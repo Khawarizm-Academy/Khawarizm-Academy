@@ -24,10 +24,10 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         
         {/* Section 1: Featured Courses (الدورات المميزة) */}
         <section className="w-full">
-          {/* Header Row */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="pr-3 py-0.5 border-r-4 border-[#29A9FF] flex items-center">
-              <h3 className="text-xl font-semibold text-[#DCE5EE] font-['IBM_Plex_Sans_Arabic']">
+          {/* Header Row with Sky-Blue 4px Right Border Accent */}
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="pr-3 py-0.5 border-r-4 border-[#29A9FF]/90 flex items-center">
+              <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
                 الدورات المميزة
               </h3>
             </div>
@@ -50,10 +50,10 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
 
         {/* Section 2: Available Scholarships (المنح والفرص المتاحة) */}
         <section className="w-full">
-          {/* Header Row */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="pr-3 py-0.5 border-r-4 border-[#E5B65C] flex items-center">
-              <h3 className="text-xl font-semibold text-[#DCE5EE] font-['IBM_Plex_Sans_Arabic']">
+          {/* Header Row with Warm-Gold 4px Right Border Accent */}
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="pr-3 py-0.5 border-r-4 border-[#E5B65C]/90 flex items-center">
+              <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
                 المنح والفرص المتاحة
               </h3>
             </div>
@@ -84,24 +84,24 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
       
       {/* Right Column (Start in RTL): Featured Courses */}
       <section className="w-full">
-        {/* Section Header */}
-        <div className="flex items-center justify-between mb-6 pb-2">
+        {/* Section Header with Soft Blended Horizontal Line */}
+        <div className="flex items-center justify-between pb-3.5 mb-5 border-b border-[#1B3F80]/40">
           <div className="flex items-center gap-2.5">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#29A9FF]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#29A9FF]">
               <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
               <path d="M6 12v5c3 3 9 3 12 0v-5" />
             </svg>
-            <h3 className="text-2xl font-bold text-[#DCE5EE] font-['IBM_Plex_Sans_Arabic']">
+            <h3 className="text-2xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
               دورات مميزة
             </h3>
           </div>
 
           <button
             onClick={onViewAllCourses}
-            className="text-sm text-[#29A9FF] hover:underline flex items-center gap-1 font-['Tajawal'] cursor-pointer"
+            className="text-xs text-[#8299B5] hover:text-[#29A9FF] flex items-center gap-1.5 font-['Tajawal'] transition-colors cursor-pointer group"
           >
             <span>عرض الكل</span>
-            <span>←</span>
+            <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
           </button>
         </div>
 
@@ -115,23 +115,23 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
 
       {/* Left Column (End in RTL): Available Scholarships */}
       <section className="w-full">
-        {/* Section Header */}
-        <div className="flex items-center justify-between mb-6 pb-2">
+        {/* Section Header with Soft Blended Horizontal Line */}
+        <div className="flex items-center justify-between pb-3.5 mb-5 border-b border-[#1B3F80]/40">
           <div className="flex items-center gap-2.5">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#E5B65C]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#E5B65C]">
               <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
             </svg>
-            <h3 className="text-2xl font-bold text-[#DCE5EE] font-['IBM_Plex_Sans_Arabic']">
+            <h3 className="text-2xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
               منح متاحة
             </h3>
           </div>
 
           <button
             onClick={onViewAllScholarships}
-            className="text-sm text-[#E5B65C] hover:underline flex items-center gap-1 font-['Tajawal'] cursor-pointer"
+            className="text-xs text-[#8299B5] hover:text-[#E5B65C] flex items-center gap-1.5 font-['Tajawal'] transition-colors cursor-pointer group"
           >
             <span>عرض الكل</span>
-            <span>←</span>
+            <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
           </button>
         </div>
 
