@@ -1,0 +1,46 @@
+:root {
+  /* Core Navy & Space Blues */
+  --color-navy-950: #040F24;
+  --color-navy-900: #061A3A;
+  --color-navy-800: #092557;
+  --color-navy-700: #123168;
+  --color-navy-600: #1B3F80;
+
+  /* Tech Accents */
+  --color-blue-500: #167BDB;
+  --color-blue-400: #29A9FF;
+
+  /* Gold & Warm Accents */
+  --color-gold-600: #C88A32;
+  --color-gold-400: #E5B65C;
+  --color-orange-300: #E5B65C;
+
+  /* Neutrals & Text */
+  --color-white-100: #DCE5EE;
+  --color-slate-400: #8299B5;
+  --color-slate-600: #5C7291;
+  --color-white-000: #F5F8FC;
+
+  /* Semantics */
+  --color-success-500: #3FAE6B;
+  --color-warning-500: #E0A23B;
+  --color-danger-500: #D9534F;
+  --color-overlay-scrim: rgba(4, 15, 36, 0.75);
+
+  /* Fonts */
+  --font-display: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+  --font-body: 'Tajawal', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Inter', monospace;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows and Glows */
+  --shadow-elev-1: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-elev-2: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-glow-gold: 0 0 24px rgba(229, 182, 92, 0.25);
+  --shadow-glow-blue: 0 0 24px rgba(41, 169, 255, 0.25);
+}
