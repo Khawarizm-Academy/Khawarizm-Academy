@@ -13,7 +13,7 @@
 The platform must feel like standing in an ancient mountain observatory under an infinite starlit Arabian desert sky:
 - **Quiet Celestial Precision:** Motion simulates the geared rotation of a brass astrolabe, celestial coordinates, and planetary dials. Transitions use weighted cubic bezier curves (`cubic-bezier(0.16, 1, 0.3, 1)`) rather than cartoonish bouncy springs.
 - **Physical Shared Motion (No Abrupt Mount/Unmount):** Active states, indicators, and toggles do not abruptly disappear and reappear. They physically slide, glide, and morph across their tracks like mechanical pointers on an astronomical brass plate.
-- **Atmospheric Luminescence:** In a deep dark navy UI (`#040F24` to `#092557`), elements without light sources become flat and lifeless. We employ multi-layered radial glows, twinkling starfields, illuminated 2px accent bars, and border luminescence to establish physical depth.
+- **Color Blending & Atmospheric Harmony (Zero Component Isolation):** Components never sit as isolated, stark-bordered "islands" in a black void. Instead, ambient radial lighting washes bathe the canvas, borders are translucent (`border-[#1B3F80]/40`), and cards use soft frosted glass (`backdrop-blur-md bg-[#061A3A]/40`) to create a unified, eye-comforting whole.
 - **Semantic Light Coding:**
   - **Celestial Gold (`#E5B65C` / `#C88A32`):** Conveys human triumph, wisdom, active deadlines, and prestigious scholarships. Radiates warm golden light (`box-shadow: 0 0 20px rgba(229, 182, 92, 0.45)`).
   - **Electric Tech Cyan (`#29A9FF` / `#167BDB`):** Conveys digital intelligence, AI courses, live broadcasts, and focus states. Radiates cool photonic energy (`box-shadow: 0 0 20px rgba(41, 169, 255, 0.40)`).
@@ -60,14 +60,22 @@ The platform must feel like standing in an ancient mountain observatory under an
 
 ### 2.4 Real-Time Interval Countdown Engine (`CompetitionBanner.tsx`)
 - **Implementation:** Integrated sub-second `setInterval` ticker calculating Days, Hours, Minutes, and Seconds.
-- **Desktop Banner:**
-  - Includes a dedicated 4-unit digital chamber: `أيام` : `ساعة` : `دقيقة` : `ثانية`.
-  - Ticking seconds with high-visibility `tabular-nums` and pulsing separators.
-- **Mobile Banner:**
-  - 4-unit real-time digital boxes with live seconds and pulsating colons.
+- **Desktop Banner Layout:**
+  - Timer is positioned **directly beside the "سجل الآن" button** on the left (End in RTL), forming a unified action cluster.
+  - 4-unit digital chamber: `أيام` : `ساعة` : `دقيقة` : `ثانية` with real-time ticking seconds and tabular numbers.
+- **Mobile Banner Layout:**
+  - Compact countdown chamber sitting directly above the "سجّل الآن" button, tightly integrated without visual disconnect.
 - **Ambient Effect:** Animated shimmer beam sweeping across the golden gradient border every 5 seconds (`animate-shimmer`).
 
-### 2.5 Celestial Starfield Canvas Engine (`CelestialCanvas.tsx`)
+### 2.5 Atmospheric Lighting Washes & Color Blending (`HomePage.tsx`)
+- **Implementation:** Fixed ambient light emitters placed at strategic astronomical coordinates across the page background:
+  - Top-right cyan aura (`bg-[#29A9FF]/[0.045] blur-[140px]`)
+  - Top-left gold aura (`bg-[#E5B65C]/[0.035] blur-[130px]`)
+  - Mid-right indigo-blue wash (`bg-[#167BDB]/[0.035] blur-[150px]`)
+  - Bottom-left event aura (`bg-[#E5B65C]/[0.03] blur-[160px]`)
+- **Visual Impact:** Bathes cards, pillars, and hero elements in soft, cohesive starlight, preventing visual isolation and harsh contrast against the `#040F24` background.
+
+### 2.6 Celestial Starfield Canvas Engine (`CelestialCanvas.tsx`)
 - **Location:** Mounted in `HeroSection` (Desktop & Mobile).
 - **Implementation:** HTML5 2D Canvas rendering loop decoupled from React state to ensure 60fps rendering without re-renders.
 - **Physics & Behavior:**
@@ -78,24 +86,19 @@ The platform must feel like standing in an ancient mountain observatory under an
     - Deep Space Cyan (`#29A9FF`)
     - Soft Stellar Ash (`#DCE5EE`)
   - Sinusoidal alpha twinkling cycle (individual random period between 3s and 7s).
-  - Micro-drift vertical displacement simulating the slow rotation of the earth relative to the heavens.
-
-### 2.6 Live Beacon Radar Ping (`animate-radar-ping`)
-- **Component:** "ندوة حية" (Live Seminar) badge in `EventSection`.
-- **Visual:** A dual-layer concentric indicator:
-  - Inner solid white beacon dot.
-  - Outer expanding ripple ring scaling from `0.95` to `1.0` while dissipating from 80% opacity to 0% over a 2-second loop.
 
 ### 2.7 Interactive 3D Card Hover & Accent Line Blooming
 - **Components:** `CourseCard`, `ScholarshipCard`.
 - **Resting State:**
-  - Elevation: `box-shadow: 0 4px 20px rgba(0, 0, 0, 0.40)`.
-  - Border: `border-color: rgba(27, 63, 128, 0.8)`.
-  - 2px Accent Bar: At the bottom of the card thumbnail (Cyan for Courses, Gold for Scholarships).
+  - Elevation: `box-shadow: 0 4px 20px rgba(0, 0, 0, 0.30)`.
+  - Border: `border-color: rgba(27, 63, 128, 0.4)`.
+  - Background: `bg-[#061A3A]/40` frosted glass.
+  - 2px Accent Bar: At the bottom of thumbnail (Cyan for Courses, Gold for Scholarships).
+  - Top Accent Bar: 4px gold bar across the top of `ScholarshipCard` matching Figma.
 - **Hover State:**
   - Lift: `transform: translateY(-4px)`.
-  - Border bloom: Border illuminates to `#29A9FF`/70 or `#E5B65C`/70.
-  - Shadow bloom: `box-shadow: 0 12px 36px rgba(0,0,0,0.65), 0 0 22px rgba(41,169,255,0.25)`.
+  - Border bloom: Soft illumination to `#29A9FF`/50 or `#E5B65C`/50.
+  - Shadow bloom: `box-shadow: 0 12px 36px rgba(0,0,0,0.55), 0 0 20px rgba(41,169,255,0.18)`.
   - Thumbnail zoom: `transform: scale(1.05)` with `transition-duration: 500ms`.
   - Accent Bar Glow: Bar emits ambient color flare (`group-hover:shadow-[0_0_10px_currentColor]`).
 
@@ -162,14 +165,14 @@ The platform must feel like standing in an ancient mountain observatory under an
 | **SmartSearchBox** | Sliding Magnetic Toggle Pill | `#29A9FF` (Cyan) ⟷ `#E5B65C` (Gold) | Glides between `دورة` and `منحة` (300ms) |
 | **SmartSearchBox** | Glow Bloom on Focus | Border `#29A9FF`, Shadow 25px flare | `focus-within:border-[#29A9FF]` |
 | **SmartSearchBox** | Compass Icon Gyro Rotation | Transform `rotate(45deg)` | `group-hover:rotate-45` 500ms ease |
-| **CompetitionBanner** | Real-Time Ticking Countdown Timer | Tabular digits, pulsing colons | Real-time 1000ms sub-second interval |
+| **CompetitionBanner** | Ticking Timer beside Registration CTA | Tabular digits, pulsing colons | Real-time 1000ms sub-second interval |
 | **CompetitionBanner** | Shimmer Light Sweep | Diagonal gradient sweep | 5s infinite `animate-shimmer` |
 | **CompetitionBanner** | Gold Button Glow & Scale | Gradient gold, scale 1.05 | Hover micro-interaction |
-| **CourseCard** | Card Elevation & Lift | `translateY(-4px)` + Cyan glow | `hover:-translate-y-1` 300ms cubic-bezier |
+| **CourseCard** | Soft Frosted Glass & Lift | `translateY(-4px)` + Cyan glow | `hover:-translate-y-1` 300ms cubic-bezier |
 | **CourseCard** | 2px Tech-Blue Accent Flare | `box-shadow: 0 0 10px #29A9FF` | `group-hover:shadow-[0_0_10px_#29A9FF]` |
-| **CourseCard** | Thumbnail Zoom | `scale(1.05)` | 500ms ease-out |
-| **ScholarshipCard** | Card Elevation & Gold Flare | `translateY(-4px)` + Gold glow | `hover:-translate-y-1` 300ms cubic-bezier |
-| **ScholarshipCard** | 2px Gold Accent Flare | `box-shadow: 0 0 10px #E5B65C` | `group-hover:shadow-[0_0_10px_#E5B65C]` |
+| **CourseCard** | Rounded-Full Outline CTA | Border `#29A9FF`/40, text `#29A9FF` | Desktop course card action |
+| **ScholarshipCard** | Top Gold Accent Bar & Soft Glass | `h-1 bg-gradient-to-r` + Gold glow | Top bar + `hover:-translate-y-1` 300ms |
+| **ScholarshipCard** | Rounded-Full Gold CTA | Gradient gold, rounded-full | Primary scholarship apply button |
 | **EventSection** | Live Beacon Radar Ping | Ping ring + White core | 2s infinite radar ping loop |
-| **EventSection** | Panoramic Stage Zoom | `scale(1.05)` on artwork | 700ms ease-out |
+| **EventSection** | Soft Translucent Section Box | `bg-[#061A3A]/30 border-[#1B3F80]/40` | Atmospheric glass integration |
 | **MobileBottomBar** | Physical Sliding Golden Chamber | `#040F24` bg + Gold border + Glow | Glides smoothly across 5 tabs (350ms) |

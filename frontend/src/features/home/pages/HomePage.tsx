@@ -34,21 +34,33 @@ export const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#040F24] text-[#DCE5EE] flex flex-col items-center relative overflow-x-hidden selection:bg-[#E5B65C]/30 selection:text-[#E5B65C]">
       
+      {/* Soft Atmospheric Celestial Light Washes — Blends all sections seamlessly into one continuous canvas */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Soft Cyan Aura on Right */}
+        <div className="absolute top-[4%] right-[5%] w-[650px] h-[650px] rounded-full bg-[#29A9FF]/[0.045] blur-[140px]" />
+        {/* Soft Gold Aura on Left */}
+        <div className="absolute top-[20%] left-[5%] w-[550px] h-[550px] rounded-full bg-[#E5B65C]/[0.035] blur-[130px]" />
+        {/* Mid-Page Cyan Deep Wash */}
+        <div className="absolute top-[50%] right-[10%] w-[600px] h-[600px] rounded-full bg-[#167BDB]/[0.035] blur-[150px]" />
+        {/* Lower Gold Aura behind Events */}
+        <div className="absolute bottom-[10%] left-[15%] w-[700px] h-[500px] rounded-full bg-[#E5B65C]/[0.03] blur-[160px]" />
+      </div>
+
       {/* Astrolabe Full-Screen Initial Preloader */}
       {initialLoading && (
         <AstrolabeLoader fullScreen message="أكاديمية خوارزم — جاري رصد النجوم والبيانات..." />
       )}
 
       {/* 1. Header Navigation Shell with Fade-Down Landing Motion */}
-      <div className="w-full hidden md:block animate-fade-in-down">
+      <div className="w-full hidden md:block animate-fade-in-down relative z-20">
         <DesktopNavbar activeTab={activeNavTab} onSelectTab={setActiveNavTab} />
       </div>
-      <div className="w-full block md:hidden animate-fade-in-down">
+      <div className="w-full block md:hidden animate-fade-in-down relative z-20">
         <MobileHeader />
       </div>
 
       {/* 2. Main Content Container with Staggered Astronomical Landing Sequence */}
-      <main className="w-full max-w-[1280px] mx-auto px-4 sm:px-8 pb-28 md:pb-20 pt-2 md:pt-4 flex flex-col gap-8 md:gap-14">
+      <main className="w-full max-w-[1280px] mx-auto px-4 sm:px-8 pb-28 md:pb-20 pt-2 md:pt-4 flex flex-col gap-8 md:gap-14 relative z-10">
         
         {/* 2.1 Hero Section with Smart Search */}
         <div className="w-full animate-fade-in-up animation-delay-100">
@@ -115,12 +127,12 @@ export const HomePage: React.FC = () => {
       </main>
 
       {/* 3. Footer (Desktop & Tablet) */}
-      <div className="w-full hidden md:block animate-fade-in-up animation-delay-500">
+      <div className="w-full hidden md:block animate-fade-in-up animation-delay-500 relative z-10">
         <Footer />
       </div>
 
       {/* 4. Mobile Sticky Bottom Navigation Bar */}
-      <div className="block md:hidden">
+      <div className="block md:hidden relative z-30">
         <MobileBottomBar activeTab={activeNavTab} onSelectTab={setActiveNavTab} />
       </div>
 
