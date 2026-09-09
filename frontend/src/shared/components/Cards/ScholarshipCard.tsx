@@ -17,13 +17,13 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
 
   if (isMobile) {
     return (
-      <div className="w-64 h-64 shrink-0 bg-[#061A3A]/60 backdrop-blur-md rounded-xl border border-[#1B3F80]/70 hover:border-[#E5B65C]/60 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5),0_0_15px_rgba(229,182,92,0.2)] transition-all duration-300 flex flex-col overflow-hidden">
+      <div className="group w-64 h-64 shrink-0 bg-[#061A3A]/70 backdrop-blur-md rounded-xl border border-[#1B3F80]/80 hover:border-[#E5B65C]/70 shadow-[0_4px_20px_rgba(0,0,0,0.40)] hover:shadow-[0_12px_36px_rgba(0,0,0,0.65),0_0_22px_rgba(229,182,92,0.25)] hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden cursor-pointer">
         {/* Mobile Media Thumbnail */}
         <div className="relative w-full h-32 bg-[#092557] overflow-hidden">
           <ScholarshipThumbnail type={scholarship.thumbnailType} />
 
           {/* Urgency Badge */}
-          <div className="absolute top-2 right-2 bg-[#040F24]/85 backdrop-blur-xs px-2.5 py-1 rounded-full border border-[#E5B65C]/40 text-[#E5B65C] text-[11px] font-['IBM_Plex_Sans_Arabic'] font-semibold flex items-center gap-1">
+          <div className="absolute top-2 right-2 bg-[#040F24]/90 backdrop-blur-xs px-2.5 py-1 rounded-full border border-[#E5B65C]/40 text-[#E5B65C] text-[11px] font-['IBM_Plex_Sans_Arabic'] font-semibold flex items-center gap-1 shadow-sm">
             <span>{scholarship.deadlineText}</span>
             {scholarship.deadlineUrgency === 'warning' && (
               <svg width="10" height="12" viewBox="0 0 8 10" fill="currentColor">
@@ -32,17 +32,17 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
             )}
           </div>
 
-          {/* 2px Gold Accent Bar */}
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-l from-[#E5B65C] via-[#C88A32] to-transparent" />
+          {/* 2px Gold Accent Bar at Bottom of Thumbnail that blooms on hover */}
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-l from-[#E5B65C] via-[#C88A32] to-transparent transition-all duration-300 group-hover:shadow-[0_0_10px_#E5B65C]" />
         </div>
 
         {/* Content Body */}
         <div className="p-4 flex-1 flex flex-col justify-between">
-          <h4 className="text-base font-semibold text-[#DCE5EE] line-clamp-2 leading-snug font-['Tajawal'] text-right">
+          <h4 className="text-base font-semibold text-[#DCE5EE] group-hover:text-white line-clamp-2 leading-snug font-['Tajawal'] text-right transition-colors">
             {scholarship.title}
           </h4>
 
-          <div className="pt-2.5 border-t border-[#1B3F80]/80 flex items-center justify-between text-xs font-['Tajawal']">
+          <div className="pt-2.5 border-t border-[#1B3F80] flex items-center justify-between text-xs font-['Tajawal']">
             {/* Location with Pin */}
             <div className="flex items-center gap-1 text-[#8299B5]">
               <svg width="12" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -53,7 +53,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
             </div>
 
             {/* Coverage Tag */}
-            <span className="text-[#E5B65C] font-semibold text-xs">
+            <span className="text-[#E5B65C] font-semibold text-xs drop-shadow-[0_0_8px_rgba(229,182,92,0.3)]">
               {scholarship.coverage}
             </span>
           </div>
@@ -64,12 +64,12 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
 
   // Desktop Card Variant (matches Desktop Screenshot)
   return (
-    <div className="w-full bg-[#061A3A]/70 backdrop-blur-md rounded-xl border border-[#1B3F80]/80 hover:border-[#E5B65C]/60 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5),0_0_15px_rgba(229,182,92,0.2)] transition-all duration-300 p-5 flex flex-col justify-between">
+    <div className="group w-full bg-[#061A3A]/70 backdrop-blur-md rounded-xl border border-[#1B3F80]/80 hover:border-[#E5B65C]/70 shadow-[0_4px_20px_rgba(0,0,0,0.40)] hover:shadow-[0_12px_36px_rgba(0,0,0,0.65),0_0_22px_rgba(229,182,92,0.25)] hover:-translate-y-1 transition-all duration-300 p-5 flex flex-col justify-between cursor-pointer">
       <div>
         {/* Top Row: Icon + Urgency Badge */}
         <div className="flex items-center justify-between mb-4">
           {/* Institution / Globe Icon in Gold Rounded Box */}
-          <div className="w-11 h-11 rounded-xl bg-[#092557] border border-[#E5B65C]/30 flex items-center justify-center text-[#E5B65C]">
+          <div className="w-11 h-11 rounded-xl bg-[#092557] border border-[#E5B65C]/30 flex items-center justify-center text-[#E5B65C] transition-transform duration-300 group-hover:scale-105 shadow-[0_0_10px_rgba(229,182,92,0.2)]">
             {scholarship.iconType === 'globe' ? (
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
@@ -86,7 +86,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
           </div>
 
           {/* Urgency Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#040F24] border border-[#E5B65C]/30 text-[#E5B65C] text-xs font-['Tajawal'] font-medium">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#040F24] border border-[#E5B65C]/30 text-[#E5B65C] text-xs font-['Tajawal'] font-medium shadow-xs">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
@@ -96,7 +96,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
         </div>
 
         {/* Title */}
-        <h4 className="text-lg font-bold text-[#DCE5EE] mb-1.5 font-['IBM_Plex_Sans_Arabic'] text-right line-clamp-2">
+        <h4 className="text-lg font-bold text-[#DCE5EE] group-hover:text-white mb-1.5 font-['IBM_Plex_Sans_Arabic'] text-right line-clamp-2 transition-colors">
           {scholarship.title}
         </h4>
 
@@ -114,15 +114,18 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
               {scholarship.degreeLevel}
             </span>
           )}
-          <span className="px-2.5 py-0.5 rounded-full bg-[#092557] border border-[#1B3F80] text-[#E5B65C] text-[11px] font-['Tajawal']">
+          <span className="px-2.5 py-0.5 rounded-full bg-[#092557] border border-[#1B3F80] text-[#E5B65C] text-[11px] font-['Tajawal'] font-medium">
             {scholarship.coverage}
           </span>
         </div>
 
         {/* Primary Gold Button */}
         <button
-          onClick={() => onApply?.(scholarship)}
-          className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-[#C88A32] to-[#E5B65C] hover:from-[#E5B65C] hover:to-[#C88A32] text-[#040F24] text-xs font-bold font-['Tajawal'] shadow-[0_0_12px_rgba(229,182,92,0.35)] hover:shadow-[0_0_18px_rgba(229,182,92,0.55)] transition-all cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onApply?.(scholarship);
+          }}
+          className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] hover:brightness-110 active:scale-[0.99] text-[#040F24] text-xs font-bold font-['Tajawal'] shadow-[0_0_12px_rgba(229,182,92,0.35)] hover:shadow-[0_0_20px_rgba(229,182,92,0.60)] transition-all cursor-pointer"
         >
           تقدم الآن
         </button>
