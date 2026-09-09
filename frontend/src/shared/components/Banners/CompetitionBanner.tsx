@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Competition } from '../../types/entities';
 
 interface CompetitionBannerProps {
@@ -12,6 +12,35 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
   variant = 'desktop',
   onRegister,
 }) => {
+  // Live Real-Time Countdown Engine
+  const [timeLeft, setTimeLeft] = useState({
+    days: parseInt(competition.daysRemaining, 10) || 3,
+    hours: parseInt(competition.hoursRemaining, 10) || 14,
+    minutes: 36,
+    seconds: 48,
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev.seconds > 0) {
+          return { ...prev, seconds: prev.seconds - 1 };
+        } else if (prev.minutes > 0) {
+          return { ...prev, minutes: 59, seconds: 59 };
+        } else if (prev.hours > 0) {
+          return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
+        } else if (prev.days > 0) {
+          return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const format2Digits = (num: number) => num.toString().padStart(2, '0');
+
   if (variant === 'mobile') {
     return (
       <section className="w-full relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#0B2554] via-[#061A3A] to-[#040F24] p-6 border border-[#1B3F80] shadow-[0_4px_25px_rgba(0,0,0,0.5),0_0_20px_rgba(41,169,255,0.1)] flex flex-col items-center text-center">
@@ -19,8 +48,9 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
         <div className="absolute top-0 right-0 w-36 h-36 bg-[#E5B65C]/8 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top Badge (مسابقة برمجية) */}
-        <div className="mb-3 px-3 py-1 rounded-full bg-[#E5B65C]/20 border border-[#E5B65C]/30 text-[#E5B65C] text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold backdrop-blur-xs">
-          {competition.badge}
+        <div className="mb-3 px-3 py-1 rounded-full bg-[#E5B65C]/20 border border-[#E5B65C]/30 text-[#E5B65C] text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold backdrop-blur-xs flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#E5B65C] animate-ping" />
+          <span>{competition.badge}</span>
         </div>
 
         {/* Title */}
@@ -28,24 +58,44 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
           {competition.title}
         </h3>
 
-        {/* Countdown Digits (First child in RTL renders on the RIGHT side) */}
-        <div className="flex items-center justify-center gap-3 mb-6 font-['IBM_Plex_Sans_Arabic']">
-          {/* Days (Visually on Right in RTL) */}
-          <div className="w-16 py-2 bg-[#061A3A] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] border border-[#1B3F80] flex flex-col items-center justify-center">
-            <div className="text-[#E5B65C] text-2xl font-bold tabular-nums leading-none">
-              {competition.daysRemaining}
+        {/* Live Countdown Digits (First child in RTL renders on the RIGHT side) */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 font-['IBM_Plex_Sans_Arabic']">
+          {/* Days (Right in RTL) */}
+          <div className="w-14 py-2 bg-[#061A3A] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] border border-[#1B3F80] flex flex-col items-center justify-center">
+            <div className="text-[#E5B65C] text-xl sm:text-2xl font-bold tabular-nums leading-none">
+              {format2Digits(timeLeft.days)}
             </div>
-            <span className="text-[11px] text-[#8299B5] font-medium mt-1">أيام</span>
+            <span className="text-[10px] text-[#8299B5] font-medium mt-1">أيام</span>
           </div>
 
-          <span className="text-2xl font-bold text-[#E5B65C] -mt-4">:</span>
+          <span className="text-xl font-bold text-[#E5B65C] animate-pulse -mt-3">:</span>
 
-          {/* Hours (Visually on Left in RTL) */}
-          <div className="w-16 py-2 bg-[#061A3A] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] border border-[#1B3F80] flex flex-col items-center justify-center">
-            <div className="text-[#E5B65C] text-2xl font-bold tabular-nums leading-none">
-              {competition.hoursRemaining}
+          {/* Hours */}
+          <div className="w-14 py-2 bg-[#061A3A] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] border border-[#1B3F80] flex flex-col items-center justify-center">
+            <div className="text-[#E5B65C] text-xl sm:text-2xl font-bold tabular-nums leading-none">
+              {format2Digits(timeLeft.hours)}
             </div>
-            <span className="text-[11px] text-[#8299B5] font-medium mt-1">ساعة</span>
+            <span className="text-[10px] text-[#8299B5] font-medium mt-1">ساعة</span>
+          </div>
+
+          <span className="text-xl font-bold text-[#E5B65C] animate-pulse -mt-3">:</span>
+
+          {/* Minutes */}
+          <div className="w-14 py-2 bg-[#061A3A] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] border border-[#1B3F80] flex flex-col items-center justify-center">
+            <div className="text-[#E5B65C] text-xl sm:text-2xl font-bold tabular-nums leading-none">
+              {format2Digits(timeLeft.minutes)}
+            </div>
+            <span className="text-[10px] text-[#8299B5] font-medium mt-1">دقيقة</span>
+          </div>
+
+          <span className="text-xl font-bold text-[#E5B65C] animate-pulse -mt-3">:</span>
+
+          {/* Seconds (Left in RTL) */}
+          <div className="w-14 py-2 bg-[#061A3A] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] border border-[#E5B65C]/40 flex flex-col items-center justify-center shadow-[0_0_10px_rgba(229,182,92,0.2)]">
+            <div className="text-[#E5B65C] text-xl sm:text-2xl font-bold tabular-nums leading-none">
+              {format2Digits(timeLeft.seconds)}
+            </div>
+            <span className="text-[10px] text-[#8299B5] font-medium mt-1">ثانية</span>
           </div>
         </div>
 
@@ -60,7 +110,7 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
     );
   }
 
-  // Desktop Variant matching Figma Desktop Banner
+  // Desktop Variant with Live Real-time Countdown Timer
   return (
     <section className="w-full relative overflow-hidden rounded-xl p-px bg-gradient-to-r from-yellow-800 via-[#E5B65C] to-yellow-800 shadow-[0_0_20px_rgba(229,182,92,0.15)] group">
       {/* Decorative animated shimmer beam sweeping across */}
@@ -68,7 +118,7 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
         <div className="w-1/3 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
       </div>
 
-      <div className="relative w-full p-6 sm:p-8 bg-[#061A3A]/95 backdrop-blur-md rounded-xl flex items-center justify-between">
+      <div className="relative w-full p-6 sm:p-8 bg-[#061A3A]/95 backdrop-blur-md rounded-xl flex flex-col lg:flex-row items-center justify-between gap-6">
         
         {/* Right (Start in RTL): Trophy Badge + Title & Description */}
         <div className="flex items-center gap-5">
@@ -89,6 +139,47 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
             <p className="text-base text-[#8299B5] font-['Tajawal'] leading-6">
               {competition.description}
             </p>
+          </div>
+        </div>
+
+        {/* Center: Live Countdown Timer Unit */}
+        <div className="flex items-center gap-2.5 font-['IBM_Plex_Sans_Arabic'] shrink-0 bg-[#040F24]/80 px-4 py-2 rounded-xl border border-[#1B3F80]">
+          {/* Days */}
+          <div className="flex flex-col items-center">
+            <span className="text-[#E5B65C] text-lg font-bold tabular-nums leading-none">
+              {format2Digits(timeLeft.days)}
+            </span>
+            <span className="text-[10px] text-[#8299B5] mt-1">أيام</span>
+          </div>
+
+          <span className="text-base font-bold text-[#E5B65C] animate-pulse -mt-2">:</span>
+
+          {/* Hours */}
+          <div className="flex flex-col items-center">
+            <span className="text-[#E5B65C] text-lg font-bold tabular-nums leading-none">
+              {format2Digits(timeLeft.hours)}
+            </span>
+            <span className="text-[10px] text-[#8299B5] mt-1">ساعة</span>
+          </div>
+
+          <span className="text-base font-bold text-[#E5B65C] animate-pulse -mt-2">:</span>
+
+          {/* Minutes */}
+          <div className="flex flex-col items-center">
+            <span className="text-[#E5B65C] text-lg font-bold tabular-nums leading-none">
+              {format2Digits(timeLeft.minutes)}
+            </span>
+            <span className="text-[10px] text-[#8299B5] mt-1">دقيقة</span>
+          </div>
+
+          <span className="text-base font-bold text-[#E5B65C] animate-pulse -mt-2">:</span>
+
+          {/* Seconds */}
+          <div className="flex flex-col items-center">
+            <span className="text-[#E5B65C] text-lg font-bold tabular-nums leading-none drop-shadow-[0_0_8px_rgba(229,182,92,0.6)]">
+              {format2Digits(timeLeft.seconds)}
+            </span>
+            <span className="text-[10px] text-[#8299B5] mt-1">ثانية</span>
           </div>
         </div>
 

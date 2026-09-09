@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { BrandLogo } from '../Artwork/BrandVisuals';
 
 interface DesktopNavbarProps {
@@ -18,6 +18,34 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
     { id: 'competitions', label: 'المسابقات' },
   ];
 
+  const navRef = useRef<HTMLElement | null>(null);
+  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+  const [indicatorStyle, setIndicatorStyle] = useState<{ left: number; width: number; opacity: number }>({
+    left: 0,
+    width: 0,
+    opacity: 0,
+  });
+
+  const updateIndicator = () => {
+    const currentTabEl = tabRefs.current[activeTab];
+    const navEl = navRef.current;
+    if (currentTabEl && navEl) {
+      const navRect = navEl.getBoundingClientRect();
+      const tabRect = currentTabEl.getBoundingClientRect();
+      setIndicatorStyle({
+        left: tabRect.left - navRect.left,
+        width: tabRect.width,
+        opacity: 1,
+      });
+    }
+  };
+
+  useEffect(() => {
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [activeTab]);
+
   return (
     <header className="sticky top-0 z-50 w-full h-16 bg-[#040F24]/90 backdrop-blur-md border-b border-[#1B3F80] shadow-[0_0_15px_rgba(41,169,255,0.10)] transition-all">
       <div className="max-w-[1280px] h-full mx-auto px-6 sm:px-10 flex items-center justify-between">
@@ -27,32 +55,38 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
           <BrandLogo size={42} textClass="text-xl font-bold text-[#E5B65C]" />
         </div>
 
-        {/* Center: Navigation Links */}
-        <nav className="flex items-center gap-8 text-sm font-['Tajawal'] font-medium">
+        {/* Center: Navigation Links with Physical Sliding Golden Beam Indicator */}
+        <nav ref={navRef} className="relative flex items-center gap-8 text-sm font-['Tajawal'] font-medium h-full">
           {navLinks.map((link) => {
             const isActive = activeTab === link.label;
             return (
               <button
                 key={link.id}
+                ref={(el) => {
+                  tabRefs.current[link.label] = el;
+                }}
                 onClick={() => onSelectTab?.(link.label)}
-                className={`relative py-5 px-1 transition-colors cursor-pointer ${
+                className={`relative py-5 px-1 transition-colors duration-300 cursor-pointer ${
                   isActive
                     ? 'text-[#E5B65C] font-bold drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]'
                     : 'text-[#8299B5] hover:text-[#DCE5EE]'
                 }`}
               >
                 <span>{link.label}</span>
-                {isActive && (
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#E5B65C] rounded-full"
-                    style={{
-                      boxShadow: '0 0 10px #E5B65C, 0 0 20px rgba(229, 182, 92, 0.6)',
-                    }}
-                  />
-                )}
               </button>
             );
           })}
+
+          {/* Smooth Sliding Underline Indicator */}
+          <div
+            className="absolute bottom-0 h-[2.5px] bg-[#E5B65C] rounded-full pointer-events-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={{
+              left: `${indicatorStyle.left}px`,
+              width: `${indicatorStyle.width}px`,
+              opacity: indicatorStyle.opacity,
+              boxShadow: '0 0 10px #E5B65C, 0 0 20px rgba(229, 182, 92, 0.6)',
+            }}
+          />
         </nav>
 
         {/* Left (End in RTL): Actions & Profile */}

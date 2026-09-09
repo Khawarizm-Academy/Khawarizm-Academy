@@ -27,36 +27,41 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
     </svg>
   );
 
-  // Mobile Variant matching media_1788955065979.png
+  // Mobile Variant matching media_1788955065979.png with gliding highlight pill
   if (variant === 'mobile') {
     return (
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm h-14 sm:h-16 px-2 bg-[#092557]/60 backdrop-blur-md rounded-full border border-[#1B3F80] focus-within:border-[#29A9FF] shadow-[0_4px_20px_rgba(0,0,0,0.4)] focus-within:shadow-[0_0_20px_rgba(41,169,255,0.3)] flex items-center justify-between transition-all"
+        className="w-full max-w-sm h-14 sm:h-16 px-2 bg-[#092557]/60 backdrop-blur-md rounded-full border border-[#1B3F80] focus-within:border-[#29A9FF] shadow-[0_4px_20px_rgba(0,0,0,0.4)] focus-within:shadow-[0_0_20px_rgba(41,169,255,0.35)] flex items-center justify-between transition-all"
       >
-        {/* Filter Pills (Left / End in RTL) */}
-        <div className="bg-[#040F24] p-1 rounded-full flex items-center border border-[#1B3F80]/60 shrink-0">
-          <button
-            type="button"
-            onClick={() => setSelectedType('scholarship')}
-            className={`px-3 py-1 rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-all cursor-pointer ${
-              selectedType === 'scholarship'
-                ? 'bg-[#E5B65C]/25 text-[#E5B65C] border border-[#E5B65C]/40 shadow-[0_0_8px_rgba(229,182,92,0.3)]'
-                : 'text-[#8299B5] hover:text-[#DCE5EE]'
+        {/* Filter Pills Container with Sliding Magnetic Puck (Left in RTL) */}
+        <div className="relative bg-[#040F24] p-1 rounded-full flex items-center border border-[#1B3F80]/60 shrink-0 w-32">
+          {/* Physical Sliding Highlight Pill */}
+          <div
+            className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              selectedType === 'course'
+                ? 'right-1 w-[calc(50%-4px)] bg-[#29A9FF]/20 border border-[#29A9FF]/50 shadow-[0_0_10px_rgba(41,169,255,0.4)]'
+                : 'right-[50%] w-[calc(50%-4px)] bg-[#E5B65C]/20 border border-[#E5B65C]/50 shadow-[0_0_10px_rgba(229,182,92,0.4)]'
             }`}
-          >
-            منحة
-          </button>
+          />
+
           <button
             type="button"
             onClick={() => setSelectedType('course')}
-            className={`px-3 py-1 rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-all cursor-pointer ${
-              selectedType === 'course'
-                ? 'bg-[#29A9FF]/25 text-[#29A9FF] border border-[#29A9FF]/40 shadow-[0_0_8px_rgba(41,169,255,0.3)]'
-                : 'text-[#8299B5] hover:text-[#DCE5EE]'
+            className={`relative z-10 flex-1 py-1 text-center rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-colors duration-300 cursor-pointer ${
+              selectedType === 'course' ? 'text-[#29A9FF]' : 'text-[#8299B5] hover:text-[#DCE5EE]'
             }`}
           >
             دورة
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedType('scholarship')}
+            className={`relative z-10 flex-1 py-1 text-center rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-colors duration-300 cursor-pointer ${
+              selectedType === 'scholarship' ? 'text-[#E5B65C]' : 'text-[#8299B5] hover:text-[#DCE5EE]'
+            }`}
+          >
+            منحة
           </button>
         </div>
 
@@ -81,21 +86,28 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
     );
   }
 
-  // Desktop Variant matching media_1788955066031.png and Homepage - Desktop.html
+  // Desktop Variant matching media_1788955066031.png with gliding highlight pill
   return (
     <form
       onSubmit={handleSubmit}
       className="w-full max-w-[768px] h-16 p-2 bg-[#061A3A]/85 backdrop-blur-md rounded-full border border-[#1B3F80] focus-within:border-[#29A9FF] shadow-[0_8px_32px_rgba(9,37,87,0.50)] focus-within:shadow-[0_0_25px_rgba(41,169,255,0.35),0_8px_32px_rgba(9,37,87,0.60)] flex items-center justify-between transition-all"
     >
-      {/* Right (Start in RTL): Segment Toggle Pills (دورة / منحة) */}
-      <div className="bg-[#040F24] p-1 rounded-full flex items-center border border-[#1B3F80]/60 shrink-0">
+      {/* Right (Start in RTL): Segment Toggle with Physical Sliding Highlight */}
+      <div className="relative bg-[#040F24] p-1 rounded-full flex items-center border border-[#1B3F80]/60 shrink-0 w-52 h-12">
+        {/* Physical Sliding Highlight Pill */}
+        <div
+          className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            selectedType === 'course'
+              ? 'right-1 w-[calc(50%-4px)] bg-[#29A9FF]/20 border border-[#29A9FF]/50 shadow-[0_0_14px_rgba(41,169,255,0.4)]'
+              : 'right-[50%] w-[calc(50%-4px)] bg-[#E5B65C]/20 border border-[#E5B65C]/50 shadow-[0_0_14px_rgba(229,182,92,0.4)]'
+          }`}
+        />
+
         <button
           type="button"
           onClick={() => setSelectedType('course')}
-          className={`px-8 py-2 rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-all cursor-pointer ${
-            selectedType === 'course'
-              ? 'bg-[#29A9FF]/20 text-[#29A9FF] border border-[#29A9FF]/40 shadow-[0_0_10px_rgba(41,169,255,0.3)]'
-              : 'text-[#8299B5] hover:text-[#DCE5EE]'
+          className={`relative z-10 flex-1 py-2 text-center rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-colors duration-300 cursor-pointer ${
+            selectedType === 'course' ? 'text-[#29A9FF] font-bold' : 'text-[#8299B5] hover:text-[#DCE5EE]'
           }`}
         >
           دورة
@@ -103,10 +115,8 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
         <button
           type="button"
           onClick={() => setSelectedType('scholarship')}
-          className={`px-8 py-2 rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-all cursor-pointer ${
-            selectedType === 'scholarship'
-              ? 'bg-[#E5B65C]/20 text-[#E5B65C] border border-[#E5B65C]/40 shadow-[0_0_10px_rgba(229,182,92,0.3)]'
-              : 'text-[#8299B5] hover:text-[#DCE5EE]'
+          className={`relative z-10 flex-1 py-2 text-center rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-colors duration-300 cursor-pointer ${
+            selectedType === 'scholarship' ? 'text-[#E5B65C] font-bold' : 'text-[#8299B5] hover:text-[#DCE5EE]'
           }`}
         >
           منحة

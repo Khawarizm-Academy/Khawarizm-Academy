@@ -6,7 +6,7 @@ interface MobileBottomBarProps {
 }
 
 export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
-  activeTab = 'لوحتي', // Default to screenshot state where 'لوحتي' is active
+  activeTab = 'لوحتي',
   onSelectTab,
 }) => {
   const tabs = [
@@ -65,25 +65,40 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
     },
   ];
 
+  const activeIndex = tabs.findIndex((t) => t.label === activeTab);
+  const safeIndex = activeIndex >= 0 ? activeIndex : 3;
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 w-full bg-[#092557]/90 backdrop-blur-lg border-t border-[#1B3F80] shadow-[0_-4px_25px_rgba(0,0,0,0.6)]">
-      <div className="max-w-md mx-auto h-16 px-4 flex items-center justify-between">
+    <div className="fixed bottom-0 left-0 right-0 z-50 w-full bg-[#092557]/95 backdrop-blur-lg border-t border-[#1B3F80] shadow-[0_-4px_25px_rgba(0,0,0,0.6)]">
+      <div className="max-w-md mx-auto h-16 px-2 grid grid-cols-5 relative items-center">
+        
+        {/* Physical Sliding Golden Chamber Indicator */}
+        <div
+          className="absolute top-2 bottom-2 rounded-xl bg-[#040F24] border border-[#E5B65C]/50 shadow-[0_0_16px_rgba(229,182,92,0.4)] pointer-events-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          style={{
+            width: 'calc(20% - 10px)',
+            right: `calc(${safeIndex * 20}% + 5px)`,
+          }}
+        />
+
         {tabs.map((tab) => {
           const isActive = activeTab === tab.label;
           return (
             <button
               key={tab.id}
               onClick={() => onSelectTab?.(tab.label)}
-              className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all cursor-pointer ${
+              className={`relative z-10 flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-300 cursor-pointer ${
                 isActive
-                  ? 'bg-[#040F24] text-[#E5B65C] border border-[#E5B65C]/40 shadow-[0_0_12px_rgba(229,182,92,0.8)] scale-105'
+                  ? 'text-[#E5B65C] scale-105'
                   : 'text-[#8299B5] hover:text-[#DCE5EE]'
               }`}
             >
-              <div className="relative">
+              <div className="relative transition-transform duration-300">
                 {tab.icon}
               </div>
-              <span className={`text-[11px] font-['Tajawal'] font-medium mt-0.5 ${isActive ? 'font-bold text-[#E5B65C]' : ''}`}>
+              <span className={`text-[11px] font-['Tajawal'] font-medium mt-0.5 transition-colors duration-300 ${
+                isActive ? 'font-bold text-[#E5B65C] drop-shadow-[0_0_8px_rgba(229,182,92,0.5)]' : ''
+              }`}>
                 {tab.label}
               </span>
             </button>
