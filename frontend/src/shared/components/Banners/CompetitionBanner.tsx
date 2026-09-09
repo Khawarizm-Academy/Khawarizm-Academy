@@ -60,52 +60,60 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
         </h3>
 
         {/* Action & Timer Unit — Placed right above & tightly coupled with registration button */}
-        <div className="w-full flex flex-col items-center gap-3">
-          {/* Live Countdown Digits (First child in RTL renders on the RIGHT side) */}
-          <div className="flex items-center justify-center gap-2 font-['IBM_Plex_Sans_Arabic']">
+        <div className="w-full flex flex-col items-center gap-4">
+          {/* Live Countdown Digits — Thick, Solid 3D Digit Boxes matching Figma */}
+          <div className="flex items-center justify-center gap-2 sm:gap-3 font-['IBM_Plex_Sans_Arabic'] my-1">
             {/* Days (Right in RTL) */}
-            <div className="w-14 py-1.5 bg-[#040F24]/90 rounded-lg border border-[#1B3F80]/60 shadow-inner flex flex-col items-center justify-center">
-              <div className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
-                {format2Digits(timeLeft.days)}
+            <div className="flex flex-col items-center">
+              <div className="w-[62px] h-[54px] sm:w-[68px] sm:h-[58px] bg-[#071938] rounded-xl border-2 border-[#1B3F80] shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center">
+                <span className="text-[#E5B65C] text-2xl sm:text-3xl font-bold tabular-nums leading-none drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
+                  {format2Digits(timeLeft.days)}
+                </span>
               </div>
-              <span className="text-[10px] text-[#8299B5] font-medium mt-0.5">أيام</span>
+              <span className="text-xs font-bold text-[#8299B5] mt-1.5">أيام</span>
             </div>
 
-            <span className="text-lg font-bold text-[#E5B65C] animate-pulse -mt-2">:</span>
+            <span className="text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse">:</span>
 
             {/* Hours */}
-            <div className="w-14 py-1.5 bg-[#040F24]/90 rounded-lg border border-[#1B3F80]/60 shadow-inner flex flex-col items-center justify-center">
-              <div className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
-                {format2Digits(timeLeft.hours)}
+            <div className="flex flex-col items-center">
+              <div className="w-[62px] h-[54px] sm:w-[68px] sm:h-[58px] bg-[#071938] rounded-xl border-2 border-[#1B3F80] shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center">
+                <span className="text-[#E5B65C] text-2xl sm:text-3xl font-bold tabular-nums leading-none drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
+                  {format2Digits(timeLeft.hours)}
+                </span>
               </div>
-              <span className="text-[10px] text-[#8299B5] font-medium mt-0.5">ساعة</span>
+              <span className="text-xs font-bold text-[#8299B5] mt-1.5">ساعة</span>
             </div>
 
-            <span className="text-lg font-bold text-[#E5B65C] animate-pulse -mt-2">:</span>
+            <span className="text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse">:</span>
 
             {/* Minutes */}
-            <div className="w-14 py-1.5 bg-[#040F24]/90 rounded-lg border border-[#1B3F80]/60 shadow-inner flex flex-col items-center justify-center">
-              <div className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
-                {format2Digits(timeLeft.minutes)}
+            <div className="flex flex-col items-center">
+              <div className="w-[62px] h-[54px] sm:w-[68px] sm:h-[58px] bg-[#071938] rounded-xl border-2 border-[#1B3F80] shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center">
+                <span className="text-[#E5B65C] text-2xl sm:text-3xl font-bold tabular-nums leading-none drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
+                  {format2Digits(timeLeft.minutes)}
+                </span>
               </div>
-              <span className="text-[10px] text-[#8299B5] font-medium mt-0.5">دقيقة</span>
+              <span className="text-xs font-bold text-[#8299B5] mt-1.5">دقيقة</span>
             </div>
 
-            <span className="text-lg font-bold text-[#E5B65C] animate-pulse -mt-2">:</span>
+            <span className="text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse">:</span>
 
             {/* Seconds (Left in RTL) */}
-            <div className="w-14 py-1.5 bg-[#040F24]/90 rounded-lg border border-[#E5B65C]/40 shadow-[0_0_10px_rgba(229,182,92,0.15)] flex flex-col items-center justify-center">
-              <div className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
-                {format2Digits(timeLeft.seconds)}
+            <div className="flex flex-col items-center">
+              <div className="w-[62px] h-[54px] sm:w-[68px] sm:h-[58px] bg-[#071938] rounded-xl border-2 border-[#E5B65C]/50 shadow-[0_0_12px_rgba(229,182,92,0.2),inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center">
+                <span className="text-[#E5B65C] text-2xl sm:text-3xl font-bold tabular-nums leading-none drop-shadow-[0_0_10px_rgba(229,182,92,0.7)]">
+                  {format2Digits(timeLeft.seconds)}
+                </span>
               </div>
-              <span className="text-[10px] text-[#8299B5] font-medium mt-0.5">ثانية</span>
+              <span className="text-xs font-bold text-[#8299B5] mt-1.5">ثانية</span>
             </div>
           </div>
 
           {/* Primary CTA Button (سجل الآن) */}
           <button
             onClick={onRegister}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] hover:brightness-110 active:scale-[0.99] text-[#040F24] font-bold text-base font-['IBM_Plex_Sans_Arabic'] shadow-[0_0_16px_rgba(229,182,92,0.35)] hover:shadow-[0_0_24px_rgba(229,182,92,0.55)] transition-all cursor-pointer"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] hover:brightness-110 active:scale-[0.99] text-[#040F24] font-bold text-base font-['IBM_Plex_Sans_Arabic'] shadow-[0_0_16px_rgba(229,182,92,0.35)] hover:shadow-[0_0_24px_rgba(229,182,92,0.55)] transition-all cursor-pointer"
           >
             {competition.actionText}
           </button>
@@ -148,51 +156,59 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
 
         {/* Left (End in RTL): Integrated Action Cluster — Timer Placed Directly Beside the "سجل الآن" Button */}
         <div className="flex items-center gap-4 shrink-0">
-          {/* Live Countdown Timer Unit */}
-          <div className="flex items-center gap-2 font-['IBM_Plex_Sans_Arabic'] bg-[#040F24]/85 px-3.5 py-1.5 rounded-xl border border-[#1B3F80]/50 shadow-inner">
+          {/* Live Countdown Timer Unit — Thick Substantial Digit Cards */}
+          <div className="flex items-center gap-2 sm:gap-2.5 font-['IBM_Plex_Sans_Arabic']">
             {/* Days */}
             <div className="flex flex-col items-center">
-              <span className="text-[#E5B65C] text-base font-bold tabular-nums leading-tight">
-                {format2Digits(timeLeft.days)}
-              </span>
-              <span className="text-[9px] text-[#8299B5]">أيام</span>
+              <div className="min-w-[54px] h-[48px] px-2.5 bg-[#040F24] border-2 border-[#1B3F80] rounded-xl flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.5)]">
+                <span className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
+                  {format2Digits(timeLeft.days)}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-[#8299B5] mt-1">أيام</span>
             </div>
 
-            <span className="text-xs font-bold text-[#E5B65C]/80 animate-pulse -mt-1.5">:</span>
+            <span className="text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse">:</span>
 
             {/* Hours */}
             <div className="flex flex-col items-center">
-              <span className="text-[#E5B65C] text-base font-bold tabular-nums leading-tight">
-                {format2Digits(timeLeft.hours)}
-              </span>
-              <span className="text-[9px] text-[#8299B5]">ساعة</span>
+              <div className="min-w-[54px] h-[48px] px-2.5 bg-[#040F24] border-2 border-[#1B3F80] rounded-xl flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.5)]">
+                <span className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
+                  {format2Digits(timeLeft.hours)}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-[#8299B5] mt-1">ساعة</span>
             </div>
 
-            <span className="text-xs font-bold text-[#E5B65C]/80 animate-pulse -mt-1.5">:</span>
+            <span className="text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse">:</span>
 
             {/* Minutes */}
             <div className="flex flex-col items-center">
-              <span className="text-[#E5B65C] text-base font-bold tabular-nums leading-tight">
-                {format2Digits(timeLeft.minutes)}
-              </span>
-              <span className="text-[9px] text-[#8299B5]">دقيقة</span>
+              <div className="min-w-[54px] h-[48px] px-2.5 bg-[#040F24] border-2 border-[#1B3F80] rounded-xl flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.5)]">
+                <span className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
+                  {format2Digits(timeLeft.minutes)}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-[#8299B5] mt-1">دقيقة</span>
             </div>
 
-            <span className="text-xs font-bold text-[#E5B65C]/80 animate-pulse -mt-1.5">:</span>
+            <span className="text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse">:</span>
 
             {/* Seconds */}
             <div className="flex flex-col items-center">
-              <span className="text-[#E5B65C] text-base font-bold tabular-nums leading-tight drop-shadow-[0_0_6px_rgba(229,182,92,0.5)]">
-                {format2Digits(timeLeft.seconds)}
-              </span>
-              <span className="text-[9px] text-[#8299B5]">ثانية</span>
+              <div className="min-w-[54px] h-[48px] px-2.5 bg-[#040F24] border-2 border-[#E5B65C]/60 rounded-xl flex items-center justify-center shadow-[0_0_12px_rgba(229,182,92,0.25),inset_0_1px_2px_rgba(0,0,0,0.5)]">
+                <span className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none drop-shadow-[0_0_6px_rgba(229,182,92,0.6)]">
+                  {format2Digits(timeLeft.seconds)}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-[#8299B5] mt-1">ثانية</span>
             </div>
           </div>
 
           {/* Button "سجل الآن" */}
           <button
             onClick={onRegister}
-            className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] hover:brightness-110 active:scale-95 text-[#040F24] font-semibold text-xs font-['IBM_Plex_Sans_Arabic'] shadow-[0_0_10px_rgba(229,182,92,0.35)] hover:shadow-[0_0_18px_rgba(229,182,92,0.55)] transition-all cursor-pointer shrink-0 whitespace-nowrap"
+            className="px-6 py-3 rounded-full bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] hover:brightness-110 active:scale-95 text-[#040F24] font-bold text-xs font-['IBM_Plex_Sans_Arabic'] shadow-[0_0_12px_rgba(229,182,92,0.35)] hover:shadow-[0_0_20px_rgba(229,182,92,0.55)] transition-all cursor-pointer shrink-0 whitespace-nowrap"
           >
             {competition.actionText}
           </button>

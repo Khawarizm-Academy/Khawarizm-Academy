@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 interface MobileBottomBarProps {
   activeTab?: string;
@@ -68,43 +68,111 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   const activeIndex = tabs.findIndex((t) => t.label === activeTab);
   const safeIndex = activeIndex >= 0 ? activeIndex : 3;
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [chamberStyle, setChamberStyle] = useState<{
+    left: number;
+    width: number;
+    height: number;
+    opacity: number;
+  }>({
+    left: 0,
+    width: 66,
+    height: 52,
+    opacity: 0,
+  });
+
+  // Calculate pixel-perfect center alignment over the active tab button
+  const updateChamberPosition = () => {
+    const activeBtn = tabRefs.current[safeIndex];
+    const container = containerRef.current;
+    if (!activeBtn || !container) return;
+
+    const btnRect = activeBtn.getBoundingClientRect();
+    const contRect = container.getBoundingClientRect();
+
+    // Box dimensions: substantial and thick (66px wide x 52px high)
+    const boxWidth = Math.min(68, Math.max(60, btnRect.width - 4));
+    const boxHeight = 52;
+
+    // Center the box exactly on the active button's center point
+    const btnCenter = (btnRect.left - contRect.left) + (btnRect.width / 2);
+    const left = btnCenter - (boxWidth / 2);
+
+    setChamberStyle({
+      left,
+      width: boxWidth,
+      height: boxHeight,
+      opacity: 1,
+    });
+  };
+
+  useEffect(() => {
+    updateChamberPosition();
+    const t1 = setTimeout(updateChamberPosition, 40);
+    const t2 = setTimeout(updateChamberPosition, 150);
+    window.addEventListener('resize', updateChamberPosition);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('resize', updateChamberPosition);
+    };
+  }, [safeIndex]);
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 w-full bg-[#092557]/95 backdrop-blur-lg border-t border-[#1B3F80] shadow-[0_-4px_25px_rgba(0,0,0,0.6)]">
-      <div className="max-w-md mx-auto h-16 px-2 grid grid-cols-5 relative items-center">
-        
-        {/* Physical Sliding Golden Chamber Indicator */}
+    <nav
+      aria-label="شريط التنقل السفلي"
+      className="fixed bottom-0 left-0 right-0 z-[100] w-full bg-[#061A3A]/95 backdrop-blur-xl border-t-2 border-[#1B3F80] shadow-[0_-8px_30px_rgba(0,0,0,0.7)] select-none pb-[max(env(safe-area-inset-bottom),10px)] pt-2"
+    >
+      {/* Container with px-4 sm:px-6 ensures tab items NEVER touch the screen edges */}
+      <div
+        ref={containerRef}
+        className="max-w-md mx-auto px-4 sm:px-6 grid grid-cols-5 relative items-center justify-items-center"
+      >
+        {/* Physical Sliding Golden Chamber Indicator — Thick, Deep, Substantial 2px Border & Measured Centering */}
         <div
-          className="absolute top-2 bottom-2 rounded-xl bg-[#040F24] border border-[#E5B65C]/50 shadow-[0_0_16px_rgba(229,182,92,0.4)] pointer-events-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          className="absolute top-1/2 -translate-y-1/2 rounded-xl bg-gradient-to-b from-[#092350] via-[#061A3A] to-[#040F24] border-2 border-[#E5B65C] shadow-[0_0_16px_rgba(229,182,92,0.65),inset_0_1px_3px_rgba(255,255,255,0.15)] pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
           style={{
-            width: 'calc(20% - 10px)',
-            right: `calc(${safeIndex * 20}% + 5px)`,
+            left: `${chamberStyle.left}px`,
+            width: `${chamberStyle.width}px`,
+            height: `${chamberStyle.height}px`,
+            opacity: chamberStyle.opacity,
           }}
         />
 
-        {tabs.map((tab) => {
+        {tabs.map((tab, idx) => {
           const isActive = activeTab === tab.label;
           return (
             <button
               key={tab.id}
+              ref={(el) => {
+                tabRefs.current[idx] = el;
+              }}
               onClick={() => onSelectTab?.(tab.label)}
-              className={`relative z-10 flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-300 cursor-pointer ${
-                isActive
-                  ? 'text-[#E5B65C] scale-105'
-                  : 'text-[#8299B5] hover:text-[#DCE5EE]'
-              }`}
+              className="relative z-10 w-full h-[52px] flex flex-col items-center justify-center gap-1 cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
             >
-              <div className="relative transition-transform duration-300">
+              <div
+                className={`transition-all duration-300 ${
+                  isActive
+                    ? 'text-[#E5B65C] scale-110 drop-shadow-[0_0_8px_rgba(229,182,92,0.7)]'
+                    : 'text-[#8299B5] hover:text-[#DCE5EE]'
+                }`}
+              >
                 {tab.icon}
               </div>
-              <span className={`text-[11px] font-['Tajawal'] font-medium mt-0.5 transition-colors duration-300 ${
-                isActive ? 'font-bold text-[#E5B65C] drop-shadow-[0_0_8px_rgba(229,182,92,0.5)]' : ''
-              }`}>
+              <span
+                className={`text-[11px] font-['Tajawal'] transition-all duration-300 leading-none ${
+                  isActive
+                    ? 'font-bold text-[#E5B65C] drop-shadow-[0_0_6px_rgba(229,182,92,0.6)]'
+                    : 'text-[#8299B5] hover:text-[#DCE5EE]'
+                }`}
+              >
                 {tab.label}
               </span>
             </button>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 };

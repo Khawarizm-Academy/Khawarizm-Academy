@@ -54,17 +54,20 @@ The platform must feel like standing in an ancient mountain observatory under an
 - **Mechanism:** An absolute rounded indicator pill sits behind the two text buttons.
 - **Motion:** When switching between `دورة` (Course, Cyan `#29A9FF`) and `منحة` (Scholarship, Gold `#E5B65C`), the pill slides across the track (`transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`), seamlessly shifting its position from `right: 4px` to `right: 50%` and morphing its color and glow flare.
 
-#### C. MobileBottomBar Sliding Golden Chamber
-- **Mechanism:** An absolute rounded chamber container (`w-[calc(20%-10px)]`) tracks the active bottom tab index (`right: calc(index * 20% + 5px)`).
-- **Motion:** Smoothly glides underneath whichever of the 5 icons the student taps, accompanied by a 1.05x micro-scale and gold drop-shadow.
+#### C. MobileBottomBar Fitted Centered Golden Chamber
+- **Mechanism:** An absolute rounded chamber container dynamically sized to fit the active icon and label (`w-[66px] h-[52px]`), engineered with substantial depth (`bg-gradient-to-b from-[#092350] via-[#061A3A] to-[#040F24]`, `border-2 border-[#E5B65C]`, and `shadow-[0_0_16px_rgba(229,182,92,0.65),inset_0_1px_3px_rgba(255,255,255,0.15)]`).
+- **Centering Mechanism:** Uses measured DOM bounding client rects (`tabRect.left - contRect.left + tabRect.width/2 - boxWidth/2`), guaranteeing absolute subpixel dead-center alignment over every tab icon regardless of viewport width or directionality.
+- **Edge Margin Clearance:** Nav container uses `px-4 sm:px-6` so the first and last tabs never touch the screen edges, maintaining comfortable breathing room on all mobile devices.
+- **Motion:** Smoothly glides underneath whichever icon the student taps with `transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1)` while the active icon scales to `110%` with gold illumination.
+- **Visibility:** Permanently pinned to `fixed bottom-0 z-[100]`, remaining always visible on mobile viewports.
 
 ### 2.4 Real-Time Interval Countdown Engine (`CompetitionBanner.tsx`)
 - **Implementation:** Integrated sub-second `setInterval` ticker calculating Days, Hours, Minutes, and Seconds.
 - **Desktop Banner Layout:**
   - Timer is positioned **directly beside the "سجل الآن" button** on the left (End in RTL), forming a unified action cluster.
-  - 4-unit digital chamber: `أيام` : `ساعة` : `دقيقة` : `ثانية` with real-time ticking seconds and tabular numbers.
+  - 4 substantial, thick 3D digit cards (`min-w-[54px] h-[48px] px-2.5 bg-[#040F24] border-2 border-[#1B3F80] rounded-xl`) with tabular 20px gold numerals and dedicated labels underneath (`أيام`, `ساعة`, `دقيقة`, `ثانية`).
 - **Mobile Banner Layout:**
-  - Compact countdown chamber sitting directly above the "سجّل الآن" button, tightly integrated without visual disconnect.
+  - 4 prominent, thick 3D digit cards (`w-[62px] h-[54px] sm:w-[68px] sm:h-[58px] bg-[#071938] rounded-xl border-2 border-[#1B3F80]` with bold 24px-28px gold numerals) sitting directly above the "سجّل الآن" button with dedicated labels underneath.
 - **Ambient Effect:** Animated shimmer beam sweeping across the golden gradient border every 5 seconds (`animate-shimmer`).
 
 ### 2.5 Atmospheric Lighting Washes & Color Blending (`HomePage.tsx`)
