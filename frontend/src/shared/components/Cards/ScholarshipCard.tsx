@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Scholarship } from '../../types/entities';
 import { ScholarshipThumbnail } from '../Artwork/BrandVisuals';
+import { convertKeyToAr, toArabic } from '../../lib/localization';
 
 interface ScholarshipCardProps {
   scholarship: Scholarship;
@@ -58,7 +59,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
 
             {/* Coverage Tag */}
             <span className="text-[#E5B65C] font-semibold text-xs drop-shadow-[0_0_8px_rgba(229,182,92,0.25)]">
-              {scholarship.coverage}
+              {convertKeyToAr(scholarship.coverage, 'coverage')}
             </span>
           </div>
 
@@ -70,7 +71,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
             }}
             className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] hover:brightness-110 active:scale-[0.98] text-[#040F24] text-[13px] font-bold font-['IBM_Plex_Sans_Arabic'] shadow-[0_2px_10px_rgba(229,182,92,0.3)] transition-all cursor-pointer flex items-center justify-center gap-1.5"
           >
-            <span>تقدم الآن</span>
+            <span>{toArabic('actions', 'apply_now')}</span>
             <span className="text-sm">←</span>
           </button>
         </div>
@@ -131,11 +132,11 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
           <div className="flex items-center gap-2 mb-4 justify-start">
             {scholarship.degreeLevel && (
               <span className="px-2.5 py-0.5 rounded-md bg-[#092557]/40 border border-[#1B3F80]/40 text-[#DCE5EE] text-[11px] font-['Tajawal']">
-                {scholarship.degreeLevel}
+                {convertKeyToAr(scholarship.degreeLevel, 'degreeLevels')}
               </span>
             )}
             <span className="px-2.5 py-0.5 rounded-md bg-[#092557]/40 border border-[#1B3F80]/40 text-[#E5B65C] text-[11px] font-['Tajawal'] font-medium">
-              {scholarship.coverage}
+              {convertKeyToAr(scholarship.coverage, 'coverage')}
             </span>
           </div>
 
@@ -147,7 +148,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
             }}
             className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] hover:brightness-110 active:scale-[0.98] text-[#040F24] text-[13px] sm:text-sm font-bold font-['IBM_Plex_Sans_Arabic'] shadow-[0_2px_12px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_16px_rgba(229,182,92,0.45)] transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5"
           >
-            <span>تقدم الآن</span>
+            <span>{toArabic('actions', 'apply_now')}</span>
             <span className="text-sm transition-transform duration-200 group-hover:-translate-x-1">←</span>
           </button>
         </div>

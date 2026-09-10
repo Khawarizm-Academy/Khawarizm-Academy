@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toArabic } from '../../lib/localization';
 
 interface SmartSearchBoxProps {
   variant?: 'desktop' | 'mobile';
@@ -52,7 +53,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
               selectedType === 'course' ? 'text-[#29A9FF]' : 'text-[#8299B5] hover:text-[#DCE5EE]'
             }`}
           >
-            دورة
+            {toArabic('search', 'course')}
           </button>
           <button
             type="button"
@@ -61,7 +62,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
               selectedType === 'scholarship' ? 'text-[#E5B65C]' : 'text-[#8299B5] hover:text-[#DCE5EE]'
             }`}
           >
-            منحة
+            {toArabic('search', 'scholarship')}
           </button>
         </div>
 
@@ -110,7 +111,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
             selectedType === 'course' ? 'text-[#29A9FF] font-bold' : 'text-[#8299B5] hover:text-[#DCE5EE]'
           }`}
         >
-          دورة
+          {toArabic('search', 'course')}
         </button>
         <button
           type="button"
@@ -119,7 +120,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
             selectedType === 'scholarship' ? 'text-[#E5B65C] font-bold' : 'text-[#8299B5] hover:text-[#DCE5EE]'
           }`}
         >
-          منحة
+          {toArabic('search', 'scholarship')}
         </button>
       </div>
 

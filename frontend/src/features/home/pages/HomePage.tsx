@@ -33,7 +33,7 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#040F24] text-[#DCE5EE] flex flex-col items-center relative overflow-x-hidden selection:bg-[#E5B65C]/30 selection:text-[#E5B65C]">
-      
+
       {/* Soft Atmospheric Celestial Light Washes — Blends all sections seamlessly into one continuous canvas */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         {/* Soft Cyan Aura on Right */}
@@ -48,6 +48,7 @@ export const HomePage: React.FC = () => {
 
       {/* Astrolabe Full-Screen Initial Preloader */}
       {initialLoading && (
+
         <AstrolabeLoader fullScreen message="أكاديمية خوارزم — جاري رصد النجوم والبيانات..." />
       )}
 
@@ -61,7 +62,7 @@ export const HomePage: React.FC = () => {
 
       {/* 2. Main Content Container with Staggered Astronomical Landing Sequence */}
       <main className="w-full max-w-[1280px] mx-auto px-4 sm:px-8 pb-28 md:pb-20 pt-2 md:pt-4 flex flex-col gap-8 md:gap-14 relative z-10">
-        
+
         {/* 2.1 Hero Section with Smart Search */}
         <div className="w-full animate-fade-in-up animation-delay-100">
           <div className="hidden md:block w-full">

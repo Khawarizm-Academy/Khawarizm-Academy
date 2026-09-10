@@ -1,21 +1,24 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { BrandLogo } from '../Artwork/BrandVisuals';
+import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
 
 interface DesktopNavbarProps {
-  activeTab?: string;
-  onSelectTab?: (tab: string) => void;
+  activeTab?: NavTabKey | string;
+  onSelectTab?: (tab: NavTabKey) => void;
 }
 
 export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
-  activeTab = 'الرئيسية',
+  activeTab = 'home',
   onSelectTab,
 }) => {
-  const navLinks = [
-    { id: 'home', label: 'الرئيسية' },
-    { id: 'courses', label: 'الدورات' },
-    { id: 'scholarships', label: 'المنح والفرص' },
-    { id: 'events', label: 'الفعاليات' },
-    { id: 'competitions', label: 'المسابقات' },
+  const normalizedActiveTab = toEnglishNav(activeTab);
+
+  const navLinks: { id: NavTabKey; label: string }[] = [
+    { id: 'home', label: toArabicNav('home') },
+    { id: 'courses', label: toArabicNav('courses') },
+    { id: 'scholarships', label: toArabicNav('scholarships') },
+    { id: 'events', label: toArabicNav('events') },
+    { id: 'competitions', label: toArabicNav('competitions') },
   ];
 
   const navRef = useRef<HTMLElement | null>(null);
@@ -27,7 +30,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
   });
 
   const updateIndicator = () => {
-    const currentTabEl = tabRefs.current[activeTab];
+    const currentTabEl = tabRefs.current[normalizedActiveTab] || tabRefs.current['home'];
     const navEl = navRef.current;
     if (currentTabEl && navEl) {
       const navRect = navEl.getBoundingClientRect();
@@ -44,7 +47,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
     updateIndicator();
     window.addEventListener('resize', updateIndicator);
     return () => window.removeEventListener('resize', updateIndicator);
-  }, [activeTab]);
+  }, [normalizedActiveTab]);
 
   return (
     <header className="sticky top-0 z-50 w-full h-16 bg-[#040F24]/90 backdrop-blur-md border-b border-[#1B3F80] shadow-[0_0_15px_rgba(41,169,255,0.10)] transition-all">
@@ -58,14 +61,14 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
         {/* Center: Navigation Links with Physical Sliding Golden Beam Indicator */}
         <nav ref={navRef} className="relative flex items-center gap-8 text-sm font-['Tajawal'] font-medium h-full">
           {navLinks.map((link) => {
-            const isActive = activeTab === link.label;
+            const isActive = normalizedActiveTab === link.id;
             return (
               <button
                 key={link.id}
                 ref={(el) => {
-                  tabRefs.current[link.label] = el;
+                  tabRefs.current[link.id] = el;
                 }}
-                onClick={() => onSelectTab?.(link.label)}
+                onClick={() => onSelectTab?.(link.id)}
                 className={`relative py-5 px-1 transition-colors duration-300 cursor-pointer ${
                   isActive
                     ? 'text-[#E5B65C] font-bold drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]'

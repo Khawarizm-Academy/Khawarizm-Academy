@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Course } from '../../types/entities';
 import { CourseThumbnail } from '../Artwork/BrandVisuals';
+import { convertKeyToAr, toArabic } from '../../lib/localization';
 
 interface CourseCardProps {
   course: Course;
@@ -28,7 +29,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
           {/* Level / Category Badge (Top Right in RTL) */}
           <div className="absolute top-2 right-2 bg-[#040F24]/85 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-[#29A9FF]/30 text-[#29A9FF] text-[11px] font-['IBM_Plex_Sans_Arabic'] font-semibold shadow-xs">
-            {course.category || course.level}
+            {convertKeyToAr(course.category || course.level, 'courseLevels')}
           </div>
 
           {/* 2px Tech-Blue Accent Bar at Bottom of Thumbnail that blooms softly on hover */}
@@ -67,12 +68,12 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             ) : (
               <span
                 className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                  course.status === 'متاح'
+                  course.status === 'available' || course.status === 'متاح'
                     ? 'bg-[#29A9FF]/15 text-[#29A9FF] border-[#29A9FF]/30 shadow-[0_0_8px_rgba(41,169,255,0.2)]'
                     : 'bg-[#092557]/50 text-[#8299B5] border-[#1B3F80]/40'
                 }`}
               >
-                {course.status || 'متاح'}
+                {convertKeyToAr(course.status || 'available', 'courseStatus')}
               </span>
             )}
           </div>
@@ -85,7 +86,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             }}
             className="w-full py-2.5 px-4 rounded-full border border-[#29A9FF]/50 hover:border-[#29A9FF] bg-[#29A9FF]/10 hover:bg-[#29A9FF]/20 text-[#29A9FF] hover:text-white text-[13px] sm:text-sm font-semibold font-['IBM_Plex_Sans_Arabic'] transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] cursor-pointer shadow-[0_2px_8px_rgba(41,169,255,0.12)] hover:shadow-[0_4px_14px_rgba(41,169,255,0.3)] flex items-center justify-center gap-1.5"
           >
-            <span>تفاصيل الدورة</span>
+            <span>{toArabic('actions', 'course_details')}</span>
             <span className="text-sm transition-transform duration-200 group-hover:-translate-x-1">←</span>
           </button>
         </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import type { Course, Scholarship } from '../../../shared/types/entities';
 import { CourseCard } from '../../../shared/components/Cards/CourseCard';
 import { ScholarshipCard } from '../../../shared/components/Cards/ScholarshipCard';
+import { toArabic } from '../../../shared/lib/localization';
 
 interface TwinPillarRailsProps {
   variant?: 'desktop' | 'mobile';
@@ -35,7 +36,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
               onClick={onViewAllCourses}
               className="text-xs sm:text-[13px] font-semibold text-[#29A9FF] hover:underline flex items-center gap-1 font-['IBM_Plex_Sans_Arabic'] cursor-pointer py-1 px-2 rounded-md hover:bg-[#29A9FF]/10 transition-colors"
             >
-              <span>عرض الكل</span>
+              <span>{toArabic('actions', 'view_all')}</span>
               <span>←</span>
             </button>
           </div>
@@ -61,7 +62,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
               onClick={onViewAllScholarships}
               className="text-xs sm:text-[13px] font-semibold text-[#E5B65C] hover:underline flex items-center gap-1 font-['IBM_Plex_Sans_Arabic'] cursor-pointer py-1 px-2 rounded-md hover:bg-[#E5B65C]/10 transition-colors"
             >
-              <span>عرض الكل</span>
+              <span>{toArabic('actions', 'view_all')}</span>
               <span>←</span>
             </button>
           </div>
@@ -100,7 +101,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
             onClick={onViewAllCourses}
             className="text-xs sm:text-[13px] text-[#8299B5] hover:text-[#29A9FF] flex items-center gap-1.5 font-['IBM_Plex_Sans_Arabic'] font-medium py-1 px-2.5 rounded-lg hover:bg-[#1B3F80]/30 transition-all cursor-pointer group"
           >
-            <span>عرض الكل</span>
+            <span>{toArabic('actions', 'view_all')}</span>
             <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
           </button>
         </div>
@@ -130,7 +131,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
             onClick={onViewAllScholarships}
             className="text-xs sm:text-[13px] text-[#8299B5] hover:text-[#E5B65C] flex items-center gap-1.5 font-['IBM_Plex_Sans_Arabic'] font-medium py-1 px-2.5 rounded-lg hover:bg-[#1B3F80]/30 transition-all cursor-pointer group"
           >
-            <span>عرض الكل</span>
+            <span>{toArabic('actions', 'view_all')}</span>
             <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
           </button>
         </div>

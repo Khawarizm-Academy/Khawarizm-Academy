@@ -1,6 +1,7 @@
 import React from 'react';
 import type { EventItem } from '../../types/entities';
 import { EventArtwork } from '../Artwork/BrandVisuals';
+import { toArabic } from '../../lib/localization';
 
 interface EventSectionProps {
   variant?: 'desktop' | 'mobile';
@@ -57,7 +58,7 @@ export const EventSection: React.FC<EventSectionProps> = ({
           onClick={onExploreAgenda}
           className="px-6 py-2.5 rounded-full bg-[#061A3A]/80 hover:bg-[#092557] border border-[#1B3F80]/60 hover:border-[#29A9FF]/50 text-[#DCE5EE] hover:text-white text-sm font-['IBM_Plex_Sans_Arabic'] font-semibold transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
         >
-          استكشف الأجندة
+          {toArabic('actions', 'explore_agenda')}
         </button>
       </div>
 
@@ -136,7 +137,7 @@ export const EventSection: React.FC<EventSectionProps> = ({
             <div className="pt-4 mt-6 border-t border-[#1B3F80]/40 flex items-center justify-between text-xs font-['Tajawal']">
               <span className="text-[#8299B5] font-medium">{workshopEvent.date}</span>
               <button className="text-sm text-[#29A9FF] hover:text-white font-semibold flex items-center gap-1.5 transition-colors cursor-pointer group py-1 px-2.5 rounded-md hover:bg-[#29A9FF]/10">
-                <span>تسجيل</span>
+                <span>{toArabic('actions', 'register')}</span>
                 <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
               </button>
             </div>
