@@ -125,7 +125,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   return (
     <nav
       aria-label="شريط التنقل السفلي"
-      className="fixed bottom-0 left-0 right-0 z-[100] w-full bg-[#061A3A]/95 backdrop-blur-xl border-t-2 border-[#1B3F80] shadow-[0_-8px_30px_rgba(0,0,0,0.7)] select-none pb-[max(env(safe-area-inset-bottom),10px)] pt-2"
+      className="glass-mobile-bottom-bar"
     >
       {/* Container with px-4 sm:px-6 ensures tab items NEVER touch the screen edges */}
       <div
@@ -134,7 +134,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       >
         {/* Physical Sliding Golden Chamber Indicator — Thick, Deep, Substantial 2px Border & Measured Centering */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 rounded-xl bg-gradient-to-b from-[#092350] via-[#061A3A] to-[#040F24] border-2 border-[#E5B65C] shadow-[0_0_16px_rgba(229,182,92,0.65),inset_0_1px_3px_rgba(255,255,255,0.15)] pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          className="sliding-chamber-indicator"
           style={{
             left: `${chamberStyle.left}px`,
             width: `${chamberStyle.width}px`,
@@ -152,7 +152,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
                 tabRefs.current[idx] = el;
               }}
               onClick={() => onSelectTab?.(tab.id)}
-              className="relative z-10 w-full h-[52px] flex flex-col items-center justify-center gap-1 cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
+              className="relative z-10 w-full h-[52px] flex-col-center gap-1 cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
             >
               <div
                 className={`transition-all duration-300 ${

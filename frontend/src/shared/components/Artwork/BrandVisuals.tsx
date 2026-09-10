@@ -9,7 +9,7 @@ export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?
   return (
     <div className="inline-flex items-center gap-3 select-none group cursor-pointer">
       <div
-        className="relative flex items-center justify-center rounded-full p-0.5 transition-transform duration-300 group-hover:scale-105"
+        className="relative flex-center rounded-full p-0.5 transition-transform duration-300 group-hover:scale-105"
         style={{
           width: size,
           height: size,
@@ -17,7 +17,7 @@ export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?
           boxShadow: '0 0 14px rgba(229, 182, 92, 0.35)',
         }}
       >
-        <div className="w-full h-full rounded-full bg-[#061A3A] flex items-center justify-center relative overflow-hidden border border-[#E5B65C]/40">
+        <div className="w-full h-full rounded-full bg-[#061A3A] flex-center relative overflow-hidden border border-[#E5B65C]/40">
           <svg viewBox="0 0 100 100" className="w-[85%] h-[85%]" fill="none">
             {/* Outer Astrolabe Ring with Degree Ticks */}
             <circle cx="50" cy="50" r="44" stroke="#E5B65C" strokeWidth="2" strokeDasharray="3 3" opacity="0.75" className="transition-transform duration-700 group-hover:rotate-45" />
@@ -46,7 +46,7 @@ export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?
 export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
   if (type === 'ai_generative' || type === 'ai_ml') {
     return (
-      <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#061A3A] to-[#040F24] flex items-center justify-center group-hover:scale-105 transition-transform duration-500 ease-out">
+      <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#061A3A] to-[#040F24] flex-center group-hover:scale-105 transition-transform duration-500 ease-out">
         {/* Glowing Neural Network Graphic */}
         <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#29A9FF_1px,transparent_1px)] [background-size:16px_16px]" />
         <svg viewBox="0 0 300 160" className="w-full h-full opacity-90">
@@ -90,7 +90,7 @@ export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
 
   if (type === 'web_frontend') {
     return (
-      <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#092557] to-[#040F24] flex items-center justify-center p-3 group-hover:scale-105 transition-transform duration-500 ease-out">
+      <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#092557] to-[#040F24] flex-center p-3 group-hover:scale-105 transition-transform duration-500 ease-out">
         {/* Code & UI Wireframe Graphics */}
         <div className="w-full h-full rounded border border-[#1B3F80] bg-[#061A3A]/85 p-2 font-mono text-left flex flex-col justify-between">
           <div className="flex items-center gap-1 mb-1 border-b border-[#1B3F80]/60 pb-1">
@@ -117,7 +117,7 @@ export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
 
   // python_data
   return (
-    <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#061A3A] to-[#040F24] flex items-center justify-center p-3 group-hover:scale-105 transition-transform duration-500 ease-out">
+    <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#061A3A] to-[#040F24] flex-center p-3 group-hover:scale-105 transition-transform duration-500 ease-out">
       <svg viewBox="0 0 240 120" className="w-full h-full">
         {/* Grid lines */}
         <line x1="20" y1="20" x2="220" y2="20" stroke="#1B3F80" strokeWidth="0.8" opacity="0.5" />
@@ -146,7 +146,7 @@ export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
 export const ScholarshipThumbnail: React.FC<{ type: string }> = ({ type }) => {
   if (type === 'astrolabe_scholarship') {
     return (
-      <div className="w-full h-full relative overflow-hidden bg-gradient-to-tr from-[#061A3A] via-[#092557] to-[#123168] flex items-center justify-center group-hover:scale-105 transition-transform duration-500 ease-out">
+      <div className="w-full h-full relative overflow-hidden bg-gradient-to-tr from-[#061A3A] via-[#092557] to-[#123168] flex-center group-hover:scale-105 transition-transform duration-500 ease-out">
         {/* Warm ancient knowledge mood: Candlelight & Brass Astrolabe */}
         <div className="absolute -left-4 -bottom-4 w-32 h-32 rounded-full bg-[#E5B65C]/20 blur-xl pointer-events-none animate-pulse" />
         <svg viewBox="0 0 280 140" className="w-full h-full">
@@ -179,7 +179,7 @@ export const ScholarshipThumbnail: React.FC<{ type: string }> = ({ type }) => {
 
   if (type === 'campus_night') {
     return (
-      <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#040F24] to-[#092557] flex items-center justify-center group-hover:scale-105 transition-transform duration-500 ease-out">
+      <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#040F24] to-[#092557] flex-center group-hover:scale-105 transition-transform duration-500 ease-out">
         {/* Starry Night University Tower */}
         <div className="absolute inset-0 space-stars-bg opacity-75" />
         <svg viewBox="0 0 280 140" className="w-full h-full">
@@ -206,7 +206,7 @@ export const ScholarshipThumbnail: React.FC<{ type: string }> = ({ type }) => {
 
   // leadership_dubai / cultural scholarship
   return (
-    <div className="w-full h-full relative overflow-hidden bg-gradient-to-tr from-[#061A3A] to-[#123168] flex items-center justify-center group-hover:scale-105 transition-transform duration-500 ease-out">
+    <div className="w-full h-full relative overflow-hidden bg-gradient-to-tr from-[#061A3A] to-[#123168] flex-center group-hover:scale-105 transition-transform duration-500 ease-out">
       <svg viewBox="0 0 280 140" className="w-full h-full">
         {/* Modern Architecture Skyline */}
         <polygon points="40,140 60,40 80,140" fill="#092557" stroke="#29A9FF" strokeWidth="1" opacity="0.8" />

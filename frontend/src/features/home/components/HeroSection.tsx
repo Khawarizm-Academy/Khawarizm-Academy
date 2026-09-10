@@ -13,7 +13,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   if (variant === 'mobile') {
     return (
-      <section className="w-full pt-6 pb-2 flex flex-col items-center text-center relative overflow-hidden">
+      <section className="w-full pt-6 pb-2 flex-col-center text-center relative overflow-hidden">
         {/* Dynamic Celestial Starfield Canvas in Background */}
         <CelestialCanvas className="absolute inset-0 pointer-events-none opacity-60" />
 
@@ -28,7 +28,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </h2>
 
         {/* Mobile Smart Search Box */}
-        <div className="relative z-10 w-full flex justify-center">
+        <div className="relative z-10 w-full flex-center">
           <SmartSearchBox variant="mobile" onSearch={onSearch} />
         </div>
       </section>
@@ -37,7 +37,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   // Desktop Variant matching Desktop Screenshot
   return (
-    <section className="w-full py-12 flex flex-col items-center text-center relative overflow-hidden">
+    <section className="w-full py-12 flex-col-center text-center relative overflow-hidden">
       {/* Dynamic Celestial Starfield Canvas in Background */}
       <CelestialCanvas className="absolute inset-0 pointer-events-none opacity-85" />
 
@@ -61,7 +61,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       </p>
 
       {/* Desktop Smart Search Box */}
-      <div className="relative z-10 w-full flex justify-center">
+      <div className="relative z-10 w-full flex-center">
         <SmartSearchBox variant="desktop" onSearch={onSearch} />
       </div>
     </section>

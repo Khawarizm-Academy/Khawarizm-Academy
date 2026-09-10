@@ -18,78 +18,76 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
   return (
     <div
-      className={`group relative bg-[#061A3A]/40 backdrop-blur-md rounded-xl border border-[#1B3F80]/40 hover:border-[#29A9FF]/50 shadow-[0_4px_20px_rgba(0,0,0,0.30)] hover:shadow-[0_12px_36px_rgba(0,0,0,0.55),0_0_20px_rgba(41,169,255,0.18)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer ${
+      className={`group relative card-interactive-blue ${
         isMobile ? 'w-64 sm:w-72 shrink-0 min-h-[295px]' : 'w-full h-full'
       }`}
     >
       <div>
         {/* Media Thumbnail Container with Smooth Scale on Card Hover */}
-        <div className="relative w-full h-32 bg-[#092557]/60 overflow-hidden">
+        <div className="card-media-box">
           <CourseThumbnail type={course.thumbnailType} />
 
           {/* Level / Category Badge (Top Right in RTL) */}
-          <div className="absolute top-2 right-2 bg-[#040F24]/85 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-[#29A9FF]/30 text-[#29A9FF] text-[11px] font-['IBM_Plex_Sans_Arabic'] font-semibold shadow-xs">
+          <div className="absolute top-2 right-2 badge-blue">
             {convertKeyToAr(course.category || course.level, 'courseLevels')}
           </div>
 
           {/* 2px Tech-Blue Accent Bar at Bottom of Thumbnail that blooms softly on hover */}
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-l from-[#29A9FF] via-[#167BDB] to-transparent transition-all duration-300 group-hover:shadow-[0_0_10px_#29A9FF]" />
+          <div className="card-accent-blue" />
         </div>
 
         {/* Content Body */}
         <div className="p-4">
-          <h4 className="text-base font-semibold text-[#DCE5EE] group-hover:text-white line-clamp-2 leading-snug font-['Tajawal'] text-right transition-colors">
+          <h4 className="card-title">
             {course.title}
           </h4>
         </div>
       </div>
 
       <div className="px-4 pb-4">
-        <div className="pt-2 border-t border-[#1B3F80]/40">
-          <div className="flex items-center justify-between text-xs text-[#8299B5] font-['Tajawal'] mb-3">
-            {/* Duration with Clock Icon */}
-            <div className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#8299B5]">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <span>{course.duration}</span>
-            </div>
-
-            {/* Students Count or Status */}
-            {course.studentsCount ? (
-              <span className="text-[#8299B5] flex items-center gap-1">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                </svg>
-                {course.studentsCount}
-              </span>
-            ) : (
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                  course.status === 'available' || course.status === 'متاح'
-                    ? 'bg-[#29A9FF]/15 text-[#29A9FF] border-[#29A9FF]/30 shadow-[0_0_8px_rgba(41,169,255,0.2)]'
-                    : 'bg-[#092557]/50 text-[#8299B5] border-[#1B3F80]/40'
-                }`}
-              >
-                {convertKeyToAr(course.status || 'available', 'courseStatus')}
-              </span>
-            )}
+        <div className="card-meta-row mb-3">
+          {/* Duration with Clock Icon */}
+          <div className="flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#8299B5]">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>{course.duration}</span>
           </div>
 
-          {/* Action Button: Balanced, accessible touch target with clear typography */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDetails?.(course);
-            }}
-            className="w-full py-2.5 px-4 rounded-full border border-[#29A9FF]/50 hover:border-[#29A9FF] bg-[#29A9FF]/10 hover:bg-[#29A9FF]/20 text-[#29A9FF] hover:text-white text-[13px] sm:text-sm font-semibold font-['IBM_Plex_Sans_Arabic'] transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] cursor-pointer shadow-[0_2px_8px_rgba(41,169,255,0.12)] hover:shadow-[0_4px_14px_rgba(41,169,255,0.3)] flex items-center justify-center gap-1.5"
-          >
-            <span>{toArabic('actions', 'course_details')}</span>
-            <span className="text-sm transition-transform duration-200 group-hover:-translate-x-1">←</span>
-          </button>
+          {/* Students Count or Status */}
+          {course.studentsCount ? (
+            <span className="text-[#8299B5] flex items-center gap-1">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+              </svg>
+              {course.studentsCount}
+            </span>
+          ) : (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                course.status === 'available' || course.status === 'متاح'
+                  ? 'bg-[#29A9FF]/15 text-[#29A9FF] border-[#29A9FF]/30 shadow-[0_0_8px_rgba(41,169,255,0.2)]'
+                  : 'bg-[#092557]/50 text-[#8299B5] border-[#1B3F80]/40'
+              }`}
+            >
+              {convertKeyToAr(course.status || 'available', 'courseStatus')}
+            </span>
+          )}
         </div>
+
+        {/* Action Button: Balanced, accessible touch target with clear typography */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDetails?.(course);
+          }}
+          className="w-full btn-outline-blue text-[13px] sm:text-sm"
+        >
+          <span>{toArabic('actions', 'course_details')}</span>
+          <span className="text-sm transition-transform duration-200 group-hover:-translate-x-1">←</span>
+        </button>
       </div>
     </div>
   );

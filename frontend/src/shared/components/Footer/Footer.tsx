@@ -44,7 +44,7 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Copyright Strip */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-[#5C7291] gap-4">
+        <div className="pt-8 flex-between flex-col sm:flex-row text-xs text-[#5C7291] gap-4">
           <p>© 2025 أكاديمية خوارزم. جميع الحقوق محفوظة</p>
           <p className="text-[#8299B5]">صُنع بكل حب لدعم المعرفة والتمكين التقني</p>
         </div>
