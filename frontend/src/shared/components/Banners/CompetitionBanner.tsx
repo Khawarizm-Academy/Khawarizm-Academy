@@ -208,7 +208,7 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
           {/* Button "سجل الآن" */}
           <button
             onClick={onRegister}
-            className="px-6 py-3 rounded-full bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] hover:brightness-110 active:scale-95 text-[#040F24] font-bold text-xs font-['IBM_Plex_Sans_Arabic'] shadow-[0_0_12px_rgba(229,182,92,0.35)] hover:shadow-[0_0_20px_rgba(229,182,92,0.55)] transition-all cursor-pointer shrink-0 whitespace-nowrap"
+            className="px-7 py-3 rounded-full bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] hover:brightness-110 active:scale-95 text-[#040F24] font-bold text-sm sm:text-base font-['IBM_Plex_Sans_Arabic'] shadow-[0_4px_16px_rgba(229,182,92,0.35)] hover:shadow-[0_6px_24px_rgba(229,182,92,0.55)] transition-all cursor-pointer shrink-0 whitespace-nowrap"
           >
             {competition.actionText}
           </button>

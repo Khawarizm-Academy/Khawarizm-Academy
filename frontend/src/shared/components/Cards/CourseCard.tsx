@@ -17,32 +17,34 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
   return (
     <div
-      className={`group relative bg-[#061A3A]/40 backdrop-blur-md rounded-xl border border-[#1B3F80]/40 hover:border-[#29A9FF]/50 shadow-[0_4px_20px_rgba(0,0,0,0.30)] hover:shadow-[0_12px_36px_rgba(0,0,0,0.55),0_0_20px_rgba(41,169,255,0.18)] hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden cursor-pointer ${
-        isMobile ? 'w-64 h-64 shrink-0' : 'w-full'
+      className={`group relative bg-[#061A3A]/40 backdrop-blur-md rounded-xl border border-[#1B3F80]/40 hover:border-[#29A9FF]/50 shadow-[0_4px_20px_rgba(0,0,0,0.30)] hover:shadow-[0_12px_36px_rgba(0,0,0,0.55),0_0_20px_rgba(41,169,255,0.18)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer ${
+        isMobile ? 'w-64 sm:w-72 shrink-0 min-h-[295px]' : 'w-full h-full'
       }`}
     >
-      {/* Media Thumbnail Container with Smooth Scale on Card Hover */}
-      <div className="relative w-full h-32 bg-[#092557]/60 overflow-hidden">
-        <CourseThumbnail type={course.thumbnailType} />
+      <div>
+        {/* Media Thumbnail Container with Smooth Scale on Card Hover */}
+        <div className="relative w-full h-32 bg-[#092557]/60 overflow-hidden">
+          <CourseThumbnail type={course.thumbnailType} />
 
-        {/* Level / Category Badge (Top Right in RTL) */}
-        <div className="absolute top-2 right-2 bg-[#040F24]/85 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-[#29A9FF]/30 text-[#29A9FF] text-[11px] font-['IBM_Plex_Sans_Arabic'] font-semibold shadow-xs">
-          {course.category || course.level}
+          {/* Level / Category Badge (Top Right in RTL) */}
+          <div className="absolute top-2 right-2 bg-[#040F24]/85 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-[#29A9FF]/30 text-[#29A9FF] text-[11px] font-['IBM_Plex_Sans_Arabic'] font-semibold shadow-xs">
+            {course.category || course.level}
+          </div>
+
+          {/* 2px Tech-Blue Accent Bar at Bottom of Thumbnail that blooms softly on hover */}
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-l from-[#29A9FF] via-[#167BDB] to-transparent transition-all duration-300 group-hover:shadow-[0_0_10px_#29A9FF]" />
         </div>
 
-        {/* 2px Tech-Blue Accent Bar at Bottom of Thumbnail that blooms softly on hover */}
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-l from-[#29A9FF] via-[#167BDB] to-transparent transition-all duration-300 group-hover:shadow-[0_0_10px_#29A9FF]" />
-      </div>
-
-      {/* Content Body */}
-      <div className="p-4 flex-1 flex flex-col justify-between">
-        <div>
+        {/* Content Body */}
+        <div className="p-4">
           <h4 className="text-base font-semibold text-[#DCE5EE] group-hover:text-white line-clamp-2 leading-snug font-['Tajawal'] text-right transition-colors">
             {course.title}
           </h4>
         </div>
+      </div>
 
-        <div className="mt-3 pt-2.5 border-t border-[#1B3F80]/40">
+      <div className="px-4 pb-4">
+        <div className="pt-2 border-t border-[#1B3F80]/40">
           <div className="flex items-center justify-between text-xs text-[#8299B5] font-['Tajawal'] mb-3">
             {/* Duration with Clock Icon */}
             <div className="flex items-center gap-1.5">
@@ -75,18 +77,17 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             )}
           </div>
 
-          {/* Action Button (Desktop Only per Figma design: rounded-full outline button) */}
-          {!isMobile && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDetails?.(course);
-              }}
-              className="w-full py-2 px-3 rounded-full border border-[#29A9FF]/40 hover:border-[#29A9FF] hover:bg-[#29A9FF]/10 text-[#29A9FF] hover:text-white text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-            >
-              تفاصيل الدورة
-            </button>
-          )}
+          {/* Action Button: Balanced, accessible touch target with clear typography */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDetails?.(course);
+            }}
+            className="w-full py-2.5 px-4 rounded-full border border-[#29A9FF]/50 hover:border-[#29A9FF] bg-[#29A9FF]/10 hover:bg-[#29A9FF]/20 text-[#29A9FF] hover:text-white text-[13px] sm:text-sm font-semibold font-['IBM_Plex_Sans_Arabic'] transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] cursor-pointer shadow-[0_2px_8px_rgba(41,169,255,0.12)] hover:shadow-[0_4px_14px_rgba(41,169,255,0.3)] flex items-center justify-center gap-1.5"
+          >
+            <span>تفاصيل الدورة</span>
+            <span className="text-sm transition-transform duration-200 group-hover:-translate-x-1">←</span>
+          </button>
         </div>
       </div>
     </div>

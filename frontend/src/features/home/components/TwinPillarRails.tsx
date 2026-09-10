@@ -33,7 +33,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
             </div>
             <button
               onClick={onViewAllCourses}
-              className="text-xs text-[#29A9FF] hover:underline flex items-center gap-1 font-['Tajawal'] cursor-pointer"
+              className="text-xs sm:text-[13px] font-semibold text-[#29A9FF] hover:underline flex items-center gap-1 font-['IBM_Plex_Sans_Arabic'] cursor-pointer py-1 px-2 rounded-md hover:bg-[#29A9FF]/10 transition-colors"
             >
               <span>عرض الكل</span>
               <span>←</span>
@@ -41,7 +41,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
           </div>
 
           {/* Horizontal Swipeable Card Row */}
-          <div className="flex items-center gap-4 overflow-x-auto pb-3 pt-1 -mx-4 px-4 no-scrollbar scroll-smooth">
+          <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 -mx-4 px-4 no-scrollbar scroll-smooth">
             {courses.map((course) => (
               <CourseCard key={course.id} course={course} layout="mobile" />
             ))}
@@ -59,7 +59,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
             </div>
             <button
               onClick={onViewAllScholarships}
-              className="text-xs text-[#E5B65C] hover:underline flex items-center gap-1 font-['Tajawal'] cursor-pointer"
+              className="text-xs sm:text-[13px] font-semibold text-[#E5B65C] hover:underline flex items-center gap-1 font-['IBM_Plex_Sans_Arabic'] cursor-pointer py-1 px-2 rounded-md hover:bg-[#E5B65C]/10 transition-colors"
             >
               <span>عرض الكل</span>
               <span>←</span>
@@ -67,7 +67,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
           </div>
 
           {/* Horizontal Swipeable Card Row */}
-          <div className="flex items-center gap-4 overflow-x-auto pb-3 pt-1 -mx-4 px-4 no-scrollbar scroll-smooth">
+          <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 -mx-4 px-4 no-scrollbar scroll-smooth">
             {scholarships.map((scholarship) => (
               <ScholarshipCard key={scholarship.id} scholarship={scholarship} layout="mobile" />
             ))}
@@ -98,7 +98,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
 
           <button
             onClick={onViewAllCourses}
-            className="text-xs text-[#8299B5] hover:text-[#29A9FF] flex items-center gap-1.5 font-['Tajawal'] transition-colors cursor-pointer group"
+            className="text-xs sm:text-[13px] text-[#8299B5] hover:text-[#29A9FF] flex items-center gap-1.5 font-['IBM_Plex_Sans_Arabic'] font-medium py-1 px-2.5 rounded-lg hover:bg-[#1B3F80]/30 transition-all cursor-pointer group"
           >
             <span>عرض الكل</span>
             <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
@@ -106,7 +106,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         </div>
 
         {/* 2-Card Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-stretch">
           {courses.slice(0, 2).map((course) => (
             <CourseCard key={course.id} course={course} layout="desktop" />
           ))}
@@ -128,7 +128,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
 
           <button
             onClick={onViewAllScholarships}
-            className="text-xs text-[#8299B5] hover:text-[#E5B65C] flex items-center gap-1.5 font-['Tajawal'] transition-colors cursor-pointer group"
+            className="text-xs sm:text-[13px] text-[#8299B5] hover:text-[#E5B65C] flex items-center gap-1.5 font-['IBM_Plex_Sans_Arabic'] font-medium py-1 px-2.5 rounded-lg hover:bg-[#1B3F80]/30 transition-all cursor-pointer group"
           >
             <span>عرض الكل</span>
             <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
@@ -136,7 +136,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         </div>
 
         {/* 2-Card Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-stretch">
           {scholarships.slice(0, 2).map((scholarship) => (
             <ScholarshipCard key={scholarship.id} scholarship={scholarship} layout="desktop" />
           ))}
