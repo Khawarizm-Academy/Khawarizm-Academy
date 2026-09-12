@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toArabic } from '../../lib/localization';
 
 interface SmartSearchBoxProps {
   variant?: 'desktop' | 'mobile';
@@ -32,10 +33,10 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
     return (
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm h-14 sm:h-16 px-2 bg-[#092557]/60 backdrop-blur-md rounded-full border border-[#1B3F80] focus-within:border-[#29A9FF] shadow-[0_4px_20px_rgba(0,0,0,0.4)] focus-within:shadow-[0_0_20px_rgba(41,169,255,0.35)] flex items-center justify-between transition-all"
+        className="search-form-mobile"
       >
         {/* Filter Pills Container with Sliding Magnetic Puck (Left in RTL) */}
-        <div className="relative bg-[#040F24] p-1 rounded-full flex items-center border border-[#1B3F80]/60 shrink-0 w-32">
+        <div className="search-pills-container w-32">
           {/* Physical Sliding Highlight Pill */}
           <div
             className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -52,7 +53,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
               selectedType === 'course' ? 'text-[#29A9FF]' : 'text-[#8299B5] hover:text-[#DCE5EE]'
             }`}
           >
-            دورة
+            {toArabic('search', 'course')}
           </button>
           <button
             type="button"
@@ -61,7 +62,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
               selectedType === 'scholarship' ? 'text-[#E5B65C]' : 'text-[#8299B5] hover:text-[#DCE5EE]'
             }`}
           >
-            منحة
+            {toArabic('search', 'scholarship')}
           </button>
         </div>
 
@@ -78,7 +79,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
         <button
           type="submit"
           aria-label="بحث"
-          className="group w-10 h-10 rounded-full bg-gradient-to-l from-[#29A9FF] to-[#167BDB] text-white shadow-[0_0_12px_rgba(41,169,255,0.35)] hover:shadow-[0_0_18px_rgba(41,169,255,0.6)] hover:scale-105 active:scale-95 flex items-center justify-center transition-all cursor-pointer shrink-0"
+          className="group btn-search-submit w-10 h-10"
         >
           {CompassIcon}
         </button>
@@ -90,10 +91,10 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-[768px] h-16 p-2 bg-[#061A3A]/85 backdrop-blur-md rounded-full border border-[#1B3F80] focus-within:border-[#29A9FF] shadow-[0_8px_32px_rgba(9,37,87,0.50)] focus-within:shadow-[0_0_25px_rgba(41,169,255,0.35),0_8px_32px_rgba(9,37,87,0.60)] flex items-center justify-between transition-all"
+      className="search-form-desktop"
     >
       {/* Right (Start in RTL): Segment Toggle with Physical Sliding Highlight */}
-      <div className="relative bg-[#040F24] p-1 rounded-full flex items-center border border-[#1B3F80]/60 shrink-0 w-52 h-12">
+      <div className="search-pills-container w-52 h-12">
         {/* Physical Sliding Highlight Pill */}
         <div
           className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -110,7 +111,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
             selectedType === 'course' ? 'text-[#29A9FF] font-bold' : 'text-[#8299B5] hover:text-[#DCE5EE]'
           }`}
         >
-          دورة
+          {toArabic('search', 'course')}
         </button>
         <button
           type="button"
@@ -119,7 +120,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
             selectedType === 'scholarship' ? 'text-[#E5B65C] font-bold' : 'text-[#8299B5] hover:text-[#DCE5EE]'
           }`}
         >
-          منحة
+          {toArabic('search', 'scholarship')}
         </button>
       </div>
 
@@ -136,7 +137,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
       <button
         type="submit"
         aria-label="تنفيذ البحث"
-        className="group w-12 h-12 rounded-full bg-gradient-to-l from-[#29A9FF] to-[#167BDB] text-white shadow-[0_0_16px_rgba(41,169,255,0.45)] hover:shadow-[0_0_24px_rgba(41,169,255,0.7)] hover:scale-105 active:scale-95 flex items-center justify-center transition-all cursor-pointer shrink-0"
+        className="group btn-search-submit w-12 h-12"
       >
         {CompassIcon}
       </button>

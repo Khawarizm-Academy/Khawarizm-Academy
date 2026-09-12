@@ -1,18 +1,21 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
 
 interface MobileBottomBarProps {
-  activeTab?: string;
-  onSelectTab?: (tab: string) => void;
+  activeTab?: NavTabKey | string;
+  onSelectTab?: (tab: NavTabKey) => void;
 }
 
 export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
-  activeTab = 'لوحتي',
+  activeTab = 'home',
   onSelectTab,
 }) => {
-  const tabs = [
+  const normalizedActiveTab = toEnglishNav(activeTab);
+
+  const tabs: { id: NavTabKey; label: string; icon: React.ReactNode }[] = [
     {
       id: 'home',
-      label: 'الرئيسية',
+      label: toArabicNav('home', true),
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -22,7 +25,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
     },
     {
       id: 'courses',
-      label: 'الدورات',
+      label: toArabicNav('courses', true),
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
@@ -33,7 +36,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
     },
     {
       id: 'scholarships',
-      label: 'المنح',
+      label: toArabicNav('scholarships', true),
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="8" r="6" />
@@ -43,7 +46,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
     },
     {
       id: 'dashboard',
-      label: 'لوحتي',
+      label: toArabicNav('dashboard', true),
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect width="7" height="9" x="3" y="3" rx="1" />
@@ -55,7 +58,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
     },
     {
       id: 'profile',
-      label: 'حسابي',
+      label: toArabicNav('profile', true),
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
@@ -65,8 +68,8 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
     },
   ];
 
-  const activeIndex = tabs.findIndex((t) => t.label === activeTab);
-  const safeIndex = activeIndex >= 0 ? activeIndex : 3;
+  const activeIndex = tabs.findIndex((t) => t.id === normalizedActiveTab);
+  const safeIndex = activeIndex >= 0 ? activeIndex : 0;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -122,7 +125,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   return (
     <nav
       aria-label="شريط التنقل السفلي"
-      className="fixed bottom-0 left-0 right-0 z-[100] w-full bg-[#061A3A]/95 backdrop-blur-xl border-t-2 border-[#1B3F80] shadow-[0_-8px_30px_rgba(0,0,0,0.7)] select-none pb-[max(env(safe-area-inset-bottom),10px)] pt-2"
+      className="glass-mobile-bottom-bar"
     >
       {/* Container with px-4 sm:px-6 ensures tab items NEVER touch the screen edges */}
       <div
@@ -131,7 +134,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       >
         {/* Physical Sliding Golden Chamber Indicator — Thick, Deep, Substantial 2px Border & Measured Centering */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 rounded-xl bg-gradient-to-b from-[#092350] via-[#061A3A] to-[#040F24] border-2 border-[#E5B65C] shadow-[0_0_16px_rgba(229,182,92,0.65),inset_0_1px_3px_rgba(255,255,255,0.15)] pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          className="sliding-chamber-indicator"
           style={{
             left: `${chamberStyle.left}px`,
             width: `${chamberStyle.width}px`,
@@ -141,15 +144,15 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
         />
 
         {tabs.map((tab, idx) => {
-          const isActive = activeTab === tab.label;
+          const isActive = normalizedActiveTab === tab.id;
           return (
             <button
               key={tab.id}
               ref={(el) => {
                 tabRefs.current[idx] = el;
               }}
-              onClick={() => onSelectTab?.(tab.label)}
-              className="relative z-10 w-full h-[52px] flex flex-col items-center justify-center gap-1 cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
+              onClick={() => onSelectTab?.(tab.id)}
+              className="relative z-10 w-full h-[52px] flex-col-center gap-1 cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
             >
               <div
                 className={`transition-all duration-300 ${

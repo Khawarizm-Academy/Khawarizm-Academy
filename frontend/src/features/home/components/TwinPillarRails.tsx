@@ -2,6 +2,8 @@ import React from 'react';
 import type { Course, Scholarship } from '../../../shared/types/entities';
 import { CourseCard } from '../../../shared/components/Cards/CourseCard';
 import { ScholarshipCard } from '../../../shared/components/Cards/ScholarshipCard';
+import { toArabic } from '../../../shared/lib/localization';
+import { useHorizontalScroll } from '../../../shared/hooks/useHorizontalScroll';
 
 interface TwinPillarRailsProps {
   variant?: 'desktop' | 'mobile';
@@ -18,6 +20,9 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
   onViewAllCourses,
   onViewAllScholarships,
 }) => {
+  const coursesRowRef = useHorizontalScroll<HTMLDivElement>();
+  const scholarshipsRowRef = useHorizontalScroll<HTMLDivElement>();
+
   if (variant === 'mobile') {
     return (
       <div className="w-full space-y-8">
@@ -25,23 +30,23 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         {/* Section 1: Featured Courses (الدورات المميزة) */}
         <section className="w-full">
           {/* Header Row with Sky-Blue 4px Right Border Accent */}
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="pr-3 py-0.5 border-r-4 border-[#29A9FF]/90 flex items-center">
+          <div className="flex-between mb-3.5">
+            <div className="section-accent-title-blue">
               <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
                 الدورات المميزة
               </h3>
             </div>
             <button
               onClick={onViewAllCourses}
-              className="text-xs sm:text-[13px] font-semibold text-[#29A9FF] hover:underline flex items-center gap-1 font-['IBM_Plex_Sans_Arabic'] cursor-pointer py-1 px-2 rounded-md hover:bg-[#29A9FF]/10 transition-colors"
+              className="link-action-blue font-semibold"
             >
-              <span>عرض الكل</span>
+              <span>{toArabic('actions', 'view_all')}</span>
               <span>←</span>
             </button>
           </div>
 
           {/* Horizontal Swipeable Card Row */}
-          <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 -mx-4 px-4 no-scrollbar scroll-smooth">
+          <div ref={coursesRowRef} className="horizontal-scroll-row no-scrollbar">
             {courses.map((course) => (
               <CourseCard key={course.id} course={course} layout="mobile" />
             ))}
@@ -51,23 +56,23 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         {/* Section 2: Available Scholarships (المنح والفرص المتاحة) */}
         <section className="w-full">
           {/* Header Row with Warm-Gold 4px Right Border Accent */}
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="pr-3 py-0.5 border-r-4 border-[#E5B65C]/90 flex items-center">
+          <div className="flex-between mb-3.5">
+            <div className="section-accent-title-gold">
               <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
                 المنح والفرص المتاحة
               </h3>
             </div>
             <button
               onClick={onViewAllScholarships}
-              className="text-xs sm:text-[13px] font-semibold text-[#E5B65C] hover:underline flex items-center gap-1 font-['IBM_Plex_Sans_Arabic'] cursor-pointer py-1 px-2 rounded-md hover:bg-[#E5B65C]/10 transition-colors"
+              className="link-action-gold font-semibold"
             >
-              <span>عرض الكل</span>
+              <span>{toArabic('actions', 'view_all')}</span>
               <span>←</span>
             </button>
           </div>
 
           {/* Horizontal Swipeable Card Row */}
-          <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 -mx-4 px-4 no-scrollbar scroll-smooth">
+          <div ref={scholarshipsRowRef} className="horizontal-scroll-row no-scrollbar">
             {scholarships.map((scholarship) => (
               <ScholarshipCard key={scholarship.id} scholarship={scholarship} layout="mobile" />
             ))}
@@ -85,7 +90,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
       {/* Right Column (Start in RTL): Featured Courses */}
       <section className="w-full">
         {/* Section Header with Soft Blended Horizontal Line */}
-        <div className="flex items-center justify-between pb-3.5 mb-5 border-b border-[#1B3F80]/40">
+        <div className="section-header-row">
           <div className="flex items-center gap-2.5">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#29A9FF]">
               <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
@@ -98,9 +103,9 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
 
           <button
             onClick={onViewAllCourses}
-            className="text-xs sm:text-[13px] text-[#8299B5] hover:text-[#29A9FF] flex items-center gap-1.5 font-['IBM_Plex_Sans_Arabic'] font-medium py-1 px-2.5 rounded-lg hover:bg-[#1B3F80]/30 transition-all cursor-pointer group"
+            className="link-action-blue group"
           >
-            <span>عرض الكل</span>
+            <span>{toArabic('actions', 'view_all')}</span>
             <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
           </button>
         </div>
@@ -116,7 +121,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
       {/* Left Column (End in RTL): Available Scholarships */}
       <section className="w-full">
         {/* Section Header with Soft Blended Horizontal Line */}
-        <div className="flex items-center justify-between pb-3.5 mb-5 border-b border-[#1B3F80]/40">
+        <div className="section-header-row">
           <div className="flex items-center gap-2.5">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#E5B65C]">
               <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
@@ -128,9 +133,9 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
 
           <button
             onClick={onViewAllScholarships}
-            className="text-xs sm:text-[13px] text-[#8299B5] hover:text-[#E5B65C] flex items-center gap-1.5 font-['IBM_Plex_Sans_Arabic'] font-medium py-1 px-2.5 rounded-lg hover:bg-[#1B3F80]/30 transition-all cursor-pointer group"
+            className="link-action-gold group"
           >
-            <span>عرض الكل</span>
+            <span>{toArabic('actions', 'view_all')}</span>
             <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
           </button>
         </div>

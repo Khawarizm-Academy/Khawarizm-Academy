@@ -1,6 +1,7 @@
 import React from 'react';
 import type { EventItem } from '../../types/entities';
 import { EventArtwork } from '../Artwork/BrandVisuals';
+import { toArabic } from '../../lib/localization';
 
 interface EventSectionProps {
   variant?: 'desktop' | 'mobile';
@@ -43,7 +44,7 @@ export const EventSection: React.FC<EventSectionProps> = ({
   return (
     <section className="w-full rounded-2xl bg-[#061A3A]/30 backdrop-blur-md border border-[#1B3F80]/40 p-7 sm:p-9 shadow-[0_4px_30px_rgba(0,0,0,0.25)]">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-7 pb-4 border-b border-[#1B3F80]/40">
+      <div className="flex-between mb-7 pb-4 border-b border-[#1B3F80]/40">
         <div>
           <h2 className="text-3xl font-bold text-white mb-2 font-['IBM_Plex_Sans_Arabic'] text-right tracking-tight">
             الفعاليات والندوات
@@ -55,9 +56,9 @@ export const EventSection: React.FC<EventSectionProps> = ({
 
         <button
           onClick={onExploreAgenda}
-          className="px-6 py-2.5 rounded-full bg-[#061A3A]/80 hover:bg-[#092557] border border-[#1B3F80]/60 hover:border-[#29A9FF]/50 text-[#DCE5EE] hover:text-white text-sm font-['IBM_Plex_Sans_Arabic'] font-semibold transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+          className="btn-pill-subtle"
         >
-          استكشف الأجندة
+          {toArabic('actions', 'explore_agenda')}
         </button>
       </div>
 
@@ -115,7 +116,7 @@ export const EventSection: React.FC<EventSectionProps> = ({
           <div className="lg:col-span-5 bg-[#061A3A]/40 backdrop-blur-md rounded-xl border border-[#1B3F80]/40 hover:border-[#29A9FF]/30 p-6 sm:p-7 flex flex-col justify-between text-right shadow-[0_4px_20px_rgba(0,0,0,0.25)] transition-all duration-300">
             <div>
               {/* Lightbulb Icon in Warm Gold Container */}
-              <div className="w-11 h-11 rounded-lg bg-[#092557]/60 border border-[#1B3F80]/50 flex items-center justify-center text-[#E5B65C] mb-5 shadow-xs">
+              <div className="card-icon-box text-[#E5B65C] mb-5">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
                   <path d="M9 18h6" />
@@ -133,10 +134,10 @@ export const EventSection: React.FC<EventSectionProps> = ({
             </div>
 
             {/* Horizontal Border Line inside Workshop card */}
-            <div className="pt-4 mt-6 border-t border-[#1B3F80]/40 flex items-center justify-between text-xs font-['Tajawal']">
+            <div className="pt-4 mt-6 border-t border-[#1B3F80]/40 flex-between text-xs font-['Tajawal']">
               <span className="text-[#8299B5] font-medium">{workshopEvent.date}</span>
-              <button className="text-sm text-[#29A9FF] hover:text-white font-semibold flex items-center gap-1.5 transition-colors cursor-pointer group py-1 px-2.5 rounded-md hover:bg-[#29A9FF]/10">
-                <span>تسجيل</span>
+              <button className="link-action-blue font-semibold group py-1 px-2.5">
+                <span>{toArabic('actions', 'register')}</span>
                 <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
               </button>
             </div>

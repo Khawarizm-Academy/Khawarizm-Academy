@@ -1,13 +1,21 @@
+import type {
+  CourseLevelKey,
+  CourseStatusKey,
+  ScholarshipCoverageKey,
+  DegreeLevelKey,
+  EventFormatKey,
+} from '../lib/localization';
+
 export interface Course {
   id: string;
   title: string;
   category: string;
-  level: 'مبتدئ' | 'متوسط' | 'متقدم';
+  level: CourseLevelKey | 'مبتدئ' | 'متوسط' | 'متقدم';
   duration: string;
   studentsCount?: string;
   instructor?: string;
   price?: string;
-  status?: string; // 'متاح' | 'قريباً'
+  status?: CourseStatusKey | 'متاح' | 'قريباً' | 'مغلق' | string;
   thumbnailType: 'ai_generative' | 'web_frontend' | 'python_data' | 'ai_ml';
 }
 
@@ -18,8 +26,8 @@ export interface Scholarship {
   location: string;
   deadlineText: string;
   deadlineUrgency?: 'critical' | 'warning' | 'open';
-  coverage: string; // 'ممولة بالكامل' | 'تمويل جزئي' | 'تدريب عملي' | 'جزئية'
-  degreeLevel?: string; // 'ماجستير' | 'بكالوريوس'
+  coverage: ScholarshipCoverageKey | 'ممولة بالكامل' | 'تمويل جزئي' | 'تدريب عملي' | 'جزئية' | string;
+  degreeLevel?: DegreeLevelKey | 'ماجستير' | 'بكالوريوس' | 'دكتوراه' | 'تدريب مهني' | string;
   iconType?: 'university' | 'globe' | 'briefcase';
   thumbnailType: 'astrolabe_scholarship' | 'campus_night' | 'leadership_dubai';
 }
@@ -40,7 +48,7 @@ export interface EventItem {
   description?: string;
   badge: string;
   date: string;
-  format: string; // 'بث مباشر' | 'حضوري'
+  format: EventFormatKey | 'بث مباشر' | 'حضوري' | 'عبر الإنترنت' | string;
   isFeatured?: boolean;
   thumbnailType: 'space_astrolabe' | 'data_science_stage' | 'academic_workshop';
 }

@@ -44,7 +44,7 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
   // Mobile Variant matching media_1788955065979.png with timer directly unified with registration button
   if (variant === 'mobile') {
     return (
-      <section className="w-full relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#092557]/80 via-[#061A3A]/90 to-[#040F24] p-5 sm:p-6 border border-[#1B3F80]/50 shadow-[0_8px_32px_rgba(0,0,0,0.45),0_0_20px_rgba(41,169,255,0.08)] flex flex-col items-center text-center backdrop-blur-md">
+      <section className="banner-mobile-card">
         {/* Subtle decorative background shimmer */}
         <div className="absolute top-0 right-0 w-36 h-36 bg-[#E5B65C]/8 rounded-full blur-3xl pointer-events-none" />
 
@@ -60,53 +60,53 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
         </h3>
 
         {/* Action & Timer Unit — Placed right above & tightly coupled with registration button */}
-        <div className="w-full flex flex-col items-center gap-4">
+        <div className="w-full flex-col-center gap-4">
           {/* Live Countdown Digits — Thick, Solid 3D Digit Boxes matching Figma */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 font-['IBM_Plex_Sans_Arabic'] my-1">
+          <div className="flex-center gap-2 sm:gap-3 font-['IBM_Plex_Sans_Arabic'] my-1">
             {/* Days (Right in RTL) */}
-            <div className="flex flex-col items-center">
-              <div className="w-[62px] h-[54px] sm:w-[68px] sm:h-[58px] bg-[#071938] rounded-xl border-2 border-[#1B3F80] shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center">
-                <span className="text-[#E5B65C] text-2xl sm:text-3xl font-bold tabular-nums leading-none drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
+            <div className="flex-col-center">
+              <div className="digit-box-mobile">
+                <span className="digit-text text-2xl sm:text-3xl drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
                   {format2Digits(timeLeft.days)}
                 </span>
               </div>
-              <span className="text-xs font-bold text-[#8299B5] mt-1.5">أيام</span>
+              <span className="digit-label text-xs mt-1.5">أيام</span>
             </div>
 
             <span className="text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse">:</span>
 
             {/* Hours */}
-            <div className="flex flex-col items-center">
-              <div className="w-[62px] h-[54px] sm:w-[68px] sm:h-[58px] bg-[#071938] rounded-xl border-2 border-[#1B3F80] shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center">
-                <span className="text-[#E5B65C] text-2xl sm:text-3xl font-bold tabular-nums leading-none drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
+            <div className="flex-col-center">
+              <div className="digit-box-mobile">
+                <span className="digit-text text-2xl sm:text-3xl drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
                   {format2Digits(timeLeft.hours)}
                 </span>
               </div>
-              <span className="text-xs font-bold text-[#8299B5] mt-1.5">ساعة</span>
+              <span className="digit-label text-xs mt-1.5">ساعة</span>
             </div>
 
             <span className="text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse">:</span>
 
             {/* Minutes */}
-            <div className="flex flex-col items-center">
-              <div className="w-[62px] h-[54px] sm:w-[68px] sm:h-[58px] bg-[#071938] rounded-xl border-2 border-[#1B3F80] shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center">
-                <span className="text-[#E5B65C] text-2xl sm:text-3xl font-bold tabular-nums leading-none drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
+            <div className="flex-col-center">
+              <div className="digit-box-mobile">
+                <span className="digit-text text-2xl sm:text-3xl drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
                   {format2Digits(timeLeft.minutes)}
                 </span>
               </div>
-              <span className="text-xs font-bold text-[#8299B5] mt-1.5">دقيقة</span>
+              <span className="digit-label text-xs mt-1.5">دقيقة</span>
             </div>
 
             <span className="text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse">:</span>
 
             {/* Seconds (Left in RTL) */}
-            <div className="flex flex-col items-center">
-              <div className="w-[62px] h-[54px] sm:w-[68px] sm:h-[58px] bg-[#071938] rounded-xl border-2 border-[#E5B65C]/50 shadow-[0_0_12px_rgba(229,182,92,0.2),inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center">
-                <span className="text-[#E5B65C] text-2xl sm:text-3xl font-bold tabular-nums leading-none drop-shadow-[0_0_10px_rgba(229,182,92,0.7)]">
+            <div className="flex-col-center">
+              <div className="digit-box-mobile-active">
+                <span className="digit-text text-2xl sm:text-3xl drop-shadow-[0_0_10px_rgba(229,182,92,0.7)]">
                   {format2Digits(timeLeft.seconds)}
                 </span>
               </div>
-              <span className="text-xs font-bold text-[#8299B5] mt-1.5">ثانية</span>
+              <span className="digit-label text-xs mt-1.5">ثانية</span>
             </div>
           </div>
 
@@ -124,13 +124,13 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
 
   // Desktop Variant: Timer placed right next to the "سجل الآن" button
   return (
-    <section className="w-full relative overflow-hidden rounded-xl p-px bg-gradient-to-r from-yellow-800/70 via-[#E5B65C]/80 to-yellow-800/70 shadow-[0_4px_25px_rgba(229,182,92,0.12)] group">
+    <section className="banner-frame-gold">
       {/* Decorative animated shimmer beam sweeping across */}
       <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden rounded-xl">
         <div className="w-1/3 h-full bg-gradient-to-r from-transparent via-white/8 to-transparent animate-shimmer" />
       </div>
 
-      <div className="relative w-full p-6 sm:p-7 bg-[#061A3A]/90 backdrop-blur-md rounded-xl flex flex-col lg:flex-row items-center justify-between gap-6">
+      <div className="banner-inner-glass">
         
         {/* Right (Start in RTL): Trophy Badge + Title & Description */}
         <div className="flex items-center gap-4.5">
@@ -159,49 +159,49 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
           {/* Live Countdown Timer Unit — Thick Substantial Digit Cards */}
           <div className="flex items-center gap-2 sm:gap-2.5 font-['IBM_Plex_Sans_Arabic']">
             {/* Days */}
-            <div className="flex flex-col items-center">
-              <div className="min-w-[54px] h-[48px] px-2.5 bg-[#040F24] border-2 border-[#1B3F80] rounded-xl flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.5)]">
-                <span className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
+            <div className="flex-col-center">
+              <div className="digit-box min-w-[54px] h-[48px] px-2.5">
+                <span className="digit-text text-xl">
                   {format2Digits(timeLeft.days)}
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-[#8299B5] mt-1">أيام</span>
+              <span className="digit-label text-[11px] mt-1">أيام</span>
             </div>
 
             <span className="text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse">:</span>
 
             {/* Hours */}
-            <div className="flex flex-col items-center">
-              <div className="min-w-[54px] h-[48px] px-2.5 bg-[#040F24] border-2 border-[#1B3F80] rounded-xl flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.5)]">
-                <span className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
+            <div className="flex-col-center">
+              <div className="digit-box min-w-[54px] h-[48px] px-2.5">
+                <span className="digit-text text-xl">
                   {format2Digits(timeLeft.hours)}
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-[#8299B5] mt-1">ساعة</span>
+              <span className="digit-label text-[11px] mt-1">ساعة</span>
             </div>
 
             <span className="text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse">:</span>
 
             {/* Minutes */}
-            <div className="flex flex-col items-center">
-              <div className="min-w-[54px] h-[48px] px-2.5 bg-[#040F24] border-2 border-[#1B3F80] rounded-xl flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.5)]">
-                <span className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none">
+            <div className="flex-col-center">
+              <div className="digit-box min-w-[54px] h-[48px] px-2.5">
+                <span className="digit-text text-xl">
                   {format2Digits(timeLeft.minutes)}
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-[#8299B5] mt-1">دقيقة</span>
+              <span className="digit-label text-[11px] mt-1">دقيقة</span>
             </div>
 
             <span className="text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse">:</span>
 
             {/* Seconds */}
-            <div className="flex flex-col items-center">
-              <div className="min-w-[54px] h-[48px] px-2.5 bg-[#040F24] border-2 border-[#E5B65C]/60 rounded-xl flex items-center justify-center shadow-[0_0_12px_rgba(229,182,92,0.25),inset_0_1px_2px_rgba(0,0,0,0.5)]">
-                <span className="text-[#E5B65C] text-xl font-bold tabular-nums leading-none drop-shadow-[0_0_6px_rgba(229,182,92,0.6)]">
+            <div className="flex-col-center">
+              <div className="digit-box-active min-w-[54px] h-[48px] px-2.5">
+                <span className="digit-text text-xl drop-shadow-[0_0_6px_rgba(229,182,92,0.6)]">
                   {format2Digits(timeLeft.seconds)}
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-[#8299B5] mt-1">ثانية</span>
+              <span className="digit-label text-[11px] mt-1">ثانية</span>
             </div>
           </div>
 

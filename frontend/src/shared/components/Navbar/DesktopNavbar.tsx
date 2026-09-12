@@ -1,21 +1,24 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { BrandLogo } from '../Artwork/BrandVisuals';
+import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
 
 interface DesktopNavbarProps {
-  activeTab?: string;
-  onSelectTab?: (tab: string) => void;
+  activeTab?: NavTabKey | string;
+  onSelectTab?: (tab: NavTabKey) => void;
 }
 
 export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
-  activeTab = 'الرئيسية',
+  activeTab = 'home',
   onSelectTab,
 }) => {
-  const navLinks = [
-    { id: 'home', label: 'الرئيسية' },
-    { id: 'courses', label: 'الدورات' },
-    { id: 'scholarships', label: 'المنح والفرص' },
-    { id: 'events', label: 'الفعاليات' },
-    { id: 'competitions', label: 'المسابقات' },
+  const normalizedActiveTab = toEnglishNav(activeTab);
+
+  const navLinks: { id: NavTabKey; label: string }[] = [
+    { id: 'home', label: toArabicNav('home') },
+    { id: 'courses', label: toArabicNav('courses') },
+    { id: 'scholarships', label: toArabicNav('scholarships') },
+    { id: 'events', label: toArabicNav('events') },
+    { id: 'competitions', label: toArabicNav('competitions') },
   ];
 
   const navRef = useRef<HTMLElement | null>(null);
@@ -27,7 +30,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
   });
 
   const updateIndicator = () => {
-    const currentTabEl = tabRefs.current[activeTab];
+    const currentTabEl = tabRefs.current[normalizedActiveTab] || tabRefs.current['home'];
     const navEl = navRef.current;
     if (currentTabEl && navEl) {
       const navRect = navEl.getBoundingClientRect();
@@ -44,11 +47,11 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
     updateIndicator();
     window.addEventListener('resize', updateIndicator);
     return () => window.removeEventListener('resize', updateIndicator);
-  }, [activeTab]);
+  }, [normalizedActiveTab]);
 
   return (
-    <header className="sticky top-0 z-50 w-full h-16 bg-[#040F24]/90 backdrop-blur-md border-b border-[#1B3F80] shadow-[0_0_15px_rgba(41,169,255,0.10)] transition-all">
-      <div className="max-w-[1280px] h-full mx-auto px-6 sm:px-10 flex items-center justify-between">
+    <header className="glass-navbar">
+      <div className="max-w-[1280px] h-full mx-auto px-6 sm:px-10 flex-between">
         
         {/* Right (Start in RTL): Brand Logo */}
         <div className="flex items-center">
@@ -58,14 +61,14 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
         {/* Center: Navigation Links with Physical Sliding Golden Beam Indicator */}
         <nav ref={navRef} className="relative flex items-center gap-8 text-sm font-['Tajawal'] font-medium h-full">
           {navLinks.map((link) => {
-            const isActive = activeTab === link.label;
+            const isActive = normalizedActiveTab === link.id;
             return (
               <button
                 key={link.id}
                 ref={(el) => {
-                  tabRefs.current[link.label] = el;
+                  tabRefs.current[link.id] = el;
                 }}
-                onClick={() => onSelectTab?.(link.label)}
+                onClick={() => onSelectTab?.(link.id)}
                 className={`relative py-5 px-1 transition-colors duration-300 cursor-pointer ${
                   isActive
                     ? 'text-[#E5B65C] font-bold drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]'
@@ -94,7 +97,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
           {/* Search Button */}
           <button
             aria-label="بحث في المنصة"
-            className="w-9 h-9 rounded-2xl bg-[#092557]/80 hover:bg-[#123168] border border-[#1B3F80] hover:border-[#29A9FF]/50 text-[#DCE5EE] hover:text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+            className="btn-icon-box"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <ellipse cx="12" cy="5" rx="9" ry="3" />
@@ -106,7 +109,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
           {/* Notifications Bell with Unread Badge */}
           <button
             aria-label="الإشعارات"
-            className="w-9 h-9 rounded-2xl bg-[#092557]/80 hover:bg-[#123168] border border-[#1B3F80] hover:border-[#29A9FF]/50 text-[#DCE5EE] hover:text-white flex items-center justify-center relative transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+            className="btn-icon-box relative"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
@@ -118,7 +121,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
           {/* User Profile Avatar */}
           <button
             aria-label="الملف الشخصي"
-            className="w-10 h-10 rounded-full bg-[#061A3A] border border-[#1B3F80] hover:border-[#29A9FF]/60 hover:shadow-[0_0_12px_rgba(41,169,255,0.3)] flex items-center justify-center text-[#8299B5] hover:text-[#DCE5EE] transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="btn-icon-circle"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
