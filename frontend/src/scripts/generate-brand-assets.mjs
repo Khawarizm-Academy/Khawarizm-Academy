@@ -166,7 +166,26 @@ async function generateBrandAssets() {
     console.log("✓ og-image.jpg");
 
     // --------------------------------------------------
-    // 10. Sync public assets for root browser availability
+    // 10. Vector SVG Favicon with official brand emblem
+    // --------------------------------------------------
+    const iconBuffer = await fs.readFile(path.join(OUTPUT, "icon-192.png"));
+    const base64Icon = iconBuffer.toString("base64");
+    const svgFaviconContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <clipPath id="circleClip">
+      <circle cx="96" cy="96" r="96" />
+    </clipPath>
+  </defs>
+  <circle cx="96" cy="96" r="96" fill="#040F24" />
+  <image href="data:image/png;base64,${base64Icon}" width="192" height="192" clip-path="url(#circleClip)" />
+</svg>
+`;
+    await fs.writeFile(path.join(OUTPUT, "favicon.svg"), svgFaviconContent, "utf-8");
+    await fs.writeFile(path.join(PUBLIC_DIR, "favicon.svg"), svgFaviconContent, "utf-8");
+    console.log("✓ favicon.svg");
+
+    // --------------------------------------------------
+    // 11. Sync public assets for root browser availability
     // --------------------------------------------------
     const publicSyncFiles = [
         "favicon-32.png",
@@ -175,6 +194,7 @@ async function generateBrandAssets() {
         "icon-192.png",
         "icon-512.png",
         "og-image.jpg",
+        "favicon.svg",
     ];
 
     for (const file of publicSyncFiles) {
@@ -183,6 +203,12 @@ async function generateBrandAssets() {
             path.join(PUBLIC_DIR, file)
         );
     }
+
+    // Also provide favicon.ico fallback for standard browser requests
+    await fs.copyFile(
+        path.join(OUTPUT, "favicon-32.png"),
+        path.join(PUBLIC_DIR, "favicon.ico")
+    );
 
     console.log("\n✅ Brand assets generated successfully!\n");
 }

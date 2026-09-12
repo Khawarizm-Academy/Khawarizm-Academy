@@ -35,10 +35,12 @@ frontend/src/assets/brand/generated/
 | `apple-touch-icon.png`| 180 × 180 (Square PNG) | iOS Home Screen icon | `index.html` (`<link rel="apple-touch-icon">`) |
 | `favicon-32.png` | 32 × 32 (Square PNG) | Standard browser favicon | `index.html` (`<link rel="icon">`) |
 | `favicon-16.png` | 16 × 16 (Square PNG) | Compact browser favicon | `index.html` (`<link rel="icon">`) |
+| `favicon.svg` | Vector SVG (192 × 192 viewBox) | Modern browser vector favicon | `index.html` (`<link rel="icon" type="image/svg+xml">`) |
+| `favicon.ico` | Fallback ICO / 32 × 32 | Legacy browser root favicon | `public/favicon.ico` |
 | `loading-logo.png` | Max 300px (PNG) | Loading / splash logo | Preloader (`AstrolabeLoader.tsx`) |
 | `og-image.jpg` | 1200 × 630 (JPEG) | Social share / Open Graph | `index.html` (`og:image`, `twitter:image`) |
 
-Public root icons (`favicon-32.png`, `favicon-16.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `og-image.jpg`) are also automatically mirrored to `frontend/public/` so web crawlers, search engines, and browsers can resolve them directly at the site root.
+Public root icons (`favicon.svg`, `favicon.ico`, `favicon-32.png`, `favicon-16.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `og-image.jpg`) are also automatically mirrored to `frontend/public/` so web crawlers, search engines, and browsers can resolve them directly at the site root.
 
 ---
 
