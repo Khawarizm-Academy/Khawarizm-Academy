@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import loadingLogo from '../../../assets/brand/generated/loading-logo.png';
 
 interface AstrolabeLoaderProps {
   fullScreen?: boolean;
@@ -9,6 +10,8 @@ export const AstrolabeLoader: React.FC<AstrolabeLoaderProps> = ({
   fullScreen = false,
   message = 'جاري رصد البيانات الفلكية...',
 }) => {
+  const [imgError, setImgError] = useState(false);
+
   const content = (
     <div className="flex-col-center gap-6 select-none">
       {/* Animated Astrolabe Gyroscopic Device */}
@@ -34,7 +37,15 @@ export const AstrolabeLoader: React.FC<AstrolabeLoaderProps> = ({
       </div>
 
       {/* Brand & Loading Label */}
-      <div className="flex-col-center gap-1.5 text-center">
+      <div className="flex-col-center gap-2 text-center">
+        {!imgError && (
+          <img
+            src={loadingLogo}
+            alt="شعار أكاديمية خوارزم"
+            className="w-14 h-14 object-contain rounded-xl drop-shadow-[0_0_12px_rgba(229,182,92,0.4)]"
+            onError={() => setImgError(true)}
+          />
+        )}
         <span className="text-sm font-bold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic'] tracking-tight">
           أكاديمية خوارزم
         </span>

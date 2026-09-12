@@ -1,4 +1,5 @@
 import React from 'react';
+import brandIcon from '../../../assets/brand/generated/icon-192.png';
 
 // Khawarizm Academy Brand Seal / Logo
 export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?: string }> = ({
@@ -6,6 +7,8 @@ export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?
   showText = true,
   textClass = 'text-xl font-bold text-[#E5B65C]',
 }) => {
+  const [imgError, setImgError] = React.useState(false);
+
   return (
     <div className="inline-flex items-center gap-3 select-none group cursor-pointer">
       <div
@@ -18,19 +21,28 @@ export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?
         }}
       >
         <div className="w-full h-full rounded-full bg-[#061A3A] flex-center relative overflow-hidden border border-[#E5B65C]/40">
-          <svg viewBox="0 0 100 100" className="w-[85%] h-[85%]" fill="none">
-            {/* Outer Astrolabe Ring with Degree Ticks */}
-            <circle cx="50" cy="50" r="44" stroke="#E5B65C" strokeWidth="2" strokeDasharray="3 3" opacity="0.75" className="transition-transform duration-700 group-hover:rotate-45" />
-            <circle cx="50" cy="50" r="38" stroke="#29A9FF" strokeWidth="1" opacity="0.5" />
-            {/* Celestial coordinate lines */}
-            <path d="M 12 50 H 88" stroke="#E5B65C" strokeWidth="1.2" opacity="0.6" />
-            <path d="M 50 12 V 88" stroke="#E5B65C" strokeWidth="1.2" opacity="0.6" />
-            <ellipse cx="50" cy="50" rx="34" ry="18" stroke="#29A9FF" strokeWidth="1.5" opacity="0.8" transform="rotate(-25 50 50)" />
-            {/* Ancient Islamic Arch Motif */}
-            <path d="M 32 72 V 46 C 32 32 50 22 50 22 C 50 22 68 32 68 46 V 72 Z" stroke="#E5B65C" strokeWidth="2" fill="rgba(9, 37, 87, 0.7)" />
-            {/* Central Star / Spark */}
-            <polygon points="50,36 53,44 61,47 53,50 50,58 47,50 39,47 47,44" fill="#E5B65C" />
-          </svg>
+          {!imgError ? (
+            <img
+              src={brandIcon}
+              alt="شعار أكاديمية خوارزم"
+              className="w-full h-full object-cover rounded-full"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <svg viewBox="0 0 100 100" className="w-[85%] h-[85%]" fill="none">
+              {/* Outer Astrolabe Ring with Degree Ticks */}
+              <circle cx="50" cy="50" r="44" stroke="#E5B65C" strokeWidth="2" strokeDasharray="3 3" opacity="0.75" className="transition-transform duration-700 group-hover:rotate-45" />
+              <circle cx="50" cy="50" r="38" stroke="#29A9FF" strokeWidth="1" opacity="0.5" />
+              {/* Celestial coordinate lines */}
+              <path d="M 12 50 H 88" stroke="#E5B65C" strokeWidth="1.2" opacity="0.6" />
+              <path d="M 50 12 V 88" stroke="#E5B65C" strokeWidth="1.2" opacity="0.6" />
+              <ellipse cx="50" cy="50" rx="34" ry="18" stroke="#29A9FF" strokeWidth="1.5" opacity="0.8" transform="rotate(-25 50 50)" />
+              {/* Ancient Islamic Arch Motif */}
+              <path d="M 32 72 V 46 C 32 32 50 22 50 22 C 50 22 68 32 68 46 V 72 Z" stroke="#E5B65C" strokeWidth="2" fill="rgba(9, 37, 87, 0.7)" />
+              {/* Central Star / Spark */}
+              <polygon points="50,36 53,44 61,47 53,50 50,58 47,50 39,47 47,44" fill="#E5B65C" />
+            </svg>
+          )}
         </div>
       </div>
       {showText && (
