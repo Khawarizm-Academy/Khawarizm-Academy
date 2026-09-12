@@ -55,7 +55,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
         
         {/* Right (Start in RTL): Brand Logo */}
         <div className="flex items-center">
-          <BrandLogo size={42} textClass="text-xl font-bold text-[#E5B65C]" />
+          <BrandLogo size={42} textClass="text-xl font-bold text-[#E5B65C]" onClick={() => onSelectTab?.('home')} />
         </div>
 
         {/* Center: Navigation Links with Physical Sliding Golden Beam Indicator */}
