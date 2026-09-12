@@ -1,0 +1,464 @@
+<div data-layer="catalog-all-mobile"
+    className="CatalogAllMobile w-96 min-h-[1300px] pt-16 pb-24 relative bg-slate-900 inline-flex flex-col justify-start items-start">
+    <div data-layer="Header - TopAppBar"
+        className="HeaderTopappbar w-96 left-0 top-0 absolute bg-slate-900 shadow-[0px_0px_15px_0px_rgba(41,169,255,0.10)] border-b border-blue-900 backdrop-blur-md flex flex-col justify-start items-start">
+        <div data-layer="Container"
+            className="Container self-stretch h-16 px-4 inline-flex justify-between items-center">
+            <div data-layer="Left Icons" className="LeftIcons size- flex justify-start items-center gap-3">
+                <div data-svg-wrapper data-layer="menu" className="Menu relative">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3.00049 3.74951H14.9993M3.00049 9.00011H14.9993M3.00049 14.2507H14.9993"
+                            stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+            </div>
+            <div data-layer="الدورات والمنح"
+                className="text-center justify-start text-white text-base font-bold font-['Inter']">الدورات والمنح</div>
+            <div data-layer="Right Logo Group" className="RightLogoGroup size- flex justify-start items-center gap-2">
+                <div data-svg-wrapper data-layer="أكاديمية خوارزم" className="relative">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
+                        xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <rect width="32" height="32" rx="16" fill="url(#pattern0_54_3413)" />
+                        <defs>
+                            <pattern id="pattern0_54_3413" patternContentUnits="objectBoundingBox" width="1" height="1">
+                                <use xlink:href="#image0_54_3413" transform="scale(0.0140873 0.015625)" />
+                            </pattern>
+                            <image id="image0_54_3413" width="71" height="64" preserveAspectRatio="none"
+                                xlink:href="data:image/jpeg;base64,/9j/2wBDAAgICAgJCAkKCgkNDgwODRMREBARExwUFhQWFBwrGx8bGx8bKyYuJSMlLiZENS8vNUROQj5CTl9VVV93cXecnNH/2wBDAQgICAgJCAkKCgkNDgwODRMREBARExwUFhQWFBwrGx8bGx8bKyYuJSMlLiZENS8vNUROQj5CTl9VVV93cXecnNH/wgARCABAAEcDASIAAhEBAxEB/8QAGwAAAgMBAQEAAAAAAAAAAAAAAAUDBAYBAgf/xAAZAQADAQEBAAAAAAAAAAAAAAAAAgMBBAX/2gAMAwEAAhADEAAAAPiAS+vyebVprKtJc0tm5aNnTokADIOFTGdGPiWxpaz72HCsl0uYVqh0tH21TMkppHOf94zltmBWMjoFWqpOFYlmsG6Gzm7UrOhNwLavkLzAGT//xAA0EAACAQMCBAQDBQkAAAAAAAABAgMABBESIQUTMUEQIlFhFGKBIDJxgqEGI0JScnOSsbL/2gAIAQEAAT8A8EjZzhRS2o/jahwW5aISJbEjTkKT52HqF64p7ZMArkZp4nTr09fsRRNK2BSDRldgB36UqrZKjyIHumAKIRkRg9GYd2PYVci8in5k/MWY+YMxOr8c0NHEtjhb3GxGwm9j8/8Aumz5iRkdGHcVPFoww+6fG3RYY9zudyasook5l3IoZIQCAdw8jfdX8O5qAvNda2Yly2snuTXEdEnL1KNwT7qM4o6o3I6FT1FX6i5gS+TCuzaJv7g3DfnFFzJ5G7DbwjGXUe9M7HyY6egqdTFZWFso3dTMw93OF/QVFFy5AkYG64Ln1G5FSXiPjJJJOjIXG31r4OGZUcM4JXcEioLV0a7s23E9uzIfmj8y0xiBB1N/iKbqaiOJEPuKJGly0Kocbd6vWjTiHLERZ1SKNQP6AMCov2fmkjkeeZIXEeoR6wSoHdiOlWNozXEDyiLkFEONWWzIDp3A9qg4LBJaLNHdTziSEFHRVIRz7DG1QSXNrxiGznl16LhUbfPf3q6jfnSqBtGxWjnJz4K7S6M4wa4zb3Iv7iQwyBCw0vpOCAOoNFbS5ZZp+JEu6ASAjzZAqW4e6gVJuLjGxKlejIMDpUrRukMK8YIjiBWJVyvU9yMVaW1yeJRFEllC3C5cKTnDdSa4kmL6738omf8A68bebltg50nrS3M8IDQXkqA/PijxGRzi7to7gfzadL/Rlrk8KP7z4mZE7wlMyfRulNxFYMi0tY4PR3xI5+pqe/vZQdd1K/5jippS5x2+wkrAYpp1ZcMCPcUJIvLlyevapZ11bZqSUtt+nj//xAAkEQACAQIEBwEAAAAAAAAAAAABAhEAAxASIUEEBRMxUWFxIv/aAAgBAgEBPwAmKLMTA37CiHVQ+YFfIoNscHEwKSArNuZA+CrDdG0quCBSxJC6gar8ODCStWrF2/atdG8i/gSTrT8t4x4YXramRIBB0ogJdKyubIM0eRibesxPveirNo2Zh77UqwMP/8QAIBEAAgICAgIDAAAAAAAAAAAAAQIAERAhEjEDBCJxkf/aAAgBAwEBPwCBBVmUpNVRhWsJqzHPQjHk5IjdA/uEOjGbxo780J+RoQex4F1wYw7S91ZrANGB9dywNih9RmvH/9k=" />
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div data-layer="Main Content"
+        className="MainContent self-stretch p-4 flex flex-col justify-start items-start gap-5">
+        <div data-layer="Tabs Container Mobile"
+            className="TabsContainerMobile self-stretch p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex justify-start items-start gap-1">
+            <div data-layer="Tab Link"
+                className="TabLink flex-1 px-4 py-2 rounded-full flex justify-center items-start">
+                <div data-layer="المنح" className="justify-start text-slate-400 text-xs font-semibold font-['Inter']">
+                    المنح</div>
+            </div>
+            <div data-layer="Tab Link"
+                className="TabLink flex-1 px-4 py-2 rounded-full flex justify-center items-start">
+                <div data-layer="الدورات" className="justify-start text-slate-400 text-xs font-semibold font-['Inter']">
+                    الدورات</div>
+            </div>
+            <div data-layer="Tab Link Active"
+                className="TabLinkActive flex-1 px-4 py-2 rounded-full flex justify-center items-start">
+                <div data-layer="الكل" className="justify-start text-slate-900 text-xs font-bold font-['Inter']">الكل
+                </div>
+            </div>
+        </div>
+        <div data-layer="Search Control Block"
+            className="SearchControlBlock self-stretch flex flex-col justify-start items-start gap-3">
+            <div data-layer="Smart Search Box"
+                className="SmartSearchBox self-stretch p-1.5 bg-blue-950/80 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex justify-start items-center gap-2">
+                <div data-layer="Submit Button"
+                    className="SubmitButton size- p-2.5 rounded-full flex justify-center items-center">
+                    <div data-svg-wrapper data-layer="search" className="Search relative">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M14.0001 14.0001L11.1068 11.1068M12.6667 7.33333C12.6667 10.2789 10.2789 12.6667 7.33333 12.6667C4.38781 12.6667 2 10.2789 2 7.33333C2 4.38781 4.38781 2 7.33333 2C10.2789 2 12.6667 4.38781 12.6667 7.33333Z"
+                                stroke="white" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                </div>
+                <div data-layer="Input Field"
+                    className="InputField flex-1 inline-flex flex-col justify-start items-start">
+                    <div data-layer="ابحث عن موضوع، دولة، أو اسم المقرر..."
+                        className="self-stretch text-right justify-start text-slate-400 text-sm font-normal font-['Tajawal']">
+                        ابحث عن موضوع، دولة، أو اسم المقرر...</div>
+                </div>
+            </div>
+            <div data-layer="Filter Floating Button"
+                className="FilterFloatingButton self-stretch px-4 py-2.5 bg-blue-950 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex justify-center items-start gap-2">
+                <div data-layer="تصفية النتائج"
+                    className="justify-start text-orange-300 text-xs font-semibold font-['Inter']">تصفية النتائج</div>
+                <div data-svg-wrapper data-layer="filter" className="Filter relative">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_54_3431)">
+                            <path
+                                d="M5.92001 11.9737C5.86303 11.8815 5.83287 11.7752 5.83292 11.6668V8.16678C5.83279 7.87766 5.72531 7.5989 5.53131 7.38452L1.31632 2.72418C1.24073 2.64043 1.19104 2.53656 1.17329 2.42516C1.15553 2.31375 1.17046 2.19958 1.21627 2.09648C1.26208 1.99339 1.33681 1.90579 1.43139 1.84429C1.52598 1.78279 1.63637 1.75004 1.74919 1.75H12.2502C12.3629 1.75027 12.4732 1.78318 12.5676 1.84477C12.662 1.90635 12.7365 1.99396 12.7822 2.09702C12.8279 2.20007 12.8427 2.31414 12.8249 2.42544C12.8071 2.53675 12.7574 2.64051 12.6819 2.72418L8.46809 7.38452C8.27409 7.5989 8.16661 7.87766 8.16648 8.16678V12.2502C8.16652 12.3496 8.14114 12.4474 8.09275 12.5343C8.04435 12.6212 7.97455 12.6943 7.88997 12.7466C7.80539 12.7989 7.70883 12.8287 7.60948 12.8332C7.51013 12.8377 7.41128 12.8167 7.32231 12.7723L6.15553 12.1889C6.05856 12.1405 5.977 12.066 5.92001 11.9737Z"
+                                stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                        </g>
+                        <defs>
+                            <clipPath id="clip0_54_3431">
+                                <rect width="14" height="14" fill="white" />
+                            </clipPath>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div data-layer="عرض 42 نتيجة منتقاة"
+            className="42 self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">عرض
+            42 نتيجة منتقاة</div>
+        <div data-layer="Cards Stack Mobile"
+            className="CardsStackMobile self-stretch flex flex-col justify-start items-start gap-4">
+            <div data-layer="Course Card"
+                className="CourseCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col justify-start items-start overflow-hidden">
+                <div data-layer="Thumbnail Area"
+                    className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                    <img data-layer="Rectangle" className="Rectangle w-96 h-36 left-0 top-0 absolute opacity-30"
+                        src="https://placehold.co/358x150" />
+                    <div data-layer="Glow Overlay" className="GlowOverlay w-96 h-36 left-0 top-0 absolute" />
+                    <div data-layer="Icon Container"
+                        className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-svg-wrapper data-layer="play" className="Play relative">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M4.39011 3.33193C4.24323 3.58574 4.16593 3.87381 4.16602 4.16705V15.8329C4.16593 16.1262 4.24323 16.4143 4.39011 16.6681C4.537 16.9219 4.74826 17.1325 5.00258 17.2785C5.25689 17.4246 5.54525 17.501 5.83855 17.5C6.13184 17.499 6.41967 17.4206 6.67299 17.2729L16.6742 11.4399C16.9263 11.2931 17.1354 11.0827 17.2807 10.8297C17.4259 10.5768 17.5023 10.2901 17.502 9.99845C17.5018 9.70677 17.4249 9.42026 17.2792 9.16756C17.1335 8.91486 16.9241 8.70482 16.6717 8.55843L6.67299 2.72715C6.41967 2.57935 6.13184 2.50101 5.83855 2.50001C5.54525 2.49901 5.25689 2.57541 5.00258 2.72148C4.74826 2.86754 4.537 3.07812 4.39011 3.33193Z"
+                                    stroke="#29A9FF" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div data-layer="Progress Badge"
+                        className="ProgressBadge size- px-2 py-1 left-[12px] top-[12px] absolute bg-slate-900 rounded-md outline outline-1 outline-offset-[-1px] outline-sky-400 flex justify-start items-start">
+                        <div data-layer="مستمر (40%)"
+                            className="40 justify-start text-sky-400 text-xs font-normal font-['Inter']">مستمر (40%)
+                        </div>
+                    </div>
+                </div>
+                <div data-layer="Tech Gradient Accent" className="TechGradientAccent self-stretch h-[3px]" />
+                <div data-layer="Content"
+                    className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                    <div data-layer="Header Row"
+                        className="HeaderRow self-stretch inline-flex justify-between items-center">
+                        <div data-layer="ذكاء اصطناعي"
+                            className="justify-start text-sky-400 text-xs font-medium font-['Tajawal']">ذكاء اصطناعي
+                        </div>
+                        <div data-layer="Frame" className="Frame size- flex justify-start items-center gap-1">
+                            <div data-layer="4.9"
+                                className="9 justify-start text-orange-300 text-xs font-normal font-['Tajawal']">4.9
+                            </div>
+                            <div data-svg-wrapper data-layer="star" className="Star relative">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <g clip-path="url(#clip0_54_3450)">
+                                        <path
+                                            d="M5.86064 1.03937C5.81867 1.06542 5.78482 1.10269 5.76291 1.14696L4.60841 3.48646C4.53226 3.64059 4.4198 3.77392 4.2807 3.87495C4.14161 3.97599 3.98004 4.04171 3.80991 4.06646L1.22741 4.44396C1.17826 4.45091 1.13205 4.47152 1.09405 4.50345C1.05605 4.53538 1.02777 4.57734 1.01245 4.62455C0.99713 4.67177 0.995377 4.72233 1.00739 4.7705C1.01941 4.81866 1.04471 4.86247 1.08041 4.89696L2.94841 6.71546C3.07172 6.83554 3.16396 6.98381 3.21718 7.14748C3.2704 7.31116 3.28301 7.48532 3.25391 7.65496L2.81341 10.2245C2.80484 10.2733 2.81015 10.3236 2.82874 10.3696C2.84733 10.4156 2.87845 10.4554 2.91856 10.4846C2.95867 10.5137 3.00616 10.5311 3.05564 10.5346C3.10511 10.5381 3.15458 10.5277 3.19841 10.5045L5.50691 9.29046C5.65905 9.21057 5.82832 9.16883 6.00016 9.16883C6.172 9.16883 6.34127 9.21057 6.49341 9.29046L8.80241 10.5045C8.84626 10.5278 8.89579 10.5384 8.94534 10.5349C8.9949 10.5315 9.04249 10.5141 9.08268 10.485C9.12288 10.4558 9.15405 10.4159 9.17266 10.3698C9.19127 10.3237 9.19655 10.2734 9.18791 10.2245L8.74691 7.65446C8.71794 7.4849 8.73061 7.31085 8.78383 7.14727C8.83705 6.9837 8.92922 6.83551 9.05241 6.71546L10.9204 4.89646C10.9558 4.86193 10.9809 4.81819 10.9927 4.77018C11.0045 4.72216 11.0027 4.67179 10.9874 4.62476C10.9721 4.57773 10.944 4.53592 10.9062 4.50406C10.8683 4.47219 10.8224 4.45155 10.7734 4.44446L8.19041 4.06646C8.02047 4.04152 7.85913 3.97571 7.72022 3.87469C7.58132 3.77366 7.469 3.64044 7.39291 3.48646L6.23791 1.14696C6.216 1.10269 6.18215 1.06542 6.14019 1.03937C6.09822 1.01332 6.04981 0.999512 6.00041 0.999512C5.95102 0.999512 5.9026 1.01332 5.86064 1.03937Z"
+                                            stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                                    </g>
+                                    <defs>
+                                        <clipPath id="clip0_54_3450">
+                                            <rect width="12" height="12" fill="white" />
+                                        </clipPath>
+                                    </defs>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div data-layer="أساسيات الذكاء الاصطناعي وتعلم الآلة"
+                        className="self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                        أساسيات الذكاء الاصطناعي وتعلم الآلة</div>
+                    <div data-layer="أ. د. أحمد خوارزم • 6 أسابيع • 14 درسًا"
+                        className="614 self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                        أ. د. أحمد خوارزم • 6 أسابيع • 14 درسًا</div>
+                    <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                    <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                        <div data-layer="Badge Level"
+                            className="BadgeLevel size- px-2 py-1 bg-sky-400/10 rounded-lg flex justify-start items-start">
+                            <div data-layer="مبتدئ"
+                                className="justify-start text-sky-400 text-xs font-normal font-['Tajawal']">مبتدئ</div>
+                        </div>
+                        <div data-layer="محررة / مجانية"
+                            className="justify-start text-white text-sm font-bold font-['Inter']">محررة / مجانية</div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Scholarship Card"
+                className="ScholarshipCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col justify-start items-start overflow-hidden">
+                <div data-layer="Thumbnail Area"
+                    className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                    <img data-layer="Rectangle" className="Rectangle w-96 h-36 left-0 top-0 absolute opacity-30"
+                        src="https://placehold.co/358x150" />
+                    <div data-layer="Glow Overlay" className="GlowOverlay w-96 h-36 left-0 top-0 absolute" />
+                    <div data-layer="Icon Container"
+                        className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-svg-wrapper data-layer="award" className="Award relative">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M12.8977 10.7407L14.1602 17.8457C14.1743 17.9294 14.1626 18.0154 14.1266 18.0922C14.0905 18.169 14.0319 18.233 13.9585 18.2756C13.8851 18.3181 13.8004 18.3373 13.7159 18.3305C13.6313 18.3237 13.5508 18.2912 13.4852 18.2374L10.5019 15.9982C10.3578 15.8906 10.1829 15.8325 10.0031 15.8325C9.82334 15.8325 9.64839 15.8906 9.50437 15.9982L6.51603 18.2366C6.45047 18.2903 6.37008 18.3227 6.28561 18.3295C6.20114 18.3363 6.11659 18.3172 6.04325 18.2748C5.96991 18.2323 5.91126 18.1685 5.87513 18.0918C5.839 18.0152 5.82711 17.9293 5.84103 17.8457L7.1027 10.7407M15 6.66602C15 9.42744 12.7614 11.666 10 11.666C7.23858 11.666 5 9.42744 5 6.66602C5 3.90459 7.23858 1.66602 10 1.66602C12.7614 1.66602 15 3.90459 15 6.66602Z"
+                                    stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div data-layer="Deadline Badge"
+                        className="DeadlineBadge size- px-2 py-1 left-[12px] top-[12px] absolute bg-slate-900 rounded-md outline outline-1 outline-offset-[-1px] outline-red-500 flex justify-start items-start">
+                        <div data-layer="متبقي 3 أيام"
+                            className="3 justify-start text-red-500 text-xs font-normal font-['Inter']">متبقي 3 أيام
+                        </div>
+                    </div>
+                </div>
+                <div data-layer="Gold Top Accent" className="GoldTopAccent self-stretch h-[3px]" />
+                <div data-layer="Content"
+                    className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                    <div data-layer="Header Row"
+                        className="HeaderRow self-stretch inline-flex justify-between items-center">
+                        <div data-layer="هندسة وحاسب"
+                            className="justify-start text-orange-300 text-xs font-medium font-['Tajawal']">هندسة وحاسب
+                        </div>
+                        <div data-layer="المملكة العربية السعودية"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">المملكة
+                            العربية السعودية</div>
+                    </div>
+                    <div data-layer="منحة التميز العلمي للدراسات العليا - جامعة KAUST"
+                        className="Kaust self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                        منحة التميز العلمي للدراسات العليا - جامعة KAUST</div>
+                    <div data-layer="الجهة المانحة • المملكة العربية السعودية • ماجستير / دكتوراه"
+                        className="self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                        الجهة المانحة • المملكة العربية السعودية • ماجستير / دكتوراه</div>
+                    <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                    <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                        <div data-layer="Badge Coverage"
+                            className="BadgeCoverage size- px-2 py-1 bg-orange-300/10 rounded-lg flex justify-start items-start">
+                            <div data-layer="تمويل كامل"
+                                className="justify-start text-orange-300 text-xs font-normal font-['Tajawal']">تمويل
+                                كامل</div>
+                        </div>
+                        <div data-layer="ماجستير / دكتوراه"
+                            className="justify-start text-orange-300 text-sm font-bold font-['Inter']">ماجستير / دكتوراه
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Course Card"
+                className="CourseCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col justify-start items-start overflow-hidden">
+                <div data-layer="Thumbnail Area"
+                    className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                    <img data-layer="Rectangle" className="Rectangle w-96 h-36 left-0 top-0 absolute opacity-30"
+                        src="https://placehold.co/358x150" />
+                    <div data-layer="Glow Overlay" className="GlowOverlay w-96 h-36 left-0 top-0 absolute" />
+                    <div data-layer="Icon Container"
+                        className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-svg-wrapper data-layer="play" className="Play relative">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M4.39011 3.33193C4.24323 3.58574 4.16593 3.87381 4.16602 4.16705V15.8329C4.16593 16.1262 4.24323 16.4143 4.39011 16.6681C4.537 16.9219 4.74826 17.1325 5.00258 17.2785C5.25689 17.4246 5.54525 17.501 5.83855 17.5C6.13184 17.499 6.41967 17.4206 6.67299 17.2729L16.6742 11.4399C16.9263 11.2931 17.1354 11.0827 17.2807 10.8297C17.4259 10.5768 17.5023 10.2901 17.502 9.99845C17.5018 9.70677 17.4249 9.42026 17.2792 9.16756C17.1335 8.91486 16.9241 8.70482 16.6717 8.55843L6.67299 2.72715C6.41967 2.57935 6.13184 2.50101 5.83855 2.50001C5.54525 2.49901 5.25689 2.57541 5.00258 2.72148C4.74826 2.86754 4.537 3.07812 4.39011 3.33193Z"
+                                    stroke="#29A9FF" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div data-layer="Tech Gradient Accent" className="TechGradientAccent self-stretch h-[3px]" />
+                <div data-layer="Content"
+                    className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                    <div data-layer="Header Row"
+                        className="HeaderRow self-stretch inline-flex justify-between items-center">
+                        <div data-layer="برمجة الويب"
+                            className="justify-start text-sky-400 text-xs font-medium font-['Tajawal']">برمجة الويب
+                        </div>
+                        <div data-layer="Frame" className="Frame size- flex justify-start items-center gap-1">
+                            <div data-layer="4.8"
+                                className="8 justify-start text-orange-300 text-xs font-normal font-['Tajawal']">4.8
+                            </div>
+                            <div data-svg-wrapper data-layer="star" className="Star relative">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <g clip-path="url(#clip0_54_3493)">
+                                        <path
+                                            d="M5.86064 1.03949C5.81867 1.06555 5.78482 1.10281 5.76291 1.14708L4.60841 3.48658C4.53226 3.64072 4.4198 3.77404 4.2807 3.87507C4.14161 3.97611 3.98004 4.04183 3.80991 4.06658L1.22741 4.44408C1.17826 4.45103 1.13205 4.47164 1.09405 4.50357C1.05605 4.5355 1.02777 4.57746 1.01245 4.62468C0.99713 4.67189 0.995377 4.72246 1.00739 4.77062C1.01941 4.81878 1.04471 4.8626 1.08041 4.89708L2.94841 6.71558C3.07172 6.83566 3.16396 6.98393 3.21718 7.1476C3.2704 7.31128 3.28301 7.48545 3.25391 7.65508L2.81341 10.2246C2.80484 10.2734 2.81015 10.3237 2.82874 10.3697C2.84733 10.4157 2.87845 10.4555 2.91856 10.4847C2.95867 10.5139 3.00616 10.5312 3.05564 10.5347C3.10511 10.5382 3.15458 10.5278 3.19841 10.5046L5.50691 9.29058C5.65905 9.21069 5.82832 9.16896 6.00016 9.16896C6.172 9.16896 6.34127 9.21069 6.49341 9.29058L8.80241 10.5046C8.84626 10.5279 8.89579 10.5385 8.94534 10.535C8.9949 10.5316 9.04249 10.5143 9.08268 10.4851C9.12288 10.4559 9.15405 10.416 9.17266 10.3699C9.19127 10.3239 9.19655 10.2735 9.18791 10.2246L8.74691 7.65458C8.71794 7.48503 8.73061 7.31097 8.78383 7.1474C8.83705 6.98382 8.92922 6.83563 9.05241 6.71558L10.9204 4.89658C10.9558 4.86206 10.9809 4.81831 10.9927 4.7703C11.0045 4.72228 11.0027 4.67191 10.9874 4.62488C10.9721 4.57785 10.944 4.53604 10.9062 4.50418C10.8683 4.47232 10.8224 4.45167 10.7734 4.44458L8.19041 4.06658C8.02047 4.04164 7.85913 3.97583 7.72022 3.87481C7.58132 3.77378 7.469 3.64056 7.39291 3.48658L6.23791 1.14708C6.216 1.10281 6.18215 1.06555 6.14019 1.03949C6.09822 1.01344 6.04981 0.999634 6.00041 0.999634C5.95102 0.999634 5.9026 1.01344 5.86064 1.03949Z"
+                                            stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                                    </g>
+                                    <defs>
+                                        <clipPath id="clip0_54_3493">
+                                            <rect width="12" height="12" fill="white" />
+                                        </clipPath>
+                                    </defs>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div data-layer="تطوير تطبيقات الويب المتكاملة بـ React & Node.js"
+                        className="ReactNodeJs self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                        تطوير تطبيقات الويب المتكاملة بـ React &amp; Node.js</div>
+                    <div data-layer="م. سليم الحربي • 10 أسابيع • 32 درسًا"
+                        className="1032 self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                        م. سليم الحربي • 10 أسابيع • 32 درسًا</div>
+                    <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                    <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                        <div data-layer="Badge Level"
+                            className="BadgeLevel size- px-2 py-1 bg-sky-400/10 rounded-lg flex justify-start items-start">
+                            <div data-layer="متوسط"
+                                className="justify-start text-sky-400 text-xs font-normal font-['Tajawal']">متوسط</div>
+                        </div>
+                        <div data-layer="مدفوعة" className="justify-start text-white text-sm font-bold font-['Inter']">
+                            مدفوعة</div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Scholarship Card"
+                className="ScholarshipCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col justify-start items-start overflow-hidden">
+                <div data-layer="Thumbnail Area"
+                    className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                    <img data-layer="Rectangle" className="Rectangle w-96 h-36 left-0 top-0 absolute opacity-30"
+                        src="https://placehold.co/358x150" />
+                    <div data-layer="Glow Overlay" className="GlowOverlay w-96 h-36 left-0 top-0 absolute" />
+                    <div data-layer="Icon Container"
+                        className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-svg-wrapper data-layer="award" className="Award relative">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M12.8977 10.7407L14.1602 17.8457C14.1743 17.9294 14.1626 18.0154 14.1266 18.0922C14.0905 18.169 14.0319 18.233 13.9585 18.2756C13.8851 18.3181 13.8004 18.3373 13.7159 18.3305C13.6313 18.3237 13.5508 18.2912 13.4852 18.2374L10.5019 15.9982C10.3578 15.8906 10.1829 15.8325 10.0031 15.8325C9.82334 15.8325 9.64839 15.8906 9.50437 15.9982L6.51603 18.2366C6.45047 18.2903 6.37008 18.3227 6.28561 18.3295C6.20114 18.3363 6.11659 18.3172 6.04325 18.2748C5.96991 18.2323 5.91126 18.1685 5.87513 18.0918C5.839 18.0152 5.82711 17.9293 5.84103 17.8457L7.1027 10.7407M15 6.66602C15 9.42744 12.7614 11.666 10 11.666C7.23858 11.666 5 9.42744 5 6.66602C5 3.90459 7.23858 1.66602 10 1.66602C12.7614 1.66602 15 3.90459 15 6.66602Z"
+                                    stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div data-layer="Deadline Badge"
+                        className="DeadlineBadge size- px-2 py-1 left-[12px] top-[12px] absolute bg-slate-900 rounded-md outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="متبقي 12 يومًا"
+                            className="12 justify-start text-slate-400 text-xs font-normal font-['Inter']">متبقي 12
+                            يومًا</div>
+                    </div>
+                </div>
+                <div data-layer="Gold Top Accent" className="GoldTopAccent self-stretch h-[3px]" />
+                <div data-layer="Content"
+                    className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                    <div data-layer="Header Row"
+                        className="HeaderRow self-stretch inline-flex justify-between items-center">
+                        <div data-layer="جميع التخصصات"
+                            className="justify-start text-orange-300 text-xs font-medium font-['Tajawal']">جميع التخصصات
+                        </div>
+                        <div data-layer="تركيا"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">تركيا</div>
+                    </div>
+                    <div data-layer="منحة الحكومة التركية لدراسة البكالوريوس التقني"
+                        className="self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                        منحة الحكومة التركية لدراسة البكالوريوس التقني</div>
+                    <div data-layer="الجهة المانحة • تركيا • بكالوريوس"
+                        className="self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                        الجهة المانحة • تركيا • بكالوريوس</div>
+                    <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                    <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                        <div data-layer="Badge Coverage"
+                            className="BadgeCoverage size- px-2 py-1 bg-orange-300/10 rounded-lg flex justify-start items-start">
+                            <div data-layer="تمويل كامل + سكن"
+                                className="justify-start text-orange-300 text-xs font-normal font-['Tajawal']">تمويل
+                                كامل + سكن</div>
+                        </div>
+                        <div data-layer="بكالوريوس"
+                            className="justify-start text-orange-300 text-sm font-bold font-['Inter']">بكالوريوس</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div data-layer="Pagination" className="Pagination self-stretch inline-flex justify-center items-center gap-2">
+            <div data-layer="Nav Arrow"
+                className="NavArrow size- p-2 bg-blue-950 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                <div data-svg-wrapper data-layer="chevron-left" className="ChevronLeft relative">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8.75 10.5L5.25 7L8.75 3.5" stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+            </div>
+            <div data-layer="Page Num"
+                className="PageNum size- px-3.5 py-2 bg-blue-950 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                <div data-layer="3" className="justify-start text-slate-400 text-sm font-normal font-['Tajawal']">3
+                </div>
+            </div>
+            <div data-layer="Page Num"
+                className="PageNum size- px-3.5 py-2 bg-blue-950 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                <div data-layer="2" className="justify-start text-slate-400 text-sm font-normal font-['Tajawal']">2
+                </div>
+            </div>
+            <div data-layer="Page Num"
+                className="PageNum size- px-3.5 py-2 bg-orange-300/10 rounded-lg outline outline-1 outline-offset-[-1px] outline-orange-300 flex justify-start items-start">
+                <div data-layer="1" className="justify-start text-orange-300 text-sm font-bold font-['Tajawal']">1</div>
+            </div>
+            <div data-layer="Nav Arrow"
+                className="NavArrow size- p-2 bg-blue-950 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                <div data-svg-wrapper data-layer="chevron-right" className="ChevronRight relative">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5.25 10.5L8.75 7L5.25 3.5" stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div data-layer="Bottom Navigation Bar"
+        className="BottomNavigationBar w-96 left-0 top-[1644px] absolute bg-slate-800/80 rounded-tl-xl rounded-tr-xl shadow-[0px_-4px_20px_0px_rgba(0,0,0,0.50)] backdrop-blur-[6px] flex flex-col justify-end items-center">
+        <div data-layer="Tabs container"
+            className="TabsContainer self-stretch h-16 px-4 border-t border-blue-900 inline-flex justify-between items-center">
+            <div data-layer="Tab - حسابي"
+                className="Tab w-16 px-2.5 py-1.5 rounded-xl inline-flex flex-col justify-center items-center gap-1">
+                <div data-svg-wrapper data-layer="user" className="User relative">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M14.2507 15.75V14.25C14.2507 13.4544 13.9346 12.6913 13.3719 12.1287C12.8093 11.5661 12.0461 11.25 11.2504 11.25H6.74985C5.95411 11.25 5.19096 11.5661 4.62829 12.1287C4.06562 12.6913 3.74951 13.4544 3.74951 14.25V15.75M12.0005 5.25C12.0005 6.90685 10.6572 8.25 9.00011 8.25C7.34307 8.25 5.99977 6.90685 5.99977 5.25C5.99977 3.59315 7.34307 2.25 9.00011 2.25C10.6572 2.25 12.0005 3.59315 12.0005 5.25Z"
+                            stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div data-layer="Tab Label"
+                    className="TabLabel text-center justify-start text-slate-400 text-xs font-semibold font-['Inter']">
+                    حسابي</div>
+            </div>
+            <div data-layer="Tab - لوحتي"
+                className="Tab w-16 px-2.5 py-1.5 rounded-xl inline-flex flex-col justify-center items-center gap-1">
+                <div data-svg-wrapper data-layer="layout-dashboard" className="LayoutDashboard relative">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M6.75 2.25H3C2.58579 2.25 2.25 2.58579 2.25 3V8.25C2.25 8.66421 2.58579 9 3 9H6.75C7.16421 9 7.5 8.66421 7.5 8.25V3C7.5 2.58579 7.16421 2.25 6.75 2.25Z"
+                            stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                        <path
+                            d="M15 2.25H11.25C10.8358 2.25 10.5 2.58579 10.5 3V5.25C10.5 5.66421 10.8358 6 11.25 6H15C15.4142 6 15.75 5.66421 15.75 5.25V3C15.75 2.58579 15.4142 2.25 15 2.25Z"
+                            stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                        <path
+                            d="M15 9H11.25C10.8358 9 10.5 9.33579 10.5 9.75V15C10.5 15.4142 10.8358 15.75 11.25 15.75H15C15.4142 15.75 15.75 15.4142 15.75 15V9.75C15.75 9.33579 15.4142 9 15 9Z"
+                            stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                        <path
+                            d="M6.75 12H3C2.58579 12 2.25 12.3358 2.25 12.75V15C2.25 15.4142 2.58579 15.75 3 15.75H6.75C7.16421 15.75 7.5 15.4142 7.5 15V12.75C7.5 12.3358 7.16421 12 6.75 12Z"
+                            stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div data-layer="Tab Label"
+                    className="TabLabel text-center justify-start text-slate-400 text-xs font-semibold font-['Inter']">
+                    لوحتي</div>
+            </div>
+            <div data-layer="Tab - المنح"
+                className="Tab w-16 px-2.5 py-1.5 rounded-xl inline-flex flex-col justify-center items-center gap-1">
+                <div data-svg-wrapper data-layer="award" className="Award relative">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M11.6079 9.66663L12.7442 16.0611C12.7569 16.1364 12.7463 16.2138 12.7139 16.2829C12.6815 16.3521 12.6287 16.4096 12.5626 16.448C12.4966 16.4863 12.4204 16.5035 12.3443 16.4974C12.2682 16.4913 12.1957 16.462 12.1367 16.4136L9.45168 14.3984C9.32206 14.3015 9.1646 14.2492 9.0028 14.2492C8.84101 14.2492 8.68355 14.3015 8.55393 14.3984L5.86443 16.4129C5.80542 16.4612 5.73308 16.4904 5.65705 16.4965C5.58103 16.5027 5.50493 16.4855 5.43893 16.4473C5.37292 16.4091 5.32014 16.3516 5.28762 16.2826C5.2551 16.2136 5.2444 16.1364 5.25693 16.0611L6.39243 9.66663M13.5 5.99939C13.5 8.48467 11.4853 10.4994 9 10.4994C6.51472 10.4994 4.5 8.48467 4.5 5.99939C4.5 3.51411 6.51472 1.49939 9 1.49939C11.4853 1.49939 13.5 3.51411 13.5 5.99939Z"
+                            stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div data-layer="Tab Label"
+                    className="TabLabel text-center justify-start text-slate-400 text-xs font-semibold font-['Inter']">
+                    المنح</div>
+            </div>
+            <div data-layer="Tab - الدورات"
+                className="Tab w-16 px-2.5 py-1.5 rounded-xl inline-flex flex-col justify-center items-center gap-1">
+                <div data-svg-wrapper data-layer="book-open" className="BookOpen relative">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M9.00011 5.25V15.75M9.00011 5.25C9.00011 4.45435 8.68402 3.69129 8.12136 3.12868C7.55871 2.56607 6.79558 2.25 5.99987 2.25H2.24957C2.05064 2.25 1.85986 2.32902 1.7192 2.46967C1.57854 2.61032 1.49951 2.80109 1.49951 3V12.75C1.49951 12.9489 1.57854 13.1397 1.7192 13.2803C1.85986 13.421 2.05064 13.5 2.24957 13.5H6.74993C7.34672 13.5 7.91906 13.7371 8.34105 14.159C8.76304 14.581 9.00011 15.1533 9.00011 15.75M9.00011 5.25C9.00011 4.45435 9.31621 3.69129 9.87886 3.12868C10.4415 2.56607 11.2046 2.25 12.0004 2.25H15.7507C15.9496 2.25 16.1404 2.32902 16.281 2.46967C16.4217 2.61032 16.5007 2.80109 16.5007 3V12.75C16.5007 12.9489 16.4217 13.1397 16.281 13.2803C16.1404 13.421 15.9496 13.5 15.7507 13.5H11.2503C10.6535 13.5 10.0812 13.7371 9.65917 14.159C9.23718 14.581 9.00011 15.1533 9.00011 15.75"
+                            stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div data-layer="Tab Label"
+                    className="TabLabel text-center justify-start text-slate-400 text-xs font-semibold font-['Inter']">
+                    الدورات</div>
+            </div>
+            <div data-layer="Tab - الرئيسية"
+                className="Tab w-16 px-2.5 py-1.5 bg-slate-900 rounded-xl shadow-[0px_0px_8px_0px_rgba(229,182,92,1.00)] inline-flex flex-col justify-center items-center gap-1">
+                <div data-svg-wrapper data-layer="home" className="Home relative">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M11.25 15.7494V9.74939C11.25 9.55048 11.171 9.35971 11.0303 9.21906C10.8897 9.07841 10.6989 8.99939 10.5 8.99939H7.5C7.30109 8.99939 7.11032 9.07841 6.96967 9.21906C6.82902 9.35971 6.75 9.55048 6.75 9.74939V15.7494M2.25 7.49975C2.24995 7.28155 2.2975 7.06597 2.38934 6.86804C2.48118 6.67011 2.6151 6.4946 2.78175 6.35375L8.03175 1.85375C8.30249 1.62493 8.64552 1.49939 9 1.49939C9.35448 1.49939 9.69751 1.62493 9.96825 1.85375L15.2183 6.35375C15.3849 6.4946 15.5188 6.67011 15.6107 6.86804C15.7025 7.06597 15.7501 7.28155 15.75 7.49975V14.2497C15.75 14.6476 15.592 15.0291 15.3107 15.3104C15.0294 15.5917 14.6478 15.7497 14.25 15.7497H3.75C3.35218 15.7497 2.97064 15.5917 2.68934 15.3104C2.40804 15.0291 2.25 14.6476 2.25 14.2497V7.49975Z"
+                            stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div data-layer="Tab Label"
+                    className="TabLabel text-center justify-start text-orange-300 text-xs font-semibold font-['Inter']">
+                    الرئيسية</div>
+            </div>
+        </div>
+    </div>
+</div>

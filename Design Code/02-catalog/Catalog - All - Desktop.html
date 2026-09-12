@@ -1,0 +1,873 @@
+<div data-layer="catalog-all-desktop"
+    className="CatalogAllDesktop w-[1280px] relative bg-slate-900 inline-flex flex-col justify-start items-start">
+    <div data-layer="Tech Blue Glow" className="TechBlueGlow size-[500px] left-[-100px] top-[150px] absolute" />
+    <div data-layer="Gold Glow" className="GoldGlow size-[500px] left-[800px] top-[450px] absolute" />
+    <div data-layer="Header - Top Navigation (Desktop Only)"
+        className="HeaderTopNavigationDesktopOnly self-stretch h-16 px-10 bg-white/0 shadow-[0px_0px_15px_0px_rgba(41,169,255,0.10)] border-b border-blue-900 backdrop-blur-md inline-flex justify-between items-center">
+        <div data-layer="Left Actions" className="LeftActions size- flex justify-start items-center gap-4">
+            <div data-layer="User Circle"
+                className="UserCircle size-10 bg-blue-950 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-center items-center">
+                <div data-layer="Container" className="Container size- inline-flex flex-col justify-start items-center">
+                    <div data-svg-wrapper data-layer="user" className="User relative">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M12.6672 14V12.6667C12.6672 11.9594 12.3862 11.2811 11.886 10.781C11.3859 10.281 10.7075 10 10.0002 10H5.99974C5.29241 10 4.61406 10.281 4.1139 10.781C3.61375 11.2811 3.33276 11.9594 3.33276 12.6667V14M10.6669 4.66667C10.6669 6.13943 9.47289 7.33333 7.99996 7.33333C6.52704 7.33333 5.33299 6.13943 5.33299 4.66667C5.33299 3.19391 6.52704 2 7.99996 2C9.47289 2 10.6669 3.19391 10.6669 4.66667Z"
+                                stroke="#8299B5" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Notification Bell"
+                className="NotificationBell size-9 relative bg-blue-900 rounded-2xl flex justify-center items-center">
+                <div data-svg-wrapper data-layer="bell" className="Bell relative">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_54_2875)">
+                            <path
+                                d="M6.8445 14.0005C6.96153 14.2032 7.12985 14.3715 7.33254 14.4885C7.53523 14.6056 7.76515 14.6672 7.99919 14.6672C8.23323 14.6672 8.46315 14.6056 8.66584 14.4885C8.86853 14.3715 9.03685 14.2032 9.15388 14.0005M2.17418 10.2175C2.08709 10.313 2.02962 10.4317 2.00875 10.5592C1.98788 10.6868 2.00453 10.8176 2.05665 10.9358C2.10878 11.0541 2.19414 11.1546 2.30236 11.2252C2.41057 11.2959 2.53698 11.3335 2.66619 11.3336H13.3331C13.4623 11.3337 13.5887 11.2962 13.697 11.2257C13.8053 11.1552 13.8908 11.0548 13.943 10.9366C13.9953 10.8184 14.0121 10.6876 13.9914 10.5601C13.9707 10.4325 13.9134 10.3137 13.8264 10.2182C12.9397 9.3041 11.9997 8.33269 11.9997 5.3331C11.9997 4.27215 11.5783 3.25464 10.8281 2.50444C10.078 1.75423 9.06053 1.33276 7.99964 1.33276C6.93875 1.33276 5.92131 1.75423 5.17115 2.50444C4.42099 3.25464 3.99955 4.27215 3.99955 5.3331C3.99955 8.33269 3.05887 9.3041 2.17418 10.2175Z"
+                                stroke="#DBE4ED" stroke-width="2" stroke-linecap="round" />
+                        </g>
+                        <defs>
+                            <clipPath id="clip0_54_2875">
+                                <rect width="16" height="16" fill="white" />
+                            </clipPath>
+                        </defs>
+                    </svg>
+                </div>
+                <div data-svg-wrapper data-layer="Badge" className="Badge left-[26px] top-[2px] absolute">
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="4" cy="4" r="4" fill="#D9534F" />
+                    </svg>
+                </div>
+            </div>
+            <div data-layer="Search Button"
+                className="SearchButton size-9 bg-blue-900 rounded-2xl flex justify-center items-center">
+                <div data-svg-wrapper data-layer="database-search" className="DatabaseSearch relative">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_54_2879)">
+                            <path
+                                d="M14.0005 7.79513V3.33288M14.0005 3.33288C14.0005 4.43751 11.3141 5.33299 8.00025 5.33299C4.6864 5.33299 2 4.43751 2 3.33288M14.0005 3.33288C14.0005 2.22825 11.3141 1.33276 8.00025 1.33276C4.6864 1.33276 2 2.22825 2 3.33288M2 3.33288V12.6667C1.99988 12.9347 2.16124 13.1999 2.47451 13.4466C2.78777 13.6933 3.24656 13.9166 3.82363 14.1031C4.4007 14.2896 5.08429 14.4355 5.83383 14.5322C6.58336 14.629 7.38356 14.6745 8.18693 14.6662M14.6672 14.6669L13.4171 13.4168M2 7.99981C2.00016 8.51858 2.60498 9.01704 3.68681 9.38997C4.76864 9.7629 6.24284 9.98113 7.79824 9.99859M14.0005 12C14.0005 13.1047 13.105 14.0002 12.0004 14.0002C10.8958 14.0002 10.0003 13.1047 10.0003 12C10.0003 10.8954 10.8958 9.99993 12.0004 9.99993C13.105 9.99993 14.0005 10.8954 14.0005 12Z"
+                                stroke="#DBE4ED" stroke-width="2" stroke-linecap="round" />
+                        </g>
+                        <defs>
+                            <clipPath id="clip0_54_2879">
+                                <rect width="16" height="16" fill="white" />
+                            </clipPath>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div data-layer="Nav" className="Nav size- flex justify-start items-center gap-8">
+            <div data-layer="Link" className="Link size- inline-flex flex-col justify-start items-end">
+                <div data-layer="المسابقات"
+                    className="text-right justify-center text-neutral-300 text-base font-normal font-['Tajawal'] leading-6">
+                    المسابقات</div>
+            </div>
+            <div data-layer="Link" className="Link size- inline-flex flex-col justify-start items-end">
+                <div data-layer="الفعاليات"
+                    className="text-right justify-center text-neutral-300 text-base font-normal font-['Tajawal'] leading-6">
+                    الفعاليات</div>
+            </div>
+            <div data-layer="Link" className="Link size- inline-flex flex-col justify-start items-end">
+                <div data-layer="المنح والفرص"
+                    className="text-right justify-center text-neutral-300 text-base font-normal font-['Tajawal'] leading-6">
+                    المنح والفرص</div>
+            </div>
+            <div data-layer="Link" className="Link size- inline-flex flex-col justify-start items-end">
+                <div data-layer="الدورات"
+                    className="text-right justify-center text-neutral-300 text-base font-normal font-['Tajawal'] leading-6">
+                    الدورات</div>
+            </div>
+            <div data-layer="Link" className="Link size- relative inline-flex flex-col justify-start items-end">
+                <div data-layer="الرئيسية"
+                    className="text-right justify-center text-orange-300 text-base font-bold font-['Tajawal'] leading-6">
+                    الرئيسية</div>
+                <div data-svg-wrapper data-layer="Horizontal Divider"
+                    className="HorizontalDivider left-0 top-[26px] absolute">
+                    <svg width="77" height="18" viewBox="0 0 77 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#filter0_d_54_2892)">
+                            <rect x="8" y="8" width="61" height="2" fill="#E5B65C" />
+                        </g>
+                        <defs>
+                            <filter id="filter0_d_54_2892" x="0" y="0" width="77" height="18"
+                                filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                                <feFlood flood-opacity="0" result="BackgroundImageFix" />
+                                <feColorMatrix in="SourceAlpha" type="matrix"
+                                    values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+                                <feOffset />
+                                <feGaussianBlur stdDeviation="4" />
+                                <feComposite in2="hardAlpha" operator="out" />
+                                <feColorMatrix type="matrix"
+                                    values="0 0 0 0 0.898039 0 0 0 0 0.713726 0 0 0 0 0.360784 0 0 0 1 0" />
+                                <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_54_2892" />
+                                <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_54_2892"
+                                    result="shape" />
+                            </filter>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div data-layer="Logo Container" className="LogoContainer size- flex justify-start items-center gap-4">
+            <div data-layer="Heading 1" className="Heading1 size- inline-flex flex-col justify-start items-end">
+                <div data-layer="أكاديمية خوارزم"
+                    className="text-right justify-center text-orange-300 text-xl font-bold font-['Inter'] leading-7">
+                    أكاديمية خوارزم</div>
+            </div>
+            <div data-svg-wrapper data-layer="أكاديمية خوارزم" className="relative">
+                <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <rect width="44" height="44" rx="22" fill="url(#pattern0_54_2896)" />
+                    <rect x="0.5" y="0.5" width="43" height="43" rx="21.5" stroke="#E5B65C" stroke-opacity="0.301961" />
+                    <defs>
+                        <pattern id="pattern0_54_2896" patternContentUnits="objectBoundingBox" width="1" height="1">
+                            <use xlink:href="#image0_54_2896"
+                                transform="matrix(0.00273959 0 0 0.00303951 -0.00271466 0)" />
+                        </pattern>
+                        <image id="image0_54_2896" width="367" height="329" preserveAspectRatio="none"
+                            xlink:href="data:image/jpeg;base64,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" />
+                    </defs>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div data-layer="Hero Section"
+        className="HeroSection self-stretch px-10 pt-12 pb-6 flex flex-col justify-start items-center gap-4">
+        <div data-layer="دليل المعرفة والمنح الدولية"
+            className="text-center justify-start text-white text-4xl font-bold font-['Inter']">دليل المعرفة والمنح
+            الدولية</div>
+        <div data-layer="البوابة الموحدة لاستكشاف أرقى الفرص التعليمية والمسارات الأكاديمية والمنح الممولة حول العالم."
+            className="w-[600px] text-center justify-start text-slate-400 text-base font-normal font-['Tajawal']">
+            البوابة الموحدة لاستكشاف أرقى الفرص التعليمية والمسارات الأكاديمية والمنح الممولة حول العالم.</div>
+    </div>
+    <div data-layer="Tab Switcher Row" className="TabSwitcherRow self-stretch h-24 relative">
+        <div data-layer="Smart Search Box"
+            className="SmartSearchBox size- px-2 py-2.5 left-[254.40px] top-[15px] absolute bg-blue-950/80 rounded-full shadow-[0px_8px_32px_0px_rgba(9,37,87,0.50)] outline outline-1 outline-offset-[-1px] outline-blue-900 backdrop-blur-[6px] inline-flex justify-start items-start gap-2">
+            <div data-layer="Submit Button"
+                className="SubmitButton size- p-3 bg-gradient-to-l from-sky-400 to-blue-600 rounded-full shadow-[0px_0px_15px_0px_rgba(41,169,255,0.40)] flex justify-center items-center">
+                <div data-svg-wrapper data-layer="Container" className="Container">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M5.5 14.5L12.5 12.5L14.5 5.5L7.5 7.5L5.5 14.5ZM10 11.5C9.58333 11.5 9.22917 11.3542 8.9375 11.0625C8.64583 10.7708 8.5 10.4167 8.5 10C8.5 9.58333 8.64583 9.22917 8.9375 8.9375C9.22917 8.64583 9.58333 8.5 10 8.5C10.4167 8.5 10.7708 8.64583 11.0625 8.9375C11.3542 9.22917 11.5 9.58333 11.5 10C11.5 10.4167 11.3542 10.7708 11.0625 11.0625C10.7708 11.3542 10.4167 11.5 10 11.5ZM10 20C8.61667 20 7.31667 19.7375 6.1 19.2125C4.88333 18.6875 3.825 17.975 2.925 17.075C2.025 16.175 1.3125 15.1167 0.7875 13.9C0.2625 12.6833 0 11.3833 0 10C0 8.61667 0.2625 7.31667 0.7875 6.1C1.3125 4.88333 2.025 3.825 2.925 2.925C3.825 2.025 4.88333 1.3125 6.1 0.7875C7.31667 0.2625 8.61667 0 10 0C11.3833 0 12.6833 0.2625 13.9 0.7875C15.1167 1.3125 16.175 2.025 17.075 2.925C17.975 3.825 18.6875 4.88333 19.2125 6.1C19.7375 7.31667 20 8.61667 20 10C20 11.3833 19.7375 12.6833 19.2125 13.9C18.6875 15.1167 17.975 16.175 17.075 17.075C16.175 17.975 15.1167 18.6875 13.9 19.2125C12.6833 19.7375 11.3833 20 10 20ZM10 18C12.2167 18 14.1042 17.2208 15.6625 15.6625C17.2208 14.1042 18 12.2167 18 10C18 7.78333 17.2208 5.89583 15.6625 4.3375C14.1042 2.77917 12.2167 2 10 2C7.78333 2 5.89583 2.77917 4.3375 4.3375C2.77917 5.89583 2 7.78333 2 10C2 12.2167 2.77917 14.1042 4.3375 15.6625C5.89583 17.2208 7.78333 18 10 18Z"
+                            fill="white" />
+                    </svg>
+                </div>
+            </div>
+            <div data-layer="Input" className="Input w-[488px] h-11 inline-flex flex-col justify-start items-start">
+                <div data-layer="Input"
+                    className="Input self-stretch px-4 pt-2.5 pb-3 inline-flex justify-center items-start overflow-hidden">
+                    <div data-layer="Container"
+                        className="Container flex-1 py-0.5 inline-flex flex-col justify-start items-end overflow-hidden">
+                        <div data-layer="Text"
+                            className="Text text-right justify-center text-slate-400/70 text-lg font-normal font-['Tajawal']">
+                            ماذا تبحث عنه؟</div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Toggle"
+                className="Toggle size- p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900/50 flex justify-start items-start">
+                <div data-layer="Button"
+                    className="Button size- px-9 py-2 bg-sky-400/20 rounded-full inline-flex flex-col justify-center items-center">
+                    <div data-layer="منحه"
+                        className="text-center justify-center text-sky-400 text-xs font-semibold font-['IBM_Plex_Sans'] leading-4">
+                        منحه</div>
+                </div>
+                <div data-layer="Button"
+                    className="Button size- px-9 py-2 rounded-full inline-flex flex-col justify-center items-center">
+                    <div data-layer="دوره"
+                        className="text-center justify-center text-slate-400 text-xs font-semibold font-['IBM_Plex_Sans'] leading-4">
+                        دوره</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div data-layer="Split Content Area"
+        className="SplitContentArea self-stretch px-10 pb-12 inline-flex justify-start items-start gap-8">
+        <div data-layer="Left Results Pane"
+            className="LeftResultsPane flex-1 inline-flex flex-col justify-start items-start gap-6">
+            <div data-layer="Results and Sorting"
+                className="ResultsAndSorting self-stretch inline-flex justify-between items-center">
+                <div data-layer="Sort Dropdown"
+                    className="SortDropdown size- px-4 py-2 bg-blue-950 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-center gap-2">
+                    <div data-svg-wrapper data-layer="chevron-down" className="ChevronDown relative">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="#8299B5" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div data-layer="الأحدث"
+                        className="justify-start text-slate-200 text-xs font-normal font-['Tajawal']">الأحدث</div>
+                    <div data-layer="ترتيب حسب:"
+                        className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">ترتيب حسب:</div>
+                </div>
+                <div data-layer="تم العثور على 42 نتيجة"
+                    className="42 justify-start text-slate-400 text-sm font-normal font-['Tajawal']">تم العثور على 42
+                    نتيجة</div>
+            </div>
+            <div data-layer="Card Grid"
+                className="CardGrid self-stretch h-24 inline-flex flex-col justify-start items-start">
+                <div data-layer="Course Card"
+                    className="CourseCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex flex-col justify-start items-start overflow-hidden">
+                    <div data-layer="Thumbnail Area"
+                        className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                        <img data-layer="Rectangle" className="Rectangle w-72 h-36 left-0 top-0 absolute opacity-30"
+                            src="https://placehold.co/283x150" />
+                        <div data-layer="Glow Overlay" className="GlowOverlay w-72 h-36 left-0 top-0 absolute" />
+                        <div data-layer="Icon Container"
+                            className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                            <div data-svg-wrapper data-layer="play" className="Play relative">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M4.39011 3.33193C4.24323 3.58574 4.16593 3.87381 4.16602 4.16705V15.8329C4.16593 16.1262 4.24323 16.4143 4.39011 16.6681C4.537 16.9219 4.74826 17.1325 5.00258 17.2785C5.25689 17.4246 5.54525 17.501 5.83855 17.5C6.13184 17.499 6.41967 17.4206 6.67299 17.2729L16.6742 11.4399C16.9263 11.2931 17.1354 11.0827 17.2807 10.8297C17.4259 10.5768 17.5023 10.2901 17.502 9.99845C17.5018 9.70677 17.4249 9.42026 17.2792 9.16756C17.1335 8.91486 16.9241 8.70482 16.6717 8.55843L6.67299 2.72715C6.41967 2.57935 6.13184 2.50101 5.83855 2.50001C5.54525 2.49901 5.25689 2.57541 5.00258 2.72148C4.74826 2.86754 4.537 3.07812 4.39011 3.33193Z"
+                                        stroke="#29A9FF" stroke-width="2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div data-layer="Progress Badge"
+                            className="ProgressBadge size- px-2 py-1 left-[12px] top-[12px] absolute bg-slate-900 rounded-md outline outline-1 outline-offset-[-1px] outline-sky-400 flex justify-start items-start">
+                            <div data-layer="مستمر (40%)"
+                                className="40 justify-start text-sky-400 text-xs font-normal font-['Inter']">مستمر (40%)
+                            </div>
+                        </div>
+                    </div>
+                    <div data-layer="Tech Gradient Accent" className="TechGradientAccent self-stretch h-[3px]" />
+                    <div data-layer="Content"
+                        className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                        <div data-layer="Header Row"
+                            className="HeaderRow self-stretch inline-flex justify-between items-center">
+                            <div data-layer="ذكاء اصطناعي"
+                                className="justify-start text-sky-400 text-xs font-medium font-['Tajawal']">ذكاء اصطناعي
+                            </div>
+                            <div data-layer="Frame" className="Frame size- flex justify-start items-center gap-1">
+                                <div data-layer="4.9"
+                                    className="9 justify-start text-orange-300 text-xs font-normal font-['Tajawal']">4.9
+                                </div>
+                                <div data-svg-wrapper data-layer="star" className="Star relative">
+                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <g clip-path="url(#clip0_54_2940)">
+                                            <path
+                                                d="M5.86064 1.03937C5.81867 1.06542 5.78482 1.10269 5.76291 1.14696L4.60841 3.48646C4.53226 3.64059 4.4198 3.77392 4.2807 3.87495C4.14161 3.97599 3.98004 4.04171 3.80991 4.06646L1.22741 4.44396C1.17826 4.45091 1.13205 4.47152 1.09405 4.50345C1.05605 4.53538 1.02777 4.57734 1.01245 4.62455C0.99713 4.67177 0.995377 4.72233 1.00739 4.7705C1.01941 4.81866 1.04471 4.86247 1.08041 4.89696L2.94841 6.71546C3.07172 6.83554 3.16396 6.98381 3.21718 7.14748C3.2704 7.31116 3.28301 7.48532 3.25391 7.65496L2.81341 10.2245C2.80484 10.2733 2.81015 10.3236 2.82874 10.3696C2.84733 10.4156 2.87845 10.4554 2.91856 10.4846C2.95867 10.5137 3.00616 10.5311 3.05564 10.5346C3.10511 10.5381 3.15458 10.5277 3.19841 10.5045L5.50691 9.29046C5.65905 9.21057 5.82832 9.16883 6.00016 9.16883C6.172 9.16883 6.34127 9.21057 6.49341 9.29046L8.80241 10.5045C8.84626 10.5278 8.89579 10.5384 8.94534 10.5349C8.9949 10.5315 9.04249 10.5141 9.08268 10.485C9.12288 10.4558 9.15405 10.4159 9.17266 10.3698C9.19127 10.3237 9.19655 10.2734 9.18791 10.2245L8.74691 7.65446C8.71794 7.4849 8.73061 7.31085 8.78383 7.14727C8.83705 6.9837 8.92922 6.83551 9.05241 6.71546L10.9204 4.89646C10.9558 4.86193 10.9809 4.81819 10.9927 4.77018C11.0045 4.72216 11.0027 4.67179 10.9874 4.62476C10.9721 4.57773 10.944 4.53592 10.9062 4.50406C10.8683 4.47219 10.8224 4.45155 10.7734 4.44446L8.19041 4.06646C8.02047 4.04152 7.85913 3.97571 7.72022 3.87469C7.58132 3.77366 7.469 3.64044 7.39291 3.48646L6.23791 1.14696C6.216 1.10269 6.18215 1.06542 6.14019 1.03937C6.09822 1.01332 6.04981 0.999512 6.00041 0.999512C5.95102 0.999512 5.9026 1.01332 5.86064 1.03937Z"
+                                                stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                                        </g>
+                                        <defs>
+                                            <clipPath id="clip0_54_2940">
+                                                <rect width="12" height="12" fill="white" />
+                                            </clipPath>
+                                        </defs>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div data-layer="أساسيات الذكاء الاصطناعي وتعلم الآلة"
+                            className="self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                            أساسيات الذكاء الاصطناعي وتعلم الآلة</div>
+                        <div data-layer="أ. د. أحمد خوارزم • 6 أسابيع • 14 درسًا"
+                            className="614 self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                            أ. د. أحمد خوارزم • 6 أسابيع • 14 درسًا</div>
+                        <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                        <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                            <div data-layer="Badge Level"
+                                className="BadgeLevel size- px-2 py-1 bg-sky-400/10 rounded-lg flex justify-start items-start">
+                                <div data-layer="مبتدئ"
+                                    className="justify-start text-sky-400 text-xs font-normal font-['Tajawal']">مبتدئ
+                                </div>
+                            </div>
+                            <div data-layer="محررة / مجانية"
+                                className="justify-start text-white text-sm font-bold font-['Inter']">محررة / مجانية
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div data-layer="Scholarship Card"
+                    className="ScholarshipCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex flex-col justify-start items-start overflow-hidden">
+                    <div data-layer="Thumbnail Area"
+                        className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                        <img data-layer="Rectangle" className="Rectangle w-72 h-36 left-0 top-0 absolute opacity-30"
+                            src="https://placehold.co/283x150" />
+                        <div data-layer="Glow Overlay" className="GlowOverlay w-72 h-36 left-0 top-0 absolute" />
+                        <div data-layer="Icon Container"
+                            className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                            <div data-svg-wrapper data-layer="award" className="Award relative">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M12.8977 10.7407L14.1602 17.8457C14.1743 17.9294 14.1626 18.0154 14.1266 18.0922C14.0905 18.169 14.0319 18.233 13.9585 18.2756C13.8851 18.3181 13.8004 18.3373 13.7159 18.3305C13.6313 18.3237 13.5508 18.2912 13.4852 18.2374L10.5019 15.9982C10.3578 15.8906 10.1829 15.8325 10.0031 15.8325C9.82334 15.8325 9.64839 15.8906 9.50437 15.9982L6.51603 18.2366C6.45047 18.2903 6.37008 18.3227 6.28561 18.3295C6.20114 18.3363 6.11659 18.3172 6.04325 18.2748C5.96991 18.2323 5.91126 18.1685 5.87513 18.0918C5.839 18.0152 5.82711 17.9293 5.84103 17.8457L7.1027 10.7407M15 6.66602C15 9.42744 12.7614 11.666 10 11.666C7.23858 11.666 5 9.42744 5 6.66602C5 3.90459 7.23858 1.66602 10 1.66602C12.7614 1.66602 15 3.90459 15 6.66602Z"
+                                        stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div data-layer="Deadline Badge"
+                            className="DeadlineBadge size- px-2 py-1 left-[12px] top-[12px] absolute bg-slate-900 rounded-md outline outline-1 outline-offset-[-1px] outline-red-500 flex justify-start items-start">
+                            <div data-layer="متبقي 3 أيام"
+                                className="3 justify-start text-red-500 text-xs font-normal font-['Inter']">متبقي 3 أيام
+                            </div>
+                        </div>
+                    </div>
+                    <div data-layer="Gold Top Accent" className="GoldTopAccent self-stretch h-[3px]" />
+                    <div data-layer="Content"
+                        className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                        <div data-layer="Header Row"
+                            className="HeaderRow self-stretch inline-flex justify-between items-center">
+                            <div data-layer="هندسة وحاسب"
+                                className="justify-start text-orange-300 text-xs font-medium font-['Tajawal']">هندسة
+                                وحاسب</div>
+                            <div data-layer="المملكة العربية السعودية"
+                                className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">المملكة
+                                العربية السعودية</div>
+                        </div>
+                        <div data-layer="منحة التميز العلمي للدراسات العليا - جامعة KAUST"
+                            className="Kaust self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                            منحة التميز العلمي للدراسات العليا - جامعة KAUST</div>
+                        <div data-layer="الجهة المانحة • المملكة العربية السعودية • ماجستير / دكتوراه"
+                            className="self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                            الجهة المانحة • المملكة العربية السعودية • ماجستير / دكتوراه</div>
+                        <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                        <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                            <div data-layer="Badge Coverage"
+                                className="BadgeCoverage size- px-2 py-1 bg-orange-300/10 rounded-lg flex justify-start items-start">
+                                <div data-layer="تمويل كامل"
+                                    className="justify-start text-orange-300 text-xs font-normal font-['Tajawal']">تمويل
+                                    كامل</div>
+                            </div>
+                            <div data-layer="ماجستير / دكتوراه"
+                                className="justify-start text-orange-300 text-sm font-bold font-['Inter']">ماجستير /
+                                دكتوراه</div>
+                        </div>
+                    </div>
+                </div>
+                <div data-layer="Course Card"
+                    className="CourseCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex flex-col justify-start items-start overflow-hidden">
+                    <div data-layer="Thumbnail Area"
+                        className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                        <img data-layer="Rectangle" className="Rectangle w-72 h-36 left-0 top-0 absolute opacity-30"
+                            src="https://placehold.co/283x150" />
+                        <div data-layer="Glow Overlay" className="GlowOverlay w-72 h-36 left-0 top-0 absolute" />
+                        <div data-layer="Icon Container"
+                            className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                            <div data-svg-wrapper data-layer="play" className="Play relative">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M4.39011 3.33193C4.24323 3.58574 4.16593 3.87381 4.16602 4.16705V15.8329C4.16593 16.1262 4.24323 16.4143 4.39011 16.6681C4.537 16.9219 4.74826 17.1325 5.00258 17.2785C5.25689 17.4246 5.54525 17.501 5.83855 17.5C6.13184 17.499 6.41967 17.4206 6.67299 17.2729L16.6742 11.4399C16.9263 11.2931 17.1354 11.0827 17.2807 10.8297C17.4259 10.5768 17.5023 10.2901 17.502 9.99845C17.5018 9.70677 17.4249 9.42026 17.2792 9.16756C17.1335 8.91486 16.9241 8.70482 16.6717 8.55843L6.67299 2.72715C6.41967 2.57935 6.13184 2.50101 5.83855 2.50001C5.54525 2.49901 5.25689 2.57541 5.00258 2.72148C4.74826 2.86754 4.537 3.07812 4.39011 3.33193Z"
+                                        stroke="#29A9FF" stroke-width="2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div data-layer="Tech Gradient Accent" className="TechGradientAccent self-stretch h-[3px]" />
+                    <div data-layer="Content"
+                        className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                        <div data-layer="Header Row"
+                            className="HeaderRow self-stretch inline-flex justify-between items-center">
+                            <div data-layer="برمجة الويب"
+                                className="justify-start text-sky-400 text-xs font-medium font-['Tajawal']">برمجة الويب
+                            </div>
+                            <div data-layer="Frame" className="Frame size- flex justify-start items-center gap-1">
+                                <div data-layer="4.8"
+                                    className="8 justify-start text-orange-300 text-xs font-normal font-['Tajawal']">4.8
+                                </div>
+                                <div data-svg-wrapper data-layer="star" className="Star relative">
+                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <g clip-path="url(#clip0_54_2983)">
+                                            <path
+                                                d="M5.86064 1.03937C5.81867 1.06542 5.78482 1.10269 5.76291 1.14696L4.60841 3.48646C4.53226 3.64059 4.4198 3.77392 4.2807 3.87495C4.14161 3.97599 3.98004 4.04171 3.80991 4.06646L1.22741 4.44396C1.17826 4.45091 1.13205 4.47152 1.09405 4.50345C1.05605 4.53538 1.02777 4.57734 1.01245 4.62455C0.99713 4.67177 0.995377 4.72233 1.00739 4.7705C1.01941 4.81866 1.04471 4.86247 1.08041 4.89696L2.94841 6.71546C3.07172 6.83554 3.16396 6.98381 3.21718 7.14748C3.2704 7.31116 3.28301 7.48532 3.25391 7.65496L2.81341 10.2245C2.80484 10.2733 2.81015 10.3236 2.82874 10.3696C2.84733 10.4156 2.87845 10.4554 2.91856 10.4846C2.95867 10.5137 3.00616 10.5311 3.05564 10.5346C3.10511 10.5381 3.15458 10.5277 3.19841 10.5045L5.50691 9.29046C5.65905 9.21057 5.82832 9.16883 6.00016 9.16883C6.172 9.16883 6.34127 9.21057 6.49341 9.29046L8.80241 10.5045C8.84626 10.5278 8.89579 10.5384 8.94534 10.5349C8.9949 10.5315 9.04249 10.5141 9.08268 10.485C9.12288 10.4558 9.15405 10.4159 9.17266 10.3698C9.19127 10.3237 9.19655 10.2734 9.18791 10.2245L8.74691 7.65446C8.71794 7.4849 8.73061 7.31085 8.78383 7.14727C8.83705 6.9837 8.92922 6.83551 9.05241 6.71546L10.9204 4.89646C10.9558 4.86193 10.9809 4.81819 10.9927 4.77018C11.0045 4.72216 11.0027 4.67179 10.9874 4.62476C10.9721 4.57773 10.944 4.53592 10.9062 4.50406C10.8683 4.47219 10.8224 4.45155 10.7734 4.44446L8.19041 4.06646C8.02047 4.04152 7.85913 3.97571 7.72022 3.87469C7.58132 3.77366 7.469 3.64044 7.39291 3.48646L6.23791 1.14696C6.216 1.10269 6.18215 1.06542 6.14019 1.03937C6.09822 1.01332 6.04981 0.999512 6.00041 0.999512C5.95102 0.999512 5.9026 1.01332 5.86064 1.03937Z"
+                                                stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                                        </g>
+                                        <defs>
+                                            <clipPath id="clip0_54_2983">
+                                                <rect width="12" height="12" fill="white" />
+                                            </clipPath>
+                                        </defs>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div data-layer="تطوير تطبيقات الويب المتكاملة بـ React & Node.js"
+                            className="ReactNodeJs self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                            تطوير تطبيقات الويب المتكاملة بـ React &amp; Node.js</div>
+                        <div data-layer="م. سليم الحربي • 10 أسابيع • 32 درسًا"
+                            className="1032 self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                            م. سليم الحربي • 10 أسابيع • 32 درسًا</div>
+                        <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                        <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                            <div data-layer="Badge Level"
+                                className="BadgeLevel size- px-2 py-1 bg-sky-400/10 rounded-lg flex justify-start items-start">
+                                <div data-layer="متوسط"
+                                    className="justify-start text-sky-400 text-xs font-normal font-['Tajawal']">متوسط
+                                </div>
+                            </div>
+                            <div data-layer="مدفوعة"
+                                className="justify-start text-white text-sm font-bold font-['Inter']">مدفوعة</div>
+                        </div>
+                    </div>
+                </div>
+                <div data-layer="Scholarship Card"
+                    className="ScholarshipCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex flex-col justify-start items-start overflow-hidden">
+                    <div data-layer="Thumbnail Area"
+                        className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                        <img data-layer="Rectangle" className="Rectangle w-72 h-36 left-0 top-0 absolute opacity-30"
+                            src="https://placehold.co/283x150" />
+                        <div data-layer="Glow Overlay" className="GlowOverlay w-72 h-36 left-0 top-0 absolute" />
+                        <div data-layer="Icon Container"
+                            className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                            <div data-svg-wrapper data-layer="award" className="Award relative">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M12.8977 10.7407L14.1602 17.8457C14.1743 17.9294 14.1626 18.0154 14.1266 18.0922C14.0905 18.169 14.0319 18.233 13.9585 18.2756C13.8851 18.3181 13.8004 18.3373 13.7159 18.3305C13.6313 18.3237 13.5508 18.2912 13.4852 18.2374L10.5019 15.9982C10.3578 15.8906 10.1829 15.8325 10.0031 15.8325C9.82334 15.8325 9.64839 15.8906 9.50437 15.9982L6.51603 18.2366C6.45047 18.2903 6.37008 18.3227 6.28561 18.3295C6.20114 18.3363 6.11659 18.3172 6.04325 18.2748C5.96991 18.2323 5.91126 18.1685 5.87513 18.0918C5.839 18.0152 5.82711 17.9293 5.84103 17.8457L7.1027 10.7407M15 6.66602C15 9.42744 12.7614 11.666 10 11.666C7.23858 11.666 5 9.42744 5 6.66602C5 3.90459 7.23858 1.66602 10 1.66602C12.7614 1.66602 15 3.90459 15 6.66602Z"
+                                        stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div data-layer="Deadline Badge"
+                            className="DeadlineBadge size- px-2 py-1 left-[12px] top-[12px] absolute bg-slate-900 rounded-md outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                            <div data-layer="متبقي 12 يومًا"
+                                className="12 justify-start text-slate-400 text-xs font-normal font-['Inter']">متبقي 12
+                                يومًا</div>
+                        </div>
+                    </div>
+                    <div data-layer="Gold Top Accent" className="GoldTopAccent self-stretch h-[3px]" />
+                    <div data-layer="Content"
+                        className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                        <div data-layer="Header Row"
+                            className="HeaderRow self-stretch inline-flex justify-between items-center">
+                            <div data-layer="جميع التخصصات"
+                                className="justify-start text-orange-300 text-xs font-medium font-['Tajawal']">جميع
+                                التخصصات</div>
+                            <div data-layer="تركيا"
+                                className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">تركيا
+                            </div>
+                        </div>
+                        <div data-layer="منحة الحكومة التركية لدراسة البكالوريوس التقني"
+                            className="self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                            منحة الحكومة التركية لدراسة البكالوريوس التقني</div>
+                        <div data-layer="الجهة المانحة • تركيا • بكالوريوس"
+                            className="self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                            الجهة المانحة • تركيا • بكالوريوس</div>
+                        <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                        <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                            <div data-layer="Badge Coverage"
+                                className="BadgeCoverage size- px-2 py-1 bg-orange-300/10 rounded-lg flex justify-start items-start">
+                                <div data-layer="تمويل كامل + سكن"
+                                    className="justify-start text-orange-300 text-xs font-normal font-['Tajawal']">تمويل
+                                    كامل + سكن</div>
+                            </div>
+                            <div data-layer="بكالوريوس"
+                                className="justify-start text-orange-300 text-sm font-bold font-['Inter']">بكالوريوس
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div data-layer="Course Card"
+                    className="CourseCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex flex-col justify-start items-start overflow-hidden">
+                    <div data-layer="Thumbnail Area"
+                        className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                        <img data-layer="Rectangle" className="Rectangle w-72 h-36 left-0 top-0 absolute opacity-30"
+                            src="https://placehold.co/283x150" />
+                        <div data-layer="Glow Overlay" className="GlowOverlay w-72 h-36 left-0 top-0 absolute" />
+                        <div data-layer="Icon Container"
+                            className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                            <div data-svg-wrapper data-layer="play" className="Play relative">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M4.39011 3.33193C4.24323 3.58574 4.16593 3.87381 4.16602 4.16705V15.8329C4.16593 16.1262 4.24323 16.4143 4.39011 16.6681C4.537 16.9219 4.74826 17.1325 5.00258 17.2785C5.25689 17.4246 5.54525 17.501 5.83855 17.5C6.13184 17.499 6.41967 17.4206 6.67299 17.2729L16.6742 11.4399C16.9263 11.2931 17.1354 11.0827 17.2807 10.8297C17.4259 10.5768 17.5023 10.2901 17.502 9.99845C17.5018 9.70677 17.4249 9.42026 17.2792 9.16756C17.1335 8.91486 16.9241 8.70482 16.6717 8.55843L6.67299 2.72715C6.41967 2.57935 6.13184 2.50101 5.83855 2.50001C5.54525 2.49901 5.25689 2.57541 5.00258 2.72148C4.74826 2.86754 4.537 3.07812 4.39011 3.33193Z"
+                                        stroke="#29A9FF" stroke-width="2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div data-layer="Tech Gradient Accent" className="TechGradientAccent self-stretch h-[3px]" />
+                    <div data-layer="Content"
+                        className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                        <div data-layer="Header Row"
+                            className="HeaderRow self-stretch inline-flex justify-between items-center">
+                            <div data-layer="علوم الحاسوب"
+                                className="justify-start text-sky-400 text-xs font-medium font-['Tajawal']">علوم الحاسوب
+                            </div>
+                            <div data-layer="Frame" className="Frame size- flex justify-start items-center gap-1">
+                                <div data-layer="5.0"
+                                    className="0 justify-start text-orange-300 text-xs font-normal font-['Tajawal']">5.0
+                                </div>
+                                <div data-svg-wrapper data-layer="star" className="Star relative">
+                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <g clip-path="url(#clip0_54_3026)">
+                                            <path
+                                                d="M5.86064 1.03937C5.81867 1.06542 5.78482 1.10269 5.76291 1.14696L4.60841 3.48646C4.53226 3.64059 4.4198 3.77392 4.2807 3.87495C4.14161 3.97599 3.98004 4.04171 3.80991 4.06646L1.22741 4.44396C1.17826 4.45091 1.13205 4.47152 1.09405 4.50345C1.05605 4.53538 1.02777 4.57734 1.01245 4.62455C0.99713 4.67177 0.995377 4.72233 1.00739 4.7705C1.01941 4.81866 1.04471 4.86247 1.08041 4.89696L2.94841 6.71546C3.07172 6.83554 3.16396 6.98381 3.21718 7.14748C3.2704 7.31116 3.28301 7.48532 3.25391 7.65496L2.81341 10.2245C2.80484 10.2733 2.81015 10.3236 2.82874 10.3696C2.84733 10.4156 2.87845 10.4554 2.91856 10.4846C2.95867 10.5137 3.00616 10.5311 3.05564 10.5346C3.10511 10.5381 3.15458 10.5277 3.19841 10.5045L5.50691 9.29046C5.65905 9.21057 5.82832 9.16883 6.00016 9.16883C6.172 9.16883 6.34127 9.21057 6.49341 9.29046L8.80241 10.5045C8.84626 10.5278 8.89579 10.5384 8.94534 10.5349C8.9949 10.5315 9.04249 10.5141 9.08268 10.485C9.12288 10.4558 9.15405 10.4159 9.17266 10.3698C9.19127 10.3237 9.19655 10.2734 9.18791 10.2245L8.74691 7.65446C8.71794 7.4849 8.73061 7.31085 8.78383 7.14727C8.83705 6.9837 8.92922 6.83551 9.05241 6.71546L10.9204 4.89646C10.9558 4.86193 10.9809 4.81819 10.9927 4.77018C11.0045 4.72216 11.0027 4.67179 10.9874 4.62476C10.9721 4.57773 10.944 4.53592 10.9062 4.50406C10.8683 4.47219 10.8224 4.45155 10.7734 4.44446L8.19041 4.06646C8.02047 4.04152 7.85913 3.97571 7.72022 3.87469C7.58132 3.77366 7.469 3.64044 7.39291 3.48646L6.23791 1.14696C6.216 1.10269 6.18215 1.06542 6.14019 1.03937C6.09822 1.01332 6.04981 0.999512 6.00041 0.999512C5.95102 0.999512 5.9026 1.01332 5.86064 1.03937Z"
+                                                stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                                        </g>
+                                        <defs>
+                                            <clipPath id="clip0_54_3026">
+                                                <rect width="12" height="12" fill="white" />
+                                            </clipPath>
+                                        </defs>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div data-layer="خوارزميات وهياكل البيانات المتقدمة"
+                            className="self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                            خوارزميات وهياكل البيانات المتقدمة</div>
+                        <div data-layer="أ. خالد النجار • 8 أسابيع • 24 درسًا"
+                            className="824 self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                            أ. خالد النجار • 8 أسابيع • 24 درسًا</div>
+                        <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                        <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                            <div data-layer="Badge Level"
+                                className="BadgeLevel size- px-2 py-1 bg-sky-400/10 rounded-lg flex justify-start items-start">
+                                <div data-layer="متقدم"
+                                    className="justify-start text-sky-400 text-xs font-normal font-['Tajawal']">متقدم
+                                </div>
+                            </div>
+                            <div data-layer="مجانية"
+                                className="justify-start text-white text-sm font-bold font-['Inter']">مجانية</div>
+                        </div>
+                    </div>
+                </div>
+                <div data-layer="Scholarship Card"
+                    className="ScholarshipCard self-stretch bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex flex-col justify-start items-start overflow-hidden">
+                    <div data-layer="Thumbnail Area"
+                        className="ThumbnailArea self-stretch h-36 relative bg-slate-900 inline-flex justify-center items-center">
+                        <img data-layer="Rectangle" className="Rectangle w-72 h-36 left-0 top-0 absolute opacity-30"
+                            src="https://placehold.co/283x150" />
+                        <div data-layer="Glow Overlay" className="GlowOverlay w-72 h-36 left-0 top-0 absolute" />
+                        <div data-layer="Icon Container"
+                            className="IconContainer size- p-2 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                            <div data-svg-wrapper data-layer="award" className="Award relative">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M12.8977 10.7407L14.1602 17.8457C14.1743 17.9294 14.1626 18.0154 14.1266 18.0922C14.0905 18.169 14.0319 18.233 13.9585 18.2756C13.8851 18.3181 13.8004 18.3373 13.7159 18.3305C13.6313 18.3237 13.5508 18.2912 13.4852 18.2374L10.5019 15.9982C10.3578 15.8906 10.1829 15.8325 10.0031 15.8325C9.82334 15.8325 9.64839 15.8906 9.50437 15.9982L6.51603 18.2366C6.45047 18.2903 6.37008 18.3227 6.28561 18.3295C6.20114 18.3363 6.11659 18.3172 6.04325 18.2748C5.96991 18.2323 5.91126 18.1685 5.87513 18.0918C5.839 18.0152 5.82711 17.9293 5.84103 17.8457L7.1027 10.7407M15 6.66602C15 9.42744 12.7614 11.666 10 11.666C7.23858 11.666 5 9.42744 5 6.66602C5 3.90459 7.23858 1.66602 10 1.66602C12.7614 1.66602 15 3.90459 15 6.66602Z"
+                                        stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div data-layer="Deadline Badge"
+                            className="DeadlineBadge size- px-2 py-1 left-[12px] top-[12px] absolute bg-slate-900 rounded-md outline outline-1 outline-offset-[-1px] outline-orange-400 flex justify-start items-start">
+                            <div data-layer="متبقي 5 أيام"
+                                className="5 justify-start text-orange-400 text-xs font-normal font-['Inter']">متبقي 5
+                                أيام</div>
+                        </div>
+                    </div>
+                    <div data-layer="Gold Top Accent" className="GoldTopAccent self-stretch h-[3px]" />
+                    <div data-layer="Content"
+                        className="Content self-stretch p-4 flex flex-col justify-start items-start gap-3">
+                        <div data-layer="Header Row"
+                            className="HeaderRow self-stretch inline-flex justify-between items-center">
+                            <div data-layer="علوم الفضاء والابتكار"
+                                className="justify-start text-orange-300 text-xs font-medium font-['Tajawal']">علوم
+                                الفضاء والابتكار</div>
+                            <div data-layer="الولايات المتحدة الأمريكية"
+                                className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">الولايات
+                                المتحدة الأمريكية</div>
+                        </div>
+                        <div data-layer="برنامج الابتعاث الثقافي الدولي لعلوم الفضاء"
+                            className="self-stretch text-right justify-start text-white text-base font-bold font-['Inter'] line-clamp-1">
+                            برنامج الابتعاث الثقافي الدولي لعلوم الفضاء</div>
+                        <div data-layer="الجهة المانحة • الولايات المتحدة الأمريكية • بكالوريوس / ماجستير"
+                            className="self-stretch text-right justify-start text-slate-400 text-xs font-normal font-['Tajawal']">
+                            الجهة المانحة • الولايات المتحدة الأمريكية • بكالوريوس / ماجستير</div>
+                        <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900/50"></div>
+                        <div data-layer="Frame" className="Frame self-stretch inline-flex justify-between items-center">
+                            <div data-layer="Badge Coverage"
+                                className="BadgeCoverage size- px-2 py-1 bg-orange-300/10 rounded-lg flex justify-start items-start">
+                                <div data-layer="رسوم كاملة + راتب"
+                                    className="justify-start text-orange-300 text-xs font-normal font-['Tajawal']">رسوم
+                                    كاملة + راتب</div>
+                            </div>
+                            <div data-layer="بكالوريوس / ماجستير"
+                                className="justify-start text-orange-300 text-sm font-bold font-['Inter']">بكالوريوس /
+                                ماجستير</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Pagination"
+                className="Pagination self-stretch inline-flex justify-center items-center gap-2">
+                <div data-layer="Nav Arrow"
+                    className="NavArrow size- p-2 bg-blue-950 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                    <div data-svg-wrapper data-layer="chevron-left" className="ChevronLeft relative">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8.75 10.5L5.25 7L8.75 3.5" stroke="#8299B5" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                </div>
+                <div data-layer="Page Num"
+                    className="PageNum size- px-3.5 py-2 bg-blue-950 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                    <div data-layer="3" className="justify-start text-slate-400 text-sm font-normal font-['Tajawal']">3
+                    </div>
+                </div>
+                <div data-layer="Page Num"
+                    className="PageNum size- px-3.5 py-2 bg-blue-950 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                    <div data-layer="2" className="justify-start text-slate-400 text-sm font-normal font-['Tajawal']">2
+                    </div>
+                </div>
+                <div data-layer="Page Num"
+                    className="PageNum size- px-3.5 py-2 bg-orange-300/10 rounded-lg outline outline-1 outline-offset-[-1px] outline-orange-300 flex justify-start items-start">
+                    <div data-layer="1" className="justify-start text-orange-300 text-sm font-bold font-['Tajawal']">1
+                    </div>
+                </div>
+                <div data-layer="Nav Arrow"
+                    className="NavArrow size- p-2 bg-blue-950 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                    <div data-svg-wrapper data-layer="chevron-right" className="ChevronRight relative">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5.25 10.5L8.75 7L5.25 3.5" stroke="#8299B5" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div data-layer="Right Filter Sidebar"
+            className="RightFilterSidebar w-72 p-6 bg-blue-950 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 inline-flex flex-col justify-start items-start gap-6">
+            <div data-layer="Sidebar Header"
+                className="SidebarHeader self-stretch pb-3 border-b border-blue-900/50 inline-flex justify-between items-center">
+                <div data-layer="إعادة ضبط"
+                    className="justify-start text-orange-300 text-xs font-medium font-['Tajawal']">إعادة ضبط</div>
+                <div data-layer="Frame" className="Frame size- flex justify-start items-center gap-2">
+                    <div data-layer="تصفية النتائج"
+                        className="justify-start text-white text-base font-bold font-['Inter']">تصفية النتائج</div>
+                    <div data-svg-wrapper data-layer="filter" className="Filter relative">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g clip-path="url(#clip0_54_3074)">
+                                <path
+                                    d="M6.76615 13.6843C6.70102 13.5789 6.66656 13.4574 6.66661 13.3335V9.33346C6.66646 9.00304 6.54363 8.68445 6.32191 8.43945L1.50478 3.11335C1.41839 3.01764 1.36161 2.89893 1.34132 2.77161C1.32102 2.64428 1.33809 2.51381 1.39044 2.39598C1.4428 2.27816 1.5282 2.17804 1.6363 2.10776C1.7444 2.03748 1.87056 2.00005 1.9995 2H14.0007C14.1295 2.0003 14.2555 2.03792 14.3634 2.1083C14.4713 2.17868 14.5565 2.27882 14.6086 2.39659C14.6608 2.51436 14.6778 2.64473 14.6574 2.77194C14.6371 2.89914 14.5803 3.01772 14.494 3.11335L9.67824 8.43945C9.45652 8.68445 9.33369 9.00304 9.33354 9.33346V14.0002C9.33359 14.1139 9.30458 14.2256 9.24928 14.3249C9.19397 14.4242 9.11419 14.5077 9.01753 14.5675C8.92086 14.6273 8.81052 14.6614 8.69697 14.6665C8.58343 14.6717 8.47045 14.6477 8.36878 14.5969L7.03532 13.9302C6.92448 13.8748 6.83127 13.7897 6.76615 13.6843Z"
+                                    stroke="#E5B65C" stroke-width="2" stroke-linecap="round" />
+                            </g>
+                            <defs>
+                                <clipPath id="clip0_54_3074">
+                                    <rect width="16" height="16" fill="white" />
+                                </clipPath>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Filter Category"
+                className="FilterCategory self-stretch flex flex-col justify-start items-start gap-3">
+                <div data-layer="المجال"
+                    className="self-stretch text-right justify-start text-white text-sm font-bold font-['Inter']">المجال
+                </div>
+                <div data-layer="Tags Grid"
+                    className="TagsGrid self-stretch inline-flex justify-end items-start gap-2 flex-wrap content-start">
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-orange-300/10 rounded-lg outline outline-1 outline-offset-[-1px] outline-orange-300 flex justify-start items-start">
+                        <div data-layer="الكل"
+                            className="justify-start text-orange-300 text-xs font-normal font-['Tajawal']">الكل</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="ذكاء اصطناعي"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">ذكاء اصطناعي
+                        </div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="برمجة"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">برمجة</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="أمن سيبراني"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">أمن سيبراني
+                        </div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="فضاء"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">فضاء</div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Filter Category"
+                className="FilterCategory self-stretch flex flex-col justify-start items-start gap-3">
+                <div data-layer="المستوى التعليمي"
+                    className="self-stretch text-right justify-start text-white text-sm font-bold font-['Inter']">
+                    المستوى التعليمي</div>
+                <div data-layer="Tags Grid"
+                    className="TagsGrid self-stretch inline-flex justify-end items-start gap-2 flex-wrap content-start">
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="بكالوريوس"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">بكالوريوس
+                        </div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="ماجستير"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">ماجستير</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="دكتوراه"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">دكتوراه</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="دورات تدريبية"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">دورات تدريبية
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Filter Category"
+                className="FilterCategory self-stretch flex flex-col justify-start items-start gap-3">
+                <div data-layer="اللغة"
+                    className="self-stretch text-right justify-start text-white text-sm font-bold font-['Inter']">اللغة
+                </div>
+                <div data-layer="Tags Grid"
+                    className="TagsGrid self-stretch inline-flex justify-end items-start gap-2 flex-wrap content-start">
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="العربية"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">العربية</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="الإنجليزية"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">الإنجليزية
+                        </div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="الفرنسية"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">الفرنسية</div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Filter Category"
+                className="FilterCategory self-stretch flex flex-col justify-start items-start gap-3">
+                <div data-layer="التكلفة"
+                    className="self-stretch text-right justify-start text-white text-sm font-bold font-['Inter']">
+                    التكلفة</div>
+                <div data-layer="Tags Grid"
+                    className="TagsGrid self-stretch inline-flex justify-end items-start gap-2 flex-wrap content-start">
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="الكل"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">الكل</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="مجانية"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">مجانية</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="مدفوعة"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">مدفوعة</div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Filter Category"
+                className="FilterCategory self-stretch flex flex-col justify-start items-start gap-3">
+                <div data-layer="البلد المتاح"
+                    className="self-stretch text-right justify-start text-white text-sm font-bold font-['Inter']">البلد
+                    المتاح</div>
+                <div data-layer="Tags Grid"
+                    className="TagsGrid self-stretch inline-flex justify-end items-start gap-2 flex-wrap content-start">
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="السعودية"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">السعودية</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="أمريكا"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">أمريكا</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="تركيا"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">تركيا</div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="بريطانيا"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">بريطانيا</div>
+                    </div>
+                </div>
+            </div>
+            <div data-layer="Filter Category"
+                className="FilterCategory self-stretch flex flex-col justify-start items-start gap-3">
+                <div data-layer="حالة التقديم"
+                    className="self-stretch text-right justify-start text-white text-sm font-bold font-['Inter']">حالة
+                    التقديم</div>
+                <div data-layer="Tags Grid"
+                    className="TagsGrid self-stretch inline-flex justify-end items-start gap-2 flex-wrap content-start">
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="مفتوح الآن"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">مفتوح الآن
+                        </div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="ينتهي قريباً"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">ينتهي قريباً
+                        </div>
+                    </div>
+                    <div data-layer="Tag Chip"
+                        className="TagChip size- px-3 py-1.5 bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-start">
+                        <div data-layer="مغلق"
+                            className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">مغلق</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div data-layer="Footer"
+        className="Footer self-stretch px-16 pt-12 pb-6 bg-slate-900 border-t border-blue-900 flex flex-col justify-start items-start gap-8">
+        <div data-layer="Footer Columns" className="FooterColumns self-stretch inline-flex justify-between items-start">
+            <div data-layer="Footer Links Grid" className="FooterLinksGrid size- flex justify-start items-start gap-16">
+                <div data-layer="Column 2" className="Column2 size- inline-flex flex-col justify-start items-end gap-3">
+                    <div data-layer="الدعم" className="justify-start text-slate-200 text-sm font-bold font-['Inter']">
+                        الدعم</div>
+                    <div data-layer="مركز المساعدة"
+                        className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">مركز المساعدة
+                    </div>
+                    <div data-layer="الشروط والأحكام"
+                        className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">الشروط والأحكام
+                    </div>
+                    <div data-layer="سياسة الخصوصية"
+                        className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">سياسة الخصوصية
+                    </div>
+                </div>
+                <div data-layer="Column 1" className="Column1 size- inline-flex flex-col justify-start items-end gap-3">
+                    <div data-layer="المنصة" className="justify-start text-slate-200 text-sm font-bold font-['Inter']">
+                        المنصة</div>
+                    <div data-layer="عن الأكاديمية"
+                        className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">عن الأكاديمية
+                    </div>
+                    <div data-layer="الدورات المتاحة"
+                        className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">الدورات المتاحة
+                    </div>
+                    <div data-layer="منح متميزة"
+                        className="justify-start text-slate-400 text-xs font-normal font-['Tajawal']">منح متميزة</div>
+                </div>
+            </div>
+            <div data-layer="Footer Logo Column"
+                className="FooterLogoColumn w-80 inline-flex flex-col justify-start items-end gap-3">
+                <div data-layer="أكاديمية خوارزم"
+                    className="justify-start text-orange-300 text-xl font-bold font-['Inter']">أكاديمية خوارزم</div>
+                <div data-layer="البوابة العربية الأولى لتمكين قادة المستقبل بالمهارات والفرص التعليمية والمنح الدولية الممولة."
+                    className="self-stretch text-right justify-start text-slate-400 text-sm font-normal font-['Tajawal'] leading-5">
+                    البوابة العربية الأولى لتمكين قادة المستقبل بالمهارات والفرص التعليمية والمنح الدولية الممولة.</div>
+            </div>
+        </div>
+        <div data-layer="Line" className="Line self-stretch h-0 border border-blue-900"></div>
+        <div data-layer="Footer Bottom" className="FooterBottom self-stretch inline-flex justify-between items-center">
+            <div data-layer="صُنع بكل حب لدعم المعرفة والتمكين التقني"
+                className="justify-start text-slate-500 text-xs font-normal font-['Tajawal']">صُنع بكل حب لدعم المعرفة
+                والتمكين التقني</div>
+            <div data-layer="© 2025 أكاديمية خوارزم. جميع الحقوق محفوظة."
+                className="2025 justify-start text-slate-500 text-xs font-normal font-['Tajawal']">© 2025 أكاديمية
+                خوارزم. جميع الحقوق محفوظة.</div>
+        </div>
+    </div>
+</div>
