@@ -14,6 +14,7 @@ export type NavTabKey =
   | 'home'
   | 'courses'
   | 'scholarships'
+  | 'catalog'
   | 'events'
   | 'competitions'
   | 'dashboard'
@@ -54,6 +55,7 @@ export const EN_TO_AR = {
     home: 'الرئيسية',
     courses: 'الدورات',
     scholarships: 'المنح والفرص',
+    catalog: 'الدورات والمنح',
     events: 'الفعاليات',
     competitions: 'المسابقات',
     dashboard: 'لوحتي',

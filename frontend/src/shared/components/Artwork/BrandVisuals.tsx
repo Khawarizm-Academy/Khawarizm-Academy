@@ -2,15 +2,16 @@ import React from 'react';
 import brandIcon from '../../../assets/brand/generated/icon-192.png';
 
 // Khawarizm Academy Brand Seal / Logo
-export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?: string }> = ({
+export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?: string; onClick?: () => void }> = ({
   size = 42,
   showText = true,
   textClass = 'text-xl font-bold text-[#E5B65C]',
+  onClick,
 }) => {
   const [imgError, setImgError] = React.useState(false);
 
   return (
-    <div className="inline-flex items-center gap-3 select-none group cursor-pointer">
+    <div onClick={onClick} className="inline-flex items-center gap-3 select-none group cursor-pointer">
       <div
         className="relative flex-center rounded-full p-0.5 transition-transform duration-300 group-hover:scale-105"
         style={{

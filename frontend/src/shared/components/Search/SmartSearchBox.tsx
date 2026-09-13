@@ -1,17 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toArabic } from '../../lib/localization';
 
 interface SmartSearchBoxProps {
   variant?: 'desktop' | 'mobile';
+  initialType?: 'course' | 'scholarship' | 'all';
+  initialQuery?: string;
   onSearch?: (query: string, type: 'course' | 'scholarship' | 'all') => void;
 }
 
 export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
   variant = 'desktop',
+  initialType = 'course',
+  initialQuery = '',
   onSearch,
 }) => {
-  const [selectedType, setSelectedType] = useState<'course' | 'scholarship'>('course');
-  const [query, setQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<'course' | 'scholarship'>(
+    initialType === 'scholarship' ? 'scholarship' : 'course'
+  );
+  const [query, setQuery] = useState(initialQuery);
+
+  useEffect(() => {
+    if (initialType === 'course' || initialType === 'scholarship') {
+      setSelectedType(initialType);
+    }
+  }, [initialType]);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
