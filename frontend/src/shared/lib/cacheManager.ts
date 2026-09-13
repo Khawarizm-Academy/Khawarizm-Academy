@@ -84,12 +84,19 @@ class CacheManager {
   }
 
   /**
-   * Marks specific or wildcard matching keys as stale
+   * Marks specific or wildcard matching keys as stale.
+   *
+   * Accepts a partial key (string, array, or object). Any cached entry whose
+   * leading namespace token matches is invalidated — e.g. `invalidate('catalog-items')`
+   * clears every `['catalog-items', {…filters}]` variant.
    */
-  invalidate(keyPrefix: unknown): void {
-    const prefix = serializeKey(keyPrefix).replace(/[\]}]$/, '');
+  invalidate(rawKey: unknown): void {
+    const prefix = serializeKey(rawKey).replace(/^\[/, '').split(/[,}\]]/)[0].trim();
+    if (!prefix) return;
+
     for (const [key, entry] of this.cache.entries()) {
-      if (key.startsWith(prefix) || key.includes(prefix)) {
+      const keyToken = key.replace(/^\[/, '').split(/[,}\]]/)[0].trim();
+      if (keyToken === prefix) {
         entry.timestamp = 0; // Force immediate staleness
         this.notify(key, entry);
       }

@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Outlet } from '../router';
 import { useLocation, useNavigate, useActiveRoute } from '../routerContext';
+import { RouteErrorBoundary } from '../RouteErrorBoundary';
 import { DesktopNavbar } from '../../shared/components/Navbar/DesktopNavbar';
 import { MobileHeader } from '../../shared/components/Navbar/MobileHeader';
 import { MobileBottomBar } from '../../shared/components/BottomNav/MobileBottomBar';
 import { Footer } from '../../shared/components/Footer/Footer';
+import { PageSkeleton } from '../../shared/components/Loading/PageSkeleton';
 import type { NavTabKey } from '../../shared/lib/localization';
 
 export const RootLayout: React.FC = () => {
@@ -67,9 +69,13 @@ export const RootLayout: React.FC = () => {
         <MobileHeader onLogoClick={() => navigate('/')} />
       </div>
 
-      {/* 3. Dynamic Page View with 60fps Entrance Transition */}
+      {/* 3. Dynamic Page View — Tier 1 skeleton via Suspense, 60fps Entrance Transition */}
       <div key={pathname} className="page-transition-wrapper animate-page-enter relative z-10">
-        <Outlet />
+        <RouteErrorBoundary>
+          <Suspense fallback={<PageSkeleton variant={activeRoute?.skeletonVariant ?? 'default'} />}>
+            <Outlet />
+          </Suspense>
+        </RouteErrorBoundary>
       </div>
 
       {/* 4. Permanent Footer Shell (Desktop / Tablet) */}

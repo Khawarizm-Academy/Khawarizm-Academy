@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from '../../../app/routerContext';
 import { HeroSection } from '../components/HeroSection';
 import { CompetitionBanner } from '../../../shared/components/Banners/CompetitionBanner';
 import { TwinPillarRails } from '../components/TwinPillarRails';
 import { EventSection } from '../../../shared/components/Events/EventSection';
-import { PageSkeleton } from '../../../shared/components/Loading/PageSkeleton';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import {
   mockCourses,
@@ -18,7 +17,6 @@ import {
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const [initialLoading, setInitialLoading] = useState<boolean>(true);
 
   // Cached data fetchers for twin rails
   const { data: coursesData } = useCachedData(
@@ -33,25 +31,11 @@ export const HomePage: React.FC = () => {
     { initialData: mockScholarships, staleTime: 10 * 60 * 1000 }
   );
 
-  useEffect(() => {
-    // Brief observatory preloader entrance for first cold load
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 280);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   const handleSearchSubmit = (query: string, type: 'course' | 'scholarship' | 'all') => {
     const resolvedType =
       type === 'course' ? 'courses' : type === 'scholarship' ? 'scholarships' : 'all';
     navigate(`/catalog?type=${resolvedType}&q=${encodeURIComponent(query)}`);
   };
-
-  // If cold initial load, show Tier 1 Full-Page Skeleton
-  if (initialLoading) {
-    return <PageSkeleton variant="home" />;
-  }
 
   return (
     <main className="content-container">

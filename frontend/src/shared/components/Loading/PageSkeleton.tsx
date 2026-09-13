@@ -119,6 +119,53 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
     );
   }
 
+  if (variant === 'detail') {
+    return (
+      <div className="w-full flex-1 flex flex-col items-center animate-pulse" aria-busy="true">
+        <main className="content-container">
+          {/* Back Button Placeholder */}
+          <SkeletonBox className="w-32 h-4 mb-6 mt-4" />
+
+          <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Media / CTA Column */}
+            <div className="lg:col-span-1 flex flex-col gap-5">
+              <div className="w-full aspect-video lg:aspect-[4/3] rounded-2xl skeleton-box" />
+              <SkeletonBox className="w-full h-12 rounded-xl" />
+              <SkeletonBox className="w-full h-12 rounded-xl" />
+            </div>
+
+            {/* Info Column */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
+              <SkeletonBadge width="110px" />
+              <SkeletonBox className="w-3/4 h-10 rounded-xl" />
+              <SkeletonBox className="w-full h-4 rounded-lg" />
+              <SkeletonBox className="w-2/3 h-4 rounded-lg" />
+              <SkeletonBox className="w-full h-4 rounded-lg" />
+
+              {/* Meta Chips Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <div key={idx} className="glass-panel rounded-xl p-3.5 border border-[#1B3F80]/50 flex flex-col gap-2">
+                    <SkeletonBox className="w-16 h-3" />
+                    <SkeletonBox className="w-24 h-4" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Body Section */}
+              <div className="glass-panel rounded-2xl p-6 border border-[#1B3F80]/50 flex flex-col gap-3">
+                <SkeletonBox className="w-48 h-6" />
+                <SkeletonBox className="w-full h-4" />
+                <SkeletonBox className="w-5/6 h-4" />
+                <SkeletonBox className="w-3/4 h-4" />
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   // Default Page Skeleton
   return (
     <div className="w-full flex-1 flex flex-col items-center animate-pulse" aria-busy="true">

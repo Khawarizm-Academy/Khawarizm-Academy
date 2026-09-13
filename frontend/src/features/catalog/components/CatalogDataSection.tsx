@@ -3,6 +3,7 @@ import { CatalogCard } from './CatalogCard';
 import { CatalogPagination } from './CatalogPagination';
 import { CatalogGridSkeleton } from './CatalogGridSkeleton';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
+import { dataCacheManager } from '../../../shared/lib/cacheManager';
 import { mockCatalogAll, type CatalogItem } from '../../../shared/data/mockCatalogData';
 import type { CatalogFiltersState, CatalogTab } from '../types';
 
@@ -131,10 +132,19 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
     return computeFilteredCatalog(filters, activeTab);
   };
 
-  const { data, isLoading, isFetching } = useCachedData<FilterResult>(cacheKey, fetcher, {
+  const { data, isLoading, isFetching, isError, error, refetch } = useCachedData<FilterResult>(cacheKey, fetcher, {
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 30 * 60 * 1000, // 30 minutes
+    keepPreviousData: true, // keep old cards mounted while a new filter combination loads
   });
+
+  // Warm the detail-page cache on card hover -> instant detail navigation.
+  const handlePrefetchDetail = (item: CatalogItem) => {
+    dataCacheManager.prefetch(['catalog-detail', item.id], async () => {
+      await new Promise((res) => setTimeout(res, 1));
+      return item;
+    });
+  };
 
   return (
     <div className="w-full flex flex-col gap-6 relative">
@@ -149,6 +159,30 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
       {/* Tier 2 Data-Section Skeleton during cold query */}
       {isLoading ? (
         <CatalogGridSkeleton count={6} />
+      ) : isError ? (
+        /* Error State with Retry */
+        <div className="w-full py-16 px-6 glass-panel rounded-2xl flex-col-center text-center gap-4 border border-[#1B3F80]">
+          <div className="w-16 h-16 rounded-full bg-[#092557] border border-[#1B3F80] flex-center text-[#D9534F]">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
+            تعذر تحميل النتائج
+          </h3>
+          <p className="text-slate-400 text-sm font-['Tajawal'] max-w-md">
+            {error?.message || 'حدث خطأ أثناء جلب البيانات. حاول مرة أخرى.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="btn-outline-blue py-2 px-6 text-xs font-bold mt-2"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
       ) : data && data.items.length > 0 ? (
         <>
           {/* Active Cards Grid */}
@@ -158,6 +192,7 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
                 key={item.id}
                 item={item}
                 onSelect={onSelectCard}
+                onPrefetch={() => handlePrefetchDetail(item)}
               />
             ))}
           </div>

@@ -7,6 +7,8 @@ description: Master engineering playbook for professional routing, dual-tier cel
 
 This skill is the **definitive operational guide and standard** for building high-performance, professional navigation, loading states, and data caching across Khawarizm Academy.
 
+> 📖 **Per-page workflow (8 steps):** read `references/page-loading-caching-guide.md` before touching any page.
+
 ---
 
 ## 1. Core Mental Model & The 4 Pillars
@@ -15,17 +17,17 @@ This skill is the **definitive operational guide and standard** for building hig
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        KHAWARIZM PLATFORM ENGINE                       │
 ├────────────────────────────────────────────────────────────────────────┤
-│  1. ROUTING & SHELL   │ Persistent RootLayout (Navbars/Footers stay    │
-│                       │ mounted, 0 flicker, 0 unneeded remounts)       │
+│  1. ROUTING & SHELL   │ Persistent RootLayout + lazy route chunks      │
+│                       │ (Navbars/Footers stay mounted, 0 remounts)     │
 ├───────────────────────┼────────────────────────────────────────────────┤
-│  2. VIEW TRANSITIONS  │ Native View Transitions API + 60fps CSS        │
-│                       │ .animate-page-enter with smart scroll memory   │
+│  2. VIEW TRANSITIONS  │ Native View Transitions API (CSS themed)       │
+│                       │ + .animate-page-enter fallback + scroll memory │
 ├───────────────────────┼────────────────────────────────────────────────┤
-│  3. DUAL-TIER         │ Tier 1: PageSkeleton (cold load / suspense)    │
-│     SKELETONS         │ Tier 2: DataSectionSkeleton (filter/tab/page)  │
+│  3. DUAL-TIER         │ Tier 1: PageSkeleton (Suspense, auto via       │
+│     SKELETONS         │   skeletonVariant) Tier 2: DataSectionSkeleton │
 ├───────────────────────┼────────────────────────────────────────────────┤
-│  4. CACHING & SWR     │ In-memory dataCacheManager + useCachedData     │
-│                       │ (Instant 0ms cached re-render, background SWR) │
+│  4. CACHING & SWR     │ dataCacheManager + useCachedData + keepPrevious│
+│                       │   Data (only the data section re-renders)      │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -33,22 +35,23 @@ This skill is the **definitive operational guide and standard** for building hig
 
 ## 2. Pillar 1: Dual-Tier Skeleton Loading System
 
-Never use a full-page spinner when the user is simply filtering, paginating, or searching data. Always distinguish between **entering a new screen** vs **filtering data inside an existing screen**:
+**HARD RULE:** Never run a fake `setTimeout` skeleton. Skeleton = real loading trigger, one of two tiers.
 
 ### Tier 1: Full-Page Skeleton (`<PageSkeleton />`)
-- **When to use:** Cold page load (first visit), hard refresh, or lazy route code-splitting suspense.
-- **Components:** `<PageSkeleton variant="home" | "catalog" | "detail" | "default" />` from `src/shared/components/Loading/PageSkeleton.tsx`.
-- **Purpose:** Pre-renders the full structure (Header, Hero, Sidebar, Grid) to guarantee **0 Cumulative Layout Shift (CLS)**.
+- **When to use:** Cold load / hard refresh / lazy route-chunk suspense.
+- **How it's triggered — automatically.** Every route declares `skeletonVariant` in `src/app/routes.tsx`. `RootLayout` wraps `<Outlet />` in `<Suspense fallback={<PageSkeleton variant={activeRoute?.skeletonVariant ?? 'default'} />}>` and each page is a `React.lazy` chunk in `src/app/pageLoads.ts`. Pages must **NOT** render `<PageSkeleton>` themselves and must **NOT** contain fake loading timers.
+- **Components:** `<PageSkeleton variant="home" | "catalog" | "detail" | "default" />`.
+- **Purpose:** Pre-renders full structure → **0 Cumulative Layout Shift (CLS)**.
 
-### Tier 2: Data-Section Skeleton (`<DataSectionSkeleton />` or `<CatalogGridSkeleton />`)
-- **When to use:** User changes a filter chip, clicks a category tab, types a search query, or navigates pagination.
+### Tier 2: Data-Section Skeleton (`<DataSectionSkeleton />` / `<CatalogGridSkeleton />`)
+- **When to use:** A data query is a true cold miss (never-fetched key).
 - **Components:**
   - `<CatalogGridSkeleton count={6} />` for course/scholarship card grids.
   - `<DataSectionSkeleton variant="grid" | "rail" | "list" count={6} />` for generic dynamic sections.
-- **Rule:** The surrounding page controls (Desktop Navbar, Mobile Header, Search Input, Filter Sidebar, Active Pills, Footer) **remain completely mounted, visible, and fully interactive**.
+- **Rule:** Surrounding controls (Navbars, Search, Sidebar, Active Pills, Footer) **stay mounted, visible, interactive**.
+- **IMPORTANT:** Do NOT show Tier 2 skeleton on every filter change. Use `keepPreviousData: true` in `useCachedData` so the **previous cards stay mounted** while a new filter combination loads in the background (shimmer line only). The skeleton appears only on a genuine first load of that key.
 
 ### Atomic Skeleton Primitives (`src/shared/components/Loading/SkeletonPrimitives.tsx`)
-When constructing custom skeletons, use atomic primitives styled with the celestial starlight shimmer:
 - `<SkeletonBox className="w-48 h-8 rounded-lg" />`
 - `<SkeletonText lines={2} lastLineWidth="70%" />`
 - `<SkeletonCircle size={40} />`
@@ -59,52 +62,61 @@ When constructing custom skeletons, use atomic primitives styled with the celest
 ## 3. Pillar 2: Persistent Shell & 60fps Page Transitions
 
 ### Rule: Never Duplicate the App Shell in Page Views
-Page components (`HomePage.tsx`, `CatalogPage.tsx`, etc.) **must never** render `<DesktopNavbar>`, `<MobileHeader>`, `<MobileBottomBar>`, or `<Footer>`.
-- The persistent frame is managed globally by `src/app/layouts/RootLayout.tsx`.
-- When navigating from `/` to `/catalog`, the navbars stay mounted, the active glowing indicator glides smoothly via CSS, and only the `<Outlet />` transition container animates.
+Pages **must never** render `<DesktopNavbar>`, `<MobileHeader>`, `<MobileBottomBar>`, or `<Footer>`. The frame lives in `src/app/layouts/RootLayout.tsx`. Only the `<Outlet />` region changes.
 
-### Page Transition Container
-Each route view is wrapped in:
+### Page Transition Container (RootLayout)
 ```tsx
 <div key={pathname} className="page-transition-wrapper animate-page-enter relative z-10">
-  <Outlet />
+  <RouteErrorBoundary>
+    <Suspense fallback={<PageSkeleton variant={activeRoute?.skeletonVariant ?? 'default'} />}>
+      <Outlet />
+    </Suspense>
+  </RouteErrorBoundary>
 </div>
 ```
+- `key={pathname}` → page remount only on *path* change; `?query` changes do **NOT** remount the page (data section re-renders alone).
 
-### Smart Scroll Restoration
-Managed automatically by `src/app/router.tsx`:
-- **Cross-page route navigation (`/` → `/catalog`):** Smoothly scrolls window to top `(0, 0)`.
-- **Browser Back / Forward (`popstate`):** Restores exact scroll coordinates from memory map.
-- **Query param updates (`?type=courses` → `?type=courses&field=ai`):** Preserves current scroll position so the user stays in place while toggling filters.
+### Native View Transitions (browser uses these when supported)
+- `router.tsx` wraps page-change state updates in `document.startViewTransition` and sets `html[data-vt-enabled='true']` so CSS disables the `.animate-page-enter` fallback (no double animation).
+- Themed `::view-transition-old(root)` / `::view-transition-new(root)` animations live in `src/styles/globals.css`.
+- **Never add new JS animation libs** for page transitions — the CSS + View Transitions API is the standard.
+
+### Smart Scroll Restoration (router.tsx)
+- Cross-page navigation → smooth scroll to `(0, 0)`.
+- Back/Forward → exact scroll restore from memory map.
+- Query param updates → scroll position preserved.
+
+### Accessibility
+Add nothing that ignores `prefers-reduced-motion` — transitions and shimmer are already disabled globally in `globals.css`.
 
 ---
 
-## 4. Pillar 3: In-Memory Caching & SWR (`useCachedData`)
+## 4. Pillar 3: In-Memory Caching & SWR (`useCachedData`) — "Only the data section updates"
 
-### Mental Model: Stale-While-Revalidate
-Whenever fetching or computing data:
-1. Check `dataCacheManager` in memory synchronously.
-2. If cached and fresh (< `staleTime`), return data immediately with `isLoading = false` (Instant 0ms render, 0 skeletons!).
-3. If cached and stale, return cached data immediately and fire a background refresh (`isFetching = true`).
-4. If cache miss, set `isLoading = true` to render Tier 2 skeleton, fetch data, and cache the result.
+### Mental Model: Stale-While-Revalidate + keepPreviousData
+1. Check `dataCacheManager` synchronously.
+2. Fresh & cached (< `staleTime`) → instant 0ms render, no skeleton.
+3. Stale but cached → render cached data now, background refresh (`isFetching = true`, shimmer line).
+4. Cache miss → **if `keepPreviousData`** render last data with shimmer; **else** `isLoading = true` → Tier 2 skeleton.
+5. Error entry → `isError = true` → render themed retry block (never an endless spinner).
 
-### Usage in Components
+### Usage in a Data Section (canonical pattern)
 ```tsx
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 
 export const MyDataSection: React.FC<{ filters: MyFilters }> = ({ filters }) => {
-  const { data, isLoading, isFetching } = useCachedData(
-    ['my-feature-key', filters],
+  const { data, isLoading, isFetching, isError, error, refetch } = useCachedData(
+    ['my-feature-key', filters],       // deterministic, full-filter key
     async () => fetchMyData(filters),
     {
-      staleTime: 5 * 60 * 1000,  // 5 minutes
-      cacheTime: 30 * 60 * 1000, // 30 minutes memory retention
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 30 * 60 * 1000,
+      keepPreviousData: true,
     }
   );
 
-  if (isLoading) {
-    return <CatalogGridSkeleton count={6} />;
-  }
+  if (isLoading) return <CatalogGridSkeleton count={6} />;
+  if (isError) return <ErrorState message={error?.message} onRetry={refetch} />;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -116,83 +128,74 @@ export const MyDataSection: React.FC<{ filters: MyFilters }> = ({ filters }) => 
 };
 ```
 
+### Cache API (`src/shared/lib/cacheManager.ts`)
+- `dataCacheManager.set(key, data)` — optimistic update / mutation result.
+- `dataCacheManager.invalidate('catalog-items')` — marks **every** `['catalog-items', …]` variant stale (namespace-token matching).
+- `dataCacheManager.prefetch(['catalog-detail', id], fetcher)` — warm cache on hover → instant detail navigation.
+- `dataCacheManager.clear()` — logout / hard reset.
+
 ---
 
 ## 5. Pillar 4: Declarative Route Registry
 
-All routes must be declared in `src/app/routes.ts`:
+All routes are declared in `src/app/routes.tsx` (JSX allowed because redirect routes render `<Navigate />`). Lazy loaders live in `src/app/pageLoads.ts` (one chunk per page).
 
-```ts
+```tsx
 export const routes: RouteDefinition[] = [
   {
     path: '/',
     component: HomePage,
-    meta: {
-      title: 'أكاديمية خوارزم — المرصد الأكاديمي والفرص الدولية',
-      description: 'بوابة خوارزم للدورات التدريبية المتقدمة والمنح الدراسية العالمية.',
-      activeTab: 'home',
-    },
+    meta: { title: '…', description: '…', activeTab: 'home' },
     skeletonVariant: 'home',
   },
   {
-    path: '/catalog',
-    component: CatalogPage,
-    meta: {
-      title: 'دليل الدورات والمنح — أكاديمية خوارزم',
-      activeTab: 'catalog',
-    },
+    path: '/courses',
+    component: () => <Navigate to="/catalog?type=courses" />, // canonical-URL redirect
+    meta: { title: '…', activeTab: 'courses' },
     skeletonVariant: 'catalog',
   },
   {
     path: '/courses/:slug',
     component: CourseDetailPage,
-    meta: {
-      title: 'تفاصيل الدورة — أكاديمية خوارزم',
-      activeTab: 'courses',
-    },
+    meta: { title: '…', activeTab: 'courses' },
     skeletonVariant: 'detail',
   },
+  { path: '*', component: NotFoundPage, skeletonVariant: 'default' }, // never blank
 ];
 ```
 
-### Dynamic Parameters
-Inside any route component:
-```tsx
-import { useParams } from '../../../app/routerContext';
+### Routing rules
+- **One canonical catalog URL:** `/catalog?type=courses|scholarships`. `/courses` & `/scholarships` **redirect** to it. Never register duplicate page routes for the same view.
+- **Placeholder policies:** tabs without a built page (events, competitions, dashboard, profile) get a lazy `FeaturePlaceholder` page + a route — **never** a blank `Outlet`.
+- `*` catch-all → `NotFoundPage` (never `null`).
+- Each page is wrapped by `RouteErrorBoundary` in RootLayout → a crash shows a themed error, shell stays alive.
 
+### Hooks (from `src/app/routerContext.ts`)
+```tsx
 const { slug } = useParams<{ slug: string }>();
-```
-
-### URL Search Parameters & Derived State
-Always derive active view state directly from `useSearchParams`:
-```tsx
-import { useSearchParams } from '../../../app/routerContext';
-
 const [searchParams, setSearchParams] = useSearchParams();
 const activeType = searchParams.get('type') || 'all';
+setSearchParams({ type: 'courses', q: 'python' }); // replace, preserves scroll
+const navigate = useNavigate();
+const { pathname, search } = useLocation();
+```
 
-// To update URL search params:
-setSearchParams({ type: 'courses', q: 'python' });
+### URL is the single source of truth for view state
+**Never** duplicate URL values (`?type=`, `?q=`) into `useState` + `useEffect`. Derive them at render (see `CatalogPage`): keep only the non-URL filters in state and merge:
+```tsx
+const filters: CatalogFiltersState = { ...persistentFilters, type: activeTab, searchQuery: qFromUrl };
 ```
 
 ---
 
 ## 6. Universal Blueprint for Building Any New Page
 
-When creating any new page, follow this 5-step checklist:
+Walk through **`references/page-loading-caching-guide.md`** for the full 8-step flow. Summary:
 
-1. **Step 1: Register Route in `src/app/routes.ts`**
-   - Add path, component, Arabic title in `meta`, and `activeTab`.
-2. **Step 2: Assemble Page View without Shell Markup**
-   - Use `<main className="content-container">`.
-   - Do NOT add `<DesktopNavbar>` or `<Footer>` (handled by `RootLayout`).
-3. **Step 3: Separate Static Controls from Dynamic Data**
-   - Static controls (Page Title, Search Box, Filter Sidebar) stay in the page view.
-   - Dynamic cards/lists are extracted into an isolated Data Section component (e.g. `MyDataSection.tsx`).
-4. **Step 4: Connect `useCachedData` in the Data Section**
-   - Define a deterministic query key: `['feature-name', filters]`.
-   - Render Tier 2 skeleton when `isLoading` is true.
-   - Render items when `data` is loaded.
-5. **Step 5: Verify Build & Instant Caching**
-   - Run `npm run build` and `npm run lint`.
-   - Verify that toggling back to a previously visited tab renders instantly from cache.
+1. **Register lazy route** in `src/app/routes.tsx` + `pageLoads.ts` (path, `meta`, `activeTab`, `skeletonVariant`).
+2. **Build the page view** as `<main className="content-container">` — no shell markup, no `<PageSkeleton>`, no fake timers.
+3. **Derive URL-driven state** from `useSearchParams` / `useParams` at render; local `useState` only for the rest.
+4. **Extract dynamic parts** into an isolated Data Section component.
+5. **Wire `useCachedData`** with a deterministic full-filter key + `keepPreviousData` + error/retry + Tier 2 skeleton.
+6. **Prefetch detail** on hover via `dataCacheManager.prefetch`.
+7. **Verify build & lint**, then confirm: cold load skeletons once, cached returns are instant, filter changes never flash the skeleton, back/forward restores scroll.

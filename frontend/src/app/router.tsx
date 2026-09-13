@@ -24,6 +24,14 @@ export const Router: React.FC<RouterProps> = ({ routes = [], children }) => {
   const scrollMap = useRef<Map<string, number>>(new Map());
   const prevPathRef = useRef<string>(currentLocation.pathname);
 
+  // Flag native View Transition support once so CSS can disable the
+  // CSS-entrance fallback (avoiding a double animation on supported browsers).
+  useEffect(() => {
+    if ('startViewTransition' in document) {
+      document.documentElement.dataset.vtEnabled = 'true';
+    }
+  }, []);
+
   // Determine active route and params
   let matchedRoute: RouteDefinition | null = null;
   let matchedParams: Record<string, string> = {};

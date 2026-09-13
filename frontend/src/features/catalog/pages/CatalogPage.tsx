@@ -1,53 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SmartSearchBox } from '../../../shared/components/Search/SmartSearchBox';
 import { CatalogFilterSidebar } from '../components/CatalogFilterSidebar';
 import { CatalogMobileFilterDrawer } from '../components/CatalogMobileFilterDrawer';
 import { CatalogToolbar } from '../components/CatalogToolbar';
 import { CatalogDataSection } from '../components/CatalogDataSection';
-import { PageSkeleton } from '../../../shared/components/Loading/PageSkeleton';
-import { useSearchParams } from '../../../app/routerContext';
+import { useNavigate, useSearchParams } from '../../../app/routerContext';
+import type { CatalogItem } from '../../../shared/data/mockCatalogData';
 import type { CatalogTab, CatalogFiltersState, SortOption } from '../types';
+
+// Non-pillar filters live in local state; `type` and `q` are URL-derived.
+type PersistentFilters = Omit<CatalogFiltersState, 'type' | 'searchQuery'>;
+
+const DEFAULT_FILTERS: PersistentFilters = {
+  field: 'all',
+  level: 'all',
+  language: 'all',
+  cost: 'all',
+  country: 'all',
+  status: 'all',
+  sortBy: 'newest',
+  page: 1,
+};
 
 export const CatalogPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // Read active type and query from URL query params (?type=courses&q=...)
+  // Active type and query are URL-derived — single source of truth, no effect-sync.
   const activeTab = (searchParams.get('type') as CatalogTab) || 'all';
   const initialQueryFromUrl = searchParams.get('q') || '';
 
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [persistentFilters, setPersistentFilters] = useState<PersistentFilters>(DEFAULT_FILTERS);
 
-  // Demonstrate Tier 1 full-page skeleton on cold entry
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 280);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Master Filter State
-  const [filters, setFilters] = useState<CatalogFiltersState>({
+  // Merged view-state handed to the data section (reacts only when it changes).
+  const filters: CatalogFiltersState = {
+    ...persistentFilters,
     type: activeTab,
-    field: 'all',
-    level: 'all',
-    language: 'all',
-    cost: 'all',
-    country: 'all',
-    status: 'all',
-    sortBy: 'newest',
     searchQuery: initialQueryFromUrl,
-    page: 1,
-  });
+  };
 
   // Handle Tab Switch (All / Courses / Scholarships)
   const handleTabChange = (newTab: CatalogTab) => {
-    setFilters((prev) => ({
-      ...prev,
-      type: newTab,
-      page: 1,
-      level: 'all',
-    }));
+    setPersistentFilters((prev) => ({ ...prev, page: 1, level: 'all' }));
     setSearchParams({
       type: newTab,
       ...(filters.searchQuery ? { q: filters.searchQuery } : {}),
@@ -61,12 +56,7 @@ export const CatalogPage: React.FC = () => {
     if (searchType === 'scholarship') resolvedTab = 'scholarships';
     if (searchType === 'all') resolvedTab = 'all';
 
-    setFilters((prev) => ({
-      ...prev,
-      type: resolvedTab,
-      searchQuery: query,
-      page: 1,
-    }));
+    setPersistentFilters((prev) => ({ ...prev, page: 1 }));
     setSearchParams({
       type: resolvedTab,
       ...(query ? { q: query } : {}),
@@ -77,27 +67,19 @@ export const CatalogPage: React.FC = () => {
     key: K,
     value: CatalogFiltersState[K]
   ) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-      page: 1, // Reset to page 1 on filter change
-    }));
+    // `type` and `q` are URL-derived — the filter UI never touches them.
+    if (key === 'type' || key === 'searchQuery') return;
+    setPersistentFilters((prev) => ({ ...prev, [key]: value, page: 1 }) as PersistentFilters);
   };
 
   const handleResetFilters = () => {
-    setFilters({
-      type: activeTab,
-      field: 'all',
-      level: 'all',
-      language: 'all',
-      cost: 'all',
-      country: 'all',
-      status: 'all',
-      sortBy: 'newest',
-      searchQuery: '',
-      page: 1,
-    });
+    setPersistentFilters(DEFAULT_FILTERS);
     setSearchParams({ type: activeTab });
+  };
+
+  const handleSelectCard = (selected: CatalogItem) => {
+    if (selected.type === 'course') navigate(`/courses/${selected.id}`);
+    else navigate(`/scholarships/${selected.id}`);
   };
 
   // Dynamic Headlines
@@ -118,11 +100,6 @@ export const CatalogPage: React.FC = () => {
       countLabel: 'منحة دراسية',
     },
   }[activeTab];
-
-  // If cold initial page load, render Tier 1 Full-Page Skeleton
-  if (initialLoading) {
-    return <PageSkeleton variant="catalog" />;
-  }
 
   return (
     <main className="content-container">
@@ -202,9 +179,7 @@ export const CatalogPage: React.FC = () => {
             activeTab={activeTab}
             onPageChange={(page) => handleFilterChange('page', page)}
             onResetFilters={handleResetFilters}
-            onSelectCard={(selected) => {
-              alert(`عرض تفاصيل: ${selected.title}`);
-            }}
+            onSelectCard={handleSelectCard}
           />
         </div>
 

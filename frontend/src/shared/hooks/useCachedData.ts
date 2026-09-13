@@ -1,9 +1,15 @@
-import { useSyncExternalStore, useEffect, useCallback } from 'react';
+import { useSyncExternalStore, useEffect, useCallback, useState } from 'react';
 import { dataCacheManager, serializeKey, type CacheEntry, type CacheOptions } from '../lib/cacheManager';
 
 export interface UseCachedDataOptions<T> extends CacheOptions {
   enabled?: boolean;
   initialData?: T;
+  /**
+   * When a cache miss occurs (new filter/page/tab key) and `keepPreviousData`
+   * is true, the last successfully loaded data stays mounted while the new
+   * query loads in the background. Skips flashing the Tier 2 skeleton.
+   */
+  keepPreviousData?: boolean;
 }
 
 export interface UseCachedDataResult<T> {
@@ -34,6 +40,7 @@ export function useCachedData<T>(
     staleTime = 5 * 60 * 1000,
     cacheTime = 30 * 60 * 1000,
     initialData,
+    keepPreviousData = false,
   } = options;
 
   const keyString = serializeKey(key);
@@ -54,6 +61,20 @@ export function useCachedData<T>(
 
   const entry = useSyncExternalStore(subscribe, getSnapshot);
 
+  // Holds the last successfully resolved data + its key, so a cache miss on a
+  // NEW key can keep rendering the previous results while it loads.
+  const [lastCommitted, setLastCommitted] = useState<{ key: string; data: T } | null>(null);
+
+  // "Adjusting state during render" (official React pattern): whenever a fresh
+  // successful entry is visible, commit it so a later cache miss can re-surface
+  // it via keepPreviousData. Guarded => no infinite loop.
+  if (entry?.status === 'success') {
+    setLastCommitted((prev) => {
+      if (prev && prev.key === keyString && prev.data === entry.data) return prev;
+      return { key: keyString, data: entry.data as T };
+    });
+  }
+
   // Auto-fetch if missing or stale
   useEffect(() => {
     if (!enabled) return;
@@ -64,11 +85,19 @@ export function useCachedData<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, keyString, staleTime, cacheTime]);
 
-  const data = (entry?.data !== undefined ? entry.data : initialData) as T;
   const isLoading = enabled && entry?.data === undefined;
   const isFetching = enabled && (!entry || dataCacheManager.isStale(entry, staleTime));
   const isError = entry?.status === 'error';
   const error = entry?.error || null;
+
+  // keepPreviousData: on a cold miss for a NEW key, surface the previous data
+  // (isLoading=false, isFetching=true) so only the section shimmer shows.
+  const showPrevious =
+    keepPreviousData && isLoading && lastCommitted !== null && lastCommitted.key !== keyString;
+
+  const data = showPrevious
+    ? (lastCommitted!.data as T)
+    : (entry?.data !== undefined ? entry.data : initialData) as T;
 
   const refetch = useCallback(async () => {
     return dataCacheManager.fetchWithDeduplication<T>(key, fetcher);
@@ -85,8 +114,8 @@ export function useCachedData<T>(
 
   return {
     data,
-    isLoading,
-    isFetching,
+    isLoading: showPrevious ? false : isLoading,
+    isFetching: showPrevious ? true : isFetching,
     isError,
     error,
     refetch,
