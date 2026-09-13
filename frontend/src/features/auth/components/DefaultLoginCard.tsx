@@ -90,22 +90,11 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
               error
                 ? 'border-[#D9534F] ring-1 ring-[#D9534F]'
                 : 'border-[#1B3F80] focus-within:border-[#29A9FF] focus-within:ring-1 focus-within:ring-[#29A9FF]'
-            } flex items-center justify-between transition-all duration-200`}
+            } flex items-center gap-3 transition-all duration-200 cursor-text`}
+            onClick={() => document.getElementById('auth-email')?.focus()}
           >
-            <input
-              id="auth-email"
-              type="email"
-              dir="ltr"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (error) setError(null);
-              }}
-              placeholder="username@example.com"
-              className="flex-1 bg-transparent text-sm text-[#DCE5EE] placeholder-[#5C7291] outline-none font-['Tajawal',sans-serif] text-left pr-2"
-              autoComplete="email"
-            />
-            <div className="text-[#8299B5]" aria-hidden="true">
+            {/* Mail Icon positioned at the right edge (start of input in RTL) */}
+            <div className="text-[#8299B5] shrink-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
                   d="M14.6672 4.66701L8.67275 8.48462C8.46933 8.60275 8.23827 8.66498 8.00303 8.66498C7.76778 8.66498 7.53673 8.60275 7.33331 8.48462L1.33282 4.66701M2.66626 2.66721H13.3338C14.0702 2.66721 14.6672 3.2641 14.6672 4.00041V11.9996C14.6672 12.7359 14.0702 13.3328 13.3338 13.3328H2.66626C1.92983 13.3328 1.33282 12.7359 1.33282 11.9996V4.00041C1.33282 3.2641 1.92983 2.66721 2.66626 2.66721Z"
@@ -116,6 +105,21 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
                 />
               </svg>
             </div>
+
+            {/* Email Input Field with clean right-alignment matching the label and icon */}
+            <input
+              id="auth-email"
+              type="email"
+              dir="auto"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="username@example.com"
+              className="flex-1 w-full bg-transparent text-sm text-[#DCE5EE] placeholder-[#5C7291] outline-none font-['Tajawal',sans-serif] text-right"
+              autoComplete="email"
+            />
           </div>
           {error && (
             <p className="text-xs text-[#D9534F] font-['Tajawal',sans-serif] text-right mt-0.5">
