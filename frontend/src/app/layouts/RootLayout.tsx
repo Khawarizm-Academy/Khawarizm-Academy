@@ -48,8 +48,12 @@ export const RootLayout: React.FC = () => {
       navigate('/dashboard');
     } else if (tab === 'profile') {
       navigate('/profile');
+    } else if ((tab as string) === 'login') {
+      navigate('/login');
     }
   };
+
+  const hideShell = !!activeRoute?.meta?.hideShell;
 
   return (
     <div className="page-wrapper">
@@ -61,16 +65,20 @@ export const RootLayout: React.FC = () => {
         <div className="absolute bottom-[10%] left-[15%] w-[700px] h-[500px] rounded-full bg-[#E5B65C]/[0.03] blur-[160px]" />
       </div>
 
-      {/* 2. Permanent Sticky Header Shell */}
-      <div className="w-full hidden md:block relative z-30">
-        <DesktopNavbar activeTab={activeTab} onSelectTab={handleNavSelect} />
-      </div>
-      <div className="w-full block md:hidden relative z-30">
-        <MobileHeader onLogoClick={() => navigate('/')} />
-      </div>
+      {/* 2. Permanent Sticky Header Shell (omitted if hideShell is true) */}
+      {!hideShell && (
+        <>
+          <div className="w-full hidden md:block relative z-30">
+            <DesktopNavbar activeTab={activeTab} onSelectTab={handleNavSelect} />
+          </div>
+          <div className="w-full block md:hidden relative z-30">
+            <MobileHeader onLogoClick={() => navigate('/')} onLoginClick={() => navigate('/login')} />
+          </div>
+        </>
+      )}
 
       {/* 3. Dynamic Page View — Tier 1 skeleton via Suspense, 60fps Entrance Transition */}
-      <div key={pathname} className="page-transition-wrapper animate-page-enter relative z-10">
+      <div key={pathname} className="page-transition-wrapper animate-page-enter relative z-10 w-full flex-1">
         <RouteErrorBoundary>
           <Suspense fallback={<PageSkeleton variant={activeRoute?.skeletonVariant ?? 'default'} />}>
             <Outlet />
@@ -78,15 +86,19 @@ export const RootLayout: React.FC = () => {
         </RouteErrorBoundary>
       </div>
 
-      {/* 4. Permanent Footer Shell (Desktop / Tablet) */}
-      <div className="w-full hidden md:block relative z-10 mt-auto">
-        <Footer />
-      </div>
+      {/* 4. Permanent Footer Shell (Desktop / Tablet, omitted if hideShell is true) */}
+      {!hideShell && (
+        <div className="w-full hidden md:block relative z-10 mt-auto">
+          <Footer />
+        </div>
+      )}
 
-      {/* 5. Permanent Mobile Floating Bottom Bar */}
-      <div className="block md:hidden relative z-40">
-        <MobileBottomBar activeTab={activeTab} onSelectTab={handleNavSelect} />
-      </div>
+      {/* 5. Permanent Mobile Floating Bottom Bar (omitted if hideShell is true) */}
+      {!hideShell && (
+        <div className="block md:hidden relative z-40">
+          <MobileBottomBar activeTab={activeTab} onSelectTab={handleNavSelect} />
+        </div>
+      )}
     </div>
   );
 };

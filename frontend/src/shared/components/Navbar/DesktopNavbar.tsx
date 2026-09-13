@@ -93,7 +93,15 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
         </nav>
 
         {/* Left (End in RTL): Actions & Profile */}
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-3">
+          {/* Guest Login CTA */}
+          <button
+            onClick={() => onSelectTab?.('login' as NavTabKey)}
+            className="btn-gold py-1.5 px-4 text-xs font-bold hidden sm:inline-flex cursor-pointer"
+          >
+            تسجيل الدخول
+          </button>
+
           {/* Search Button */}
           <button
             aria-label="بحث في المنصة"
@@ -120,6 +128,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
 
           {/* User Profile Avatar */}
           <button
+            onClick={() => onSelectTab?.('profile')}
             aria-label="الملف الشخصي"
             className="btn-icon-circle"
           >

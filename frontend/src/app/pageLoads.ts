@@ -14,3 +14,4 @@ export const DashboardPage = lazy(() => import('../features/dashboard/pages/Dash
 export const ProfilePage = lazy(() => import('../features/profile/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 export const CourseDetailPage = lazy(() => import('../features/courses/pages/CourseDetailPage').then((m) => ({ default: m.CourseDetailPage })));
 export const ScholarshipDetailPage = lazy(() => import('../features/scholarships/pages/ScholarshipDetailPage').then((m) => ({ default: m.ScholarshipDetailPage })));
+export const LoginPage = lazy(() => import('../features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
