@@ -10,12 +10,14 @@ import {
   ProfilePage,
   CourseDetailPage,
   ScholarshipDetailPage,
+  LoginPage,
 } from './pageLoads';
 
 export interface RouteMeta {
   title: string;
   description?: string;
   activeTab?: NavTabKey;
+  hideShell?: boolean;
 }
 
 export type SkeletonVariant = 'home' | 'catalog' | 'detail' | 'default';
@@ -126,6 +128,25 @@ export const routes: RouteDefinition[] = [
     meta: {
       title: 'الملف الشخصي — أكاديمية خوارزم',
       activeTab: 'profile',
+    },
+    skeletonVariant: 'default',
+  },
+  {
+    path: '/login',
+    component: LoginPage,
+    meta: {
+      title: 'تسجيل الدخول — أكاديمية خوارزم',
+      description: 'سجّل دخولك إلى منصة أكاديمية خوارزم واستكشف مساراتك الأكاديمية والمنح الممولة.',
+      hideShell: true,
+    },
+    skeletonVariant: 'default',
+  },
+  {
+    path: '/auth',
+    component: () => <Navigate to="/login" />,
+    meta: {
+      title: 'تسجيل الدخول — أكاديمية خوارزم',
+      hideShell: true,
     },
     skeletonVariant: 'default',
   },
