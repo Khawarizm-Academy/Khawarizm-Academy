@@ -100,6 +100,12 @@ Add nothing that ignores `prefers-reduced-motion` — transitions and shimmer ar
 4. Cache miss → **if `keepPreviousData`** render last data with shimmer; **else** `isLoading = true` → Tier 2 skeleton.
 5. Error entry → `isError = true` → render themed retry block (never an endless spinner).
 
+> **Implementation note (keepPreviousData internals):** `useCachedData` commits the last
+> successful entry *inside the store-notification callback* (`dataCacheManager.subscribe`), never
+> with a guarded `setState` during render. Calling `setState` in the render body — even guarded
+> with an `Object.is` bail-out — loops under the React Compiler (`Too many re-renders`), so the
+> previous-data memory must live in the subscription callback only.
+
 ### Usage in a Data Section (canonical pattern)
 ```tsx
 import { useCachedData } from '../../../shared/hooks/useCachedData';

@@ -45,10 +45,26 @@ export function useCachedData<T>(
 
   const keyString = serializeKey(key);
 
+  // Holds the last successfully resolved data + its key, so a cache miss on a
+  // NEW key can keep rendering the previous results while it loads.
+  const [lastCommitted, setLastCommitted] = useState<{ key: string; data: T } | null>(null);
+
+  const commitLastCommitted = (entry: CacheEntry) => {
+    if (entry.status !== 'success') return;
+    setLastCommitted((prev) =>
+      prev && prev.data === entry.data ? prev : { key: keyString, data: entry.data as T }
+    );
+  };
+
   const subscribe = useCallback(
     (onStoreChange: () => void) => {
       if (!enabled) return () => {};
-      return dataCacheManager.subscribe(key, () => onStoreChange());
+      // Commit latest successful data inside the store-notification callback
+      // (never during render) so keepPreviousData stays safe for React Compiler.
+      return dataCacheManager.subscribe(key, (entry) => {
+        commitLastCommitted(entry);
+        onStoreChange();
+      });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [enabled, keyString]
@@ -60,20 +76,6 @@ export function useCachedData<T>(
   }, [enabled, keyString, cacheTime]);
 
   const entry = useSyncExternalStore(subscribe, getSnapshot);
-
-  // Holds the last successfully resolved data + its key, so a cache miss on a
-  // NEW key can keep rendering the previous results while it loads.
-  const [lastCommitted, setLastCommitted] = useState<{ key: string; data: T } | null>(null);
-
-  // "Adjusting state during render" (official React pattern): whenever a fresh
-  // successful entry is visible, commit it so a later cache miss can re-surface
-  // it via keepPreviousData. Guarded => no infinite loop.
-  if (entry?.status === 'success') {
-    setLastCommitted((prev) => {
-      if (prev && prev.key === keyString && prev.data === entry.data) return prev;
-      return { key: keyString, data: entry.data as T };
-    });
-  }
 
   // Auto-fetch if missing or stale
   useEffect(() => {
