@@ -1,22 +1,11 @@
-import React from 'react';
-import { Router, useLocation } from './app/router';
-import { HomePage } from './features/home/pages/HomePage';
-import { CatalogPage } from './features/catalog/pages/CatalogPage';
-
-const AppRoutes: React.FC = () => {
-  const { pathname } = useLocation();
-
-  if (pathname === '/catalog') {
-    return <CatalogPage />;
-  }
-
-  return <HomePage />;
-};
+import { Router } from './app/router';
+import { routes } from './app/routes';
+import { RootLayout } from './app/layouts/RootLayout';
 
 function App() {
   return (
-    <Router>
-      <AppRoutes />
+    <Router routes={routes}>
+      <RootLayout />
     </Router>
   );
 }

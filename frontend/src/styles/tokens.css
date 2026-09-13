@@ -43,4 +43,15 @@
   --shadow-elev-2: 0 8px 24px rgba(0, 0, 0, 0.45);
   --shadow-glow-gold: 0 0 24px rgba(229, 182, 92, 0.25);
   --shadow-glow-blue: 0 0 24px rgba(41, 169, 255, 0.25);
+
+  /* Celestial Skeleton Shimmer Tokens */
+  --skeleton-base: #061A3A;
+  --skeleton-surface: #092557;
+  --skeleton-border: #1B3F80;
+  --skeleton-highlight-cyan: rgba(41, 169, 255, 0.12);
+  --skeleton-highlight-gold: rgba(229, 182, 92, 0.10);
+
+  /* Page Transition Tokens */
+  --transition-page-duration: 220ms;
+  --transition-page-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }

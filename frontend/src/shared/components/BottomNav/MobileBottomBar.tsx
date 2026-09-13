@@ -120,6 +120,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       clearTimeout(t2);
       window.removeEventListener('resize', updateChamberPosition);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeIndex]);
 
   return (

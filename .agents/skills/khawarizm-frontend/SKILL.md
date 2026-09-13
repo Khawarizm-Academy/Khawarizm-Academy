@@ -107,3 +107,4 @@ Whenever asked to create any new page:
 - **Component & Class Catalog:** [`references/component-catalog.md`](references/component-catalog.md)
 - **Page Creation Blueprint & Real Case Study:** [`references/page-creation-blueprint.md`](references/page-creation-blueprint.md)
 - **Design Tokens & CSS Variables Dictionary:** [`references/design-tokens-and-classes.md`](references/design-tokens-and-classes.md)
+- **Loading, Caching & Routing Architecture:** [`references/loading-caching-routing-guide.md`](references/loading-caching-routing-guide.md)
