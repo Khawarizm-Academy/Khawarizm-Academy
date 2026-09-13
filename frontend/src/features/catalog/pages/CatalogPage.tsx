@@ -112,48 +112,23 @@ export const CatalogPage: React.FC = () => {
           {pageTitles.subtitle}
         </p>
 
-        {/* Mobile 3-Way Tabs Switcher */}
-        <div className="md:hidden w-full max-w-sm mt-3 p-1 bg-[#061A3A] rounded-full border border-[#1B3F80] flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => handleTabChange('scholarships')}
-            className={`flex-1 py-1.5 text-xs font-semibold font-['Tajawal'] rounded-full transition-all cursor-pointer ${
-              activeTab === 'scholarships'
-                ? 'bg-[#E5B65C] text-[#040F24] font-bold shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            المنح
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('courses')}
-            className={`flex-1 py-1.5 text-xs font-semibold font-['Tajawal'] rounded-full transition-all cursor-pointer ${
-              activeTab === 'courses'
-                ? 'bg-[#29A9FF] text-white font-bold shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            الدورات
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('all')}
-            className={`flex-1 py-1.5 text-xs font-semibold font-['Tajawal'] rounded-full transition-all cursor-pointer ${
-              activeTab === 'all'
-                ? 'bg-gradient-to-r from-[#E5B65C] to-[#29A9FF] text-[#040F24] font-bold shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            الكل
-          </button>
-        </div>
-
-        {/* Smart Search Box */}
-        <div className="w-full flex-center mt-3">
+        {/* Desktop Smart Search Box (Inline 3-Segment Toggle: الكل / دورة / منحة) */}
+        <div className="hidden md:flex w-full justify-center mt-4">
           <SmartSearchBox
             variant="desktop"
-            initialType={activeTab === 'scholarships' ? 'scholarship' : 'course'}
+            selectedType={activeTab === 'courses' ? 'course' : activeTab === 'scholarships' ? 'scholarship' : 'all'}
+            onTypeChange={(t) => handleTabChange(t === 'course' ? 'courses' : t === 'scholarship' ? 'scholarships' : 'all')}
+            initialQuery={filters.searchQuery}
+            onSearch={(q, t) => handleSearch(q, t)}
+          />
+        </div>
+
+        {/* Mobile Smart Search Box (3-Way Switcher ON TOP + Clean Search Bar Below) */}
+        <div className="flex md:hidden w-full justify-center mt-3">
+          <SmartSearchBox
+            variant="mobile"
+            selectedType={activeTab === 'courses' ? 'course' : activeTab === 'scholarships' ? 'scholarship' : 'all'}
+            onTypeChange={(t) => handleTabChange(t === 'course' ? 'courses' : t === 'scholarship' ? 'scholarships' : 'all')}
             initialQuery={filters.searchQuery}
             onSearch={(q, t) => handleSearch(q, t)}
           />
