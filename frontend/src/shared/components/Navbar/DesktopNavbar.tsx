@@ -46,7 +46,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
   useEffect(() => {
     updateIndicator();
     window.addEventListener('resize', updateIndicator);
-    return () => window.removeEventListener('resize', updateIndicator);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [normalizedActiveTab]);
 
   return (

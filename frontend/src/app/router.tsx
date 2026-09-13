@@ -1,31 +1,84 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useTransition } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useTransition,
+  useRef,
+  useContext,
+} from 'react';
+import type { RouteDefinition } from './routes';
+import { RouterContext, matchRoutePattern } from './routerContext';
 
-interface RouterContextType {
-  pathname: string;
-  search: string;
-  navigate: (to: string, options?: { replace?: boolean }) => void;
+interface RouterProps {
+  routes?: RouteDefinition[];
+  children: React.ReactNode;
 }
 
-const RouterContext = createContext<RouterContextType>({
-  pathname: '/',
-  search: '',
-  navigate: () => {},
-});
-
-export const Router: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const Router: React.FC<RouterProps> = ({ routes = [], children }) => {
   const [currentLocation, setCurrentLocation] = useState(() => ({
     pathname: window.location.pathname || '/',
     search: window.location.search || '',
   }));
-  const [, startTransition] = useTransition();
 
+  const [, startTransition] = useTransition();
+  const scrollMap = useRef<Map<string, number>>(new Map());
+  const prevPathRef = useRef<string>(currentLocation.pathname);
+
+  // Flag native View Transition support once so CSS can disable the
+  // CSS-entrance fallback (avoiding a double animation on supported browsers).
+  useEffect(() => {
+    if ('startViewTransition' in document) {
+      document.documentElement.dataset.vtEnabled = 'true';
+    }
+  }, []);
+
+  // Determine active route and params
+  let matchedRoute: RouteDefinition | null = null;
+  let matchedParams: Record<string, string> = {};
+
+  for (const route of routes) {
+    const result = matchRoutePattern(route.path, currentLocation.pathname);
+    if (result.matches) {
+      matchedRoute = route;
+      matchedParams = result.params;
+      break;
+    }
+  }
+
+  // Update document title when route changes
+  useEffect(() => {
+    if (matchedRoute?.meta?.title) {
+      document.title = matchedRoute.meta.title;
+    }
+  }, [matchedRoute]);
+
+  // Handle browser popstate (Back / Forward)
   useEffect(() => {
     const handlePopState = () => {
-      startTransition(() => {
+      const targetPath = window.location.pathname || '/';
+      const targetSearch = window.location.search || '';
+      const fullKey = `${targetPath}${targetSearch}`;
+
+      const updateState = () => {
         setCurrentLocation({
-          pathname: window.location.pathname || '/',
-          search: window.location.search || '',
+          pathname: targetPath,
+          search: targetSearch,
         });
+      };
+
+      // Native View Transitions if supported
+      if ('startViewTransition' in document) {
+        (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(() => {
+          startTransition(updateState);
+        });
+      } else {
+        startTransition(updateState);
+      }
+
+      // Restore scroll position
+      requestAnimationFrame(() => {
+        const savedY = scrollMap.current.get(fullKey) ?? 0;
+        window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior });
       });
     };
 
@@ -33,10 +86,16 @@ export const Router: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Programmatic navigation
   const navigate = useCallback((to: string, options?: { replace?: boolean }) => {
+    // Save current scroll position before leaving
+    const currentKey = `${window.location.pathname}${window.location.search}`;
+    scrollMap.current.set(currentKey, window.scrollY);
+
     const url = new URL(to, window.location.origin);
     const newPathname = url.pathname || '/';
     const newSearch = url.search || '';
+    const isDifferentPage = newPathname !== prevPathRef.current;
 
     if (options?.replace) {
       window.history.replaceState(null, '', to);
@@ -44,51 +103,54 @@ export const Router: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       window.history.pushState(null, '', to);
     }
 
-    startTransition(() => {
-      setCurrentLocation({
-        pathname: newPathname,
-        search: newSearch,
+    const performTransition = () => {
+      startTransition(() => {
+        setCurrentLocation({
+          pathname: newPathname,
+          search: newSearch,
+        });
       });
-    });
+    };
 
-    // Scroll to top on navigation if pathname changed
-    if (newPathname !== currentLocation.pathname) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Use native View Transitions API if supported
+    if ('startViewTransition' in document && isDifferentPage) {
+      (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(
+        performTransition
+      );
+    } else {
+      performTransition();
     }
-  }, [currentLocation.pathname]);
+
+    // Scroll handling:
+    // If navigating to a new page, smooth scroll to top.
+    // If only query params changed on the same page, PRESERVE current scroll position!
+    if (isDifferentPage) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      prevPathRef.current = newPathname;
+    }
+  }, []);
 
   return (
-    <RouterContext.Provider value={{ pathname: currentLocation.pathname, search: currentLocation.search, navigate }}>
+    <RouterContext.Provider
+      value={{
+        pathname: currentLocation.pathname,
+        search: currentLocation.search,
+        params: matchedParams,
+        activeRoute: matchedRoute,
+        navigate,
+      }}
+    >
       {children}
     </RouterContext.Provider>
   );
 };
 
-export const useRouter = () => useContext(RouterContext);
-
-export const useNavigate = () => {
-  const { navigate } = useContext(RouterContext);
-  return navigate;
-};
-
-export const useLocation = () => {
-  const { pathname, search } = useContext(RouterContext);
-  return { pathname, search };
-};
-
-export const useSearchParams = (): [URLSearchParams, (params: URLSearchParams | Record<string, string>) => void] => {
-  const { search, pathname, navigate } = useContext(RouterContext);
-  const searchParams = new URLSearchParams(search);
-
-  const setSearchParams = useCallback(
-    (newParams: URLSearchParams | Record<string, string>) => {
-      const paramsObj = newParams instanceof URLSearchParams ? newParams : new URLSearchParams(newParams);
-      const queryString = paramsObj.toString();
-      const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
-      navigate(newUrl, { replace: true });
-    },
-    [pathname, navigate]
-  );
-
-  return [searchParams, setSearchParams];
+/**
+ * Outlet component: Renders the active matched route component within a persistent layout
+ */
+export const Outlet: React.FC = () => {
+  const { activeRoute } = useContext(RouterContext);
+  if (!activeRoute) return null;
+  const Component = activeRoute.component;
+  return <Component />;
 };

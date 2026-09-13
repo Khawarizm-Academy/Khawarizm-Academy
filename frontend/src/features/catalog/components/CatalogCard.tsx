@@ -4,14 +4,16 @@ import type { CatalogItem } from '../../../shared/data/mockCatalogData';
 interface CatalogCardProps {
   item: CatalogItem;
   onSelect?: (item: CatalogItem) => void;
+  onPrefetch?: () => void;
 }
 
-export const CatalogCard: React.FC<CatalogCardProps> = ({ item, onSelect }) => {
+export const CatalogCard: React.FC<CatalogCardProps> = ({ item, onSelect, onPrefetch }) => {
   const isCourse = item.type === 'course';
 
   return (
     <article
       onClick={() => onSelect?.(item)}
+      onMouseEnter={onPrefetch}
       className={`group cursor-pointer rounded-xl overflow-hidden flex flex-col justify-between transition-all duration-300 ${
         isCourse ? 'card-interactive-blue' : 'card-interactive-gold'
       }`}
