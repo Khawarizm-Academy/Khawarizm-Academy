@@ -5,11 +5,15 @@ import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localizatio
 interface DesktopNavbarProps {
   activeTab?: NavTabKey | string;
   onSelectTab?: (tab: NavTabKey) => void;
+  onNotificationsClick?: () => void;
+  unreadCount?: number;
 }
 
 export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
   activeTab = 'home',
   onSelectTab,
+  onNotificationsClick,
+  unreadCount = 3,
 }) => {
   const normalizedActiveTab = toEnglishNav(activeTab);
 
@@ -116,14 +120,17 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
 
           {/* Notifications Bell with Unread Badge */}
           <button
+            onClick={onNotificationsClick}
             aria-label="الإشعارات"
-            className="btn-icon-box relative"
+            className="btn-icon-box relative cursor-pointer"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
               <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
             </svg>
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#D9534F] ring-2 ring-[#040F24]" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#FF4D4D] ring-2 ring-[#040F24]" />
+            )}
           </button>
 
           {/* User Profile Avatar */}

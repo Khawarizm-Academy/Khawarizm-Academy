@@ -1,0 +1,76 @@
+export type DashboardState = 'active' | 'live' | 'empty';
+
+export type DashboardView = 'overview' | 'saved' | 'achievements';
+
+export interface EnrolledCourse {
+  id: string;
+  title: string;
+  track: string;
+  progress: number;
+  lastLesson: string;
+  thumbnail: string;
+  nextLiveTime?: string;
+  instructor?: string;
+}
+
+export interface LiveSessionInfo {
+  id: string;
+  courseTitle: string;
+  instructor: string;
+  initialRemainingSeconds: number;
+  thumbnail: string;
+  meetUrl?: string;
+}
+
+export interface DashboardStats {
+  attendanceRate: number;
+  attendanceNote: string;
+  gpa: string;
+  gpaRating: string;
+  pointsEarned: number;
+  rankNote: string;
+}
+
+export interface UpcomingEvent {
+  id: string;
+  title: string;
+  dateText: string;
+  type: 'submission' | 'exam' | 'session';
+  typeLabel: string;
+}
+
+export interface SavedScholarshipItem {
+  id: string;
+  title: string;
+  provider: string;
+  deadlineText: string;
+  hoursRemaining: number;
+  isUrgent?: boolean;
+  category?: string;
+}
+
+export interface CompetitionItem {
+  id: string;
+  title: string;
+  status: 'registered' | 'live' | 'completed';
+  statusLabel: string;
+  dateText?: string;
+  rankText?: string;
+}
+
+export interface CertificateItem {
+  id: string;
+  title: string;
+  issueDate: string;
+  credentialUrl: string;
+  isOfficial: boolean;
+}
+
+export interface DashboardNotification {
+  id: string;
+  title: string;
+  timeAgo: string;
+  type: 'live' | 'scholarship' | 'exam' | 'competition' | 'lesson' | 'application';
+  isRead: boolean;
+  link?: string;
+}

@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Outlet } from '../router';
 import { useLocation, useNavigate, useActiveRoute } from '../routerContext';
 import { RouteErrorBoundary } from '../RouteErrorBoundary';
@@ -7,12 +7,14 @@ import { MobileHeader } from '../../shared/components/Navbar/MobileHeader';
 import { MobileBottomBar } from '../../shared/components/BottomNav/MobileBottomBar';
 import { Footer } from '../../shared/components/Footer/Footer';
 import { PageSkeleton } from '../../shared/components/Loading/PageSkeleton';
+import { NotificationsDrawer } from '../../features/dashboard/components/NotificationsDrawer';
 import type { NavTabKey } from '../../shared/lib/localization';
 
 export const RootLayout: React.FC = () => {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const activeRoute = useActiveRoute();
+  const [isGlobalNotificationsOpen, setIsGlobalNotificationsOpen] = useState(false);
 
   // Resolve active navbar tab key
   const queryParams = new URLSearchParams(search);
@@ -69,10 +71,18 @@ export const RootLayout: React.FC = () => {
       {!hideShell && (
         <>
           <div className="w-full hidden md:block relative z-30">
-            <DesktopNavbar activeTab={activeTab} onSelectTab={handleNavSelect} />
+            <DesktopNavbar
+              activeTab={activeTab}
+              onSelectTab={handleNavSelect}
+              onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
+            />
           </div>
           <div className="w-full block md:hidden relative z-30">
-            <MobileHeader onLogoClick={() => navigate('/')} onLoginClick={() => navigate('/login')} />
+            <MobileHeader
+              onLogoClick={() => navigate('/')}
+              onLoginClick={() => navigate('/login')}
+              onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
+            />
           </div>
         </>
       )}
@@ -99,6 +109,13 @@ export const RootLayout: React.FC = () => {
           <MobileBottomBar activeTab={activeTab} onSelectTab={handleNavSelect} />
         </div>
       )}
+
+      {/* 6. Global Notifications Drawer Overlay */}
+      <NotificationsDrawer
+        isOpen={isGlobalNotificationsOpen}
+        onClose={() => setIsGlobalNotificationsOpen(false)}
+        onNavigate={(path) => navigate(path)}
+      />
     </div>
   );
 };
