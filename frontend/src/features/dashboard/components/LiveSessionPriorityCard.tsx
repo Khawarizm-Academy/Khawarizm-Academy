@@ -1,93 +1,122 @@
 import React from 'react';
-import type { LiveSessionInfo } from '../types';
 import { useLiveCountdown } from '../hooks/useLiveCountdown';
 
 interface LiveSessionPriorityCardProps {
-  session: LiveSessionInfo;
-  onJoin?: () => void;
+  courseTitle?: string;
+  instructorName?: string;
+  sessionDescription?: string;
+  initialMinutes?: number;
+  initialSeconds?: number;
+  onJoinSession?: () => void;
 }
 
 export const LiveSessionPriorityCard: React.FC<LiveSessionPriorityCardProps> = ({
-  session,
-  onJoin,
+  courseTitle = 'برمجة بايثون للمبتدئين',
+  instructorName = 'م. خالد الشمري',
+  sessionDescription = 'شاشة المباشرة والأسئلة تفاعلية',
+  initialMinutes = 14,
+  initialSeconds = 3,
+  onJoinSession,
 }) => {
-  const { formattedTime, isStarted } = useLiveCountdown(session.initialRemainingSeconds);
+  const totalSeconds = initialMinutes * 60 + initialSeconds;
+  const { formattedTime } = useLiveCountdown(totalSeconds);
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#0B1E40] to-[#061A3A] rounded-2xl border border-[#FF4D4D]/50 shadow-[0_0_30px_rgba(255,77,77,0.18)] p-5 sm:p-7 flex flex-col gap-6 transition-all duration-300">
-      {/* Ambient Red Celestial Glow in Background */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-[#FF4D4D]/10 rounded-full blur-3xl pointer-events-none" />
+    <div
+      dir="rtl"
+      data-layer="Live-Priority-Card"
+      className="LivePriorityCard self-stretch p-6 md:p-7 bg-slate-900 rounded-3xl shadow-[0px_8px_24px_0px_rgba(255,77,77,0.12)] outline outline-[1.5px] outline-offset-[-1.5px] outline-red-500/80 flex flex-col justify-start items-start gap-5 md:gap-6 relative overflow-hidden"
+    >
+      {/* Red ambient beacon atmosphere */}
+      <div className="absolute top-0 right-0 w-72 h-72 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* 1. Header Urgency Beacon */}
-      <div className="flex items-center justify-between">
-        <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#FF4D4D]/10 border border-[#FF4D4D]/30 text-[#FF6B6B] text-xs font-bold font-['Tajawal']">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF4D4D] opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF4D4D]" />
-          </span>
-          <span>جلستك المباشرة تبدأ قريبًا</span>
-        </div>
-
-        <span className="text-xs text-[#8299B5] font-['Tajawal'] hidden sm:inline">
-          منصة الفصول الافتراضية
+      {/* Live-Tag */}
+      <div
+        data-layer="Live-Tag"
+        className="LiveTag px-3 py-1.5 bg-red-500/10 rounded-lg inline-flex justify-start items-center gap-2 border border-red-500/20"
+      >
+        <span className="size-2 rounded-full bg-red-500 animate-ping shrink-0" />
+        <span
+          data-layer="جلستك المباشرة تبدأ قريبًا"
+          className="text-red-500 text-xs font-bold font-['Tajawal'] leading-3"
+        >
+          جلستك المباشرة تبدأ قريبًا
         </span>
       </div>
 
-      {/* 2. Course Details & Instructor Info */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 flex flex-col gap-1.5">
-          <h2 className="text-xl sm:text-2xl font-bold text-[#F1F5F9] font-['Cairo',sans-serif] leading-tight">
-            {session.courseTitle}
+      {/* Live-Details: Text Details on right, Laser/Neon Thumbnail on left */}
+      <div
+        data-layer="Live-Details"
+        className="LiveDetails self-stretch flex justify-between items-center gap-4 md:gap-6"
+      >
+        <div data-layer="Text-Details" className="TextDetails flex-1 flex flex-col justify-start items-start gap-1.5 md:gap-2 text-right">
+          <h2
+            data-layer={courseTitle}
+            className="text-slate-200 text-lg md:text-xl font-bold font-['Cairo'] leading-6 md:leading-7"
+          >
+            {courseTitle}
           </h2>
-          <p className="text-sm text-[#8299B5] font-['Tajawal',sans-serif] leading-relaxed">
-            {session.instructor}
+          <p
+            data-layer={sessionDescription}
+            className="text-slate-400 text-xs md:text-base font-medium font-['Tajawal'] leading-5 md:leading-6"
+          >
+            المعلم: {instructorName} • {sessionDescription}
           </p>
         </div>
 
-        {/* Course Thumbnail */}
-        <div className="size-16 sm:size-20 rounded-2xl overflow-hidden shrink-0 border border-[#167BDB]/40 shadow-[0_4px_16px_rgba(0,0,0,0.4)]">
-          <img
-            src={session.thumbnail}
-            alt={session.courseTitle}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+        {/* Thumbnail with neon visual matching Figma */}
+        <div
+          data-layer="Thumb-Wrapper"
+          className="ThumbWrapper size-16 md:size-20 bg-blue-950 rounded-2xl flex justify-center items-center overflow-hidden shrink-0 border border-red-500/30 shadow-inner"
+        >
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M12 22C12 16.48 16.48 12 22 12C27.52 12 32 16.48 32 22C32 27.52 27.52 32 22 32"
+              stroke="#FF4D4D"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M6 22C6 13.16 13.16 6 22 6C30.84 6 38 13.16 38 22"
+              stroke="#29A9FF"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="4 4"
+            />
+            <circle cx="22" cy="22" r="5" fill="#E5B65C" />
+          </svg>
         </div>
       </div>
 
-      {/* 3. High-Tech Inset Countdown Chamber */}
-      <div className="w-full p-4 sm:p-5 rounded-2xl bg-[#040F24]/90 border border-[#1B3F80]/70 shadow-inner flex flex-col items-center justify-center gap-1">
-        <span className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">
-          {isStarted ? 'بدأت الجلسة الآن!' : 'الوقت المتبقي لبدء الجلسة'}
+      {/* Countdown Chamber */}
+      <div
+        data-layer="Countdown-Chamber"
+        className="w-full bg-slate-950/80 border border-blue-900/60 rounded-2xl py-4 px-6 flex flex-col items-center justify-center gap-1 shadow-inner"
+      >
+        <span
+          data-layer="الوقت المتبقي لبدء الجلسة"
+          className="text-slate-400 text-xs font-normal font-['Tajawal']"
+        >
+          الوقت المتبقي لبدء الجلسة
         </span>
         <div
-          className="text-4xl sm:text-5xl font-black font-['Cairo',sans-serif] text-[#F1F5F9] tracking-wider drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]"
-          dir="ltr"
+          data-layer={formattedTime}
+          className="text-3xl md:text-4xl font-extrabold text-slate-100 font-mono tracking-widest text-shadow-sm"
         >
           {formattedTime}
         </div>
       </div>
 
-      {/* 4. Primary Gold Action CTA */}
+      {/* Action Button */}
       <button
-        onClick={onJoin}
-        className="btn-gold w-full py-3.5 sm:py-4 text-base font-bold font-['Cairo',sans-serif] shadow-[0_0_20px_rgba(229,182,92,0.4)] flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-transform"
+        type="button"
+        onClick={onJoinSession}
+        data-layer="Hero-Action"
+        className="self-stretch py-3.5 bg-gradient-to-r from-orange-300 to-amber-400 hover:from-amber-400 hover:to-orange-300 text-slate-900 font-bold font-['Tajawal'] text-base rounded-full flex justify-center items-center cursor-pointer shadow-[0_4px_16px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_24px_rgba(229,182,92,0.5)] hover:scale-[1.01] active:scale-[0.99] transition-all"
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" opacity="0.2" />
-          <polygon points="5 3 19 12 5 21 5 3" />
-        </svg>
-        <span>انضم الآن للجلسة</span>
+        <span className="hidden md:inline">انضم الآن للجلسة</span>
+        <span className="md:hidden">انضم الآن</span>
       </button>
-    </section>
+    </div>
   );
 };

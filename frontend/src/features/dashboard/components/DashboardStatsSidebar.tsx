@@ -1,113 +1,195 @@
 import React from 'react';
-import type { DashboardStats, UpcomingEvent } from '../types';
 
-interface DashboardStatsSidebarProps {
-  stats: DashboardStats;
-  events: UpcomingEvent[];
-}
-
-export const DashboardStatsSidebar: React.FC<DashboardStatsSidebarProps> = ({
-  stats,
-  events,
-}) => {
+export const DashboardStatsSidebar: React.FC = () => {
   return (
-    <aside className="flex flex-col gap-6 w-full">
-      {/* 1. Achievement Stats Widget */}
-      <div className="glass-panel p-5 sm:p-6 rounded-2xl border border-[#1B3F80]/50 shadow-[0_8px_24px_rgba(0,0,0,0.35)] flex flex-col gap-4">
-        <h3 className="text-lg font-bold text-[#E5B65C] font-['Cairo',sans-serif]">
+    <aside
+      dir="rtl"
+      data-layer="Sidebar-Widgets"
+      className="SidebarWidgets w-full md:w-96 flex flex-col justify-start items-start gap-6 shrink-0"
+    >
+      {/* 1. Achievement Stats Widget Card */}
+      <div
+        data-layer="Widget-Card"
+        className="WidgetCard self-stretch p-6 bg-slate-900 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col justify-start items-start gap-5"
+      >
+        <h3
+          data-layer="إحصائيات الإنجاز"
+          className="text-right text-orange-300 text-lg font-bold font-['Cairo'] leading-6"
+        >
           إحصائيات الإنجاز
         </h3>
 
-        <div className="flex flex-col gap-3">
-          {/* Attendance Rate */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-[#040F24]/80 border border-[#167BDB]/25">
-            <div className="flex flex-col gap-0.5 text-right">
-              <span className="text-sm font-medium text-[#DCE5EE] font-['Tajawal']">
-                معدل الحضور
+        <div data-layer="Stat-List" className="StatList self-stretch flex flex-col justify-start items-start gap-3">
+          {/* Row 1: Attendance */}
+          <div
+            data-layer="Widget-Row"
+            className="WidgetRow self-stretch p-3 bg-slate-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center"
+          >
+            <div
+              data-layer="Value-Group"
+              className="ValueGroup flex flex-col justify-start items-start gap-0.5 text-left"
+            >
+              <span
+                data-layer="98%"
+                className="text-sky-400 text-base font-bold font-['Tajawal'] leading-6"
+              >
+                98%
               </span>
-              <span className="text-[11px] text-[#8299B5] font-['Tajawal']">
-                {stats.attendanceNote}
+              <span
+                data-layer="ملتزم بالحصص المباشرة"
+                className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
+              >
+                ملتزم بالحصص المباشرة
               </span>
             </div>
-            <span className="text-lg font-bold text-[#29A9FF] font-['Cairo']" dir="ltr">
-              {stats.attendanceRate}%
+            <span
+              data-layer="معدل الحضور"
+              className="text-right text-slate-200 text-base font-medium font-['Tajawal'] leading-6"
+            >
+              معدل الحضور
             </span>
           </div>
 
-          {/* Cumulative GPA */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-[#040F24]/80 border border-[#167BDB]/25">
-            <div className="flex flex-col gap-0.5 text-right">
-              <span className="text-sm font-medium text-[#DCE5EE] font-['Tajawal']">
-                المعدل التراكمي
+          {/* Row 2: GPA */}
+          <div
+            data-layer="Widget-Row"
+            className="WidgetRow self-stretch p-3 bg-slate-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center"
+          >
+            <div
+              data-layer="Value-Group"
+              className="ValueGroup flex flex-col justify-start items-start gap-0.5 text-left"
+            >
+              <span
+                data-layer="4.9 / 5.0"
+                className="text-orange-300 text-base font-bold font-['Tajawal'] leading-6"
+              >
+                4.9 / 5.0
               </span>
-              <span className="text-[11px] text-[#8299B5] font-['Tajawal']">
-                {stats.gpaRating}
+              <span
+                data-layer="تصنيف ممتاز"
+                className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
+              >
+                تصنيف ممتاز
               </span>
             </div>
-            <span className="text-lg font-bold text-[#E5B65C] font-['Cairo']" dir="ltr">
-              {stats.gpa}
+            <span
+              data-layer="المعدل التراكمي"
+              className="text-right text-slate-200 text-base font-medium font-['Tajawal'] leading-6"
+            >
+              المعدل التراكمي
             </span>
           </div>
 
-          {/* Earned Points & Class Rank */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-[#040F24]/80 border border-[#167BDB]/25">
-            <div className="flex flex-col gap-0.5 text-right">
-              <span className="text-sm font-medium text-[#DCE5EE] font-['Tajawal']">
-                النقاط المكتسبة
+          {/* Row 3: Earned Points */}
+          <div
+            data-layer="Widget-Row"
+            className="WidgetRow self-stretch p-3 bg-slate-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center"
+          >
+            <div
+              data-layer="Value-Group"
+              className="ValueGroup flex flex-col justify-start items-start gap-0.5 text-left"
+            >
+              <span
+                data-layer="1,240 نقطة"
+                className="text-emerald-500 text-base font-bold font-['Tajawal'] leading-6"
+              >
+                1,240 نقطة
               </span>
-              <span className="text-[11px] text-[#8299B5] font-['Tajawal']">
-                {stats.rankNote}
+              <span
+                data-layer="الترتيب العاشر على الدفعة"
+                className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
+              >
+                الترتيب العاشر على الدفعة
               </span>
             </div>
-            <span className="text-lg font-bold text-[#10B981] font-['Cairo']">
-              {stats.pointsEarned.toLocaleString('ar-EG')} نقطة
+            <span
+              data-layer="النقاط المكتسبة"
+              className="text-right text-slate-200 text-base font-medium font-['Tajawal'] leading-6"
+            >
+              النقاط المكتسبة
             </span>
           </div>
         </div>
       </div>
 
-      {/* 2. Upcoming Important Events Widget */}
-      <div className="glass-panel p-5 sm:p-6 rounded-2xl border border-[#1B3F80]/50 shadow-[0_8px_24px_rgba(0,0,0,0.35)] flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-[#E5B65C] font-['Cairo',sans-serif]">
-            الأحداث الهامة القادمة
-          </h3>
-          <span className="text-xs text-[#8299B5] font-['Tajawal']">
-            {events.length} مجدولة
-          </span>
-        </div>
+      {/* 2. Upcoming Events Widget Card */}
+      <div
+        data-layer="Widget-Card"
+        className="WidgetCard self-stretch p-6 bg-slate-900 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col justify-start items-start gap-5"
+      >
+        <h3
+          data-layer="الأحداث الهامة القادمة"
+          className="text-right text-orange-300 text-lg font-bold font-['Cairo'] leading-6"
+        >
+          الأحداث الهامة القادمة
+        </h3>
 
-        <div className="flex flex-col gap-3">
-          {events.map((evt) => {
-            const isSubmission = evt.type === 'submission';
-            return (
-              <div
-                key={evt.id}
-                className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#040F24]/80 border border-[#1B3F80]/40 hover:border-[#167BDB]/50 transition-colors"
+        <div data-layer="Event-List" className="EventList self-stretch flex flex-col justify-start items-start gap-3">
+          {/* Event 1: Project Submission */}
+          <div
+            data-layer="Event-Row"
+            className="EventRow self-stretch p-3 bg-slate-900/90 rounded-xl border border-blue-900/50 flex justify-between items-center gap-3"
+          >
+            <div
+              data-layer="Type-Tag"
+              className="TypeTag px-2 py-1 bg-red-500/10 rounded-md flex justify-center items-center shrink-0 border border-red-500/20"
+            >
+              <span
+                data-layer="تسليم"
+                className="text-red-500 text-xs font-bold font-['Tajawal'] leading-4"
               >
-                {/* Event Title & Date on the Right in RTL */}
-                <div className="flex flex-col gap-0.5 min-w-0 flex-1 text-right">
-                  <h4 className="text-xs sm:text-sm font-bold text-[#DCE5EE] font-['Cairo'] truncate">
-                    {evt.title}
-                  </h4>
-                  <span className="text-[11px] text-[#8299B5] font-['Tajawal']">
-                    {evt.dateText}
-                  </span>
-                </div>
+                تسليم
+              </span>
+            </div>
 
-                {/* Event Type Badge on the Left in RTL */}
-                <span
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold font-['Tajawal'] shrink-0 ${
-                    isSubmission
-                      ? 'bg-[#FF4D4D]/15 text-[#FF6B6B] border border-[#FF4D4D]/30'
-                      : 'bg-[#29A9FF]/15 text-[#29A9FF] border border-[#29A9FF]/30'
-                  }`}
-                >
-                  {evt.typeLabel}
-                </span>
-              </div>
-            );
-          })}
+            <div data-layer="Details" className="Details flex-1 flex flex-col justify-start items-start gap-0.5 text-right">
+              <h4
+                data-layer="تسليم مشروع تخرج الويب"
+                className="text-slate-200 text-sm font-bold font-['Tajawal'] leading-5 truncate w-full"
+              >
+                تسليم مشروع تخرج الويب
+              </h4>
+              <span
+                data-layer="الأحد، 15 يناير • 11:59 م"
+                className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
+              >
+                الأحد، 15 يناير • 11:59 م
+              </span>
+            </div>
+          </div>
+
+          {/* Event 2: Final Exam */}
+          <div
+            data-layer="Event-Row"
+            className="EventRow self-stretch p-3 bg-slate-900/90 rounded-xl border border-blue-900/50 flex justify-between items-center gap-3"
+          >
+            <div
+              data-layer="Type-Tag"
+              className="TypeTag px-2 py-1 bg-sky-400/10 rounded-md flex justify-center items-center shrink-0 border border-sky-400/20"
+            >
+              <span
+                data-layer="اختبار"
+                className="text-sky-400 text-xs font-bold font-['Tajawal'] leading-4"
+              >
+                اختبار
+              </span>
+            </div>
+
+            <div data-layer="Details" className="Details flex-1 flex flex-col justify-start items-start gap-0.5 text-right">
+              <h4
+                data-layer="الاختبار النهائي - بايثون"
+                className="text-slate-200 text-sm font-bold font-['Tajawal'] leading-5 truncate w-full"
+              >
+                الاختبار النهائي - بايثون
+              </h4>
+              <span
+                data-layer="الأربعاء، 18 يناير • 06:00 م"
+                className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
+              >
+                الأربعاء، 18 يناير • 06:00 م
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </aside>

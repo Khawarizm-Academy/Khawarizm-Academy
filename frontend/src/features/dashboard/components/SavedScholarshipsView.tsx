@@ -1,74 +1,121 @@
 import React, { useState } from 'react';
-import type { SavedScholarshipItem } from '../types';
-import { mockSavedScholarships, mockFavoriteCourses } from '../data/mockDashboardData';
+import { useNavigate } from '../../../app/routerContext';
 
-interface SavedScholarshipsViewProps {
-  onExploreMore?: () => void;
+interface SavedScholarshipItem {
+  id: string;
+  title: string;
+  provider: string;
+  deadlineText: string;
+  isUrgent: boolean;
 }
 
-export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
-  onExploreMore,
-}) => {
-  const [activeSubTab, setActiveSubTab] = useState<'scholarships' | 'courses'>('scholarships');
-  const [scholarships, setScholarships] = useState<SavedScholarshipItem[]>(mockSavedScholarships);
-  const [favoriteCourses, setFavoriteCourses] = useState<SavedScholarshipItem[]>(mockFavoriteCourses);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+interface FavoriteCourseItem {
+  id: string;
+  title: string;
+  provider: string;
+  durationText: string;
+}
 
-  const handleRemove = (id: string, isScholarship: boolean) => {
-    if (isScholarship) {
-      setScholarships((prev) => prev.filter((item) => item.id !== id));
-      showToast('تمت إزالة المنحة من قائمة المحفوظات');
-    } else {
-      setFavoriteCourses((prev) => prev.filter((item) => item.id !== id));
-      showToast('تمت إزالة الدورة من قائمة المفضلة');
-    }
+const initialScholarships: SavedScholarshipItem[] = [
+  {
+    id: 'sch-kaust-01',
+    title: 'منحة التميز لعلوم الحاسب والابتكار التقني',
+    provider: 'جامعة الملك عبدالله للعلوم والتقنية',
+    deadlineText: 'باقي 18 ساعة',
+    isUrgent: true,
+  },
+  {
+    id: 'sch-tuwaiq-02',
+    title: 'برنامج الابتعاث الثقافي والتقني الدولي',
+    provider: 'وزارة الثقافة ومؤسسة طويق',
+    deadlineText: 'باقي 5 أيام',
+    isUrgent: false,
+  },
+  {
+    id: 'sch-sdaia-03',
+    title: 'منحة الذكاء الاصطناعي وعلوم البيانات المتقدمة',
+    provider: 'الهيئة السعودية للبيانات والذكاء الاصطناعي (سدايا)',
+    deadlineText: 'باقي 12 يومًا',
+    isUrgent: false,
+  },
+  {
+    id: 'sch-oxford-04',
+    title: 'زمالة أكسفورد لأبحاث الحوسبة السحابية',
+    provider: 'جامعة أكسفورد بالشراكة مع الأكاديمية',
+    deadlineText: 'باقي 20 يومًا',
+    isUrgent: false,
+  },
+];
+
+const initialFavoriteCourses: FavoriteCourseItem[] = [
+  {
+    id: 'course-fav-1',
+    title: 'الأمن السيبراني والدفاع الرقمي الاستباقي',
+    provider: 'مسار الأمن المتقدم • 10 أسابيع',
+    durationText: 'معتمدة دولياً',
+  },
+  {
+    id: 'course-fav-2',
+    title: 'الحوسبة الكمية ومستقبل الخوارزميات',
+    provider: 'مسار الفيزياء التقنية • 6 أسابيع',
+    durationText: 'مستوى متقدم',
+  },
+];
+
+export const SavedScholarshipsView: React.FC = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'scholarships' | 'courses'>('scholarships');
+  const [scholarships, setScholarships] = useState<SavedScholarshipItem[]>(initialScholarships);
+  const [favoriteCourses, setFavoriteCourses] = useState<FavoriteCourseItem[]>(initialFavoriteCourses);
+
+  const handleDeleteScholarship = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setScholarships((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+  const handleDeleteFavoriteCourse = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoriteCourses((prev) => prev.filter((c) => c.id !== id));
   };
-
-  const currentItems = activeSubTab === 'scholarships' ? scholarships : favoriteCourses;
 
   return (
-    <div className="flex flex-col gap-6 w-full animate-page-enter">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-[#061A3A] border border-[#29A9FF]/60 text-xs sm:text-sm text-[#DCE5EE] shadow-[0_4px_20px_rgba(0,0,0,0.6)] animate-page-enter">
-          {toastMessage}
-        </div>
-      )}
+    <div dir="rtl" className="w-full flex flex-col gap-6">
+      {/* Header-Filter matching lines 177-197 of Saved Scholarships - Dashboard - Desktop.html */}
+      <div
+        data-layer="Header-Filter"
+        className="HeaderFilter self-stretch flex justify-between items-center flex-wrap gap-4"
+      >
+        {/* Title on Right in RTL */}
+        <h2
+          data-layer="إدارة المحفوظات"
+          className="text-slate-200 text-xl font-bold font-['Cairo'] leading-6"
+        >
+          إدارة المحفوظات
+        </h2>
 
-      {/* Header & Sub-Tab Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#1B3F80]/30">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-[#F1F5F9] font-['Cairo',sans-serif]">
-            إدارة المحفوظات
-          </h2>
-          <p className="text-xs sm:text-sm text-[#8299B5] font-['Tajawal',sans-serif] mt-0.5">
-            تابع المنح الدراسية والدورات المفضلة والتقديمات القادمة بانتظام.
-          </p>
-        </div>
-
-        {/* Sub-Tab Switcher */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#040F24]/90 border border-[#167BDB]/30 self-start sm:self-auto">
+        {/* Toggle-Filter on Left in RTL */}
+        <div
+          data-layer="Toggle-Filter"
+          className="ToggleFilter p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center"
+        >
           <button
-            onClick={() => setActiveSubTab('scholarships')}
-            className={`px-4 py-1.5 rounded-lg text-xs sm:text-sm font-['Tajawal'] font-bold transition-colors cursor-pointer ${
-              activeSubTab === 'scholarships'
-                ? 'bg-[#167BDB]/30 text-[#29A9FF] border border-[#29A9FF]/50 shadow-[0_0_8px_rgba(41,169,255,0.3)]'
-                : 'text-[#8299B5] hover:text-[#DCE5EE]'
+            type="button"
+            onClick={() => setActiveTab('scholarships')}
+            className={`px-5 md:px-6 py-2 rounded-full text-xs md:text-sm transition-all cursor-pointer ${
+              activeTab === 'scholarships'
+                ? 'bg-orange-300/10 text-orange-300 font-bold'
+                : 'text-slate-400 hover:text-slate-200 font-medium'
             }`}
           >
             المنح المحفوظة ({scholarships.length})
           </button>
           <button
-            onClick={() => setActiveSubTab('courses')}
-            className={`px-4 py-1.5 rounded-lg text-xs sm:text-sm font-['Tajawal'] font-bold transition-colors cursor-pointer ${
-              activeSubTab === 'courses'
-                ? 'bg-[#E5B65C]/20 text-[#E5B65C] border border-[#E5B65C]/50 shadow-[0_0_8px_rgba(229,182,92,0.3)]'
-                : 'text-[#8299B5] hover:text-[#DCE5EE]'
+            type="button"
+            onClick={() => setActiveTab('courses')}
+            className={`px-5 md:px-6 py-2 rounded-full text-xs md:text-sm transition-all cursor-pointer ${
+              activeTab === 'courses'
+                ? 'bg-orange-300/10 text-orange-300 font-bold'
+                : 'text-slate-400 hover:text-slate-200 font-medium'
             }`}
           >
             الدورات المفضلة ({favoriteCourses.length})
@@ -76,78 +123,119 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
         </div>
       </div>
 
-      {/* Saved Items List */}
-      {currentItems.length === 0 ? (
-        <div className="p-8 text-center glass-panel rounded-2xl border border-[#167BDB]/30 flex flex-col items-center gap-4">
-          <span className="text-3xl">🔖</span>
-          <p className="text-sm text-[#8299B5] font-['Tajawal']">
-            لا توجد عناصر محفوظة في هذا القسم حاليًا.
-          </p>
-          <button
-            onClick={onExploreMore}
-            className="btn-outline-blue py-2 px-5 text-xs font-bold font-['Cairo']"
-          >
-            استكشف الفرص والدورات
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3.5">
-          {currentItems.map((item) => {
-            const isScholarship = activeSubTab === 'scholarships';
-            return (
+      {/* List of Saved Scholarships */}
+      {activeTab === 'scholarships' && (
+        <div data-layer="Scholarships-List" className="flex flex-col gap-3">
+          {scholarships.length === 0 ? (
+            <div className="p-10 text-center bg-slate-900/50 rounded-2xl border border-blue-900/50 text-slate-400 text-sm">
+              لا توجد منح دراسية محفوظة حالياً.
+            </div>
+          ) : (
+            scholarships.map((item) => (
               <div
                 key={item.id}
-                className="card-interactive-blue flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-[#061A3A]/80 border border-[#167BDB]/30 hover:border-[#29A9FF]/60 shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-all duration-200"
+                data-layer="Scholarship-Row"
+                onClick={() => navigate(`/scholarships/${item.id}`)}
+                className="ScholarshipRow self-stretch p-4 bg-blue-950 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-4 hover:border-sky-400/40 transition-all cursor-pointer group"
               >
-                {/* 1. Item Title & Provider on the Right in RTL */}
-                <div className="flex flex-col gap-1 min-w-0 flex-1 text-right">
-                  <h3 className="text-sm sm:text-base font-bold text-[#F1F5F9] font-['Cairo',sans-serif]">
+                {/* Right in RTL: Text-Metadata */}
+                <div data-layer="Text-Metadata" className="flex-1 flex flex-col justify-start items-start gap-1 text-right min-w-0">
+                  <h3
+                    data-layer={item.title}
+                    className="text-slate-200 text-sm md:text-base font-bold font-['Tajawal'] leading-6 truncate w-full group-hover:text-sky-300 transition-colors"
+                  >
                     {item.title}
                   </h3>
-                  <span className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">
+                  <span
+                    data-layer={item.provider}
+                    className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
+                  >
                     {item.provider}
                   </span>
                 </div>
 
-                {/* 2. Urgency Badge & Remove Button on the Left in RTL */}
-                <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                  {/* Deadline Urgency Badge */}
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-['Tajawal',sans-serif] ${
+                {/* Left in RTL: Left-Controls (Deadline Tag + Delete Button) */}
+                <div data-layer="Left-Controls" className="flex items-center gap-3 shrink-0">
+                  {/* Deadline-Tag */}
+                  <div
+                    data-layer="Deadline-Tag"
+                    className={`px-3 py-1.5 rounded-lg outline outline-1 outline-offset-[-1px] flex items-center justify-center ${
                       item.isUrgent
-                        ? 'bg-[#FF4D4D]/15 text-[#FF6B6B] border border-[#FF4D4D]/40 shadow-[0_0_10px_rgba(255,77,77,0.2)] animate-pulse'
-                        : 'bg-[#167BDB]/15 text-[#29A9FF] border border-[#167BDB]/30'
+                        ? 'bg-red-500/10 outline-red-500 text-red-500 animate-pulse'
+                        : 'bg-orange-300/10 outline-orange-300 text-orange-300'
                     }`}
                   >
-                    {item.isUrgent && <span className="size-1.5 rounded-full bg-[#FF4D4D]" />}
-                    <span>{item.deadlineText}</span>
-                  </span>
+                    <span className="text-xs font-bold font-['Tajawal'] leading-4 whitespace-nowrap">
+                      {item.deadlineText}
+                    </span>
+                  </div>
 
-                  {/* Remove Button */}
+                  {/* Delete-Btn */}
                   <button
-                    onClick={() => handleRemove(item.id, isScholarship)}
-                    className="p-2 rounded-xl bg-[#040F24]/80 hover:bg-[#FF4D4D]/20 border border-[#1B3F80]/40 hover:border-[#FF4D4D]/40 text-[#8299B5] hover:text-[#FF6B6B] transition-colors cursor-pointer"
+                    type="button"
+                    onClick={(e) => handleDeleteScholarship(item.id, e)}
+                    data-layer="Delete-Btn"
                     title="إزالة من المحفوظات"
-                    aria-label="إزالة من المحفوظات"
+                    className="size-8 p-1.5 bg-slate-900 hover:bg-red-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 hover:outline-red-500 flex justify-center items-center cursor-pointer transition-all text-slate-400 hover:text-red-400"
                   >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
                   </button>
                 </div>
               </div>
-            );
-          })}
+            ))
+          )}
+        </div>
+      )}
+
+      {/* List of Favorite Courses */}
+      {activeTab === 'courses' && (
+        <div data-layer="Courses-List" className="flex flex-col gap-3">
+          {favoriteCourses.length === 0 ? (
+            <div className="p-10 text-center bg-slate-900/50 rounded-2xl border border-blue-900/50 text-slate-400 text-sm">
+              لا توجد دورات مفضلة محفوظة حالياً.
+            </div>
+          ) : (
+            favoriteCourses.map((item) => (
+              <div
+                key={item.id}
+                data-layer="Course-Row"
+                onClick={() => navigate(`/courses/${item.id}`)}
+                className="self-stretch p-4 bg-blue-950 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-4 hover:border-sky-400/40 transition-all cursor-pointer group"
+              >
+                {/* Right: Info */}
+                <div className="flex-1 flex flex-col justify-start items-start gap-1 text-right min-w-0">
+                  <h3 className="text-slate-200 text-sm md:text-base font-bold font-['Tajawal'] leading-6 truncate w-full group-hover:text-sky-300 transition-colors">
+                    {item.title}
+                  </h3>
+                  <span className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4">
+                    {item.provider}
+                  </span>
+                </div>
+
+                {/* Left: Tag + Delete */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="px-3 py-1.5 rounded-lg outline outline-1 outline-offset-[-1px] bg-sky-400/10 outline-sky-400 text-sky-400 flex items-center justify-center">
+                    <span className="text-xs font-bold font-['Tajawal'] leading-4 whitespace-nowrap">
+                      {item.durationText}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteFavoriteCourse(item.id, e)}
+                    title="إزالة من المفضلة"
+                    className="size-8 p-1.5 bg-slate-900 hover:bg-red-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-blue-900 hover:outline-red-500 flex justify-center items-center cursor-pointer transition-all text-slate-400 hover:text-red-400"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

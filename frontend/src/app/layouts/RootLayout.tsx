@@ -56,6 +56,7 @@ export const RootLayout: React.FC = () => {
   };
 
   const hideShell = !!activeRoute?.meta?.hideShell;
+  const isDashboard = pathname === '/dashboard';
 
   return (
     <div className="page-wrapper">
@@ -67,8 +68,8 @@ export const RootLayout: React.FC = () => {
         <div className="absolute bottom-[10%] left-[15%] w-[700px] h-[500px] rounded-full bg-[#E5B65C]/[0.03] blur-[160px]" />
       </div>
 
-      {/* 2. Permanent Sticky Header Shell (omitted if hideShell is true) */}
-      {!hideShell && (
+      {/* 2. Permanent Sticky Header Shell (omitted if hideShell or isDashboard) */}
+      {!hideShell && !isDashboard && (
         <>
           <div className="w-full hidden md:block relative z-30">
             <DesktopNavbar
@@ -96,8 +97,8 @@ export const RootLayout: React.FC = () => {
         </RouteErrorBoundary>
       </div>
 
-      {/* 4. Permanent Footer Shell (Desktop / Tablet, omitted if hideShell is true) */}
-      {!hideShell && (
+      {/* 4. Permanent Footer Shell (Desktop / Tablet, omitted if hideShell or isDashboard) */}
+      {!hideShell && !isDashboard && (
         <div className="w-full hidden md:block relative z-10 mt-auto">
           <Footer />
         </div>

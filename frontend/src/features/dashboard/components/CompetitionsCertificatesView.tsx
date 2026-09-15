@@ -1,183 +1,236 @@
 import React, { useState } from 'react';
-import type { CompetitionItem, CertificateItem } from '../types';
-import { mockCompetitions, mockCertificates } from '../data/mockDashboardData';
+import { useNavigate } from '../../../app/routerContext';
+
+interface CompetitionItem {
+  id: string;
+  title: string;
+  statusText: string;
+  statusColor: 'blue' | 'red' | 'green';
+  actionLabel: string;
+  actionVariant: 'gold' | 'sky';
+}
+
+interface CertificateItem {
+  id: string;
+  title: string;
+  issueDate: string;
+  credentialId: string;
+  isOfficial: boolean;
+}
+
+const mockCompetitions: CompetitionItem[] = [
+  {
+    id: 'comp-1',
+    title: 'تحدي الخوارزميات الشتوي',
+    statusText: 'مسجل ومجدول في يناير',
+    statusColor: 'blue',
+    actionLabel: 'عرض التفاصيل',
+    actionVariant: 'sky',
+  },
+  {
+    id: 'comp-2',
+    title: 'مسابقة البرمجة التنافسية للأكاديميات',
+    statusText: 'جارية الآن (تحدي البث المباشر)',
+    statusColor: 'red',
+    actionLabel: 'ادخل الساحة',
+    actionVariant: 'gold',
+  },
+  {
+    id: 'comp-3',
+    title: 'هاكاثون الابتكار الوطني',
+    statusText: 'انتهت • حققت المركز الثالث',
+    statusColor: 'green',
+    actionLabel: 'عرض النتائج',
+    actionVariant: 'sky',
+  },
+];
+
+const mockCertificates: CertificateItem[] = [
+  {
+    id: 'cert-1',
+    title: 'شهادة إتمام: أساسيات الذكاء الاصطناعي التوليدي',
+    issueDate: '10 يناير 2026',
+    credentialId: 'KHW-AI-89421',
+    isOfficial: true,
+  },
+  {
+    id: 'cert-2',
+    title: 'شهادة إتمام: تصميم واجهات وتجربة المستخدم المتقدمة',
+    issueDate: '28 ديسمبر 2025',
+    credentialId: 'KHW-UX-77319',
+    isOfficial: true,
+  },
+];
 
 export const CompetitionsCertificatesView: React.FC = () => {
-  const [competitions] = useState<CompetitionItem[]>(mockCompetitions);
-  const [certificates] = useState<CertificateItem[]>(mockCertificates);
-  const [filterState, setFilterState] = useState<'all' | 'completed'>('all');
-  const [downloadToast, setDownloadToast] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [filterMode, setFilterMode] = useState<'completed' | 'active'>('completed');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const handleDownload = (certTitle: string) => {
-    setDownloadToast(`جاري تجهيز وتحميل شهادة: ${certTitle}`);
-    setTimeout(() => setDownloadToast(null), 3500);
+  const handleDownload = (id: string) => {
+    setDownloadingId(id);
+    setTimeout(() => {
+      setDownloadingId(null);
+    }, 1500);
   };
 
-  const filteredCompetitions =
-    filterState === 'completed'
-      ? competitions.filter((c) => c.status === 'completed')
-      : competitions;
-
   return (
-    <div className="flex flex-col gap-10 w-full animate-page-enter">
-      {/* Toast Notification */}
-      {downloadToast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-[#061A3A] border border-[#E5B65C]/60 text-xs sm:text-sm text-[#E5B65C] shadow-[0_4px_20px_rgba(0,0,0,0.6)] animate-page-enter">
-          {downloadToast}
-        </div>
-      )}
+    <div dir="rtl" className="w-full flex flex-col gap-8">
+      {/* Header-Filter matching lines 171-191 of Competitions Certificates - Dashboard - Desktop.html */}
+      <div
+        data-layer="Header-Filter"
+        className="HeaderFilter self-stretch flex justify-between items-center flex-wrap gap-4"
+      >
+        <h2
+          data-layer="مسابقاتي وتحدياتي"
+          className="text-slate-200 text-xl font-bold font-['Cairo'] leading-6"
+        >
+          مسابقاتي وتحدياتي
+        </h2>
 
-      {/* 1. Competitions Section */}
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#1B3F80]/30">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-[#F1F5F9] font-['Cairo',sans-serif]">
-              مسابقاتي وتحدياتي
-            </h2>
-            <p className="text-xs sm:text-sm text-[#8299B5] font-['Tajawal',sans-serif] mt-0.5">
-              سجل التحديات البرمجية الحية والمسابقات الرسمية المعتمدة.
-            </p>
-          </div>
-
-          {/* Sub-Filter Pills */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#040F24]/90 border border-[#167BDB]/30 self-start sm:self-auto">
-            <button
-              onClick={() => setFilterState('all')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-['Tajawal'] font-bold transition-colors cursor-pointer ${
-                filterState === 'all'
-                  ? 'bg-[#167BDB]/30 text-[#29A9FF] border border-[#29A9FF]/50'
-                  : 'text-[#8299B5] hover:text-[#DCE5EE]'
-              }`}
-            >
-              جميع التحديات ({competitions.length})
-            </button>
-            <button
-              onClick={() => setFilterState('completed')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-['Tajawal'] font-bold transition-colors cursor-pointer ${
-                filterState === 'completed'
-                  ? 'bg-[#E5B65C]/20 text-[#E5B65C] border border-[#E5B65C]/50'
-                : 'text-[#8299B5] hover:text-[#DCE5EE]'
-              }`}
-            >
-              المكتملة فقط
-            </button>
-          </div>
-        </div>
-
-        {/* Competitions Cards */}
-        <div className="flex flex-col gap-3.5">
-          {filteredCompetitions.map((comp) => {
-            const isLive = comp.status === 'live';
-            const isCompleted = comp.status === 'completed';
-
-            return (
-              <div
-                key={comp.id}
-                className={`card-interactive-blue flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-[#061A3A]/80 border transition-all duration-200 ${
-                  isLive
-                    ? 'border-[#E5B65C]/60 shadow-[0_0_15px_rgba(229,182,92,0.15)]'
-                    : 'border-[#167BDB]/30 hover:border-[#29A9FF]/60'
-                }`}
-              >
-                {/* Right: Competition Title & Status */}
-                <div className="flex flex-col gap-1 min-w-0 flex-1 text-right">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm sm:text-base font-bold text-[#F1F5F9] font-['Cairo',sans-serif]">
-                      {comp.title}
-                    </h3>
-                    {isLive && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#FF6B6B] bg-[#FF4D4D]/15 px-2 py-0.5 rounded-full">
-                        <span className="size-1.5 rounded-full bg-[#FF4D4D] animate-ping" />
-                        مباشر
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">
-                    {comp.statusLabel}
-                  </span>
-                </div>
-
-                {/* Left: Context-Appropriate Action CTA */}
-                <div className="shrink-0 self-end sm:self-auto">
-                  {isLive ? (
-                    <button className="btn-gold px-5 py-2 text-xs sm:text-sm font-bold font-['Cairo'] shadow-[0_0_12px_rgba(229,182,92,0.3)] cursor-pointer active:scale-95">
-                      ادخل الساحة
-                    </button>
-                  ) : isCompleted ? (
-                    <button className="btn-outline-blue px-4 py-2 text-xs sm:text-sm font-bold font-['Cairo'] cursor-pointer active:scale-95">
-                      عرض النتائج
-                    </button>
-                  ) : (
-                    <button className="btn-outline-blue px-4 py-2 text-xs sm:text-sm font-bold font-['Cairo'] cursor-pointer active:scale-95">
-                      عرض التفاصيل
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        {/* Toggle Filter */}
+        <div
+          data-layer="Toggle-Filter"
+          className="ToggleFilter p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center"
+        >
+          <button
+            type="button"
+            onClick={() => setFilterMode('completed')}
+            className={`px-5 md:px-6 py-2 rounded-full text-xs md:text-sm transition-all cursor-pointer ${
+              filterMode === 'completed'
+                ? 'bg-orange-300/10 text-orange-300 font-bold'
+                : 'text-slate-400 hover:text-slate-200 font-medium'
+            }`}
+          >
+            أكمل المسابقة
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode('active')}
+            className={`px-5 md:px-6 py-2 rounded-full text-xs md:text-sm transition-all cursor-pointer ${
+              filterMode === 'active'
+                ? 'bg-orange-300/10 text-orange-300 font-bold'
+                : 'text-slate-400 hover:text-slate-200 font-medium'
+            }`}
+          >
+            لم يحل المسابقة
+          </button>
         </div>
       </div>
 
-      {/* 2. Completed Certificates Section */}
-      <div className="flex flex-col gap-5">
-        <div className="flex items-center justify-between pb-2 border-b border-[#1B3F80]/30">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-[#F1F5F9] font-['Cairo',sans-serif]">
-              شهاداتي المكتملة
-            </h2>
-            <p className="text-xs sm:text-sm text-[#8299B5] font-['Tajawal',sans-serif] mt-0.5">
-              شهادات التخرج الموثقة والمعتمدة الصادرة من الأكاديمية والشركاء الدوليين.
-            </p>
-          </div>
-          <span className="badge-gold">{certificates.length} شهادات موثقة</span>
-        </div>
-
-        {/* Certificates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {certificates.map((cert) => (
-            <div
-              key={cert.id}
-              className="card-interactive-gold p-5 rounded-2xl bg-gradient-to-b from-[#061A3A] to-[#040F24] border border-[#E5B65C]/40 hover:border-[#E5B65C]/80 shadow-[0_8px_24px_rgba(0,0,0,0.35)] flex flex-col justify-between gap-5 transition-all duration-300"
-            >
-              {/* Card Top: Official Badge and Verified Icon */}
-              <div className="flex items-center justify-between">
-                <span className="badge-gold text-[10px] py-0.5 px-2">رسمية ومعتمدة</span>
-                <span className="text-[#E5B65C] text-lg" title="شهادة موثقة">
-                  🎖️
+      {/* Competitions Section matching lines 192-284 */}
+      <div data-layer="Competitions-Section" className="flex flex-col gap-3">
+        {mockCompetitions.map((comp) => (
+          <div
+            key={comp.id}
+            data-layer="Competition Row"
+            className="CompetitionRow self-stretch p-4 bg-blue-950 rounded-2xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-4 hover:border-sky-400/40 transition-all"
+          >
+            {/* Right: Text details */}
+            <div data-layer="Text details" className="flex-1 flex flex-col justify-start items-start gap-1 text-right min-w-0">
+              <h3
+                data-layer={comp.title}
+                className="text-slate-200 text-sm md:text-base font-bold font-['Tajawal'] leading-6 truncate w-full"
+              >
+                {comp.title}
+              </h3>
+              <div
+                data-layer="Status indicator"
+                className="StatusIndicator inline-flex justify-start items-center gap-2"
+              >
+                <span
+                  className={`size-2 rounded-full shrink-0 ${
+                    comp.statusColor === 'red'
+                      ? 'bg-red-500 animate-ping'
+                      : comp.statusColor === 'green'
+                      ? 'bg-emerald-500'
+                      : 'bg-sky-400'
+                  }`}
+                />
+                <span
+                  data-layer={comp.statusText}
+                  className="text-slate-400 text-xs font-normal font-['Tajawal']"
+                >
+                  {comp.statusText}
                 </span>
               </div>
+            </div>
 
-              {/* Certificate Title & Date */}
+            {/* Left: Action CTA */}
+            <div data-layer="Action Left" className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => navigate('/competitions')}
+                data-layer="CTA"
+                className={`px-4 md:px-5 py-2.5 rounded-lg text-xs font-bold font-['Tajawal'] transition-all cursor-pointer ${
+                  comp.actionVariant === 'gold'
+                    ? 'bg-orange-300 hover:bg-amber-300 text-slate-900 shadow-[0_0_12px_rgba(229,182,92,0.3)]'
+                    : 'outline outline-1 outline-offset-[-1px] outline-sky-400 text-sky-400 hover:bg-sky-400/10'
+                }`}
+              >
+                {comp.actionLabel}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Certificates Section matching lines 285-350 */}
+      <div data-layer="Certificates-Section" className="flex flex-col gap-4 pt-2">
+        <h2
+          data-layer="شهاداتي المكتملة"
+          className="text-slate-200 text-xl font-bold font-['Cairo'] leading-6 text-right"
+        >
+          شهاداتي المكتملة
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {mockCertificates.map((cert) => (
+            <div
+              key={cert.id}
+              data-layer="Certificate Card"
+              className="p-5 bg-blue-950 rounded-2xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col justify-between gap-4 relative overflow-hidden"
+            >
+              {/* Badge Accent Row */}
+              <div data-layer="Badge Accent Row" className="flex justify-between items-center">
+                <div
+                  data-layer="Gold Foil accent"
+                  className="px-2.5 py-0.5 bg-orange-300/10 rounded border border-orange-300 flex items-center gap-1"
+                >
+                  <span className="size-1.5 rounded-full bg-orange-300" />
+                  <span className="text-orange-300 text-[11px] font-bold font-['Tajawal']">رسمية ومعتمدة</span>
+                </div>
+
+                <span className="text-slate-400 text-xs font-['Tajawal'] font-mono">{cert.credentialId}</span>
+              </div>
+
+              {/* Certificate Details */}
               <div className="flex flex-col gap-1 text-right">
-                <h3 className="text-base font-bold text-[#F1F5F9] font-['Cairo',sans-serif] line-clamp-2">
-                  {cert.title}
-                </h3>
-                <span className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">
+                <h3 className="text-slate-200 text-base font-bold font-['Tajawal'] leading-6">{cert.title}</h3>
+                <span className="text-slate-400 text-xs font-normal font-['Tajawal']">
                   تاريخ الإصدار: {cert.issueDate}
                 </span>
               </div>
 
-              {/* Download Action */}
+              {/* Download CTA */}
               <button
-                onClick={() => handleDownload(cert.title)}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#0F2B5C]/70 hover:bg-[#167BDB]/30 border border-[#29A9FF]/40 hover:border-[#29A9FF] text-xs font-bold font-['Cairo',sans-serif] text-[#29A9FF] hover:text-[#DCE5EE] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+                type="button"
+                onClick={() => handleDownload(cert.id)}
+                className="self-stretch py-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl outline outline-1 outline-blue-900 hover:outline-sky-400 text-sky-400 text-xs font-bold font-['Tajawal'] flex justify-center items-center gap-2 cursor-pointer transition-all"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                <span>تحميل الشهادة (PDF)</span>
+                {downloadingId === cert.id ? (
+                  <>
+                    <span className="size-3.5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+                    <span>جاري التجهيز...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M7 1V9M7 9L4 6M7 9L10 6M1 11V13H13V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span>تحميل وثيقة الشهادة (PDF)</span>
+                  </>
+                )}
               </button>
             </div>
           ))}
