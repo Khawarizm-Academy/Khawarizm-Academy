@@ -25,6 +25,15 @@ export const DashboardStatsSidebar: React.FC = () => {
             data-layer="Widget-Row"
             className="WidgetRow self-stretch p-3 bg-slate-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center"
           >
+            {/* Right: Label in RTL */}
+            <span
+              data-layer="معدل الحضور"
+              className="text-right text-slate-200 text-sm md:text-base font-medium font-['Tajawal'] leading-6"
+            >
+              معدل الحضور
+            </span>
+
+            {/* Left: Value Group in RTL */}
             <div
               data-layer="Value-Group"
               className="ValueGroup flex flex-col justify-start items-start gap-0.5 text-left"
@@ -42,12 +51,6 @@ export const DashboardStatsSidebar: React.FC = () => {
                 ملتزم بالحصص المباشرة
               </span>
             </div>
-            <span
-              data-layer="معدل الحضور"
-              className="text-right text-slate-200 text-base font-medium font-['Tajawal'] leading-6"
-            >
-              معدل الحضور
-            </span>
           </div>
 
           {/* Row 2: GPA */}
@@ -55,13 +58,22 @@ export const DashboardStatsSidebar: React.FC = () => {
             data-layer="Widget-Row"
             className="WidgetRow self-stretch p-3 bg-slate-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center"
           >
+            {/* Right: Label in RTL */}
+            <span
+              data-layer="المعدل التراكمي"
+              className="text-right text-slate-200 text-sm md:text-base font-medium font-['Tajawal'] leading-6"
+            >
+              المعدل التراكمي
+            </span>
+
+            {/* Left: Value Group in RTL */}
             <div
               data-layer="Value-Group"
               className="ValueGroup flex flex-col justify-start items-start gap-0.5 text-left"
             >
               <span
                 data-layer="4.9 / 5.0"
-                className="text-orange-300 text-base font-bold font-['Tajawal'] leading-6"
+                className="text-[#E5B65C] text-base font-bold font-['Tajawal'] leading-6"
               >
                 4.9 / 5.0
               </span>
@@ -72,12 +84,6 @@ export const DashboardStatsSidebar: React.FC = () => {
                 تصنيف ممتاز
               </span>
             </div>
-            <span
-              data-layer="المعدل التراكمي"
-              className="text-right text-slate-200 text-base font-medium font-['Tajawal'] leading-6"
-            >
-              المعدل التراكمي
-            </span>
           </div>
 
           {/* Row 3: Earned Points */}
@@ -85,13 +91,22 @@ export const DashboardStatsSidebar: React.FC = () => {
             data-layer="Widget-Row"
             className="WidgetRow self-stretch p-3 bg-slate-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center"
           >
+            {/* Right: Label in RTL */}
+            <span
+              data-layer="النقاط المكتسبة"
+              className="text-right text-slate-200 text-sm md:text-base font-medium font-['Tajawal'] leading-6"
+            >
+              النقاط المكتسبة
+            </span>
+
+            {/* Left: Value Group in RTL */}
             <div
               data-layer="Value-Group"
               className="ValueGroup flex flex-col justify-start items-start gap-0.5 text-left"
             >
               <span
                 data-layer="1,240 نقطة"
-                className="text-emerald-500 text-base font-bold font-['Tajawal'] leading-6"
+                className="text-emerald-400 text-base font-bold font-['Tajawal'] leading-6"
               >
                 1,240 نقطة
               </span>
@@ -102,12 +117,6 @@ export const DashboardStatsSidebar: React.FC = () => {
                 الترتيب العاشر على الدفعة
               </span>
             </div>
-            <span
-              data-layer="النقاط المكتسبة"
-              className="text-right text-slate-200 text-base font-medium font-['Tajawal'] leading-6"
-            >
-              النقاط المكتسبة
-            </span>
           </div>
         </div>
       </div>
@@ -119,7 +128,7 @@ export const DashboardStatsSidebar: React.FC = () => {
       >
         <h3
           data-layer="الأحداث الهامة القادمة"
-          className="text-right text-orange-300 text-lg font-bold font-['Cairo'] leading-6"
+          className="text-right text-[#E5B65C] text-lg font-bold font-['Cairo'] leading-6"
         >
           الأحداث الهامة القادمة
         </h3>
@@ -130,18 +139,7 @@ export const DashboardStatsSidebar: React.FC = () => {
             data-layer="Event-Row"
             className="EventRow self-stretch p-3 bg-slate-900/90 rounded-xl border border-blue-900/50 flex justify-between items-center gap-3"
           >
-            <div
-              data-layer="Type-Tag"
-              className="TypeTag px-2 py-1 bg-red-500/10 rounded-md flex justify-center items-center shrink-0 border border-red-500/20"
-            >
-              <span
-                data-layer="تسليم"
-                className="text-red-500 text-xs font-bold font-['Tajawal'] leading-4"
-              >
-                تسليم
-              </span>
-            </div>
-
+            {/* Right: Event Details in RTL */}
             <div data-layer="Details" className="Details flex-1 flex flex-col justify-start items-start gap-0.5 text-right">
               <h4
                 data-layer="تسليم مشروع تخرج الويب"
@@ -156,6 +154,19 @@ export const DashboardStatsSidebar: React.FC = () => {
                 الأحد، 15 يناير • 11:59 م
               </span>
             </div>
+
+            {/* Left: Type Tag in RTL */}
+            <div
+              data-layer="Type-Tag"
+              className="TypeTag px-2 py-1 bg-red-500/10 rounded-md flex justify-center items-center shrink-0 border border-red-500/20"
+            >
+              <span
+                data-layer="تسليم"
+                className="text-red-400 text-xs font-bold font-['Tajawal'] leading-4"
+              >
+                تسليم
+              </span>
+            </div>
           </div>
 
           {/* Event 2: Final Exam */}
@@ -163,18 +174,7 @@ export const DashboardStatsSidebar: React.FC = () => {
             data-layer="Event-Row"
             className="EventRow self-stretch p-3 bg-slate-900/90 rounded-xl border border-blue-900/50 flex justify-between items-center gap-3"
           >
-            <div
-              data-layer="Type-Tag"
-              className="TypeTag px-2 py-1 bg-sky-400/10 rounded-md flex justify-center items-center shrink-0 border border-sky-400/20"
-            >
-              <span
-                data-layer="اختبار"
-                className="text-sky-400 text-xs font-bold font-['Tajawal'] leading-4"
-              >
-                اختبار
-              </span>
-            </div>
-
+            {/* Right: Event Details in RTL */}
             <div data-layer="Details" className="Details flex-1 flex flex-col justify-start items-start gap-0.5 text-right">
               <h4
                 data-layer="الاختبار النهائي - بايثون"
@@ -187,6 +187,19 @@ export const DashboardStatsSidebar: React.FC = () => {
                 className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
               >
                 الأربعاء، 18 يناير • 06:00 م
+              </span>
+            </div>
+
+            {/* Left: Type Tag in RTL */}
+            <div
+              data-layer="Type-Tag"
+              className="TypeTag px-2 py-1 bg-sky-400/10 rounded-md flex justify-center items-center shrink-0 border border-sky-400/20"
+            >
+              <span
+                data-layer="اختبار"
+                className="text-sky-400 text-xs font-bold font-['Tajawal'] leading-4"
+              >
+                اختبار
               </span>
             </div>
           </div>

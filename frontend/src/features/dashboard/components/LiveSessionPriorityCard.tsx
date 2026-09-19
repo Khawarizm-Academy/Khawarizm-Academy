@@ -1,4 +1,5 @@
 import React from 'react';
+import { Radio } from 'lucide-react';
 import { useLiveCountdown } from '../hooks/useLiveCountdown';
 
 interface LiveSessionPriorityCardProps {
@@ -25,7 +26,7 @@ export const LiveSessionPriorityCard: React.FC<LiveSessionPriorityCardProps> = (
     <div
       dir="rtl"
       data-layer="Live-Priority-Card"
-      className="LivePriorityCard self-stretch p-6 md:p-7 bg-slate-900 rounded-3xl shadow-[0px_8px_24px_0px_rgba(255,77,77,0.12)] outline outline-[1.5px] outline-offset-[-1.5px] outline-red-500/80 flex flex-col justify-start items-start gap-5 md:gap-6 relative overflow-hidden"
+      className="LivePriorityCard self-stretch p-6 md:p-7 bg-slate-900 rounded-3xl shadow-[0px_8px_24px_0px_rgba(255,77,77,0.12)] outline outline-[1.5px] outline-offset-[-1.5px] outline-red-500/80 flex flex-col justify-start items-start gap-5 md:gap-6 relative overflow-hidden select-none"
     >
       {/* Red ambient beacon atmosphere */}
       <div className="absolute top-0 right-0 w-72 h-72 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -44,11 +45,23 @@ export const LiveSessionPriorityCard: React.FC<LiveSessionPriorityCardProps> = (
         </span>
       </div>
 
-      {/* Live-Details: Text Details on right, Laser/Neon Thumbnail on left */}
+      {/* Live-Details: Thumbnail on Right, Text Details on Left in RTL */}
       <div
         data-layer="Live-Details"
-        className="LiveDetails self-stretch flex justify-between items-center gap-4 md:gap-6"
+        className="LiveDetails self-stretch flex justify-start items-center gap-4 md:gap-6"
       >
+        {/* 1. Thumbnail with beacon on the RIGHT */}
+        <div
+          data-layer="Thumb-Wrapper"
+          className="ThumbWrapper size-16 md:size-20 bg-blue-950 rounded-2xl flex justify-center items-center overflow-hidden shrink-0 border border-red-500/30 shadow-inner group-hover:border-red-400 transition-colors"
+        >
+          <div className="relative flex items-center justify-center">
+            <Radio size={36} className="text-red-400 drop-shadow-[0_0_8px_rgba(255,77,77,0.8)]" strokeWidth={1.8} />
+            <span className="size-2 rounded-full bg-[#E5B65C] absolute" />
+          </div>
+        </div>
+
+        {/* 2. Text Details on the LEFT */}
         <div data-layer="Text-Details" className="TextDetails flex-1 flex flex-col justify-start items-start gap-1.5 md:gap-2 text-right">
           <h2
             data-layer={courseTitle}
@@ -62,29 +75,6 @@ export const LiveSessionPriorityCard: React.FC<LiveSessionPriorityCardProps> = (
           >
             المعلم: {instructorName} • {sessionDescription}
           </p>
-        </div>
-
-        {/* Thumbnail with neon visual matching Figma */}
-        <div
-          data-layer="Thumb-Wrapper"
-          className="ThumbWrapper size-16 md:size-20 bg-blue-950 rounded-2xl flex justify-center items-center overflow-hidden shrink-0 border border-red-500/30 shadow-inner"
-        >
-          <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M12 22C12 16.48 16.48 12 22 12C27.52 12 32 16.48 32 22C32 27.52 27.52 32 22 32"
-              stroke="#FF4D4D"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-            <path
-              d="M6 22C6 13.16 13.16 6 22 6C30.84 6 38 13.16 38 22"
-              stroke="#29A9FF"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="4 4"
-            />
-            <circle cx="22" cy="22" r="5" fill="#E5B65C" />
-          </svg>
         </div>
       </div>
 
@@ -112,7 +102,7 @@ export const LiveSessionPriorityCard: React.FC<LiveSessionPriorityCardProps> = (
         type="button"
         onClick={onJoinSession}
         data-layer="Hero-Action"
-        className="self-stretch py-3.5 bg-gradient-to-r from-orange-300 to-amber-400 hover:from-amber-400 hover:to-orange-300 text-slate-900 font-bold font-['Tajawal'] text-base rounded-full flex justify-center items-center cursor-pointer shadow-[0_4px_16px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_24px_rgba(229,182,92,0.5)] hover:scale-[1.01] active:scale-[0.99] transition-all"
+        className="self-stretch py-3.5 bg-gradient-to-r from-[#E5B65C] to-amber-400 hover:from-amber-400 hover:to-[#E5B65C] text-slate-900 font-bold font-['Tajawal'] text-base rounded-full flex justify-center items-center cursor-pointer shadow-[0_4px_16px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_24px_rgba(229,182,92,0.5)] hover:scale-[1.01] active:scale-[0.99] transition-all"
       >
         <span className="hidden md:inline">انضم الآن للجلسة</span>
         <span className="md:hidden">انضم الآن</span>
