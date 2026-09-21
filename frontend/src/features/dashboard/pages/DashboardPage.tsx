@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Trophy, GraduationCap, BookOpen, Award } from 'lucide-react';
+import { Trophy, GraduationCap, BookOpen, Award, Bell } from 'lucide-react';
 import { useLocation, useNavigate } from '../../../app/routerContext';
 import { DesktopDashboardSidebar } from '../components/DesktopDashboardSidebar';
 import { DashboardTopBar } from '../components/DashboardTopBar';
@@ -227,9 +227,37 @@ export const DashboardPage: React.FC = () => {
 
           {/* Empty State View */}
           {(stateParam === 'empty' || currentView === 'empty') && (
-            <div className="w-full py-6">
-              <EmptyDashboardState userName="سارة" />
-            </div>
+            <>
+              {/* Mobile Top Navigation Bar matching Empty State - Dashboard - Mobile.html & media_1789428679990.png */}
+              <div className="flex md:hidden justify-between items-center w-full py-1 select-none">
+                {/* Right in RTL: Avatar + "مرحبًا، سارة" */}
+                <div className="flex items-center gap-2.5 text-right">
+                  <div className="size-9 rounded-full bg-[#061A3A] border border-blue-900 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="10" cy="10" r="8" stroke="#E5B65C" strokeWidth="1.5" strokeDasharray="3 3" />
+                      <circle cx="10" cy="10" r="4" fill="#29A9FF" />
+                    </svg>
+                  </div>
+                  <span className="text-slate-200 text-lg font-bold font-['Cairo']">
+                    مرحبًا، سارة
+                  </span>
+                </div>
+
+                {/* Left in RTL: Notification Bell (0 unread notifications, no red badge) */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectView('notifications')}
+                  title="الإشعارات"
+                  className="size-10 relative bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-center items-center cursor-pointer hover:outline-sky-400 text-[#8299B5] hover:text-sky-300 transition-all"
+                >
+                  <Bell size={18} strokeWidth={2} />
+                </button>
+              </div>
+
+              <div className="w-full py-2 md:py-6">
+                <EmptyDashboardState userName="سارة" />
+              </div>
+            </>
           )}
 
           {/* Notifications View */}

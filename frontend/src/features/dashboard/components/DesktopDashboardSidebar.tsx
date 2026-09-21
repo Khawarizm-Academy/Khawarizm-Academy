@@ -95,7 +95,7 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
-              (item.id === 'main' && (currentView === 'main' || currentView === 'live' || currentView === 'overview')) ||
+              (item.id === 'main' && (currentView === 'main' || currentView === 'live' || currentView === 'overview' || currentView === 'empty')) ||
               (item.id === 'saved' && currentView === 'saved');
 
             return (
