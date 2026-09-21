@@ -183,9 +183,11 @@ export const DashboardPage: React.FC = () => {
       data-layer="dashboard-main-desktop"
       className="DashboardMainDesktop w-full min-h-screen bg-slate-900 flex justify-start items-start text-slate-100 selection:bg-sky-500/20 selection:text-sky-300 relative overflow-x-hidden"
     >
-      {/* Ambient background glows matching Figma */}
-      <div className="size-[600px] -left-[200px] top-[400px] absolute bg-radial from-sky-400/5 to-transparent pointer-events-none" />
-      <div className="size-[600px] left-[800px] top-[800px] absolute bg-radial from-[#E5B65C]/5 to-transparent pointer-events-none" />
+      {/* Ambient background glows matching Figma — strictly contained in an overflow-hidden layer to prevent expanding page scroll height */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
+        <div className="size-[600px] -left-[200px] top-[400px] absolute bg-radial from-sky-400/5 to-transparent" />
+        <div className="size-[600px] left-[800px] top-[800px] absolute bg-radial from-[#E5B65C]/5 to-transparent" />
+      </div>
 
       {/* ========================================================================= */}
       {/* 1. PERMANENT RIGHT DESKTOP SIDEBAR (w-60, 240px) */}
@@ -203,13 +205,13 @@ export const DashboardPage: React.FC = () => {
       {/* ========================================================================= */}
       <div
         data-layer="Main-Body"
-        className="MainBody flex-1 min-w-0 flex flex-col justify-start items-start"
+        className="MainBody flex-1 min-w-0 flex flex-col justify-start items-start relative z-10"
       >
         {/* Top-Bar matching Figma desktop (Search on right, Nav links on left) */}
         <DashboardTopBar />
 
         {/* Inner Padding Container */}
-        <div className="w-full max-w-[1280px] px-4 sm:px-6 md:px-10 lg:px-14 pt-4 md:pt-8 pb-24 md:pb-16 flex flex-col gap-6 md:gap-8">
+        <div className="w-full max-w-[1280px] px-4 sm:px-6 md:px-10 lg:px-14 pt-4 md:pt-8 pb-24 lg:pb-8 flex flex-col gap-6 md:gap-8">
           {/* Stats & Greeting Header */}
           {stateParam !== 'empty' && currentView !== 'empty' && (
             <DashboardStatsHeader
