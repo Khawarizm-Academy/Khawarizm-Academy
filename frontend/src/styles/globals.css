@@ -333,7 +333,41 @@
 }
 
 /* ==========================================================================
-   Hide Scrollbar Utility
+   Celestial Observatory Scrollbar Design System
+   ========================================================================== */
+/* WebKit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #040F24;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1B3F80;
+  border-radius: 9999px;
+  border: 1.5px solid #040F24;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #29A9FF;
+}
+
+::-webkit-scrollbar-corner {
+  background: #040F24;
+}
+
+/* Firefox standard */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1B3F80 #040F24;
+}
+
+/* ==========================================================================
+   Hide Scrollbar Utility (Touch & Horizontal Carousels)
    ========================================================================== */
 .no-scrollbar::-webkit-scrollbar,
 [data-no-scrollbar]::-webkit-scrollbar {

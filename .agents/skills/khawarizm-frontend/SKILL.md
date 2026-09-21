@@ -108,3 +108,55 @@ Whenever asked to create any new page:
 - **Page Creation Blueprint & Real Case Study:** [`references/page-creation-blueprint.md`](references/page-creation-blueprint.md)
 - **Design Tokens & CSS Variables Dictionary:** [`references/design-tokens-and-classes.md`](references/design-tokens-and-classes.md)
 - **Loading, Caching & Routing Architecture:** [`references/loading-caching-routing-guide.md`](references/loading-caching-routing-guide.md)
+
+---
+
+## 6. Dashboard System & RTL Engineering Rules
+
+### 6.1 RTL Flex Ordering for Right-Hand Sidebars
+- In any container with `dir="rtl"` and horizontal flex (`display: flex; flex-direction: row`), **Child #1 in the DOM is rendered on the FAR RIGHT**.
+- **Crucial Layout Rule:** Desktop navigation sidebars located on the right edge MUST be declared as **Child #1** in the JSX structure (`<DesktopDashboardSidebar />` first, then `<MainBody />` second). Reversing this pushes the sidebar to the left.
+- **Internal Item Alignment:** Inside sidebar navigation items, use `inline-flex justify-start items-center gap-3`. Child #1 is the icon (renders on right), Child #2 is the label (renders on left). Do not use `justify-between` which scatters the icon to the opposite edge.
+
+### 6.2 Self-Contained Workspace Architecture
+- Students must never be forced out of the dashboard or bounce to external pages to perform student actions.
+- Any action originating from the dashboard must resolve in an in-dashboard interactive chamber:
+  - **Resume Learning / Continue:** In-dashboard lesson workspace modal (`CourseWorkspaceModal.tsx`) with player simulation, curriculum drawer, and progress tracking.
+  - **Join Live Session:** In-dashboard interactive classroom chamber (`LiveClassroomModal.tsx`) with real-time Q&A chat, teacher blackboard, and audio/video controls.
+  - **Saved Scholarship Details & Apply:** In-dashboard application modal (`ScholarshipApplicationModal.tsx`) with qualification checklist and instant submission.
+  - **Competition Challenge:** In-dashboard coding challenge arena (`CompetitionArenaModal.tsx`) with live leaderboard, test-runner, and code editor.
+  - **Certificates:** In-dashboard verified certificate preview modal.
+
+### 6.3 Dedicated Semantic Icon Library (`lucide-react`)
+- **Strict Rule:** Never use raw emojis (`📚`, `🎓`, `🏆`, `🔴`), random Unicode symbols, or inconsistent ad-hoc SVGs for UI elements.
+- Always import from `lucide-react` with semantic naming and consistent stroke widths (`1.8` - `2.2`):
+  - Dashboard: `Home` / `LayoutDashboard`
+  - Courses: `BookOpen`
+  - Scholarships: `GraduationCap` / `Award`
+  - Saved: `LayoutGrid` / `Bookmark`
+  - Competitions: `Trophy`
+  - Notifications: `Bell`
+  - Search: `Search`
+  - Technical Tracks: `Brain` (AI), `Code2` (Programming), `Palette` (Design)
+  - Interactive Actions: `Radio`, `Play`, `Pause`, `Download`, `CheckCircle2`, `X`.
+
+### 6.4 Clean Scroll & State Management
+- Never leave temporary debug tab switchers or browser-like scroll buttons.
+- For horizontal chip lists and cards on mobile, use touch scrolling with `.no-scrollbar` (`scrollbar-width: none !important; -webkit-overflow-scrolling: touch;`).
+
+### 6.5 Celestial Observatory Scrollbar Standards
+- The platform uses a curated dark celestial scrollbar system configured in `globals.css`:
+  - Width/Height: `7px`
+  - Track: `#040F24` (Deep navy void)
+  - Thumb: `#1B3F80` (Navy border) with rounded pill radius (`rounded-full`)
+  - Hover: `#29A9FF` (Electric blue celestial glow)
+  - Firefox support: `scrollbar-width: thin; scrollbar-color: #1B3F80 #040F24;`
+- Never let unstyled browser OS scrollbars render across desktop viewports.
+
+### 6.6 Dashboard Tab Architecture & Prohibition of Prototype Tabs
+- **Prohibited:** Never inject dashboard-wide ad-hoc view tabs (e.g. `DashboardTabFilter` with `overview / saved / achievements` and emoji state buttons).
+- Primary dashboard navigation is strictly governed by the **Right Sidebar** (Desktop) and **Mobile Bottom Bar** / URL queries.
+- The ONLY valid tabs inside the dashboard are section-level pill toggle filters:
+  - **Saved Scholarships:** `ToggleFilter` (`المنح المحفوظة` vs `الدورات المفضلة`) with active pill `bg-orange-300/10 text-orange-300 font-bold`.
+  - **Competitions & Certificates:** `ToggleFilter` (`أكمل المسابقة` vs `لم يحل المسابقة`) with active pill `bg-orange-300/10 text-orange-300 font-bold`.
+

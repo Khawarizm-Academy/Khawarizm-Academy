@@ -43,32 +43,82 @@ export const DashboardPage: React.FC = () => {
   let headerTitle = 'مرحبًا، أحمد';
   let headerSubtitle = 'لديك تقدم مميز اليوم. تابع إنجازك الدراسي!';
   let statChips: StatChipItem[] = [
-    { icon: Trophy, label: 'مسابقة ذكاء اصطناعي مسجّل بها', iconColor: 'text-[#E5B65C]' },
-    { icon: GraduationCap, label: 'منحتان دراسيتان قريبتا الانتهاء', iconColor: 'text-sky-400' },
-    { icon: BookOpen, label: '3 دورات نشطة ومسجلة', iconColor: 'text-sky-400' },
+    {
+      icon: Trophy,
+      label: 'مسابقة ذكاء اصطناعي مسجّل بها',
+      iconColor: 'text-[#E5B65C]',
+      onClick: () => handleSelectView('achievements'),
+    },
+    {
+      icon: GraduationCap,
+      label: 'منحتان دراسيتان قريبتا الانتهاء',
+      iconColor: 'text-sky-400',
+      onClick: () => handleSelectView('saved'),
+    },
+    {
+      icon: BookOpen,
+      label: '3 دورات نشطة ومسجلة',
+      iconColor: 'text-sky-400',
+      onClick: () => handleSelectView('main'),
+    },
   ];
 
   if (stateParam === 'live' || currentView === 'live') {
     headerTitle = 'الجلسات المباشرة';
     headerSubtitle = 'انضم للفصول الافتراضية التفاعلية مع المعلمين';
     statChips = [
-      { icon: Trophy, label: 'بث مباشر تفاعلي الآن', iconColor: 'text-red-400' },
-      { icon: BookOpen, label: 'حصة بايثون للمبتدئين', iconColor: 'text-sky-400' },
+      {
+        icon: Trophy,
+        label: 'بث مباشر تفاعلي الآن',
+        iconColor: 'text-red-400',
+        onClick: () => setIsLiveClassroomOpen(true),
+      },
+      {
+        icon: BookOpen,
+        label: 'حصة بايثون للمبتدئين',
+        iconColor: 'text-sky-400',
+        onClick: () => setActiveWorkspaceCourse('برمجة بايثون للمبتدئين'),
+      },
     ];
   } else if (currentView === 'saved') {
     headerTitle = 'لوحتي المحفوظة';
     headerSubtitle = 'تابع المنح الدراسية والدورات المفضلة والتقديمات القادمة';
     statChips = [
-      { icon: Trophy, label: 'برامج ابتعاث تفاعلية', iconColor: 'text-[#E5B65C]' },
-      { icon: GraduationCap, label: '4 منح محفوظات حاليًا', iconColor: 'text-sky-400' },
-      { icon: BookOpen, label: 'مستندات جاهزة للتقديم', iconColor: 'text-sky-400' },
+      {
+        icon: Trophy,
+        label: 'برامج ابتعاث تفاعلية',
+        iconColor: 'text-[#E5B65C]',
+        onClick: () => handleSelectView('saved'),
+      },
+      {
+        icon: GraduationCap,
+        label: '4 منح محفوظات حاليًا',
+        iconColor: 'text-sky-400',
+        onClick: () => handleSelectView('saved'),
+      },
+      {
+        icon: BookOpen,
+        label: 'مستندات جاهزة للتقديم',
+        iconColor: 'text-sky-400',
+        onClick: () => handleSelectView('saved'),
+      },
     ];
   } else if (currentView === 'achievements') {
     headerTitle = 'إنجازاتي وتحدياتي';
     headerSubtitle = 'سجل التحديات البرمجية والشهادات الرسمية المعتمدة';
     statChips = [
-      { icon: Trophy, label: '3 تحديات نشطة', iconColor: 'text-[#E5B65C]' },
-      { icon: Award, label: '6 شهادات موثقة', iconColor: 'text-sky-400' },
+      {
+        icon: Trophy,
+        label: '3 تحديات نشطة',
+        iconColor: 'text-[#E5B65C]',
+        onClick: () => handleSelectView('achievements'),
+      },
+      {
+        icon: Award,
+        label: '6 شهادات موثقة',
+        iconColor: 'text-sky-400',
+        onClick: () => handleSelectView('achievements'),
+      },
     ];
   } else if (currentView === 'notifications') {
     headerTitle = 'مركز الإشعارات';

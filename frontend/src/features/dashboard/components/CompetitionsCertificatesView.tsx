@@ -96,7 +96,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
           مسابقاتي وتحدياتي
         </h2>
 
-        {/* Toggle Filter */}
+        {/* Toggle Filter matching Figma Desktop & Mobile */}
         <div
           data-layer="Toggle-Filter"
           className="ToggleFilter p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center"
@@ -106,7 +106,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
             onClick={() => setFilterMode('completed')}
             className={`px-5 md:px-6 py-2 rounded-full text-xs md:text-sm transition-all cursor-pointer ${
               filterMode === 'completed'
-                ? 'bg-[#E5B65C]/15 text-[#E5B65C] font-bold outline outline-1 outline-[#E5B65C]/50'
+                ? 'bg-orange-300/10 text-orange-300 font-bold'
                 : 'text-slate-400 hover:text-slate-200 font-medium'
             }`}
           >
@@ -117,7 +117,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
             onClick={() => setFilterMode('active')}
             className={`px-5 md:px-6 py-2 rounded-full text-xs md:text-sm transition-all cursor-pointer ${
               filterMode === 'active'
-                ? 'bg-[#E5B65C]/15 text-[#E5B65C] font-bold outline outline-1 outline-[#E5B65C]/50'
+                ? 'bg-orange-300/10 text-orange-300 font-bold'
                 : 'text-slate-400 hover:text-slate-200 font-medium'
             }`}
           >

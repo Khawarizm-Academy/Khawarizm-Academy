@@ -5,6 +5,7 @@ export interface StatChipItem {
   icon: LucideIcon;
   label: string;
   iconColor?: string;
+  onClick?: () => void;
 }
 
 interface DashboardStatsHeaderProps {
@@ -71,15 +72,19 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
         {chips.map((chip, idx) => {
           const Icon = chip.icon;
           return (
-            <div
+            <button
               key={idx}
-              className="shrink-0 px-3.5 py-2 bg-blue-950/90 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center gap-2"
+              type="button"
+              onClick={chip.onClick}
+              className={`shrink-0 px-3.5 py-2 bg-blue-950/90 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center gap-2 transition-all ${
+                chip.onClick ? 'cursor-pointer hover:border-sky-400/50 active:scale-95' : 'cursor-default'
+              }`}
             >
               <Icon size={16} className={chip.iconColor || 'text-sky-400'} strokeWidth={2} />
               <span className="text-slate-200 text-xs font-medium font-['Tajawal'] whitespace-nowrap">
                 {chip.label}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -110,14 +115,18 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
           {chips.map((chip, idx) => {
             const Icon = chip.icon;
             return (
-              <div
+              <button
                 key={idx}
+                type="button"
+                onClick={chip.onClick}
                 data-layer="Stat-Chip"
-                className="StatChip px-5 py-2.5 bg-blue-950 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-center gap-3 shadow-sm hover:border-sky-400/40 transition-colors"
+                className={`StatChip px-5 py-2.5 bg-blue-950 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-center gap-3 shadow-sm transition-all ${
+                  chip.onClick ? 'cursor-pointer hover:border-sky-400/50 active:scale-95' : 'cursor-default'
+                }`}
               >
                 <Icon size={18} className={chip.iconColor || 'text-sky-400'} strokeWidth={2} />
                 <span className="text-slate-200 text-sm md:text-base font-medium font-['Tajawal'] leading-6">{chip.label}</span>
-              </div>
+              </button>
             );
           })}
         </div>

@@ -131,17 +131,18 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
         </div>
       )}
 
-      {/* Header & Filter matching Figma & Mobile screenshot media_1789837891295.png */}
+      {/* Header & Filter matching Figma Desktop & Mobile */}
       <div
         data-layer="Header-Filter"
         className="HeaderFilter self-stretch flex justify-between items-center flex-wrap gap-4"
       >
         {/* Title on Right in RTL */}
         <h2
-          data-layer="منحي المحفوظة"
-          className="text-slate-200 text-xl font-bold font-['Cairo'] leading-6"
+          data-layer="إدارة المحفوظات"
+          className="text-slate-200 text-lg md:text-xl font-bold font-['Cairo'] leading-6"
         >
-          {activeTab === 'scholarships' ? 'منحي المحفوظة' : 'دوراتي المفضلة'}
+          <span className="hidden md:inline">إدارة المحفوظات</span>
+          <span className="md:hidden inline">منحي المحفوظة</span>
         </h2>
 
         {/* Toggle-Filter on Left in RTL */}
@@ -154,22 +155,22 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
             onClick={() => setActiveTab('scholarships')}
             className={`px-5 md:px-6 py-2 rounded-full text-xs md:text-sm transition-all cursor-pointer ${
               activeTab === 'scholarships'
-                ? 'bg-[#E5B65C]/15 text-[#E5B65C] font-bold outline outline-1 outline-[#E5B65C]/50'
+                ? 'bg-orange-300/10 text-orange-300 font-bold'
                 : 'text-slate-400 hover:text-slate-200 font-medium'
             }`}
           >
-            المنح المحفوظة ({scholarships.length})
+            المنح المحفوظة
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('courses')}
             className={`px-5 md:px-6 py-2 rounded-full text-xs md:text-sm transition-all cursor-pointer ${
               activeTab === 'courses'
-                ? 'bg-[#E5B65C]/15 text-[#E5B65C] font-bold outline outline-1 outline-[#E5B65C]/50'
+                ? 'bg-orange-300/10 text-orange-300 font-bold'
                 : 'text-slate-400 hover:text-slate-200 font-medium'
             }`}
           >
-            الدورات المفضلة ({favoriteCourses.length})
+            الدورات المفضلة
           </button>
         </div>
       </div>
