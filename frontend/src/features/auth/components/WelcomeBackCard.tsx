@@ -42,7 +42,7 @@ export const WelcomeBackCard: React.FC<WelcomeBackCardProps> = ({
 
         {/* User Titles */}
         <div className="flex flex-col items-center gap-1.5">
-          <h2 className="text-2xl font-bold text-[#DCE5EE] font-['Cairo',sans-serif]">
+          <h2 className="text-2xl font-bold text-slate-100 font-['IBM_Plex_Sans_Arabic']">
             {user.name}
           </h2>
           <div className="px-2.5 py-0.5 rounded bg-[#E5B65C]/15 border border-[#E5B65C]/30 inline-flex items-center">
@@ -57,7 +57,7 @@ export const WelcomeBackCard: React.FC<WelcomeBackCardProps> = ({
       {isMobile && (
         <div className="w-full py-2.5 px-4 rounded-xl bg-[#040F24]/80 border border-[#1B3F80]/50 flex items-center justify-around select-none">
           <div className="flex flex-col items-center">
-            <span className="text-sm font-bold text-[#E5B65C] font-['Cairo',sans-serif]">
+            <span className="text-sm font-bold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic']">
               {user.activeCoursesCount} دورات مستمرة
             </span>
             <span className="text-[11px] text-[#8299B5] font-['Tajawal',sans-serif]">
@@ -66,7 +66,7 @@ export const WelcomeBackCard: React.FC<WelcomeBackCardProps> = ({
           </div>
           <div className="w-[1px] h-6 bg-[#1B3F80]" aria-hidden="true" />
           <div className="flex flex-col items-center">
-            <span className="text-sm font-bold text-[#29A9FF] font-['Cairo',sans-serif]">
+            <span className="text-sm font-bold text-[#29A9FF] font-['IBM_Plex_Sans_Arabic']">
               {user.savedScholarshipsCount} منح محفوظة
             </span>
             <span className="text-[11px] text-[#8299B5] font-['Tajawal',sans-serif]">
@@ -95,7 +95,7 @@ export const WelcomeBackCard: React.FC<WelcomeBackCardProps> = ({
         <button
           type="button"
           onClick={onSwitchToEmail}
-          className="text-sm font-medium text-[#8299B5] hover:text-[#DCE5EE] hover:underline transition-colors font-['Tajawal',sans-serif] cursor-pointer"
+          className="text-sm font-medium text-[#8299B5] hover:text-slate-100 hover:underline transition-colors font-['Tajawal',sans-serif] cursor-pointer"
         >
           استخدام بريد إلكتروني آخر
         </button>

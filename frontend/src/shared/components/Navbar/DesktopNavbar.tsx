@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { Bell, Search, User } from 'lucide-react';
 import { BrandLogo } from '../Artwork/BrandVisuals';
 import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
 
@@ -76,7 +77,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
                 className={`relative py-5 px-1 transition-colors duration-300 cursor-pointer ${
                   isActive
                     ? 'text-[#E5B65C] font-bold drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]'
-                    : 'text-[#8299B5] hover:text-[#DCE5EE]'
+                    : 'text-[#8299B5] hover:text-slate-100'
                 }`}
               >
                 <span>{link.label}</span>
@@ -111,11 +112,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
             aria-label="بحث في المنصة"
             className="btn-icon-box"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <ellipse cx="12" cy="5" rx="9" ry="3" />
-              <path d="M3 5v14a9 3 0 0 0 18 0V5" />
-              <path d="M3 12a9 3 0 0 0 18 0" />
-            </svg>
+            <Search size={18} />
           </button>
 
           {/* Notifications Bell with Unread Badge */}
@@ -124,12 +121,9 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
             aria-label="الإشعارات"
             className="btn-icon-box relative cursor-pointer"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-            </svg>
+            <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#FF4D4D] ring-2 ring-[#040F24]" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#040F24]" />
             )}
           </button>
 
@@ -139,10 +133,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
             aria-label="الملف الشخصي"
             className="btn-icon-circle"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            <User size={20} />
           </button>
         </div>
 

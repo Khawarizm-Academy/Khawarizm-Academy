@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Mail } from 'lucide-react';
 import { AuthSocialButton } from './AuthSocialButton';
 
 interface DefaultLoginCardProps {
@@ -43,7 +44,7 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
     <div className="w-full bg-[#061A3A] rounded-2xl p-6 sm:p-9 border border-[#1B3F80] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.3)] flex flex-col justify-start items-stretch gap-6 sm:gap-7 transition-all duration-300">
       {/* 1. Welcome Header */}
       <div className="flex flex-col items-end text-right gap-1.5">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#DCE5EE] font-['Cairo',sans-serif]">
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-100 font-['IBM_Plex_Sans_Arabic']">
           {isDesktop ? 'مرحبًا بك في خوارزم' : 'مرحبًا بك'}
         </h2>
         <p className="text-xs sm:text-sm text-[#8299B5] font-['Tajawal',sans-serif]">
@@ -81,7 +82,7 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
         <div className="flex flex-col gap-2">
           <label
             htmlFor="auth-email"
-            className="text-xs font-bold text-[#DCE5EE] font-['Cairo',sans-serif] text-right"
+            className="text-xs font-bold text-slate-100 font-['IBM_Plex_Sans_Arabic'] text-right"
           >
             البريد الإلكتروني
           </label>
@@ -95,15 +96,7 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
           >
             {/* Mail Icon positioned at the right edge (start of input in RTL) */}
             <div className="text-[#8299B5] shrink-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M14.6672 4.66701L8.67275 8.48462C8.46933 8.60275 8.23827 8.66498 8.00303 8.66498C7.76778 8.66498 7.53673 8.60275 7.33331 8.48462L1.33282 4.66701M2.66626 2.66721H13.3338C14.0702 2.66721 14.6672 3.2641 14.6672 4.00041V11.9996C14.6672 12.7359 14.0702 13.3328 13.3338 13.3328H2.66626C1.92983 13.3328 1.33282 12.7359 1.33282 11.9996V4.00041C1.33282 3.2641 1.92983 2.66721 2.66626 2.66721Z"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <Mail size={18} />
             </div>
 
             {/* Email Input Field with clean right-alignment matching the label and icon */}
@@ -117,7 +110,7 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
                 if (error) setError(null);
               }}
               placeholder="username@example.com"
-              className="flex-1 w-full bg-transparent text-sm text-[#DCE5EE] placeholder-[#5C7291] outline-none font-['Tajawal',sans-serif] text-right"
+              className="flex-1 w-full bg-transparent text-sm text-slate-100 placeholder-[#5C7291] outline-none font-['Tajawal',sans-serif] text-right"
               autoComplete="email"
             />
           </div>
@@ -132,7 +125,7 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="btn-gold w-full h-12 rounded-lg text-base font-bold font-['Cairo',sans-serif] flex-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+          className="btn-gold w-full h-12 rounded-lg text-base font-bold font-['IBM_Plex_Sans_Arabic'] flex-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
         >
           {isLoading ? (
             <span className="inline-block w-5 h-5 border-2 border-[#040F24] border-t-transparent rounded-full animate-spin" />

@@ -67,7 +67,7 @@ export const CourseWorkspaceModal: React.FC<CourseWorkspaceModalProps> = ({
               <BookOpen size={18} />
             </div>
             <div>
-              <h2 className="text-slate-100 font-bold font-['Cairo'] text-base md:text-lg">
+              <h2 className="text-slate-100 font-bold font-['IBM_Plex_Sans_Arabic'] text-base md:text-lg">
                 {courseTitle}
               </h2>
               <span className="text-slate-400 text-xs font-['Tajawal']">
@@ -142,7 +142,7 @@ export const CourseWorkspaceModal: React.FC<CourseWorkspaceModalProps> = ({
             {/* Lesson Info and Action Row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
               <div>
-                <h3 className="text-slate-100 font-bold text-lg font-['Cairo']">
+                <h3 className="text-slate-100 font-bold text-lg font-['IBM_Plex_Sans_Arabic']">
                   {currentLesson.title}
                 </h3>
                 <p className="text-slate-400 text-xs font-['Tajawal'] mt-1">
@@ -169,7 +169,7 @@ export const CourseWorkspaceModal: React.FC<CourseWorkspaceModalProps> = ({
 
           {/* Curriculum Drawer */}
           <div className="w-full lg:w-80 bg-blue-950/20 p-4 overflow-y-auto flex flex-col gap-2 shrink-0">
-            <h4 className="text-slate-300 font-bold text-sm font-['Cairo'] px-2 mb-1">
+            <h4 className="text-slate-300 font-bold text-sm font-['IBM_Plex_Sans_Arabic'] px-2 mb-1">
               قائمة دروس المسار ({completedCount}/{lessons.length})
             </h4>
 

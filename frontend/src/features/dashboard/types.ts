@@ -44,26 +44,34 @@ export interface SavedScholarshipItem {
   title: string;
   provider: string;
   deadlineText: string;
-  hoursRemaining: number;
-  isUrgent?: boolean;
-  category?: string;
+  isUrgent: boolean;
+  coverage: string;
+  gpaRequirement: string;
 }
 
 export interface CompetitionItem {
   id: string;
   title: string;
-  status: 'registered' | 'live' | 'completed';
-  statusLabel: string;
-  dateText?: string;
-  rankText?: string;
+  statusText: string;
+  statusColor: 'blue' | 'red' | 'green';
+  actionLabel: string;
+  actionVariant: 'gold' | 'sky';
 }
 
 export interface CertificateItem {
   id: string;
   title: string;
   issueDate: string;
-  credentialUrl: string;
+  credentialId: string;
   isOfficial: boolean;
+}
+
+export interface NotificationItemData {
+  id: string;
+  message: string;
+  timeAgo: string;
+  isUnread: boolean;
+  type: 'live' | 'scholarship' | 'exam' | 'competition' | 'lesson';
 }
 
 export interface DashboardNotification {

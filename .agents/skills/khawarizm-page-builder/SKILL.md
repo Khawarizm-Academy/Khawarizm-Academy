@@ -313,7 +313,7 @@ export const MyFeaturePage: React.FC = () => {
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#1B3F80]/50 pb-6">
         <div>
           <span className="badge-gold mb-2 inline-block">مسار معتمد</span>
-          <h1 className="text-3xl font-bold text-[#DCE5EE] font-['Cairo',sans-serif]">
+          <h1 className="text-3xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
             عنوان الميزة أو الصفحة
           </h1>
           <p className="text-sm text-[#8299B5] font-['Tajawal',sans-serif] mt-1">
@@ -337,7 +337,7 @@ export const MyFeaturePage: React.FC = () => {
         <aside className="flex flex-col gap-6">
           {/* Sidebar / Quick Stats */}
           <div className="glass-panel rounded-2xl p-6 flex flex-col gap-4">
-            <h3 className="text-lg font-bold text-[#E5B65C] font-['Cairo',sans-serif]">
+            <h3 className="text-lg font-bold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic']">
               معلومات إضافية
             </h3>
             <p className="text-sm text-[#8299B5] font-['Tajawal',sans-serif]">

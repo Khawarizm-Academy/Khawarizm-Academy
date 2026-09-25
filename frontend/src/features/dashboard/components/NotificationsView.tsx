@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { Bell, Award, BookOpen, Trophy, ChevronLeft } from 'lucide-react';
-
-export interface NotificationItemData {
-  id: string;
-  message: string;
-  timeAgo: string;
-  isUnread: boolean;
-  type: 'live' | 'scholarship' | 'exam' | 'competition' | 'lesson';
-}
+import type { NotificationItemData } from '../types';
+export type { NotificationItemData };
 
 const initialNotifications: NotificationItemData[] = [
   {
@@ -83,7 +77,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
       {/* Mobile Top Navigation Bar matching media_1789837891270.png */}
       <div className="flex md:hidden justify-between items-center w-full py-1">
         {/* Right: Title */}
-        <h2 className="text-slate-200 text-xl font-bold font-['Cairo'] text-right">
+        <h2 className="text-slate-200 text-xl font-bold font-['IBM_Plex_Sans_Arabic'] text-right">
           الإشعارات
         </h2>
 
@@ -113,11 +107,11 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
 
       {/* Desktop Section-Header matching media_1789837891286.png */}
       <div
-        data-layer="Section-Header"
+
         className="SectionHeader self-stretch hidden md:flex justify-between items-center"
       >
         {/* Left: Mark All as Read button */}
-        <div data-layer="Action Left" className="ActionLeft">
+        <div className="ActionLeft">
           <button
             type="button"
             onClick={handleMarkAllRead}
@@ -128,22 +122,22 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         </div>
 
         {/* Right: Title & Unread Count info */}
-        <div data-layer="Header Title Info" className="HeaderTitleInfo flex flex-col justify-start items-start text-right gap-1">
-          <h2 data-layer="مركز الإشعارات" className="text-slate-200 text-2xl font-bold font-['Cairo']">
+        <div className="HeaderTitleInfo flex flex-col justify-start items-start text-right gap-1">
+          <h2 className="text-slate-200 text-2xl font-bold font-['IBM_Plex_Sans_Arabic']">
             مركز الإشعارات
           </h2>
-          <span data-layer="لديك تنبيهات جديدة" className="text-slate-400 text-sm font-normal font-['Tajawal']">
+          <span className="text-slate-400 text-sm font-normal font-['Tajawal']">
             {unreadCount > 0 ? `لديك ${unreadCount} تنبيهات جديدة غير مقروءة` : 'لا توجد تنبيهات جديدة غير مقروءة'}
           </span>
         </div>
       </div>
 
       {/* Notification-List matching Figma & Screenshots */}
-      <div data-layer="Notification-List" className="NotificationList self-stretch flex flex-col justify-start items-start gap-3">
+      <div className="NotificationList self-stretch flex flex-col justify-start items-start gap-3">
         {notifications.map((item) => (
           <div
             key={item.id}
-            data-layer="Notification Item"
+
             onClick={() => handleToggleRead(item.id, item)}
             className={`NotificationItem self-stretch p-3.5 md:p-4 rounded-2xl outline outline-1 outline-offset-[-1px] flex justify-between items-center gap-3 md:gap-5 transition-all cursor-pointer relative group ${
               item.isUnread
@@ -160,7 +154,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
             <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 text-right">
               {/* Category Icon Container */}
               <div
-                data-layer="Icon Container"
+
                 className="IconContainer size-10 md:size-12 bg-slate-900 rounded-full flex justify-center items-center shrink-0 border border-blue-900/60 shadow-inner group-hover:border-sky-400/40 transition-colors"
               >
                 {item.type === 'live' && (
@@ -181,15 +175,15 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
               </div>
 
               {/* Text Info */}
-              <div data-layer="Details Left" className="DetailsLeft flex-1 flex flex-col justify-start items-start gap-1">
+              <div className="DetailsLeft flex-1 flex flex-col justify-start items-start gap-1">
                 <p
-                  data-layer={item.message}
+
                   className="text-right text-slate-200 text-xs md:text-sm font-normal font-['Tajawal'] leading-5"
                 >
                   {item.message}
                 </p>
                 <span
-                  data-layer={item.timeAgo}
+
                   className="text-right text-slate-400 text-[11px] md:text-xs font-normal font-['Tajawal']"
                 >
                   {item.timeAgo}
@@ -198,7 +192,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
             </div>
 
             {/* Desktop-only Left side in RTL: Unread Indicator Dot (matching media_1789837891286.png) */}
-            <div data-layer="Indicator Section" className="hidden md:flex shrink-0 items-center justify-center size-4">
+            <div className="hidden md:flex shrink-0 items-center justify-center size-4">
               {item.isUnread && (
                 <div className="size-2.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(41,169,255,0.8)]" />
               )}

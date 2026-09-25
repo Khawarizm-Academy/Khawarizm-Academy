@@ -4,55 +4,96 @@ This reference provides a comprehensive lookup of all design tokens, gradients, 
 
 ---
 
-## 1. CSS Custom Properties (`tokens.css`)
+## 1. Design Tokens (`tokens.css`)
+
+`tokens.css` is the **single source of truth** for the Observatory palette. It is
+imported by `globals.css` after `@import "tailwindcss"`, so its `@theme` block
+registers real Tailwind v4 utilities (`bg-`, `text-`, `border-`, `outline-`,
+`ring-`, `fill-`, `stroke-`).
+
+> **Key design decision — default-name overrides.** The `@theme` block also
+> **overrides Tailwind's default color names** (`slate-*`, `sky-*`, `blue-900/950`,
+> `amber-*`, `orange-*`, `emerald-*`, `red-*`) with locked brand values. This means
+> every `text-slate-400`, `bg-sky-400`, etc. already resolves to the brand palette —
+> there is **zero** Tailwind-default leakage and **no** need for a plain-CSS
+> override utility layer. Use the default-name utilities directly in new work.
+> Prefer semantic brand names (`navy-*`, `gold-*`, `blue-400/500`, `success-*`…) for
+> intent, and the overridden defaults where a component already reads that way.
 
 ```css
-:root {
-  /* Dark Cosmic Palette */
-  --color-navy-950: #040F24;
-  --color-navy-900: #061A3A;
+@theme {
+  /* Brand Navy (canvases & surfaces) */
+  --color-navy-950: #040f24;
+  --color-navy-900: #061a3a;
   --color-navy-800: #092557;
   --color-navy-700: #123168;
-  --color-navy-600: #1B3F80;
+  --color-navy-600: #1b3f80;
 
-  /* Tech Cyan Accents */
-  --color-blue-500: #167BDB;
-  --color-blue-400: #29A9FF;
+  /* Brand Cyan (courses pillar / tech accent) */
+  --color-blue-500: #167bdb;
+  --color-blue-400: #29a9ff;
 
-  /* Warm Celestial Gold */
-  --color-gold-600: #C88A32;
-  --color-gold-400: #E5B65C;
-  --color-orange-300: #E5B65C;
+  /* Brand Gold (scholarships pillar / achievement accent) */
+  --color-gold-600: #c88a32;
+  --color-gold-400: #e5b65c;
+  --color-gold-200: #f3ce7a;
 
-  /* Neutrals & Text */
-  --color-white-000: #F5F8FC;
-  --color-white-100: #DCE5EE;
-  --color-slate-400: #8299B5;
-  --color-slate-600: #5C7291;
+  /* Brand text neutrals */
+  --color-white-000: #f5f8fc;
+  --color-white-100: #dce5ee;
 
-  /* Status Colors */
-  --color-success-500: #3FAE6B;
-  --color-warning-500: #E0A23B;
-  --color-danger-500: #D9534F;
+  /* Brand semantic status */
+  --color-success-500: #3fae6b;
+  --color-warning-500: #e0a23b;
+  --color-danger-500: #d9534f;
 
-  /* Typography */
+  /* DEFAULT-NAME OVERRIDES → locked brand values */
+  --color-slate-100: #e6eef7; --color-slate-200: #c5d3e4;
+  --color-slate-300: #9fb3cc; --color-slate-400: #8299b5;
+  --color-slate-500: #6b84a3; --color-slate-600: #5c7291;
+  --color-slate-700: #485f80; --color-slate-800: #092557;
+  --color-slate-900: #061a3a; --color-slate-950: #040f24;
+  --color-sky-300: #7bc9ff; --color-sky-400: #29a9ff; --color-sky-500: #167bdb;
+  --color-blue-900: #1b3f80; --color-blue-950: #040f24;
+  --color-amber-300: #e5b65c; --color-amber-400: #c88a32;
+  --color-orange-300: #e5b65c; --color-orange-400: #f3ce7a;
+  --color-emerald-300: #5fce8f; --color-emerald-400: #4abf78;
+  --color-emerald-500: #3fae6b;
+  --color-red-400: #e06862; --color-red-500: #d9534f;
+
+  /* Fonts → font-display / font-body / font-mono */
   --font-display: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
   --font-body: 'Tajawal', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Inter', monospace;
+}
+```
 
-  /* Radii Scale */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-full: 9999px;
+Non-utility CSS variables live in a `:root` block in the same file (consumed via
+`var(--…)` in runtime CSS only — they are **not** Tailwind utilities):
 
-  /* Elevation Shadows */
+```css
+:root {
   --shadow-elev-1: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-elev-2: 0 8px 24px rgba(0, 0, 0, 0.45);
   --shadow-glow-gold: 0 0 24px rgba(229, 182, 92, 0.25);
   --shadow-glow-blue: 0 0 24px rgba(41, 169, 255, 0.25);
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px; --radius-full: 9999px;
+  --color-overlay-scrim: rgba(4, 15, 36, 0.75);
+  --skeleton-base: #061a3a; --skeleton-surface: #092557; --skeleton-border: #1b3f80;
+  --skeleton-highlight-cyan: rgba(41, 169, 255, 0.12);
+  --skeleton-highlight-gold: rgba(229, 182, 92, 0.1);
+  --transition-page-duration: 220ms;
+  --transition-page-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 ```
+
+> **Fonts (canonical, unified).** Headings/display: **IBM Plex Sans Arabic**;
+> body: **Tajawal**; those are the only two brand Arabic faces. `Cairo` has been
+> eliminated from every component — do not reintroduce it.
+
+> **Icons (canonical).** Use **lucide-react** for all UI icons. Raw `<svg>` is
+> permitted only for illustrations/BrandVisuals artwork and third-party brand
+> marks (Google/Facebook logos).
 
 ---
 

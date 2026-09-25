@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Trophy, GraduationCap, BookOpen, Award, Bell, User, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from '../../../app/routerContext';
+import { CATALOG_COURSES_ROUTE } from '../../../shared/lib/navigation';
 import { DesktopDashboardSidebar } from '../components/DesktopDashboardSidebar';
 import { DashboardTopBar } from '../components/DashboardTopBar';
 import { DashboardStatsHeader, type StatChipItem } from '../components/DashboardStatsHeader';
@@ -196,7 +197,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <div
       dir="rtl"
-      data-layer="dashboard-main-desktop"
+
       className="DashboardMainDesktop w-full min-h-screen bg-slate-900 flex justify-start items-start text-slate-100 selection:bg-sky-500/20 selection:text-sky-300 relative overflow-x-hidden"
     >
       {/* Ambient background glows matching Figma — strictly contained in an overflow-hidden layer to prevent expanding page scroll height */}
@@ -220,7 +221,7 @@ export const DashboardPage: React.FC = () => {
       {/* In RTL flex-row, Child #2 renders to the LEFT of Child #1 */}
       {/* ========================================================================= */}
       <div
-        data-layer="Main-Body"
+
         className="MainBody flex-1 min-w-0 flex flex-col justify-start items-start relative z-10"
       >
         {/* Top-Bar matching Figma desktop (Search on right, Nav links on left) */}
@@ -249,12 +250,9 @@ export const DashboardPage: React.FC = () => {
                 {/* Right in RTL: Avatar + "مرحبًا، سارة" */}
                 <div className="flex items-center gap-2.5 text-right">
                   <div className="size-9 rounded-full bg-[#061A3A] border border-blue-900 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="10" cy="10" r="8" stroke="#E5B65C" strokeWidth="1.5" strokeDasharray="3 3" />
-                      <circle cx="10" cy="10" r="4" fill="#29A9FF" />
-                    </svg>
+                    <User size={18} className="text-sky-400" />
                   </div>
-                  <span className="text-slate-200 text-lg font-bold font-['Cairo']">
+                  <span className="text-slate-200 text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
                     مرحبًا، سارة
                   </span>
                 </div>
@@ -294,9 +292,9 @@ export const DashboardPage: React.FC = () => {
                 {/* Right in RTL: Avatar Initials + "الملف الشخصي" */}
                 <div className="flex items-center gap-2.5 text-right">
                   <div className="size-8.5 rounded-full bg-[#061A3A] border border-[#E5B65C] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                    <span className="text-[#E5B65C] text-xs font-bold font-['Cairo']">أق</span>
+                    <span className="text-[#E5B65C] text-xs font-bold font-['IBM_Plex_Sans_Arabic']">أق</span>
                   </div>
-                  <span className="text-white text-base font-bold font-['Cairo']">
+                  <span className="text-white text-base font-bold font-['IBM_Plex_Sans_Arabic']">
                     الملف الشخصي
                   </span>
                 </div>
@@ -321,12 +319,12 @@ export const DashboardPage: React.FC = () => {
           {/* Two-Column Grid for Main, Live, Saved, Achievements views */}
           {currentView !== 'empty' && stateParam !== 'empty' && currentView !== 'notifications' && currentView !== 'profile' && (
             <div
-              data-layer="Two-Column-Grid"
+
               className="TwoColumnGrid self-stretch flex flex-col lg:flex-row justify-start items-start gap-8 w-full"
             >
               {/* Primary Column (Center, flex-1) */}
               <div
-                data-layer="Primary-Column"
+
                 className="PrimaryColumn flex-1 min-w-0 w-full flex flex-col justify-start items-start gap-8 order-1"
               >
                 {/* 1. Main / Live View */}
@@ -357,24 +355,24 @@ export const DashboardPage: React.FC = () => {
 
                     {/* Courses Section */}
                     <div
-                      data-layer="Courses-Section"
+
                       className="CoursesSection self-stretch flex flex-col justify-start items-start gap-4 w-full"
                     >
                       <div
-                        data-layer="Section-Header"
+
                         className="SectionHeader self-stretch flex justify-between items-center w-full"
                       >
                         <h2
-                          data-layer="دوراتي الحالية"
-                          className="text-slate-200 text-lg md:text-xl font-bold font-['Cairo'] leading-6"
+
+                          className="text-slate-200 text-lg md:text-xl font-bold font-['IBM_Plex_Sans_Arabic'] leading-6"
                         >
                           {stateParam === 'live' || currentView === 'live' ? 'بقية دوراتك لليوم' : 'دوراتي الحالية'}
                         </h2>
 
                         <button
                           type="button"
-                          onClick={() => navigate('/catalog?type=courses')}
-                          data-layer="عرض الكل"
+                          onClick={() => navigate(CATALOG_COURSES_ROUTE)}
+
                           className="text-sky-400 hover:text-sky-300 text-sm md:text-base font-bold font-['Tajawal'] leading-6 transition-colors cursor-pointer"
                         >
                           عرض الكل
@@ -383,7 +381,7 @@ export const DashboardPage: React.FC = () => {
 
                       {/* Courses List */}
                       <div
-                        data-layer="Courses-List"
+
                         className="CoursesList self-stretch flex flex-col justify-start items-start gap-3 w-full"
                       >
                         {enrolledCourses.map((course) => (
@@ -470,7 +468,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <span className="text-[#E5B65C] font-bold text-xs font-mono uppercase">شهادة موثقة ورسمية</span>
-              <h3 className="text-slate-100 font-bold font-['Cairo'] text-lg mt-1">
+              <h3 className="text-slate-100 font-bold font-['IBM_Plex_Sans_Arabic'] text-lg mt-1">
                 {previewCertificate.title}
               </h3>
               <p className="text-slate-400 text-xs font-['Tajawal'] mt-1">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Award, Play, Star } from 'lucide-react';
 import type { CatalogItem } from '../../../shared/data/mockCatalogData';
 
 interface CatalogCardProps {
@@ -32,20 +33,9 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({ item, onSelect, onPref
         {/* Center Icon Symbol (Play for Course, Award for Scholarship) */}
         <div className="relative z-10 w-11 h-11 rounded-full bg-[#040F24]/85 border border-[#1B3F80] group-hover:border-[#29A9FF]/60 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-lg">
           {isCourse ? (
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-[#29A9FF] translate-x-[-1px]">
-              <path
-                d="M5 3.5L16 10L5 16.5V3.5Z"
-                fill="currentColor"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Play size={20} className="text-[#29A9FF] translate-x-[-1px] fill-[#29A9FF]" />
           ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#E5B65C]">
-              <circle cx="12" cy="8" r="6" />
-              <path d="m15.477 12.89 2.523 7.11-6-3-6 3 2.523-7.11" />
-            </svg>
+            <Award size={20} className="text-[#E5B65C]" />
           )}
         </div>
 
@@ -89,9 +79,7 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({ item, onSelect, onPref
           {isCourse ? (
             <div className="flex items-center gap-1 text-xs text-[#E5B65C] font-semibold">
               <span className="tabular-nums">{item.rating?.toFixed(1)}</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                <path d="M6 1l1.5 3.3 3.6.5-2.6 2.5.6 3.6L6 9.2l-3.1 1.7.6-3.6L.9 4.8l3.6-.5L6 1z" />
-              </svg>
+              <Star size={12} className="fill-[#E5B65C]" />
             </div>
           ) : (
             <span className="text-xs text-[#8299B5] font-['Tajawal'] truncate max-w-[140px]">

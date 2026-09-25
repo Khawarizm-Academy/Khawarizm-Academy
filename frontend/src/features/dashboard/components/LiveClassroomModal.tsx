@@ -66,7 +66,7 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
               <div className="flex items-center gap-2">
                 <span className="size-2 rounded-full bg-red-500 animate-ping" />
                 <span className="text-red-400 font-bold text-xs font-mono uppercase">LIVE</span>
-                <h2 className="text-slate-100 font-bold font-['Cairo'] text-base md:text-lg">
+                <h2 className="text-slate-100 font-bold font-['IBM_Plex_Sans_Arabic'] text-base md:text-lg">
                   {courseTitle}
                 </h2>
               </div>
@@ -90,7 +90,7 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
           {/* Live Stage */}
           <div className="flex-1 p-4 md:p-6 overflow-y-auto flex flex-col justify-between gap-4 border-b lg:border-b-0 lg:border-l border-blue-900/60 bg-slate-950">
             {/* Main Stage Screen: Interactive Code / Blackboard simulation */}
-            <div className="w-full aspect-video bg-[#040D1E] rounded-2xl border border-blue-900/80 p-4 md:p-6 relative overflow-hidden flex flex-col justify-between shadow-inner">
+            <div className="w-full aspect-video bg-navy-950 rounded-2xl border border-blue-900/80 p-4 md:p-6 relative overflow-hidden flex flex-col justify-between shadow-inner">
               {/* Teacher camera pip */}
               <div className="absolute top-4 left-4 size-24 md:size-32 rounded-xl bg-slate-900 border border-sky-400/50 overflow-hidden shadow-lg z-20 flex flex-col justify-between p-2">
                 <div className="flex justify-between items-center text-[10px] text-slate-300 font-bold font-['Tajawal']">
@@ -172,7 +172,7 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
           <div className="w-full lg:w-80 bg-slate-900/90 flex flex-col justify-between p-4 shrink-0">
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-blue-900/40">
-                <div className="flex items-center gap-2 text-slate-200 font-bold text-sm font-['Cairo']">
+                <div className="flex items-center gap-2 text-slate-200 font-bold text-sm font-['IBM_Plex_Sans_Arabic']">
                   <MessageSquare size={16} className="text-sky-400" />
                   <span>المحادثة التفاعلية</span>
                 </div>

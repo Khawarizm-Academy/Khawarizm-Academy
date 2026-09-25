@@ -42,7 +42,7 @@ export const RadialProgressRing: React.FC<RadialProgressRingProps> = ({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#0F2B5C"
+          stroke="#092557"
           strokeWidth={strokeWidth}
           opacity={0.7}
         />
@@ -64,7 +64,7 @@ export const RadialProgressRing: React.FC<RadialProgressRingProps> = ({
         />
       </svg>
       {/* Center Percentage Display */}
-      <span className="absolute text-[10px] sm:text-[11px] font-bold text-[#DCE5EE] font-['Cairo',sans-serif] tracking-tight">
+      <span className="absolute text-[10px] sm:text-[11px] font-bold text-slate-100 font-['IBM_Plex_Sans_Arabic'] tracking-tight">
         {safeProgress}%
       </span>
     </div>

@@ -41,7 +41,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               <Award size={18} />
             </div>
             <div>
-              <h2 className="text-slate-100 font-bold font-['Cairo'] text-base md:text-lg truncate max-w-md">
+              <h2 className="text-slate-100 font-bold font-['IBM_Plex_Sans_Arabic'] text-base md:text-lg truncate max-w-md">
                 {scholarship.title}
               </h2>
               <span className="text-slate-400 text-xs font-['Tajawal']">
@@ -80,7 +80,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
 
           {/* Coverage & Eligibility Details */}
           <div className="space-y-3">
-            <h3 className="text-slate-200 font-bold text-sm font-['Cairo']">مزايا وشروط المنحة</h3>
+            <h3 className="text-slate-200 font-bold text-sm font-['IBM_Plex_Sans_Arabic']">مزايا وشروط المنحة</h3>
             <p className="text-slate-400 text-xs font-['Tajawal'] leading-relaxed bg-blue-950/30 p-3 rounded-xl border border-blue-900/40">
               {scholarship.coverage}
             </p>
@@ -88,7 +88,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
 
           {/* Automatic Profile Verification Checklist */}
           <div className="space-y-3">
-            <h3 className="text-slate-200 font-bold text-sm font-['Cairo']">
+            <h3 className="text-slate-200 font-bold text-sm font-['IBM_Plex_Sans_Arabic']">
               المستندات والمعايير المطابقة من ملفك الأكاديمي
             </h3>
             <div className="space-y-2">
@@ -119,7 +119,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               <div className="size-12 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
                 <Sparkles size={24} />
               </div>
-              <h4 className="text-slate-100 font-bold text-base font-['Cairo']">
+              <h4 className="text-slate-100 font-bold text-base font-['IBM_Plex_Sans_Arabic']">
                 تم تقديم طلبك للمنحة بنجاح!
               </h4>
               <p className="text-slate-400 text-xs font-['Tajawal'] max-w-sm mx-auto">
@@ -137,7 +137,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-slate-300 text-xs font-bold font-['Cairo'] mb-1.5">
+                <label className="block text-slate-300 text-xs font-bold font-['IBM_Plex_Sans_Arabic'] mb-1.5">
                   خطاب النية أو الدافع الشخصي (اختياري)
                 </label>
                 <textarea

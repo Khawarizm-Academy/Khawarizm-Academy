@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowLeft, Clock, Users } from 'lucide-react';
 import type { Course } from '../../types/entities';
 import { CourseThumbnail } from '../Artwork/BrandVisuals';
 import { convertKeyToAr, toArabic } from '../../lib/localization';
@@ -48,20 +49,14 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         <div className="card-meta-row mb-3">
           {/* Duration with Clock Icon */}
           <div className="flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#8299B5]">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+            <Clock size={14} className="text-[#8299B5]" />
             <span>{course.duration}</span>
           </div>
 
           {/* Students Count or Status */}
           {course.studentsCount ? (
             <span className="text-[#8299B5] flex items-center gap-1">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-              </svg>
+              <Users size={13} />
               {course.studentsCount}
             </span>
           ) : (
@@ -86,7 +81,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           className="w-full btn-outline-blue text-[13px] sm:text-sm"
         >
           <span>{toArabic('actions', 'course_details')}</span>
-          <span className="text-sm transition-transform duration-200 group-hover:-translate-x-1">←</span>
+          <ArrowLeft size={14} className="transition-transform duration-200 group-hover:-translate-x-1" />
         </button>
       </div>
     </div>

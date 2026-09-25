@@ -19,7 +19,7 @@ export const Footer: React.FC = () => {
 
           {/* Platform Links (3 cols) */}
           <div className="md:col-span-3 space-y-3">
-            <h4 className="text-sm font-bold text-[#DCE5EE] font-['IBM_Plex_Sans_Arabic'] mb-4">
+            <h4 className="text-sm font-bold text-slate-100 font-['IBM_Plex_Sans_Arabic'] mb-4">
               المنصة
             </h4>
             <ul className="space-y-2.5 text-xs text-[#8299B5]">
@@ -31,13 +31,13 @@ export const Footer: React.FC = () => {
 
           {/* Support Links (3 cols) */}
           <div className="md:col-span-3 space-y-3">
-            <h4 className="text-sm font-bold text-[#DCE5EE] font-['IBM_Plex_Sans_Arabic'] mb-4">
+            <h4 className="text-sm font-bold text-slate-100 font-['IBM_Plex_Sans_Arabic'] mb-4">
               الدعم
             </h4>
             <ul className="space-y-2.5 text-xs text-[#8299B5]">
-              <li><a href="#help" className="hover:text-[#DCE5EE] transition-colors">مركز المساعدة</a></li>
-              <li><a href="#terms" className="hover:text-[#DCE5EE] transition-colors">الشروط والأحكام</a></li>
-              <li><a href="#privacy" className="hover:text-[#DCE5EE] transition-colors">سياسة الخصوصية</a></li>
+              <li><a href="#help" className="hover:text-slate-100 transition-colors">مركز المساعدة</a></li>
+              <li><a href="#terms" className="hover:text-slate-100 transition-colors">الشروط والأحكام</a></li>
+              <li><a href="#privacy" className="hover:text-slate-100 transition-colors">سياسة الخصوصية</a></li>
             </ul>
           </div>
 

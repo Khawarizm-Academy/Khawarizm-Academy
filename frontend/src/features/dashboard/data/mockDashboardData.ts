@@ -3,9 +3,6 @@ import type {
   LiveSessionInfo,
   DashboardStats,
   UpcomingEvent,
-  SavedScholarshipItem,
-  CompetitionItem,
-  CertificateItem,
   DashboardNotification,
 } from '../types';
 
@@ -82,112 +79,6 @@ export const mockUpcomingEvents: UpcomingEvent[] = [
     dateText: 'الأربعاء، 18 يناير • 06:00 م',
     type: 'exam',
     typeLabel: 'اختبار',
-  },
-];
-
-export const mockSavedScholarships: SavedScholarshipItem[] = [
-  {
-    id: 'sch-1',
-    title: 'منحة التميز لعلوم الحاسب والابتكار التقني',
-    provider: 'جامعة الملك عبدالله للعلوم والتقنية (KAUST)',
-    deadlineText: 'باقٍ 18 ساعة',
-    hoursRemaining: 18,
-    isUrgent: true,
-    category: 'scholarships',
-  },
-  {
-    id: 'sch-2',
-    title: 'برنامج الابتعاث الثقافي والتقني الدولي',
-    provider: 'وزارة الثقافة ومؤسسة طويق',
-    deadlineText: 'باقٍ 5 أيام',
-    hoursRemaining: 120,
-    isUrgent: false,
-    category: 'scholarships',
-  },
-  {
-    id: 'sch-3',
-    title: 'منحة رواد الغد لعلوم البيانات والذكاء الاصطناعي',
-    provider: 'مؤسسة طويق للابتكار التقني',
-    deadlineText: 'باقٍ 12 يوم',
-    hoursRemaining: 288,
-    isUrgent: false,
-    category: 'scholarships',
-  },
-  {
-    id: 'sch-4',
-    title: 'برنامج زمالة الذكاء الاصطناعي المتقدم',
-    provider: 'المركز الوطني للذكاء الاصطناعي (سدايا)',
-    deadlineText: 'باقٍ 24 يوم',
-    hoursRemaining: 576,
-    isUrgent: false,
-    category: 'scholarships',
-  },
-];
-
-export const mockFavoriteCourses: SavedScholarshipItem[] = [
-  {
-    id: 'fav-1',
-    title: 'هندسة الأنظمة السحابية الموزعة (DevOps & K8s)',
-    provider: 'أكاديمية خوارزم المعتمدة',
-    deadlineText: 'تبدأ الأسبوع القادم',
-    hoursRemaining: 168,
-    category: 'courses',
-  },
-  {
-    id: 'fav-2',
-    title: 'أمن الفضاء السيبراني واختبار الاختراق الأخلاقي',
-    provider: 'المركز الوطني للأمن السيبراني',
-    deadlineText: 'التسجيل متاح',
-    hoursRemaining: 300,
-    category: 'courses',
-  },
-];
-
-export const mockCompetitions: CompetitionItem[] = [
-  {
-    id: 'comp-1',
-    title: 'تحدي الخوارزميات الشتوي 2026',
-    status: 'registered',
-    statusLabel: 'مسجل ومجدول في يناير',
-    dateText: 'الأحد، 25 يناير 2026',
-  },
-  {
-    id: 'comp-2',
-    title: 'مسابقة البرمجة التنافسية للأكاديميات التقنية',
-    status: 'live',
-    statusLabel: 'جارية الآن (تحدي البث المباشر)',
-    dateText: 'تبث الآن مباشرة',
-  },
-  {
-    id: 'comp-3',
-    title: 'هاكاثون الابتكار الوطني وحلول الذكاء الاصطناعي',
-    status: 'completed',
-    statusLabel: 'انتهت • حققت المركز الثالث',
-    rankText: 'المركز 3',
-  },
-];
-
-export const mockCertificates: CertificateItem[] = [
-  {
-    id: 'cert-1',
-    title: 'أساسيات البرمجة وهندسة الخوارزميات',
-    issueDate: 'أكتوبر 2025',
-    credentialUrl: '#',
-    isOfficial: true,
-  },
-  {
-    id: 'cert-2',
-    title: 'تصميم واجهات وتجربة المستخدم UI/UX المتقدمة',
-    issueDate: 'نوفمبر 2025',
-    credentialUrl: '#',
-    isOfficial: true,
-  },
-  {
-    id: 'cert-3',
-    title: 'إدارة المشاريع الرقمية والقيادة الرشيقة (Agile)',
-    issueDate: 'ديسمبر 2025',
-    credentialUrl: '#',
-    isOfficial: true,
   },
 ];
 

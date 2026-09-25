@@ -1,15 +1,7 @@
 import React, { useState } from 'react';
 import { X, Undo2 } from 'lucide-react';
-
-export interface SavedScholarshipItem {
-  id: string;
-  title: string;
-  provider: string;
-  deadlineText: string;
-  isUrgent: boolean;
-  coverage: string;
-  gpaRequirement: string;
-}
+import type { SavedScholarshipItem } from '../types';
+export type { SavedScholarshipItem };
 
 interface FavoriteCourseItem {
   id: string;
@@ -133,13 +125,13 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
 
       {/* Header & Filter matching Figma Desktop & Mobile */}
       <div
-        data-layer="Header-Filter"
+
         className="HeaderFilter self-stretch flex justify-between items-center flex-wrap gap-4"
       >
         {/* Title on Right in RTL */}
         <h2
-          data-layer="إدارة المحفوظات"
-          className="text-slate-200 text-lg md:text-xl font-bold font-['Cairo'] leading-6"
+
+          className="text-slate-200 text-lg md:text-xl font-bold font-['IBM_Plex_Sans_Arabic'] leading-6"
         >
           <span className="hidden md:inline">إدارة المحفوظات</span>
           <span className="md:hidden inline">منحي المحفوظة</span>
@@ -147,7 +139,7 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
 
         {/* Toggle-Filter on Left in RTL */}
         <div
-          data-layer="Toggle-Filter"
+
           className="ToggleFilter p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center"
         >
           <button
@@ -177,7 +169,7 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
 
       {/* List of Saved Scholarships */}
       {activeTab === 'scholarships' && (
-        <div data-layer="Scholarships-List" className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {scholarships.length === 0 ? (
             <div className="p-10 text-center bg-slate-900/50 rounded-2xl border border-blue-900/50 text-slate-400 text-sm">
               لا توجد منح دراسية محفوظة حالياً في لوحتك.
@@ -186,20 +178,20 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
             scholarships.map((item) => (
               <div
                 key={item.id}
-                data-layer="Scholarship-Row"
+
                 onClick={() => onSelectScholarship?.(item)}
                 className="ScholarshipRow self-stretch p-3.5 md:p-4 bg-blue-950 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-3 md:gap-4 hover:border-sky-400/40 transition-all cursor-pointer group"
               >
                 {/* Right side in RTL: Title and Provider */}
-                <div data-layer="Text-Metadata" className="flex-1 flex flex-col justify-start items-start gap-1 text-right min-w-0">
+                <div className="flex-1 flex flex-col justify-start items-start gap-1 text-right min-w-0">
                   <h3
-                    data-layer={item.title}
+
                     className="text-slate-200 text-sm md:text-base font-bold font-['Tajawal'] leading-6 truncate w-full group-hover:text-sky-300 transition-colors"
                   >
                     {item.title}
                   </h3>
                   <span
-                    data-layer={item.provider}
+
                     className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
                   >
                     {item.provider}
@@ -207,10 +199,10 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
                 </div>
 
                 {/* Left side in RTL: Deadline Badge + Circular Gold Delete Button */}
-                <div data-layer="Left-Controls" className="flex items-center gap-2.5 md:gap-3 shrink-0">
+                <div className="flex items-center gap-2.5 md:gap-3 shrink-0">
                   {/* Deadline-Tag */}
                   <div
-                    data-layer="Deadline-Tag"
+
                     className={`px-3 py-1.5 rounded-lg border flex items-center justify-center ${
                       item.isUrgent
                         ? 'bg-red-500/10 border-red-500/80 text-red-400'
@@ -226,7 +218,7 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
                   <button
                     type="button"
                     onClick={(e) => handleDeleteScholarship(item.id, e)}
-                    data-layer="Delete-Btn"
+
                     title="إزالة من المحفوظات"
                     className="size-8 rounded-full bg-slate-900 hover:bg-slate-800 border border-[#E5B65C]/70 hover:border-[#E5B65C] flex items-center justify-center text-[#E5B65C] cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm"
                   >
@@ -241,7 +233,7 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
 
       {/* List of Favorite Courses */}
       {activeTab === 'courses' && (
-        <div data-layer="Courses-List" className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {favoriteCourses.length === 0 ? (
             <div className="p-10 text-center bg-slate-900/50 rounded-2xl border border-blue-900/50 text-slate-400 text-sm">
               لا توجد دورات مفضلة محفوظة حالياً في لوحتك.
@@ -250,7 +242,7 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
             favoriteCourses.map((item) => (
               <div
                 key={item.id}
-                data-layer="Course-Row"
+
                 onClick={() => onSelectCourse?.(item.id)}
                 className="self-stretch p-3.5 md:p-4 bg-blue-950 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-4 hover:border-sky-400/40 transition-all cursor-pointer group"
               >

@@ -86,7 +86,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
       {/* 1. IDENTITY SUMMARY HEADER CARD                                           */}
       {/* ========================================================================= */}
       <div
-        data-layer="Identity summary"
+
         className="IdentitySummary w-full p-5 sm:p-6 bg-slate-900 rounded-2xl outline outline-1 outline-offset-[-1px] outline-blue-900 shadow-md backdrop-blur-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 relative overflow-hidden"
       >
         {/* Ambient celestial backdrop glow */}
@@ -105,7 +105,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-[#E5B65C] text-xl sm:text-2xl font-bold font-['Cairo']">
+                <span className="text-[#E5B65C] text-xl sm:text-2xl font-bold font-['IBM_Plex_Sans_Arabic']">
                   {profile.avatarInitials}
                 </span>
               )}
@@ -124,7 +124,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
 
           <div className="flex flex-col gap-1 text-right">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-white text-xl sm:text-2xl font-bold font-['Cairo'] leading-tight">
+              <h1 className="text-white text-xl sm:text-2xl font-bold font-['IBM_Plex_Sans_Arabic'] leading-tight">
                 {profile.fullName}
               </h1>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-bold font-['Tajawal']">
@@ -173,12 +173,12 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             {/* CARD 1: المعلومات الشخصية (Personal Information)                     */}
             {/* ------------------------------------------------------------------- */}
             <div
-              data-layer="Settings card - Personal Info"
+
               className="p-5 sm:p-6 bg-slate-900 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col gap-5"
             >
               <div className="flex items-center gap-2.5 pb-2 border-b border-blue-900/40">
                 <User size={18} className="text-sky-400 shrink-0" />
-                <h2 className="text-white text-base sm:text-lg font-bold font-['Cairo']">
+                <h2 className="text-white text-base sm:text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
                   المعلومات الشخصية
                 </h2>
               </div>
@@ -253,12 +253,12 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             {/* CARD 2: تفضيلات التعلّم (Learning Preferences)                       */}
             {/* ------------------------------------------------------------------- */}
             <div
-              data-layer="Settings card - Learning Preferences"
+
               className="p-5 sm:p-6 bg-slate-900 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col gap-5"
             >
               <div className="flex items-center gap-2.5 pb-2 border-b border-blue-900/40">
                 <Sparkles size={18} className="text-[#E5B65C] shrink-0" />
-                <h2 className="text-white text-base sm:text-lg font-bold font-['Cairo']">
+                <h2 className="text-white text-base sm:text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
                   تفضيلات التعلّم
                 </h2>
               </div>
@@ -282,7 +282,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                         key={lvl.id}
                         type="button"
                         onClick={() => setProfile({ ...profile, learningLevel: lvl.id as LearningLevel })}
-                        className={`py-2 px-3 rounded-lg text-xs sm:text-sm font-bold font-['Cairo'] transition-all cursor-pointer text-center ${
+                        className={`py-2 px-3 rounded-lg text-xs sm:text-sm font-bold font-['IBM_Plex_Sans_Arabic'] transition-all cursor-pointer text-center ${
                           isSelected
                             ? 'bg-sky-500/20 outline outline-1 outline-sky-400 text-sky-300 shadow-sm'
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
@@ -339,12 +339,12 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             {/* CARD 3: الإشعارات والتذكيرات (Notifications & Reminders)             */}
             {/* ------------------------------------------------------------------- */}
             <div
-              data-layer="Settings card - Notifications"
+
               className="p-5 sm:p-6 bg-slate-900 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col gap-5"
             >
               <div className="flex items-center gap-2.5 pb-2 border-b border-blue-900/40">
                 <Bell size={18} className="text-sky-400 shrink-0" />
-                <h2 className="text-white text-base sm:text-lg font-bold font-['Cairo']">
+                <h2 className="text-white text-base sm:text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
                   الإشعارات والتذكيرات
                 </h2>
               </div>
@@ -422,12 +422,12 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             {/* CARD 4: اللغة والحساب (Language & Account)                           */}
             {/* ------------------------------------------------------------------- */}
             <div
-              data-layer="Settings card - Language & Account"
+
               className="p-5 sm:p-6 bg-slate-900 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col gap-5"
             >
               <div className="flex items-center gap-2.5 pb-2 border-b border-blue-900/40">
                 <Globe size={18} className="text-sky-400 shrink-0" />
-                <h2 className="text-white text-base sm:text-lg font-bold font-['Cairo']">
+                <h2 className="text-white text-base sm:text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
                   اللغة والحساب
                 </h2>
               </div>
@@ -482,7 +482,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full sm:w-auto px-8 py-3.5 bg-orange-300 hover:bg-orange-400 text-slate-900 rounded-full font-bold font-['Cairo'] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_16px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_24px_rgba(229,182,92,0.5)] active:scale-95 transition-all disabled:opacity-70"
+            className="w-full sm:w-auto px-8 py-3.5 bg-orange-300 hover:bg-orange-400 text-slate-900 rounded-full font-bold font-['IBM_Plex_Sans_Arabic'] text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_16px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_24px_rgba(229,182,92,0.5)] active:scale-95 transition-all disabled:opacity-70"
           >
             {isSaving ? (
               <>
@@ -516,7 +516,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
           <div className="size-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
             <Check size={14} className="text-emerald-400" />
           </div>
-          <span className="text-sm font-bold font-['Cairo']">
+          <span className="text-sm font-bold font-['IBM_Plex_Sans_Arabic']">
             تم حفظ تغييرات الملف الشخصي بنجاح!
           </span>
         </div>

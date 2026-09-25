@@ -1,22 +1,7 @@
 import React, { useState } from 'react';
 import { Trophy, Award, Download } from 'lucide-react';
-
-export interface CompetitionItem {
-  id: string;
-  title: string;
-  statusText: string;
-  statusColor: 'blue' | 'red' | 'green';
-  actionLabel: string;
-  actionVariant: 'gold' | 'sky';
-}
-
-export interface CertificateItem {
-  id: string;
-  title: string;
-  issueDate: string;
-  credentialId: string;
-  isOfficial: boolean;
-}
+import type { CompetitionItem, CertificateItem } from '../types';
+export type { CompetitionItem, CertificateItem };
 
 const mockCompetitions: CompetitionItem[] = [
   {
@@ -86,19 +71,19 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
     <div dir="rtl" className="w-full flex flex-col gap-8 select-none">
       {/* Header-Filter matching Figma */}
       <div
-        data-layer="Header-Filter"
+
         className="HeaderFilter self-stretch flex justify-between items-center flex-wrap gap-4"
       >
         <h2
-          data-layer="مسابقاتي وتحدياتي"
-          className="text-slate-200 text-xl font-bold font-['Cairo'] leading-6"
+
+          className="text-slate-200 text-xl font-bold font-['IBM_Plex_Sans_Arabic'] leading-6"
         >
           مسابقاتي وتحدياتي
         </h2>
 
         {/* Toggle Filter matching Figma Desktop & Mobile */}
         <div
-          data-layer="Toggle-Filter"
+
           className="ToggleFilter p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center"
         >
           <button
@@ -127,26 +112,26 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
       </div>
 
       {/* Competitions Section */}
-      <div data-layer="Competitions-Section" className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
         {mockCompetitions.map((comp) => (
           <div
             key={comp.id}
-            data-layer="Competition Row"
+
             className="CompetitionRow self-stretch p-4 bg-blue-950 rounded-2xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-4 hover:border-sky-400/40 transition-all"
           >
             {/* Right: Text details */}
-            <div data-layer="Text details" className="flex-1 flex flex-col justify-start items-start gap-1 text-right min-w-0">
+            <div className="flex-1 flex flex-col justify-start items-start gap-1 text-right min-w-0">
               <div className="flex items-center gap-2">
                 <Trophy size={18} className="text-[#E5B65C] shrink-0" />
                 <h3
-                  data-layer={comp.title}
+
                   className="text-slate-200 text-sm md:text-base font-bold font-['Tajawal'] leading-6 truncate w-full"
                 >
                   {comp.title}
                 </h3>
               </div>
               <div
-                data-layer="Status indicator"
+
                 className="StatusIndicator inline-flex justify-start items-center gap-2 pr-6"
               >
                 <span
@@ -159,7 +144,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
                   }`}
                 />
                 <span
-                  data-layer={comp.statusText}
+
                   className="text-slate-400 text-xs font-normal font-['Tajawal']"
                 >
                   {comp.statusText}
@@ -168,11 +153,11 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
             </div>
 
             {/* Left: Action CTA */}
-            <div data-layer="Action Left" className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => onOpenArena?.(comp)}
-                data-layer="CTA"
+
                 className={`px-4 md:px-5 py-2.5 rounded-xl text-xs font-bold font-['Tajawal'] transition-all cursor-pointer ${
                   comp.actionVariant === 'gold'
                     ? 'bg-[#E5B65C] hover:bg-amber-300 text-slate-900 shadow-[0_0_12px_rgba(229,182,92,0.3)]'
@@ -187,10 +172,10 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
       </div>
 
       {/* Certificates Section */}
-      <div data-layer="Certificates-Section" className="flex flex-col gap-4 pt-2">
+      <div className="flex flex-col gap-4 pt-2">
         <h2
-          data-layer="شهاداتي المكتملة"
-          className="text-slate-200 text-xl font-bold font-['Cairo'] leading-6 text-right"
+
+          className="text-slate-200 text-xl font-bold font-['IBM_Plex_Sans_Arabic'] leading-6 text-right"
         >
           شهاداتي المكتملة
         </h2>
@@ -199,13 +184,13 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
           {mockCertificates.map((cert) => (
             <div
               key={cert.id}
-              data-layer="Certificate Card"
+
               className="p-5 bg-blue-950 rounded-2xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col justify-between gap-4 relative overflow-hidden group hover:border-[#E5B65C]/40 transition-colors"
             >
               {/* Badge Accent Row */}
-              <div data-layer="Badge Accent Row" className="flex justify-between items-center">
+              <div className="flex justify-between items-center">
                 <div
-                  data-layer="Gold Foil accent"
+
                   className="px-2.5 py-0.5 bg-[#E5B65C]/10 rounded border border-[#E5B65C] flex items-center gap-1.5"
                 >
                   <Award size={14} className="text-[#E5B65C]" />

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from '../../../app/routerContext';
+import { CATALOG_COURSES_ROUTE, CATALOG_SCHOLARSHIPS_ROUTE } from '../../../shared/lib/navigation';
 import { HeroSection } from '../components/HeroSection';
 import { CompetitionBanner } from '../../../shared/components/Banners/CompetitionBanner';
 import { TwinPillarRails } from '../components/TwinPillarRails';
@@ -74,8 +75,8 @@ export const HomePage: React.FC = () => {
             variant="desktop"
             courses={coursesData || mockCourses}
             scholarships={scholarshipsData || mockScholarships}
-            onViewAllCourses={() => navigate('/catalog?type=courses')}
-            onViewAllScholarships={() => navigate('/catalog?type=scholarships')}
+            onViewAllCourses={() => navigate(CATALOG_COURSES_ROUTE)}
+            onViewAllScholarships={() => navigate(CATALOG_SCHOLARSHIPS_ROUTE)}
           />
         </div>
         <div className="block lg:hidden w-full">
@@ -83,8 +84,8 @@ export const HomePage: React.FC = () => {
             variant="mobile"
             courses={coursesData || mockCourses}
             scholarships={scholarshipsData || mockScholarships}
-            onViewAllCourses={() => navigate('/catalog?type=courses')}
-            onViewAllScholarships={() => navigate('/catalog?type=scholarships')}
+            onViewAllCourses={() => navigate(CATALOG_COURSES_ROUTE)}
+            onViewAllScholarships={() => navigate(CATALOG_SCHOLARSHIPS_ROUTE)}
           />
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { CircleAlert } from 'lucide-react';
 
 interface RouteErrorBoundaryProps {
   children: React.ReactNode;
@@ -36,11 +37,7 @@ export class RouteErrorBoundary extends React.Component<
         <main className="content-container">
           <div className="w-full py-20 px-6 glass-panel rounded-2xl flex-col-center text-center gap-4 border border-[#1B3F80]">
             <div className="w-16 h-16 rounded-full bg-[#092557] border border-[#1B3F80] flex-center text-[#D9534F]">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
+              <CircleAlert size={30} />
             </div>
             <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
               تعذر عرض هذه الصفحة

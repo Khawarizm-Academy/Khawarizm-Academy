@@ -1,4 +1,5 @@
 import React from 'react';
+import { Bell } from 'lucide-react';
 import { BrandLogo } from '../Artwork/BrandVisuals';
 
 export interface MobileHeaderProps {
@@ -28,23 +29,11 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           <button
             onClick={onNotificationsClick}
             aria-label="الإشعارات"
-            className="relative p-2 rounded-full bg-[#061A3A]/80 border border-[#167BDB]/40 text-[#8299B5] hover:text-[#DCE5EE] transition-colors cursor-pointer"
+            className="relative p-2 rounded-full bg-[#061A3A]/80 border border-[#167BDB]/40 text-[#8299B5] hover:text-slate-100 transition-colors cursor-pointer"
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-            </svg>
+            <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-[#FF4D4D] text-[#F1F5F9] text-[9px] font-bold flex items-center justify-center ring-2 ring-[#040F24]">
+              <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-[#040F24]">
                 {unreadCount}
               </span>
             )}

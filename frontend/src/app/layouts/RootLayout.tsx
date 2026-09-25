@@ -8,6 +8,7 @@ import { MobileBottomBar } from '../../shared/components/BottomNav/MobileBottomB
 import { Footer } from '../../shared/components/Footer/Footer';
 import { PageSkeleton } from '../../shared/components/Loading/PageSkeleton';
 import { NotificationsDrawer } from '../../features/dashboard/components/NotificationsDrawer';
+import { CATALOG_COURSES_ROUTE, CATALOG_SCHOLARSHIPS_ROUTE } from '../../shared/lib/navigation';
 import type { NavTabKey } from '../../shared/lib/localization';
 
 export const RootLayout: React.FC = () => {
@@ -42,9 +43,9 @@ export const RootLayout: React.FC = () => {
     if (tab === 'home') {
       navigate('/');
     } else if (tab === 'courses') {
-      navigate('/catalog?type=courses');
+      navigate(CATALOG_COURSES_ROUTE);
     } else if (tab === 'scholarships') {
-      navigate('/catalog?type=scholarships');
+      navigate(CATALOG_SCHOLARSHIPS_ROUTE);
     } else if (tab === 'catalog') {
       navigate('/catalog');
     } else if (tab === 'events') {

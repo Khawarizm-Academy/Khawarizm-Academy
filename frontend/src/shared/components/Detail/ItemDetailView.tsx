@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from '../../../app/routerContext';
 import type { CatalogItem } from '../../../shared/data/mockCatalogData';
 
@@ -45,9 +46,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         onClick={() => navigate(backPath)}
         className="inline-flex items-center gap-2 text-[#29A9FF] text-sm font-['Tajawal'] hover:text-white transition-colors mb-6 animate-fade-in-up"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
+        <ArrowLeft size={16} />
         العودة إلى الدليل
       </button>
 

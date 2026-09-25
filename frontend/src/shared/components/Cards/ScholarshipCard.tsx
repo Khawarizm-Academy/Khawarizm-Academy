@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowLeft, BellRing, Clock, Globe, Landmark, MapPin } from 'lucide-react';
 import type { Scholarship } from '../../types/entities';
 import { ScholarshipThumbnail } from '../Artwork/BrandVisuals';
 import { convertKeyToAr, toArabic } from '../../lib/localization';
@@ -28,9 +29,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
             <div className="absolute top-2 right-2 badge-gold">
               <span>{scholarship.deadlineText}</span>
               {scholarship.deadlineUrgency === 'warning' && (
-                <svg width="10" height="12" viewBox="0 0 8 10" fill="currentColor">
-                  <path d="M2 9H6V7.5C6 6.95 5.8 6.5 5.4 6.1C5 5.7 4.55 5.5 4 5.5C3.45 5.5 3 5.7 2.6 6.1C2.2 6.5 2 6.95 2 7.5V9ZM4 4.5C4.55 4.5 5 4.3 5.4 3.9C5.8 3.5 6 3.05 6 2.5V1H2V2.5C2 3.05 2.2 3.5 2.6 3.9C3 4.3 3.45 4.5 4 4.5ZM0 10V9H1V7.5C1 7 1.1 6.5 1.35 6.05C1.6 5.6 1.9 5.25 2.35 5C1.9 4.75 1.6 4.4 1.35 3.95C1.1 3.5 1 3 1 2.5V1H0V0H8V1H7V2.5C7 3 6.9 3.5 6.65 3.95C6.4 4.4 6.1 4.75 5.65 5C6.1 5.25 6.4 5.6 6.65 6.05C6.9 6.5 7 7 7 7.5V9H8V10H0Z" />
-                </svg>
+                <BellRing size={10} fill="currentColor" />
               )}
             </div>
 
@@ -50,10 +49,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
           <div className="card-meta-row mb-3">
             {/* Location with Pin */}
             <div className="flex items-center gap-1 text-[#8299B5]">
-              <svg width="12" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
+              <MapPin size={14} />
               <span>{scholarship.location}</span>
             </div>
 
@@ -72,7 +68,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
             className="w-full btn-gold text-[13px]"
           >
             <span>{toArabic('actions', 'apply_now')}</span>
-            <span className="text-sm">←</span>
+            <ArrowLeft size={14} />
           </button>
         </div>
       </div>
@@ -92,26 +88,15 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
             {/* Institution / Globe Icon in Rounded Box */}
             <div className="card-icon-box text-[#E5B65C]">
               {scholarship.iconType === 'globe' ? (
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-                  <path d="M2 12h20" />
-                </svg>
+                <Globe size={22} />
               ) : (
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 21h18" />
-                  <path d="M5 21V7l7-4 7 4v14" />
-                  <path d="M9 10a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v11H9Z" />
-                </svg>
+                <Landmark size={22} />
               )}
             </div>
 
             {/* Urgency Badge */}
             <div className="badge-gold-subtle">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
+              <Clock size={12} />
               <span>{scholarship.deadlineText}</span>
             </div>
           </div>
@@ -131,7 +116,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
           {/* Badges / Tags */}
           <div className="flex items-center gap-2 mb-4 justify-start">
             {scholarship.degreeLevel && (
-              <span className="tag-box text-[#DCE5EE]">
+              <span className="tag-box text-slate-100">
                 {convertKeyToAr(scholarship.degreeLevel, 'degreeLevels')}
               </span>
             )}
@@ -149,7 +134,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
             className="w-full btn-gold text-[13px] sm:text-sm"
           >
             <span>{toArabic('actions', 'apply_now')}</span>
-            <span className="text-sm transition-transform duration-200 group-hover:-translate-x-1">←</span>
+            <ArrowLeft size={14} className="transition-transform duration-200 group-hover:-translate-x-1" />
           </button>
         </div>
       </div>

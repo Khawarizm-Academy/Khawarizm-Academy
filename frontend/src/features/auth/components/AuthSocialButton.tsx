@@ -19,7 +19,7 @@ export const AuthSocialButton: React.FC<AuthSocialButtonProps> = ({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className="w-full h-12 px-4 py-3 bg-white hover:bg-slate-100 active:scale-[0.99] rounded-lg border border-slate-200 text-slate-900 text-sm font-bold font-['Cairo',sans-serif] inline-flex justify-center items-center gap-3 transition-all duration-200 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#E5B65C]"
+        className="w-full h-12 px-4 py-3 bg-white hover:bg-slate-100 active:scale-[0.99] rounded-lg border border-slate-200 text-slate-900 text-sm font-bold font-['IBM_Plex_Sans_Arabic'] inline-flex justify-center items-center gap-3 transition-all duration-200 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#E5B65C]"
       >
         <span>{label}</span>
         {/* Google Official Multicolored Vector Icon */}
@@ -51,7 +51,7 @@ export const AuthSocialButton: React.FC<AuthSocialButtonProps> = ({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-12 px-4 py-3 bg-[#1877F2] hover:bg-[#166fe5] active:scale-[0.99] rounded-lg text-white text-sm font-bold font-['Cairo',sans-serif] inline-flex justify-center items-center gap-3 transition-all duration-200 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#29A9FF]"
+      className="w-full h-12 px-4 py-3 bg-[#1877F2] hover:bg-[#166fe5] active:scale-[0.99] rounded-lg text-white text-sm font-bold font-['IBM_Plex_Sans_Arabic'] inline-flex justify-center items-center gap-3 transition-all duration-200 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#29A9FF]"
     >
       <span>{label}</span>
       {/* Facebook Official Icon */}

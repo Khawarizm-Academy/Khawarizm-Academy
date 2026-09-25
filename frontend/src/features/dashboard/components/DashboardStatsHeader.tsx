@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, type LucideIcon } from 'lucide-react';
+import { Bell, User, type LucideIcon } from 'lucide-react';
 
 export interface StatChipItem {
   icon: LucideIcon;
@@ -39,12 +39,9 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
         >
           <div className="size-9 rounded-full bg-[#061A3A] border border-blue-900 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-sky-400 transition-colors">
             {/* Celestial spiral / avatar mark matching mobile image */}
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="10" cy="10" r="8" stroke="#E5B65C" strokeWidth="1.5" strokeDasharray="3 3" />
-              <circle cx="10" cy="10" r="4" fill="#29A9FF" />
-            </svg>
+            <User size={18} className="text-sky-400" />
           </div>
-          <span className="text-slate-200 text-lg font-bold font-['Cairo'] group-hover:text-sky-300 transition-colors">
+          <span className="text-slate-200 text-lg font-bold font-['IBM_Plex_Sans_Arabic'] group-hover:text-sky-300 transition-colors">
             مرحبًا، {studentName}
           </span>
         </button>
@@ -91,19 +88,19 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
 
       {/* 3. Desktop Stats-Row matching lines 32-66 of Main - Dashboard - Desktop.html & Screenshot media_1789837891256.png */}
       <div
-        data-layer="Stats-Row"
+
         className="StatsRow self-stretch hidden md:flex justify-between items-center gap-6"
       >
         {/* First Child in RTL: Welcome-Msg on Right side */}
-        <div data-layer="Welcome-Msg" className="WelcomeMsg flex flex-col justify-start items-start text-right gap-1 shrink-0">
+        <div className="WelcomeMsg flex flex-col justify-start items-start text-right gap-1 shrink-0">
           <h1
-            data-layer={title}
-            className="text-slate-200 text-2xl md:text-[26px] font-bold font-['Cairo'] leading-8"
+
+            className="text-slate-200 text-2xl md:text-[26px] font-bold font-['IBM_Plex_Sans_Arabic'] leading-8"
           >
             {title}
           </h1>
           <p
-            data-layer={subtitle}
+
             className="text-slate-400 text-sm font-medium font-['Tajawal'] leading-5"
           >
             {subtitle}
@@ -119,7 +116,7 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
                 key={idx}
                 type="button"
                 onClick={chip.onClick}
-                data-layer="Stat-Chip"
+
                 className={`StatChip px-5 py-2.5 bg-blue-950 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-start items-center gap-3 shadow-sm transition-all ${
                   chip.onClick ? 'cursor-pointer hover:border-sky-400/50 active:scale-95' : 'cursor-default'
                 }`}

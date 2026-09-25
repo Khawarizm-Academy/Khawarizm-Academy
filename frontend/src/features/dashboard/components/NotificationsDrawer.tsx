@@ -38,8 +38,8 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
     switch (type) {
       case 'live':
         return (
-          <div className="size-10 rounded-full bg-[#040F24] border border-[#FF4D4D]/40 flex items-center justify-center shrink-0">
-            <Radio size={18} strokeWidth={2} className="text-[#FF4D4D]" />
+          <div className="size-10 rounded-full bg-[#040F24] border border-red-500/40 flex items-center justify-center shrink-0">
+            <Radio size={18} strokeWidth={2} className="text-red-500" />
           </div>
         );
       case 'scholarship':
@@ -58,8 +58,8 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
         );
       case 'competition':
         return (
-          <div className="size-10 rounded-full bg-[#040F24] border border-[#10B981]/40 flex items-center justify-center shrink-0">
-            <Trophy size={18} strokeWidth={2} className="text-[#10B981]" />
+          <div className="size-10 rounded-full bg-[#040F24] border border-emerald-500/40 flex items-center justify-center shrink-0">
+            <Trophy size={18} strokeWidth={2} className="text-emerald-500" />
           </div>
         );
       default:
@@ -90,7 +90,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
               <Bell size={18} strokeWidth={2} />
             </div>
             <div>
-              <h2 className="text-lg font-bold font-['Cairo',sans-serif] text-[#F1F5F9]">
+              <h2 className="text-lg font-bold font-['IBM_Plex_Sans_Arabic'] text-white">
                 مركز الإشعارات
               </h2>
               <p className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">
@@ -112,7 +112,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-[#8299B5] hover:text-[#DCE5EE] hover:bg-[#092557] transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[#8299B5] hover:text-slate-100 hover:bg-[#092557] transition-colors cursor-pointer"
               aria-label="إغلاق"
             >
               <X size={18} strokeWidth={2} />
@@ -144,7 +144,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
               <div className="flex-1 flex flex-col gap-1 text-right">
                 <p
                   className={`text-xs sm:text-sm font-['Tajawal',sans-serif] leading-relaxed ${
-                    notif.isRead ? 'text-[#8299B5]' : 'text-[#F1F5F9] font-medium'
+                    notif.isRead ? 'text-[#8299B5]' : 'text-white font-medium'
                   }`}
                 >
                   {notif.title}

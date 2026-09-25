@@ -54,7 +54,7 @@ export const CompetitionArenaModal: React.FC<CompetitionArenaModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-slate-100 font-bold font-['Cairo'] text-base md:text-lg">
+                <h2 className="text-slate-100 font-bold font-['IBM_Plex_Sans_Arabic'] text-base md:text-lg">
                   {competition.title}
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-red-500/15 text-red-400 border border-red-500/30 animate-pulse">
@@ -81,10 +81,10 @@ export const CompetitionArenaModal: React.FC<CompetitionArenaModalProps> = ({
           {/* Problem Description & Leaderboard (Right in RTL) */}
           <div className="w-full lg:w-96 p-5 md:p-6 overflow-y-auto border-b lg:border-b-0 lg:border-l border-blue-900/60 space-y-5 bg-slate-950/40">
             <div>
-              <span className="text-[#E5B65C] font-bold text-xs font-['Cairo'] uppercase">
+              <span className="text-[#E5B65C] font-bold text-xs font-['IBM_Plex_Sans_Arabic'] uppercase">
                 التحدي البرمجي رقم #42
               </span>
-              <h3 className="text-slate-100 font-bold text-base font-['Cairo'] mt-0.5">
+              <h3 className="text-slate-100 font-bold text-base font-['IBM_Plex_Sans_Arabic'] mt-0.5">
                 تصفية العناصر الأكثر تكراراً في تدفق البيانات
               </h3>
               <p className="text-slate-400 text-xs font-['Tajawal'] leading-relaxed mt-2">
@@ -101,7 +101,7 @@ export const CompetitionArenaModal: React.FC<CompetitionArenaModalProps> = ({
 
             {/* Mini Live Leaderboard */}
             <div className="space-y-2 pt-2 border-t border-blue-900/40">
-              <h4 className="text-slate-300 font-bold text-xs font-['Cairo']">
+              <h4 className="text-slate-300 font-bold text-xs font-['IBM_Plex_Sans_Arabic']">
                 لوحة الصدارة المباشرة
               </h4>
               <div className="space-y-1.5 text-xs font-['Tajawal']">
@@ -163,7 +163,7 @@ export const CompetitionArenaModal: React.FC<CompetitionArenaModalProps> = ({
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 spellCheck={false}
-                className="w-full h-full bg-[#030914] border border-blue-900/80 rounded-2xl p-4 font-mono text-xs md:text-sm text-sky-200 outline-none focus:border-sky-400 leading-relaxed transition-colors resize-none shadow-inner"
+                className="w-full h-full bg-navy-950 border border-blue-900/80 rounded-2xl p-4 font-mono text-xs md:text-sm text-sky-200 outline-none focus:border-sky-400 leading-relaxed transition-colors resize-none shadow-inner"
               />
             </div>
 

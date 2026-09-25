@@ -33,7 +33,7 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-screen w-full bg-[#040F24] flex items-center justify-center relative overflow-hidden select-text">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl bg-[#092557] border border-[#29A9FF] text-[#DCE5EE] text-sm font-bold shadow-xl animate-fade-in flex items-center gap-2">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl bg-[#092557] border border-[#29A9FF] text-slate-100 text-sm font-bold shadow-xl animate-fade-in flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#3FAE6B] animate-pulse" />
           <span>{toastMessage}</span>
         </div>
@@ -76,7 +76,7 @@ export const LoginPage: React.FC = () => {
                 className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   authMode === 'login'
                     ? 'bg-[#167BDB] text-white font-bold shadow-sm'
-                    : 'text-[#8299B5] hover:text-[#DCE5EE]'
+                    : 'text-[#8299B5] hover:text-slate-100'
                 }`}
               >
                 دخول جديد
@@ -87,7 +87,7 @@ export const LoginPage: React.FC = () => {
                 className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   authMode === 'welcome-back'
                     ? 'bg-[#E5B65C] text-[#040F24] font-bold shadow-sm'
-                    : 'text-[#8299B5] hover:text-[#DCE5EE]'
+                    : 'text-[#8299B5] hover:text-slate-100'
                 }`}
               >
                 طالب سابق
@@ -213,7 +213,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <div className="flex flex-col items-center text-center gap-0.5">
-            <h1 className="text-xl font-bold text-[#E5B65C] font-['Cairo',sans-serif]">
+            <h1 className="text-xl font-bold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic']">
               أكاديمية خوارزم
             </h1>
             <p className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">
@@ -269,7 +269,7 @@ export const LoginPage: React.FC = () => {
       {showTermsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#040F24]/80 backdrop-blur-md animate-fade-in">
           <div className="w-full max-w-lg bg-[#061A3A] border border-[#1B3F80] rounded-2xl p-6 sm:p-8 flex flex-col gap-4 text-right shadow-2xl">
-            <h3 className="text-xl font-bold text-[#E5B65C] font-['Cairo',sans-serif]">
+            <h3 className="text-xl font-bold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic']">
               شروط الاستخدام وسياسة الخصوصية
             </h3>
             <div className="text-sm text-[#8299B5] font-['Tajawal',sans-serif] leading-relaxed space-y-3 max-h-64 overflow-y-auto pl-2">

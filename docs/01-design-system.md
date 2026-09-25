@@ -87,12 +87,12 @@ The brand sheet gives us mood colors, not a full UI system. These are added, sta
 
 | Role | Arabic typeface | Latin/numeral fallback | Notes |
 |---|---|---|---|
-| Display / headlines | **IBM Plex Sans Arabic** (Bold/SemiBold) or **Cairo** (Bold) | IBM Plex Sans | Geometric, modern, reads as "tech" not "government form" — matches the Codecademy/Scrimba confidence |
+| Display / headlines | **IBM Plex Sans Arabic** (Bold/SemiBold) | IBM Plex Sans | Geometric, modern, reads as "tech" not "government form" — matches the Codecademy/Scrimba confidence. Canonical display face; `Cairo` was removed from the app |
 | Body text | **IBM Plex Sans Arabic** (Regular/Medium) or **Tajawal** | IBM Plex Sans | Optimized for long reading (lesson descriptions, scholarship criteria) |
 | Numerals / stats / countdowns | **Latin numerals (0-9)**, not Eastern Arabic-Indic, set in a monospaced or tabular-figure style (e.g. IBM Plex Mono for countdowns) | — | Deadlines, scores, and prices need to be scannable at a glance; tabular figures prevent countdown timers from "jumping" in width |
 | Code snippets (coding competitions) | — | **IBM Plex Mono** or **JetBrains Mono** | Ligatures off, tabular figures on |
 
-*(If Cairo/Tajawal/IBM Plex Arabic licensing is a concern for Stitch's font picker, both Cairo and Tajawal are open-source Google Fonts and are safe defaults to name directly in prompts.)*
+*(IBM Plex Sans Arabic and Tajawal are open-source Google Fonts — safe defaults to name directly in prompts.)*
 
 ### 3.2 Type scale (mobile base → desktop)
 
