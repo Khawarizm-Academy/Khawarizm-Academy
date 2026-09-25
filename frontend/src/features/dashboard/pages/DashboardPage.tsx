@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Trophy, GraduationCap, BookOpen, Award, Bell } from 'lucide-react';
+import { Trophy, GraduationCap, BookOpen, Award, Bell, User, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from '../../../app/routerContext';
 import { DesktopDashboardSidebar } from '../components/DesktopDashboardSidebar';
 import { DashboardTopBar } from '../components/DashboardTopBar';
@@ -12,6 +12,7 @@ import { DashboardStatsSidebar } from '../components/DashboardStatsSidebar';
 import { SavedScholarshipsView, type SavedScholarshipItem } from '../components/SavedScholarshipsView';
 import { CompetitionsCertificatesView, type CompetitionItem, type CertificateItem } from '../components/CompetitionsCertificatesView';
 import { NotificationsView, type NotificationItemData } from '../components/NotificationsView';
+import { ProfileView } from '../../profile/components/ProfileView';
 import { CourseWorkspaceModal } from '../components/CourseWorkspaceModal';
 import { LiveClassroomModal } from '../components/LiveClassroomModal';
 import { ScholarshipApplicationModal } from '../components/ScholarshipApplicationModal';
@@ -123,6 +124,21 @@ export const DashboardPage: React.FC = () => {
   } else if (currentView === 'notifications') {
     headerTitle = 'مركز الإشعارات';
     headerSubtitle = 'لديك 3 تنبيهات جديدة غير مقروءة';
+  } else if (currentView === 'profile') {
+    headerTitle = 'الملف الشخصي';
+    headerSubtitle = 'إدارة بياناتك الشخصية، تفضيلات التعلّم، وإعدادات الحساب';
+    statChips = [
+      {
+        icon: User,
+        label: 'بيانات الحساب مكتملة',
+        iconColor: 'text-[#E5B65C]',
+      },
+      {
+        icon: Sparkles,
+        label: '3 مسارات اهتمام نشطة',
+        iconColor: 'text-sky-400',
+      },
+    ];
   }
 
   // Course rows for main / live views
@@ -213,7 +229,7 @@ export const DashboardPage: React.FC = () => {
         {/* Inner Padding Container */}
         <div className="w-full max-w-[1280px] px-4 sm:px-6 md:px-10 lg:px-14 pt-4 md:pt-8 pb-24 lg:pb-8 flex flex-col gap-6 md:gap-8">
           {/* Stats & Greeting Header */}
-          {stateParam !== 'empty' && currentView !== 'empty' && (
+          {stateParam !== 'empty' && currentView !== 'empty' && currentView !== 'profile' && (
             <DashboardStatsHeader
               title={headerTitle}
               subtitle={headerSubtitle}
@@ -221,7 +237,7 @@ export const DashboardPage: React.FC = () => {
               studentName="أحمد"
               unreadNotificationsCount={5}
               onNotificationsClick={() => handleSelectView('notifications')}
-              onAvatarClick={() => navigate('/profile')}
+              onAvatarClick={() => handleSelectView('profile')}
             />
           )}
 
@@ -270,8 +286,40 @@ export const DashboardPage: React.FC = () => {
             </div>
           )}
 
+          {/* Profile View (حسابي) */}
+          {currentView === 'profile' && (
+            <>
+              {/* Mobile Top Navigation Bar matching Profile - Dashboard - Mobile.html */}
+              <div className="flex md:hidden justify-between items-center w-full py-1 select-none">
+                {/* Right in RTL: Avatar Initials + "الملف الشخصي" */}
+                <div className="flex items-center gap-2.5 text-right">
+                  <div className="size-8.5 rounded-full bg-[#061A3A] border border-[#E5B65C] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                    <span className="text-[#E5B65C] text-xs font-bold font-['Cairo']">أق</span>
+                  </div>
+                  <span className="text-white text-base font-bold font-['Cairo']">
+                    الملف الشخصي
+                  </span>
+                </div>
+
+                {/* Left in RTL: Notification Bell */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectView('notifications')}
+                  title="الإشعارات"
+                  className="size-9 relative bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-center items-center cursor-pointer hover:outline-sky-400 text-[#8299B5] hover:text-sky-300 transition-all"
+                >
+                  <Bell size={17} strokeWidth={2} />
+                </button>
+              </div>
+
+              <div className="w-full py-1 md:py-2">
+                <ProfileView />
+              </div>
+            </>
+          )}
+
           {/* Two-Column Grid for Main, Live, Saved, Achievements views */}
-          {currentView !== 'empty' && stateParam !== 'empty' && currentView !== 'notifications' && (
+          {currentView !== 'empty' && stateParam !== 'empty' && currentView !== 'notifications' && currentView !== 'profile' && (
             <div
               data-layer="Two-Column-Grid"
               className="TwoColumnGrid self-stretch flex flex-col lg:flex-row justify-start items-start gap-8 w-full"

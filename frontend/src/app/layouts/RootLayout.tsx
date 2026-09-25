@@ -19,6 +19,7 @@ export const RootLayout: React.FC = () => {
   // Resolve active navbar tab key
   const queryParams = new URLSearchParams(search);
   const catalogType = queryParams.get('type');
+  const dashboardView = queryParams.get('view');
 
   let activeTab: NavTabKey = 'home';
   if (pathname === '/catalog') {
@@ -29,6 +30,10 @@ export const RootLayout: React.FC = () => {
     activeTab = 'courses';
   } else if (pathname === '/scholarships') {
     activeTab = 'scholarships';
+  } else if (pathname === '/profile' || (pathname === '/dashboard' && dashboardView === 'profile')) {
+    activeTab = 'profile';
+  } else if (pathname === '/dashboard') {
+    activeTab = 'dashboard';
   } else if (activeRoute?.meta?.activeTab) {
     activeTab = activeRoute.meta.activeTab;
   }
@@ -49,7 +54,7 @@ export const RootLayout: React.FC = () => {
     } else if (tab === 'dashboard') {
       navigate('/dashboard');
     } else if (tab === 'profile') {
-      navigate('/profile');
+      navigate('/dashboard?view=profile');
     } else if ((tab as string) === 'login') {
       navigate('/login');
     }

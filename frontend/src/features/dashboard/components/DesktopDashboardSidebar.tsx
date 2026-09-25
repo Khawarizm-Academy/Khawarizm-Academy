@@ -55,8 +55,8 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
       id: 'profile',
       label: 'حسابي',
       icon: User,
-      path: '/profile',
-      isExternalRoute: true,
+      path: '/dashboard?view=profile',
+      isExternalRoute: false,
     },
   ];
 
@@ -96,7 +96,8 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
             const Icon = item.icon;
             const isActive =
               (item.id === 'main' && (currentView === 'main' || currentView === 'live' || currentView === 'overview' || currentView === 'empty')) ||
-              (item.id === 'saved' && currentView === 'saved');
+              (item.id === 'saved' && currentView === 'saved') ||
+              (item.id === 'profile' && currentView === 'profile');
 
             return (
               <button
@@ -134,7 +135,7 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
       <div data-layer="Sidebar-Bottom" className="SidebarBottom self-stretch flex flex-col justify-start items-start gap-4 pt-4 border-t border-blue-900/40">
         <button
           type="button"
-          onClick={() => navigate('/profile')}
+          onClick={() => onSelectView('profile')}
           data-layer="User-Badge"
           className="UserBadge self-stretch inline-flex justify-start items-center gap-3 group text-right cursor-pointer"
         >
