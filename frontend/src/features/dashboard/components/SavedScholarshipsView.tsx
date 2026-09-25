@@ -1,68 +1,10 @@
 import React, { useState } from 'react';
 import { X, Undo2 } from 'lucide-react';
-import type { SavedScholarshipItem } from '../types';
+import { useCachedData } from '../../../shared/hooks/useCachedData';
+import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
+import { fetchSavedScholarships, fetchFavoriteCourses } from '../data/dashboardFetchers';
+import type { SavedScholarshipItem, FavoriteCourseItem } from '../types';
 export type { SavedScholarshipItem };
-
-interface FavoriteCourseItem {
-  id: string;
-  title: string;
-  provider: string;
-  durationText: string;
-}
-
-const initialScholarships: SavedScholarshipItem[] = [
-  {
-    id: 'sch-kaust-01',
-    title: 'منحة التميز لعلوم الحاسب والابتكار التقني',
-    provider: 'جامعة الملك عبدالله للعلوم والتقنية',
-    deadlineText: 'باقي 18 ساعة',
-    isUrgent: true,
-    coverage: 'تغطية كاملة 100% شاملة الرسوم الدراسية والسكن وبدل شهري',
-    gpaRequirement: '4.5 فما فوق (مكتمل لديك: 4.9)',
-  },
-  {
-    id: 'sch-tuwaiq-02',
-    title: 'برنامج الابتعاث الثقافي والدولي',
-    provider: 'وزارة الثقافة',
-    deadlineText: 'باقي 5 أيام',
-    isUrgent: false,
-    coverage: 'ابتعاث دولي متكامل لمرحلتي البكالوريوس والماجستير',
-    gpaRequirement: '4.0 فما فوق (مكتمل لديك: 4.9)',
-  },
-  {
-    id: 'sch-sdaia-03',
-    title: 'منحة رواد الغد للتكنولوجيا',
-    provider: 'مؤسسة طويق',
-    deadlineText: 'باقي 12 يوم',
-    isUrgent: false,
-    coverage: 'معسكرات تدريبية متقدمة وتوظيف مباشر للمتميزين',
-    gpaRequirement: '3.75 فما فوق (مكتمل لديك: 4.9)',
-  },
-  {
-    id: 'sch-oxford-04',
-    title: 'برنامج زمالة الذكاء الاصطناعي المتقدم',
-    provider: 'المركز الوطني للذكاء الاصطناعي',
-    deadlineText: 'باقي 24 يوم',
-    isUrgent: false,
-    coverage: 'أبحاث مشتركة مع مختبرات الذكاء الاصطناعي الدولية',
-    gpaRequirement: '4.2 فما فوق (مكتمل لديك: 4.9)',
-  },
-];
-
-const initialFavoriteCourses: FavoriteCourseItem[] = [
-  {
-    id: 'course-fav-1',
-    title: 'الأمن السيبراني والدفاع الرقمي الاستباقي',
-    provider: 'مسار الأمن المتقدم • 10 أسابيع',
-    durationText: 'معتمدة دولياً',
-  },
-  {
-    id: 'course-fav-2',
-    title: 'الحوسبة الكمية ومستقبل الخوارزميات',
-    provider: 'مسار الفيزياء التقنية • 6 أسابيع',
-    durationText: 'مستوى متقدم',
-  },
-];
 
 interface SavedScholarshipsViewProps {
   onSelectScholarship?: (scholarship: SavedScholarshipItem) => void;
@@ -74,34 +16,46 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
   onSelectCourse,
 }) => {
   const [activeTab, setActiveTab] = useState<'scholarships' | 'courses'>('scholarships');
-  const [scholarships, setScholarships] = useState<SavedScholarshipItem[]>(initialScholarships);
-  const [favoriteCourses, setFavoriteCourses] = useState<FavoriteCourseItem[]>(initialFavoriteCourses);
+
+  const { data: scholarshipsData, isLoading: isLoadingScholarships } = useCachedData<
+    SavedScholarshipItem[]
+  >(['dashboard', 'saved-scholarships'], fetchSavedScholarships, { initialData: [] });
+
+  const { data: favoriteCoursesData, isLoading: isLoadingCourses } = useCachedData<
+    FavoriteCourseItem[]
+  >(['dashboard', 'favorite-courses'], fetchFavoriteCourses, { initialData: [] });
+
+  // Local overrides so remove/undo persist for the session
+  const [localScholarships, setLocalScholarships] = useState<SavedScholarshipItem[] | null>(null);
+  const [localCourses, setLocalCourses] = useState<FavoriteCourseItem[] | null>(null);
   const [deletedItem, setDeletedItem] = useState<{ item: SavedScholarshipItem; index: number } | null>(null);
+
+  const scholarships = localScholarships ?? scholarshipsData;
+  const favoriteCourses = localCourses ?? favoriteCoursesData;
+  const isLoading = activeTab === 'scholarships' ? isLoadingScholarships : isLoadingCourses;
 
   const handleDeleteScholarship = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const idx = scholarships.findIndex((s) => s.id === id);
+    const target = scholarships;
+    const idx = target.findIndex((s) => s.id === id);
     if (idx !== -1) {
-      const removed = scholarships[idx];
-      setDeletedItem({ item: removed, index: idx });
-      setScholarships((prev) => prev.filter((s) => s.id !== id));
+      setDeletedItem({ item: target[idx], index: idx });
+      setLocalScholarships(target.filter((s) => s.id !== id));
     }
   };
 
   const handleUndoDelete = () => {
     if (deletedItem) {
-      setScholarships((prev) => {
-        const next = [...prev];
-        next.splice(deletedItem.index, 0, deletedItem.item);
-        return next;
-      });
+      const next = [...scholarships];
+      next.splice(deletedItem.index, 0, deletedItem.item);
+      setLocalScholarships(next);
       setDeletedItem(null);
     }
   };
 
   const handleDeleteFavoriteCourse = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setFavoriteCourses((prev) => prev.filter((c) => c.id !== id));
+    setLocalCourses(favoriteCourses.filter((c) => c.id !== id));
   };
 
   return (
@@ -126,7 +80,7 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
       {/* Header & Filter matching Figma Desktop & Mobile */}
       <div
 
-        className="HeaderFilter self-stretch flex justify-between items-center flex-wrap gap-4"
+        className="self-stretch flex justify-between items-center flex-wrap gap-4"
       >
         {/* Title on Right in RTL */}
         <h2
@@ -140,7 +94,7 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
         {/* Toggle-Filter on Left in RTL */}
         <div
 
-          className="ToggleFilter p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center"
+          className="p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center"
         >
           <button
             type="button"
@@ -170,7 +124,9 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
       {/* List of Saved Scholarships */}
       {activeTab === 'scholarships' && (
         <div className="flex flex-col gap-3">
-          {scholarships.length === 0 ? (
+          {isLoading ? (
+            <DataSectionSkeleton variant="list" count={4} />
+          ) : scholarships.length === 0 ? (
             <div className="p-10 text-center bg-slate-900/50 rounded-2xl border border-blue-900/50 text-slate-400 text-sm">
               لا توجد منح دراسية محفوظة حالياً في لوحتك.
             </div>
@@ -180,7 +136,7 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
                 key={item.id}
 
                 onClick={() => onSelectScholarship?.(item)}
-                className="ScholarshipRow self-stretch p-3.5 md:p-4 bg-blue-950 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-3 md:gap-4 hover:border-sky-400/40 transition-all cursor-pointer group"
+                className="self-stretch p-3.5 md:p-4 bg-blue-950 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-3 md:gap-4 hover:border-sky-400/40 transition-all cursor-pointer group"
               >
                 {/* Right side in RTL: Title and Provider */}
                 <div className="flex-1 flex flex-col justify-start items-start gap-1 text-right min-w-0">
@@ -234,7 +190,9 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
       {/* List of Favorite Courses */}
       {activeTab === 'courses' && (
         <div className="flex flex-col gap-3">
-          {favoriteCourses.length === 0 ? (
+          {isLoading ? (
+            <DataSectionSkeleton variant="list" count={3} />
+          ) : favoriteCourses.length === 0 ? (
             <div className="p-10 text-center bg-slate-900/50 rounded-2xl border border-blue-900/50 text-slate-400 text-sm">
               لا توجد دورات مفضلة محفوظة حالياً في لوحتك.
             </div>

@@ -118,7 +118,7 @@ export const CourseWorkspaceModal: React.FC<CourseWorkspaceModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className="size-16 rounded-full bg-[#E5B65C] hover:bg-amber-300 text-slate-900 flex items-center justify-center shadow-[0_0_24px_rgba(229,182,92,0.4)] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                  className="btn-gold size-16 rounded-full hover:scale-110"
                 >
                   {isPlaying ? <Pause size={28} /> : <Play size={28} className="translate-x-0.5" />}
                 </button>
@@ -157,7 +157,7 @@ export const CourseWorkspaceModal: React.FC<CourseWorkspaceModalProps> = ({
                   className={`px-5 py-2.5 rounded-xl font-bold font-['Tajawal'] text-xs md:text-sm flex items-center gap-2 transition-all cursor-pointer ${
                     currentLesson.isCompleted
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                      : 'bg-[#E5B65C] hover:bg-amber-300 text-slate-900 shadow-[0_0_12px_rgba(229,182,92,0.3)]'
+                      : 'btn-gold'
                   }`}
                 >
                   <CheckCircle2 size={16} />

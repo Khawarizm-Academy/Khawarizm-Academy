@@ -51,7 +51,7 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
           type="button"
           onClick={onNotificationsClick}
           title="الإشعارات"
-          className="size-10 relative bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-center items-center cursor-pointer hover:outline-sky-400 text-[#8299B5] hover:text-sky-300 transition-all"
+          className="btn-icon-circle relative"
         >
           <Bell size={18} strokeWidth={2} />
           {unreadNotificationsCount > 0 && (
@@ -89,10 +89,10 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
       {/* 3. Desktop Stats-Row matching lines 32-66 of Main - Dashboard - Desktop.html & Screenshot media_1789837891256.png */}
       <div
 
-        className="StatsRow self-stretch hidden md:flex justify-between items-center gap-6"
+        className="self-stretch hidden md:flex justify-between items-center gap-6"
       >
         {/* First Child in RTL: Welcome-Msg on Right side */}
-        <div className="WelcomeMsg flex flex-col justify-start items-start text-right gap-1 shrink-0">
+        <div className="flex flex-col justify-start items-start text-right gap-1 shrink-0">
           <h1
 
             className="text-slate-200 text-2xl md:text-[26px] font-bold font-['IBM_Plex_Sans_Arabic'] leading-8"

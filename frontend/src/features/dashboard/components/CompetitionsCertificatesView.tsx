@@ -1,51 +1,10 @@
 import React, { useState } from 'react';
 import { Trophy, Award, Download } from 'lucide-react';
+import { useCachedData } from '../../../shared/hooks/useCachedData';
+import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
+import { fetchCompetitions, fetchCertificates } from '../data/dashboardFetchers';
 import type { CompetitionItem, CertificateItem } from '../types';
 export type { CompetitionItem, CertificateItem };
-
-const mockCompetitions: CompetitionItem[] = [
-  {
-    id: 'comp-1',
-    title: 'تحدي الخوارزميات الشتوي',
-    statusText: 'مسجل ومجدول في يناير',
-    statusColor: 'blue',
-    actionLabel: 'عرض التفاصيل',
-    actionVariant: 'sky',
-  },
-  {
-    id: 'comp-2',
-    title: 'مسابقة البرمجة التنافسية للأكاديميات',
-    statusText: 'جارية الآن (تحدي البث المباشر)',
-    statusColor: 'red',
-    actionLabel: 'ادخل الساحة',
-    actionVariant: 'gold',
-  },
-  {
-    id: 'comp-3',
-    title: 'هاكاثون الابتكار الوطني',
-    statusText: 'انتهت • حققت المركز الثالث',
-    statusColor: 'green',
-    actionLabel: 'عرض النتائج',
-    actionVariant: 'sky',
-  },
-];
-
-const mockCertificates: CertificateItem[] = [
-  {
-    id: 'cert-1',
-    title: 'شهادة إتمام: أساسيات الذكاء الاصطناعي التوليدي',
-    issueDate: '10 يناير 2026',
-    credentialId: 'KHW-AI-89421',
-    isOfficial: true,
-  },
-  {
-    id: 'cert-2',
-    title: 'شهادة إتمام: تصميم واجهات وتجربة المستخدم المتقدمة',
-    issueDate: '28 ديسمبر 2025',
-    credentialId: 'KHW-UX-77319',
-    isOfficial: true,
-  },
-];
 
 interface CompetitionsCertificatesViewProps {
   onOpenArena?: (comp: CompetitionItem) => void;
@@ -58,6 +17,18 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
 }) => {
   const [filterMode, setFilterMode] = useState<'completed' | 'active'>('completed');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const { data: competitions, isLoading: isLoadingCompetitions } = useCachedData<CompetitionItem[]>(
+    ['dashboard', 'competitions'],
+    fetchCompetitions,
+    { initialData: [] }
+  );
+
+  const { data: certificates, isLoading: isLoadingCertificates } = useCachedData<CertificateItem[]>(
+    ['dashboard', 'certificates'],
+    fetchCertificates,
+    { initialData: [] }
+  );
 
   const handleDownload = (cert: CertificateItem) => {
     setDownloadingId(cert.id);
@@ -72,7 +43,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
       {/* Header-Filter matching Figma */}
       <div
 
-        className="HeaderFilter self-stretch flex justify-between items-center flex-wrap gap-4"
+        className="self-stretch flex justify-between items-center flex-wrap gap-4"
       >
         <h2
 
@@ -84,7 +55,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
         {/* Toggle Filter matching Figma Desktop & Mobile */}
         <div
 
-          className="ToggleFilter p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center"
+          className="p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex items-center"
         >
           <button
             type="button"
@@ -113,11 +84,14 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
 
       {/* Competitions Section */}
       <div className="flex flex-col gap-3">
-        {mockCompetitions.map((comp) => (
+        {isLoadingCompetitions ? (
+          <DataSectionSkeleton variant="list" count={3} />
+        ) : (
+          competitions.map((comp) => (
           <div
             key={comp.id}
 
-            className="CompetitionRow self-stretch p-4 bg-blue-950 rounded-2xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-4 hover:border-sky-400/40 transition-all"
+            className="self-stretch p-4 bg-blue-950 rounded-2xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-4 hover:border-sky-400/40 transition-all"
           >
             {/* Right: Text details */}
             <div className="flex-1 flex flex-col justify-start items-start gap-1 text-right min-w-0">
@@ -132,7 +106,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
               </div>
               <div
 
-                className="StatusIndicator inline-flex justify-start items-center gap-2 pr-6"
+                className="inline-flex justify-start items-center gap-2 pr-6"
               >
                 <span
                   className={`size-2 rounded-full shrink-0 ${
@@ -160,7 +134,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
 
                 className={`px-4 md:px-5 py-2.5 rounded-xl text-xs font-bold font-['Tajawal'] transition-all cursor-pointer ${
                   comp.actionVariant === 'gold'
-                    ? 'bg-[#E5B65C] hover:bg-amber-300 text-slate-900 shadow-[0_0_12px_rgba(229,182,92,0.3)]'
+                    ? 'btn-gold'
                     : 'outline outline-1 outline-offset-[-1px] outline-sky-400 text-sky-400 hover:bg-sky-400/10'
                 }`}
               >
@@ -168,7 +142,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
               </button>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Certificates Section */}
@@ -181,7 +155,10 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {mockCertificates.map((cert) => (
+          {isLoadingCertificates ? (
+            <DataSectionSkeleton variant="grid" count={2} className="md:col-span-2" />
+          ) : (
+            certificates.map((cert) => (
             <div
               key={cert.id}
 
@@ -227,7 +204,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
                 )}
               </button>
             </div>
-          ))}
+          )))}
         </div>
       </div>
     </div>

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Radio, Award, BookOpen, Trophy, Bell, X } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
+import { useCachedData } from '../../../shared/hooks/useCachedData';
+import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
+import { fetchDrawerNotifications } from '../data/dashboardFetchers';
+import { NotificationListItem } from './NotificationListItem';
 import type { DashboardNotification } from '../types';
-import { mockNotifications } from '../data/mockDashboardData';
 
 interface NotificationsDrawerProps {
   isOpen: boolean;
@@ -14,60 +17,31 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
   onClose,
   onNavigate,
 }) => {
-  const [notifications, setNotifications] = useState<DashboardNotification[]>(mockNotifications);
+  const { data, isLoading } = useCachedData<DashboardNotification[]>(
+    ['dashboard', 'notifications-drawer'],
+    fetchDrawerNotifications,
+    { enabled: isOpen, initialData: [] }
+  );
+
+  // Local override so marking-as-read persists for the session
+  const [localItems, setLocalItems] = useState<DashboardNotification[] | null>(null);
+  const notifications = localItems ?? data;
 
   if (!isOpen) return null;
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setLocalItems((prev) => (prev ?? notifications).map((n) => ({ ...n, isRead: true })));
   };
 
   const handleItemClick = (notif: DashboardNotification) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
+    setLocalItems((prev) =>
+      (prev ?? notifications).map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
     );
     if (notif.link && onNavigate) {
       onClose();
       onNavigate(notif.link);
-    }
-  };
-
-  const getNotificationIcon = (type: DashboardNotification['type']) => {
-    switch (type) {
-      case 'live':
-        return (
-          <div className="size-10 rounded-full bg-[#040F24] border border-red-500/40 flex items-center justify-center shrink-0">
-            <Radio size={18} strokeWidth={2} className="text-red-500" />
-          </div>
-        );
-      case 'scholarship':
-      case 'application':
-        return (
-          <div className="size-10 rounded-full bg-[#040F24] border border-[#E5B65C]/40 flex items-center justify-center shrink-0">
-            <Award size={18} strokeWidth={2} className="text-[#E5B65C]" />
-          </div>
-        );
-      case 'exam':
-      case 'lesson':
-        return (
-          <div className="size-10 rounded-full bg-[#040F24] border border-[#29A9FF]/40 flex items-center justify-center shrink-0">
-            <BookOpen size={18} strokeWidth={2} className="text-[#29A9FF]" />
-          </div>
-        );
-      case 'competition':
-        return (
-          <div className="size-10 rounded-full bg-[#040F24] border border-emerald-500/40 flex items-center justify-center shrink-0">
-            <Trophy size={18} strokeWidth={2} className="text-emerald-500" />
-          </div>
-        );
-      default:
-        return (
-          <div className="size-10 rounded-full bg-[#040F24] border border-[#167BDB]/40 flex items-center justify-center shrink-0 text-[#29A9FF]">
-            <Bell size={18} strokeWidth={2} />
-          </div>
-        );
     }
   };
 
@@ -120,41 +94,22 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
           </div>
         </div>
 
-        {/* Scrollable Notification List */}
+{/* Scrollable Notification List */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-          {notifications.map((notif) => (
-            <div
-              key={notif.id}
-              onClick={() => handleItemClick(notif)}
-              className={`relative flex items-start gap-3.5 p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                notif.isRead
-                  ? 'bg-[#040F24]/60 border-[#1B3F80]/30 hover:border-[#167BDB]/50'
-                  : 'bg-[#092557]/40 border-[#29A9FF]/40 shadow-[0_4px_16px_rgba(41,169,255,0.12)]'
-              }`}
-            >
-              {/* Unread Glowing Dot */}
-              {!notif.isRead && (
-                <span className="absolute top-4 left-3 size-2 rounded-full bg-[#29A9FF] shadow-[0_0_8px_#29A9FF]" />
-              )}
-
-              {/* Categorized Icon */}
-              {getNotificationIcon(notif.type)}
-
-              {/* Notification Text Content */}
-              <div className="flex-1 flex flex-col gap-1 text-right">
-                <p
-                  className={`text-xs sm:text-sm font-['Tajawal',sans-serif] leading-relaxed ${
-                    notif.isRead ? 'text-[#8299B5]' : 'text-white font-medium'
-                  }`}
-                >
-                  {notif.title}
-                </p>
-                <span className="text-[11px] text-[#5A7394] font-['Tajawal']">
-                  {notif.timeAgo}
-                </span>
-              </div>
-            </div>
-          ))}
+          {isLoading ? (
+            <DataSectionSkeleton variant="list" count={5} />
+          ) : (
+            notifications.map((notif) => (
+              <NotificationListItem
+                key={notif.id}
+                text={notif.title}
+                timeAgo={notif.timeAgo}
+                type={notif.type}
+                unread={!notif.isRead}
+                onClick={() => handleItemClick(notif)}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>

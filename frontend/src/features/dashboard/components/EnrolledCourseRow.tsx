@@ -23,7 +23,7 @@ export const EnrolledCourseRow: React.FC<EnrolledCourseRowProps> = ({
     <div
       dir="rtl"
 
-      className="CourseRow self-stretch p-3.5 md:p-4 bg-blue-950 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-3 md:gap-5 hover:border-sky-400/40 transition-all duration-200 select-none"
+      className="self-stretch p-3.5 md:p-4 bg-blue-950 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-3 md:gap-5 hover:border-sky-400/40 transition-all duration-200 select-none"
     >
       {/* Right side in RTL: Thumbnail + Course text info */}
       <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 text-right">
@@ -71,7 +71,7 @@ export const EnrolledCourseRow: React.FC<EnrolledCourseRowProps> = ({
           type="button"
           onClick={() => onContinue ? onContinue(id) : undefined}
 
-          className="ActionBtn px-4 md:px-5 py-2 md:py-2.5 bg-slate-900 hover:bg-slate-800 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 hover:outline-[#E5B65C] text-[#E5B65C] text-xs md:text-sm font-bold font-['Tajawal'] transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+          className="btn-pill-subtle text-[#E5B65C] px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm"
         >
           استمر
         </button>

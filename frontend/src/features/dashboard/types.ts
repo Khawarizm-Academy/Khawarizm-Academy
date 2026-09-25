@@ -74,6 +74,13 @@ export interface NotificationItemData {
   type: 'live' | 'scholarship' | 'exam' | 'competition' | 'lesson';
 }
 
+export interface FavoriteCourseItem {
+  id: string;
+  title: string;
+  provider: string;
+  durationText: string;
+}
+
 export interface DashboardNotification {
   id: string;
   title: string;

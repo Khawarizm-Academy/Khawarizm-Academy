@@ -4,6 +4,11 @@ import type {
   DashboardStats,
   UpcomingEvent,
   DashboardNotification,
+  SavedScholarshipItem,
+  FavoriteCourseItem,
+  CompetitionItem,
+  CertificateItem,
+  NotificationItemData,
 } from '../types';
 
 export const mockEnrolledCourses: EnrolledCourse[] = [
@@ -130,5 +135,148 @@ export const mockNotifications: DashboardNotification[] = [
     type: 'application',
     isRead: true,
     link: '/dashboard?view=saved',
+  },
+];
+
+export const mockDashboardNotifications: NotificationItemData[] = [
+  {
+    id: 'view-notif-1',
+    message: 'جلستك المباشرة في برمجة بايثون تبدأ خلال 30 دقيقة. استعد وانضم الآن للتفاعل المباشر.',
+    timeAgo: 'منذ 5 دقائق',
+    isUnread: true,
+    type: 'live',
+  },
+  {
+    id: 'view-notif-2',
+    message: 'منحة جديدة تطابق اهتماماتك وتخصصك: برنامج الابتعاث الخارجي المتميز لمرحلة البكالوريوس والماجستير.',
+    timeAgo: 'منذ ساعتين',
+    isUnread: true,
+    type: 'scholarship',
+  },
+  {
+    id: 'view-notif-3',
+    message: 'تم تصحيح اختبارك في أساسيات البرمجة بنجاح - حصلت على درجة مميزة 87%. مبارك نجاحك!',
+    timeAgo: 'أمس',
+    isUnread: true,
+    type: 'exam',
+  },
+  {
+    id: 'view-notif-4',
+    message: 'تحدي الخوارزميات الشتوي يبدأ غدًا في الصباح الباكر. تأكد من مراجعة القواعد والتحضير بشكل مناسب.',
+    timeAgo: 'منذ يومين',
+    isUnread: false,
+    type: 'competition',
+  },
+  {
+    id: 'view-notif-5',
+    message: 'تمت إضافة درس جديد في تصميم واجهات المستخدم (أدوات النماذج التفاعلية المتقدمة وتجربة المستخدم).',
+    timeAgo: 'منذ 3 أيام',
+    isUnread: false,
+    type: 'lesson',
+  },
+  {
+    id: 'view-notif-6',
+    message: 'تحديث حالة طلب المنحة: تم قبول طلبك المبدئي في منحة التميز العلمي والابتكار التقني.',
+    timeAgo: 'منذ أسبوع',
+    isUnread: false,
+    type: 'scholarship',
+  },
+];
+
+export const mockSavedScholarships: SavedScholarshipItem[] = [
+  {
+    id: 'sch-kaust-01',
+    title: 'منحة التميز لعلوم الحاسب والابتكار التقني',
+    provider: 'جامعة الملك عبدالله للعلوم والتقنية',
+    deadlineText: 'باقي 18 ساعة',
+    isUrgent: true,
+    coverage: 'تغطية كاملة 100% شاملة الرسوم الدراسية والسكن وبدل شهري',
+    gpaRequirement: '4.5 فما فوق (مكتمل لديك: 4.9)',
+  },
+  {
+    id: 'sch-tuwaiq-02',
+    title: 'برنامج الابتعاث الثقافي والدولي',
+    provider: 'وزارة الثقافة',
+    deadlineText: 'باقي 5 أيام',
+    isUrgent: false,
+    coverage: 'ابتعاث دولي متكامل لمرحلتي البكالوريوس والماجستير',
+    gpaRequirement: '4.0 فما فوق (مكتمل لديك: 4.9)',
+  },
+  {
+    id: 'sch-sdaia-03',
+    title: 'منحة رواد الغد للتكنولوجيا',
+    provider: 'مؤسسة طويق',
+    deadlineText: 'باقي 12 يوم',
+    isUrgent: false,
+    coverage: 'معسكرات تدريبية متقدمة وتوظيف مباشر للمتميزين',
+    gpaRequirement: '3.75 فما فوق (مكتمل لديك: 4.9)',
+  },
+  {
+    id: 'sch-oxford-04',
+    title: 'برنامج زمالة الذكاء الاصطناعي المتقدم',
+    provider: 'المركز الوطني للذكاء الاصطناعي',
+    deadlineText: 'باقي 24 يوم',
+    isUrgent: false,
+    coverage: 'أبحاث مشتركة مع مختبرات الذكاء الاصطناعي الدولية',
+    gpaRequirement: '4.2 فما فوق (مكتمل لديك: 4.9)',
+  },
+];
+
+export const mockFavoriteCourses: FavoriteCourseItem[] = [
+  {
+    id: 'course-fav-1',
+    title: 'الأمن السيبراني والدفاع الرقمي الاستباقي',
+    provider: 'مسار الأمن المتقدم • 10 أسابيع',
+    durationText: 'معتمدة دولياً',
+  },
+  {
+    id: 'course-fav-2',
+    title: 'الحوسبة الكمية ومستقبل الخوارزميات',
+    provider: 'مسار الفيزياء التقنية • 6 أسابيع',
+    durationText: 'مستوى متقدم',
+  },
+];
+
+export const mockCompetitions: CompetitionItem[] = [
+  {
+    id: 'comp-1',
+    title: 'تحدي الخوارزميات الشتوي',
+    statusText: 'مسجل ومجدول في يناير',
+    statusColor: 'blue',
+    actionLabel: 'عرض التفاصيل',
+    actionVariant: 'sky',
+  },
+  {
+    id: 'comp-2',
+    title: 'مسابقة البرمجة التنافسية للأكاديميات',
+    statusText: 'جارية الآن (تحدي البث المباشر)',
+    statusColor: 'red',
+    actionLabel: 'ادخل الساحة',
+    actionVariant: 'gold',
+  },
+  {
+    id: 'comp-3',
+    title: 'هاكاثون الابتكار الوطني',
+    statusText: 'انتهت • حققت المركز الثالث',
+    statusColor: 'green',
+    actionLabel: 'عرض النتائج',
+    actionVariant: 'sky',
+  },
+];
+
+export const mockCertificates: CertificateItem[] = [
+  {
+    id: 'cert-1',
+    title: 'شهادة إتمام: أساسيات الذكاء الاصطناعي التوليدي',
+    issueDate: '10 يناير 2026',
+    credentialId: 'KHW-AI-89421',
+    isOfficial: true,
+  },
+  {
+    id: 'cert-2',
+    title: 'شهادة إتمام: تصميم واجهات وتجربة المستخدم المتقدمة',
+    issueDate: '28 ديسمبر 2025',
+    credentialId: 'KHW-UX-77319',
+    isOfficial: true,
   },
 ];

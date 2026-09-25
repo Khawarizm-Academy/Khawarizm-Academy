@@ -1,9 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { Trophy, GraduationCap, BookOpen, Award, Bell, User, Sparkles } from 'lucide-react';
+import { Trophy, GraduationCap, BookOpen, Award, User, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from '../../../app/routerContext';
 import { CATALOG_COURSES_ROUTE } from '../../../shared/lib/navigation';
+import { useCachedData } from '../../../shared/hooks/useCachedData';
+import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
+import { fetchEnrolledCourses } from '../data/dashboardFetchers';
+import type { EnrolledCourse } from '../types';
 import { DesktopDashboardSidebar } from '../components/DesktopDashboardSidebar';
 import { DashboardTopBar } from '../components/DashboardTopBar';
+import { MobileDashboardTopBar } from '../components/MobileDashboardTopBar';
+import { CertificatePreviewModal } from '../components/CertificatePreviewModal';
 import { DashboardStatsHeader, type StatChipItem } from '../components/DashboardStatsHeader';
 import { PriorityContinueCard } from '../components/PriorityContinueCard';
 import { LiveSessionPriorityCard } from '../components/LiveSessionPriorityCard';
@@ -142,30 +148,16 @@ export const DashboardPage: React.FC = () => {
     ];
   }
 
-  // Course rows for main / live views
-  const enrolledCourses = [
-    {
-      id: 'course-uiux',
-      title: 'تصميم واجهات المستخدم UI/UX للمتقدمين',
-      category: 'مسار التصميم والابتكار',
-      progressPercent: 75,
-      iconType: 'uiux' as const,
-    },
-    {
-      id: 'course-python',
-      title: 'برمجة بايثون للمبتدئين',
-      category: 'مسار البرمجة والتطوير',
-      progressPercent: 20,
-      iconType: 'python' as const,
-    },
-    {
-      id: 'course-ai',
-      title: 'أساسيات الذكاء الاصطناعي وتطبيقاته',
-      category: 'مسار التقنيات الناشئة',
-      progressPercent: 40,
-      iconType: 'ai' as const,
-    },
-  ];
+  // Course rows for main / live views (Tier 2: real async load via cache)
+  const { data: coursesData, isLoading: isLoadingCourses } = useCachedData<EnrolledCourse[]>(['dashboard', 'courses-list'], fetchEnrolledCourses, { initialData: [] });
+
+  const enrolledCourses = coursesData.map((c) => ({
+    id: c.id,
+    title: c.title,
+    category: c.track,
+    progressPercent: c.progress,
+    iconType: (c.id.includes('uiux') ? 'uiux' : c.id.includes('python') ? 'python' : 'ai') as 'uiux' | 'python' | 'ai',
+  }));
 
   const handleNotificationAction = (notif: NotificationItemData) => {
     if (notif.type === 'live') {
@@ -197,8 +189,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <div
       dir="rtl"
-
-      className="DashboardMainDesktop w-full min-h-screen bg-slate-900 flex justify-start items-start text-slate-100 selection:bg-sky-500/20 selection:text-sky-300 relative overflow-x-hidden"
+      className="w-full min-h-screen bg-slate-900 flex justify-start items-start text-slate-100 selection:bg-sky-500/20 selection:text-sky-300 relative overflow-x-hidden"
     >
       {/* Ambient background glows matching Figma — strictly contained in an overflow-hidden layer to prevent expanding page scroll height */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
@@ -222,7 +213,7 @@ export const DashboardPage: React.FC = () => {
       {/* ========================================================================= */}
       <div
 
-        className="MainBody flex-1 min-w-0 flex flex-col justify-start items-start relative z-10"
+        className="flex-1 min-w-0 flex flex-col justify-start items-start relative z-10"
       >
         {/* Top-Bar matching Figma desktop (Search on right, Nav links on left) */}
         <DashboardTopBar />
@@ -231,44 +222,37 @@ export const DashboardPage: React.FC = () => {
         <div className="w-full max-w-[1280px] px-4 sm:px-6 md:px-10 lg:px-14 pt-4 md:pt-8 pb-24 lg:pb-8 flex flex-col gap-6 md:gap-8">
           {/* Stats & Greeting Header */}
           {stateParam !== 'empty' && currentView !== 'empty' && currentView !== 'profile' && (
-            <DashboardStatsHeader
-              title={headerTitle}
-              subtitle={headerSubtitle}
-              chips={statChips}
-              studentName="أحمد"
-              unreadNotificationsCount={5}
-              onNotificationsClick={() => handleSelectView('notifications')}
-              onAvatarClick={() => handleSelectView('profile')}
-            />
+            <div className="animate-fade-in-up">
+              <DashboardStatsHeader
+                title={headerTitle}
+                subtitle={headerSubtitle}
+                chips={statChips}
+                studentName="أحمد"
+                unreadNotificationsCount={5}
+                onNotificationsClick={() => handleSelectView('notifications')}
+                onAvatarClick={() => handleSelectView('profile')}
+              />
+            </div>
           )}
 
           {/* Empty State View */}
           {(stateParam === 'empty' || currentView === 'empty') && (
             <>
-              {/* Mobile Top Navigation Bar matching Empty State - Dashboard - Mobile.html & media_1789428679990.png */}
-              <div className="flex md:hidden justify-between items-center w-full py-1 select-none">
-                {/* Right in RTL: Avatar + "مرحبًا، سارة" */}
-                <div className="flex items-center gap-2.5 text-right">
-                  <div className="size-9 rounded-full bg-[#061A3A] border border-blue-900 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                    <User size={18} className="text-sky-400" />
+              <MobileDashboardTopBar
+                title={
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-9 rounded-full bg-[#061A3A] border border-blue-900 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                      <User size={18} className="text-sky-400" />
+                    </div>
+                    <span className="text-slate-200 text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
+                      مرحبًا، سارة
+                    </span>
                   </div>
-                  <span className="text-slate-200 text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
-                    مرحبًا، سارة
-                  </span>
-                </div>
+                }
+                onNotificationsClick={() => handleSelectView('notifications')}
+              />
 
-                {/* Left in RTL: Notification Bell (0 unread notifications, no red badge) */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectView('notifications')}
-                  title="الإشعارات"
-                  className="size-10 relative bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-center items-center cursor-pointer hover:outline-sky-400 text-[#8299B5] hover:text-sky-300 transition-all"
-                >
-                  <Bell size={18} strokeWidth={2} />
-                </button>
-              </div>
-
-              <div className="w-full py-2 md:py-6">
+              <div className="w-full py-2 md:py-6 animate-fade-in-up animation-delay-100">
                 <EmptyDashboardState userName="سارة" />
               </div>
             </>
@@ -276,7 +260,7 @@ export const DashboardPage: React.FC = () => {
 
           {/* Notifications View */}
           {currentView === 'notifications' && (
-            <div className="w-full max-w-4xl mx-auto py-2">
+            <div className="w-full max-w-4xl mx-auto py-2 animate-fade-in-up">
               <NotificationsView
                 onBack={() => handleSelectView('main')}
                 onSelectNotification={handleNotificationAction}
@@ -287,30 +271,21 @@ export const DashboardPage: React.FC = () => {
           {/* Profile View (حسابي) */}
           {currentView === 'profile' && (
             <>
-              {/* Mobile Top Navigation Bar matching Profile - Dashboard - Mobile.html */}
-              <div className="flex md:hidden justify-between items-center w-full py-1 select-none">
-                {/* Right in RTL: Avatar Initials + "الملف الشخصي" */}
-                <div className="flex items-center gap-2.5 text-right">
-                  <div className="size-8.5 rounded-full bg-[#061A3A] border border-[#E5B65C] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                    <span className="text-[#E5B65C] text-xs font-bold font-['IBM_Plex_Sans_Arabic']">أق</span>
+              <MobileDashboardTopBar
+                title={
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-8.5 rounded-full bg-[#061A3A] border border-[#E5B65C] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                      <span className="text-[#E5B65C] text-xs font-bold font-['IBM_Plex_Sans_Arabic']">أق</span>
+                    </div>
+                    <span className="text-white text-base font-bold font-['IBM_Plex_Sans_Arabic']">
+                      الملف الشخصي
+                    </span>
                   </div>
-                  <span className="text-white text-base font-bold font-['IBM_Plex_Sans_Arabic']">
-                    الملف الشخصي
-                  </span>
-                </div>
+                }
+                onNotificationsClick={() => handleSelectView('notifications')}
+              />
 
-                {/* Left in RTL: Notification Bell */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectView('notifications')}
-                  title="الإشعارات"
-                  className="size-9 relative bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-center items-center cursor-pointer hover:outline-sky-400 text-[#8299B5] hover:text-sky-300 transition-all"
-                >
-                  <Bell size={17} strokeWidth={2} />
-                </button>
-              </div>
-
-              <div className="w-full py-1 md:py-2">
+              <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
                 <ProfileView />
               </div>
             </>
@@ -320,12 +295,12 @@ export const DashboardPage: React.FC = () => {
           {currentView !== 'empty' && stateParam !== 'empty' && currentView !== 'notifications' && currentView !== 'profile' && (
             <div
 
-              className="TwoColumnGrid self-stretch flex flex-col lg:flex-row justify-start items-start gap-8 w-full"
+              className="self-stretch flex flex-col lg:flex-row justify-start items-start gap-8 w-full animate-fade-in-up animation-delay-100"
             >
               {/* Primary Column (Center, flex-1) */}
               <div
 
-                className="PrimaryColumn flex-1 min-w-0 w-full flex flex-col justify-start items-start gap-8 order-1"
+                className="flex-1 min-w-0 w-full flex flex-col justify-start items-start gap-8 order-1"
               >
                 {/* 1. Main / Live View */}
                 {(currentView === 'main' || currentView === 'live') && (
@@ -356,11 +331,11 @@ export const DashboardPage: React.FC = () => {
                     {/* Courses Section */}
                     <div
 
-                      className="CoursesSection self-stretch flex flex-col justify-start items-start gap-4 w-full"
+                      className="self-stretch flex flex-col justify-start items-start gap-4 w-full"
                     >
                       <div
 
-                        className="SectionHeader self-stretch flex justify-between items-center w-full"
+                        className="self-stretch flex justify-between items-center w-full"
                       >
                         <h2
 
@@ -382,19 +357,23 @@ export const DashboardPage: React.FC = () => {
                       {/* Courses List */}
                       <div
 
-                        className="CoursesList self-stretch flex flex-col justify-start items-start gap-3 w-full"
+                        className="self-stretch flex flex-col justify-start items-start gap-3 w-full"
                       >
-                        {enrolledCourses.map((course) => (
-                          <EnrolledCourseRow
-                            key={course.id}
-                            id={course.id}
-                            title={course.title}
-                            category={course.category}
-                            progressPercent={course.progressPercent}
-                            iconType={course.iconType}
-                            onContinue={() => setActiveWorkspaceCourse(course.title)}
-                          />
-                        ))}
+                        {isLoadingCourses ? (
+                          <DataSectionSkeleton variant="list" count={3} />
+                        ) : (
+                          enrolledCourses.map((course) => (
+                            <EnrolledCourseRow
+                              key={course.id}
+                              id={course.id}
+                              title={course.title}
+                              category={course.category}
+                              progressPercent={course.progressPercent}
+                              iconType={course.iconType}
+                              onContinue={() => setActiveWorkspaceCourse(course.title)}
+                            />
+                          ))
+                        )}
                       </div>
                     </div>
                   </>
@@ -458,37 +437,10 @@ export const DashboardPage: React.FC = () => {
 
       {/* E. Certificate Document Preview Modal */}
       {previewCertificate && (
-        <div
-          dir="rtl"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in select-none"
-        >
-          <div className="w-full max-w-lg bg-slate-900 border border-[#E5B65C]/60 rounded-3xl p-6 shadow-2xl space-y-5 text-center relative">
-            <div className="size-16 rounded-2xl bg-[#E5B65C]/15 border border-[#E5B65C]/40 mx-auto flex items-center justify-center text-[#E5B65C]">
-              <Award size={32} />
-            </div>
-            <div>
-              <span className="text-[#E5B65C] font-bold text-xs font-mono uppercase">شهادة موثقة ورسمية</span>
-              <h3 className="text-slate-100 font-bold font-['IBM_Plex_Sans_Arabic'] text-lg mt-1">
-                {previewCertificate.title}
-              </h3>
-              <p className="text-slate-400 text-xs font-['Tajawal'] mt-1">
-                رقم الاعتماد الدولي: <span className="font-mono text-sky-300">{previewCertificate.credentialId}</span>
-              </p>
-            </div>
-            <div className="p-4 bg-blue-950/40 rounded-2xl border border-blue-900/40 text-xs text-slate-300 space-y-1.5 text-right font-['Tajawal']">
-              <div>الممنوحة إلى: <strong className="text-white">أحمد الغامدي</strong></div>
-              <div>تاريخ الإصدار: {previewCertificate.issueDate}</div>
-              <div>حالة الاعتماد: <span className="text-emerald-400 font-bold">معتمدة ومسجلة في السجل الأكاديمي ✓</span></div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPreviewCertificate(null)}
-              className="w-full py-3 bg-[#E5B65C] hover:bg-amber-300 text-slate-900 font-bold font-['Tajawal'] text-sm rounded-xl transition-all cursor-pointer"
-            >
-              إغلاق الوثيقة
-            </button>
-          </div>
-        </div>
+        <CertificatePreviewModal
+          certificate={previewCertificate}
+          onClose={() => setPreviewCertificate(null)}
+        />
       )}
     </div>
   );

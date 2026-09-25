@@ -152,7 +152,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3.5 bg-gradient-to-r from-[#E5B65C] to-amber-400 hover:from-amber-400 hover:to-[#E5B65C] text-slate-900 font-bold font-['Tajawal'] text-base rounded-full flex justify-center items-center gap-2 cursor-pointer shadow-[0_4px_16px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_24px_rgba(229,182,92,0.5)] transition-all disabled:opacity-60"
+                className="btn-gold w-full py-3.5 text-base disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <>

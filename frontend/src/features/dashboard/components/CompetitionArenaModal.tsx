@@ -198,7 +198,7 @@ export const CompetitionArenaModal: React.FC<CompetitionArenaModalProps> = ({
               <button
                 type="button"
                 onClick={handleRunTests}
-                className="px-6 py-2.5 rounded-xl bg-[#E5B65C] hover:bg-amber-300 text-slate-900 font-bold font-['Tajawal'] text-xs md:text-sm flex items-center gap-2 cursor-pointer shadow-[0_0_12px_rgba(229,182,92,0.3)] transition-all"
+                className="btn-gold px-6 py-2.5 text-xs md:text-sm"
               >
                 <span>تسليم الحل النهائي</span>
               </button>
