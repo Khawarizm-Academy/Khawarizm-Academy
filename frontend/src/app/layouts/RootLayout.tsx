@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Outlet } from '../router';
 import { useLocation, useNavigate, useActiveRoute } from '../routerContext';
 import { RouteErrorBoundary } from '../RouteErrorBoundary';
@@ -7,16 +7,20 @@ import { MobileHeader } from '../../shared/components/Navbar/MobileHeader';
 import { MobileBottomBar } from '../../shared/components/BottomNav/MobileBottomBar';
 import { Footer } from '../../shared/components/Footer/Footer';
 import { PageSkeleton } from '../../shared/components/Loading/PageSkeleton';
+import { NotificationsDrawer } from '../../features/dashboard/components/NotificationsDrawer';
+import { CATALOG_COURSES_ROUTE, CATALOG_SCHOLARSHIPS_ROUTE } from '../../shared/lib/navigation';
 import type { NavTabKey } from '../../shared/lib/localization';
 
 export const RootLayout: React.FC = () => {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const activeRoute = useActiveRoute();
+  const [isGlobalNotificationsOpen, setIsGlobalNotificationsOpen] = useState(false);
 
   // Resolve active navbar tab key
   const queryParams = new URLSearchParams(search);
   const catalogType = queryParams.get('type');
+  const dashboardView = queryParams.get('view');
 
   let activeTab: NavTabKey = 'home';
   if (pathname === '/catalog') {
@@ -27,6 +31,10 @@ export const RootLayout: React.FC = () => {
     activeTab = 'courses';
   } else if (pathname === '/scholarships') {
     activeTab = 'scholarships';
+  } else if (pathname === '/profile' || (pathname === '/dashboard' && dashboardView === 'profile')) {
+    activeTab = 'profile';
+  } else if (pathname === '/dashboard') {
+    activeTab = 'dashboard';
   } else if (activeRoute?.meta?.activeTab) {
     activeTab = activeRoute.meta.activeTab;
   }
@@ -35,9 +43,9 @@ export const RootLayout: React.FC = () => {
     if (tab === 'home') {
       navigate('/');
     } else if (tab === 'courses') {
-      navigate('/catalog?type=courses');
+      navigate(CATALOG_COURSES_ROUTE);
     } else if (tab === 'scholarships') {
-      navigate('/catalog?type=scholarships');
+      navigate(CATALOG_SCHOLARSHIPS_ROUTE);
     } else if (tab === 'catalog') {
       navigate('/catalog');
     } else if (tab === 'events') {
@@ -47,13 +55,14 @@ export const RootLayout: React.FC = () => {
     } else if (tab === 'dashboard') {
       navigate('/dashboard');
     } else if (tab === 'profile') {
-      navigate('/profile');
+      navigate('/dashboard?view=profile');
     } else if ((tab as string) === 'login') {
       navigate('/login');
     }
   };
 
   const hideShell = !!activeRoute?.meta?.hideShell;
+  const isDashboard = pathname === '/dashboard';
 
   return (
     <div className="page-wrapper">
@@ -65,14 +74,22 @@ export const RootLayout: React.FC = () => {
         <div className="absolute bottom-[10%] left-[15%] w-[700px] h-[500px] rounded-full bg-[#E5B65C]/[0.03] blur-[160px]" />
       </div>
 
-      {/* 2. Permanent Sticky Header Shell (omitted if hideShell is true) */}
-      {!hideShell && (
+      {/* 2. Permanent Sticky Header Shell (omitted if hideShell or isDashboard) */}
+      {!hideShell && !isDashboard && (
         <>
           <div className="w-full hidden md:block relative z-30">
-            <DesktopNavbar activeTab={activeTab} onSelectTab={handleNavSelect} />
+            <DesktopNavbar
+              activeTab={activeTab}
+              onSelectTab={handleNavSelect}
+              onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
+            />
           </div>
           <div className="w-full block md:hidden relative z-30">
-            <MobileHeader onLogoClick={() => navigate('/')} onLoginClick={() => navigate('/login')} />
+            <MobileHeader
+              onLogoClick={() => navigate('/')}
+              onLoginClick={() => navigate('/login')}
+              onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
+            />
           </div>
         </>
       )}
@@ -86,8 +103,8 @@ export const RootLayout: React.FC = () => {
         </RouteErrorBoundary>
       </div>
 
-      {/* 4. Permanent Footer Shell (Desktop / Tablet, omitted if hideShell is true) */}
-      {!hideShell && (
+      {/* 4. Permanent Footer Shell (Desktop / Tablet, omitted if hideShell or isDashboard) */}
+      {!hideShell && !isDashboard && (
         <div className="w-full hidden md:block relative z-10 mt-auto">
           <Footer />
         </div>
@@ -99,6 +116,13 @@ export const RootLayout: React.FC = () => {
           <MobileBottomBar activeTab={activeTab} onSelectTab={handleNavSelect} />
         </div>
       )}
+
+      {/* 6. Global Notifications Drawer Overlay */}
+      <NotificationsDrawer
+        isOpen={isGlobalNotificationsOpen}
+        onClose={() => setIsGlobalNotificationsOpen(false)}
+        onNavigate={(path) => navigate(path)}
+      />
     </div>
   );
 };

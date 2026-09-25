@@ -20,7 +20,7 @@ export interface RouteMeta {
   hideShell?: boolean;
 }
 
-export type SkeletonVariant = 'home' | 'catalog' | 'detail' | 'default';
+export type SkeletonVariant = 'home' | 'catalog' | 'detail' | 'dashboard' | 'default';
 
 export interface RouteDefinition {
   path: string;
@@ -120,7 +120,7 @@ export const routes: RouteDefinition[] = [
       title: 'لوحة التحكم — أكاديمية خوارزم',
       activeTab: 'dashboard',
     },
-    skeletonVariant: 'default',
+    skeletonVariant: 'dashboard',
   },
   {
     path: '/profile',

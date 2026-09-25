@@ -115,7 +115,7 @@ export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
           <div className="space-y-1 text-[10px] opacity-90">
             <div className="text-[#29A9FF]">const [course, setCourse] = useState(AI);</div>
             <div className="text-[#8299B5] pl-2">&lt;<span className="text-[#E5B65C]">FrontendUI</span> layout=&quot;modern&quot;&gt;</div>
-            <div className="text-[#DCE5EE] pl-4">&lt;<span className="text-[#29A9FF]">Components</span> glassmorphism /&gt;</div>
+            <div className="text-slate-100 pl-4">&lt;<span className="text-[#29A9FF]">Components</span> glassmorphism /&gt;</div>
             <div className="text-[#8299B5] pl-2">&lt;/<span className="text-[#E5B65C]">FrontendUI</span>&gt;</div>
           </div>
           <div className="flex justify-end gap-1 mt-1">

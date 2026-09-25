@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowLeft, Calendar, Lightbulb, Radio } from 'lucide-react';
 import type { EventItem } from '../../types/entities';
 import { EventArtwork } from '../Artwork/BrandVisuals';
 import { toArabic } from '../../lib/localization';
@@ -89,22 +90,11 @@ export const EventSection: React.FC<EventSectionProps> = ({
             {/* Meta Row: Date & Broadcast */}
             <div className="flex items-center gap-5 text-xs text-[#8299B5] font-['Tajawal']">
               <span className="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                  <line x1="16" x2="16" y1="2" y2="6" />
-                  <line x1="8" x2="8" y1="2" y2="6" />
-                  <line x1="3" x2="21" y1="10" y2="10" />
-                </svg>
+                <Calendar size={14} />
                 {featuredEvent.date}
               </span>
               <span className="flex items-center gap-1.5 text-[#29A9FF]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
-                  <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
-                  <circle cx="12" cy="12" r="2" />
-                  <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
-                  <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19" />
-                </svg>
+                <Radio size={14} />
                 {featuredEvent.format}
               </span>
             </div>
@@ -117,11 +107,7 @@ export const EventSection: React.FC<EventSectionProps> = ({
             <div>
               {/* Lightbulb Icon in Warm Gold Container */}
               <div className="card-icon-box text-[#E5B65C] mb-5">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
-                  <path d="M9 18h6" />
-                  <path d="M10 22h4" />
-                </svg>
+                <Lightbulb size={22} />
               </div>
 
               <h4 className="text-xl font-bold text-white mb-2.5 font-['IBM_Plex_Sans_Arabic'] leading-snug">
@@ -138,7 +124,7 @@ export const EventSection: React.FC<EventSectionProps> = ({
               <span className="text-[#8299B5] font-medium">{workshopEvent.date}</span>
               <button className="link-action-blue font-semibold group py-1 px-2.5">
                 <span>{toArabic('actions', 'register')}</span>
-                <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
+                <ArrowLeft size={14} className="transition-transform duration-200 group-hover:-translate-x-1" />
               </button>
             </div>
           </div>

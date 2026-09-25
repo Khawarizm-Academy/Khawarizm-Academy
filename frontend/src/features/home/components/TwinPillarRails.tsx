@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowLeft, GraduationCap, Sparkles } from 'lucide-react';
 import type { Course, Scholarship } from '../../../shared/types/entities';
 import { CourseCard } from '../../../shared/components/Cards/CourseCard';
 import { ScholarshipCard } from '../../../shared/components/Cards/ScholarshipCard';
@@ -41,7 +42,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
               className="link-action-blue font-semibold"
             >
               <span>{toArabic('actions', 'view_all')}</span>
-              <span>←</span>
+              <ArrowLeft size={16} />
             </button>
           </div>
 
@@ -67,7 +68,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
               className="link-action-gold font-semibold"
             >
               <span>{toArabic('actions', 'view_all')}</span>
-              <span>←</span>
+              <ArrowLeft size={16} />
             </button>
           </div>
 
@@ -92,10 +93,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         {/* Section Header with Soft Blended Horizontal Line */}
         <div className="section-header-row">
           <div className="flex items-center gap-2.5">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#29A9FF]">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-              <path d="M6 12v5c3 3 9 3 12 0v-5" />
-            </svg>
+            <GraduationCap size={22} className="text-[#29A9FF]" />
             <h3 className="text-2xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
               دورات مميزة
             </h3>
@@ -123,9 +121,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         {/* Section Header with Soft Blended Horizontal Line */}
         <div className="section-header-row">
           <div className="flex items-center gap-2.5">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#E5B65C]">
-              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-            </svg>
+            <Sparkles size={22} className="text-[#E5B65C]" />
             <h3 className="text-2xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
               منح متاحة
             </h3>

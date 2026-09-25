@@ -1,4 +1,5 @@
 import React from 'react';
+import { ShieldCheck } from 'lucide-react';
 import type { AuthMode, ReturningUserData } from '../types';
 import brandIcon from '../../../assets/brand/generated/icon-192.png';
 
@@ -40,7 +41,7 @@ export const AuthHeroPanel: React.FC<AuthHeroPanelProps> = ({
         title="العودة للصفحة الرئيسية"
       >
         <div className="flex flex-col items-end text-right">
-          <span className="text-2xl font-bold text-[#E5B65C] font-['Cairo',sans-serif] group-hover:text-white transition-colors">
+          <span className="text-2xl font-bold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic'] group-hover:text-white transition-colors">
             أكاديمية خوارزم
           </span>
           <span className="text-xs text-[#8299B5] tracking-wider font-['Tajawal',sans-serif]">
@@ -93,7 +94,7 @@ export const AuthHeroPanel: React.FC<AuthHeroPanelProps> = ({
           <>
             {/* Default Tagline Group */}
             <div className="flex flex-col items-end gap-3 max-w-xl">
-              <h1 className="text-3xl lg:text-4xl font-bold text-[#DCE5EE] leading-tight font-['Cairo',sans-serif]">
+              <h1 className="text-3xl lg:text-4xl font-bold text-slate-100 leading-tight font-['IBM_Plex_Sans_Arabic']">
                 تعلّم مهارة غدٍ، أو اعثر على منحتك القادمة
               </h1>
               <p className="text-sm lg:text-base text-[#8299B5] leading-relaxed font-['Tajawal',sans-serif]">
@@ -106,21 +107,14 @@ export const AuthHeroPanel: React.FC<AuthHeroPanelProps> = ({
               <span className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">
                 نظام تشفير معتمد وحماية بيانات كاملة
               </span>
-              <svg width="16" height="16" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path
-                  d="M5.25018 6.99972L6.41673 8.16643L8.74983 5.83302M11.6662 7.58334C11.6662 10.5001 9.62474 11.9585 7.19831 12.8043C7.07126 12.8474 6.93324 12.8453 6.80752 12.7985C4.37526 11.9585 2.3338 10.5001 2.3338 7.58334V3.49987C2.3338 3.34516 2.39525 3.19678 2.50464 3.08738C2.61402 2.97798 2.76238 2.91652 2.91708 2.91652C4.08363 2.91652 5.54181 2.21649 6.55671 1.3298C6.68028 1.22421 6.83747 1.1662 7 1.1662C7.16253 1.1662 7.31972 1.22421 7.44329 1.3298C8.46402 2.22233 9.91638 2.91652 11.0829 2.91652C11.2376 2.91652 11.386 2.97798 11.4954 3.08738C11.6047 3.19678 11.6662 3.34516 11.6662 3.49987V7.58334Z"
-                  stroke="#29A9FF"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              </svg>
+<ShieldCheck size={16} className="text-sky-400" />
             </div>
           </>
         ) : (
           <>
             {/* Returning User Tagline Group */}
             <div className="flex flex-col items-end gap-3 max-w-xl">
-              <h1 className="text-4xl lg:text-5xl font-bold text-[#DCE5EE] leading-tight font-['Cairo',sans-serif]">
+              <h1 className="text-4xl lg:text-5xl font-bold text-slate-100 leading-tight font-['IBM_Plex_Sans_Arabic']">
                 أهلاً بعودتك من جديد!
               </h1>
               <p className="text-base lg:text-lg text-[#8299B5] leading-relaxed font-['Tajawal',sans-serif]">
@@ -131,7 +125,7 @@ export const AuthHeroPanel: React.FC<AuthHeroPanelProps> = ({
             {/* Returning User Quick Stats Row */}
             <div className="inline-flex items-center gap-8 pt-2">
               <div className="flex flex-col items-end">
-                <span className="text-xl font-bold text-[#E5B65C] font-['Cairo',sans-serif]">
+                <span className="text-xl font-bold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic']">
                   {user?.activeCoursesCount ?? 3} دورات مستمرة
                 </span>
                 <span className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">
@@ -142,7 +136,7 @@ export const AuthHeroPanel: React.FC<AuthHeroPanelProps> = ({
               <div className="w-[1px] h-7 bg-[#1B3F80]" aria-hidden="true" />
 
               <div className="flex flex-col items-end">
-                <span className="text-xl font-bold text-[#29A9FF] font-['Cairo',sans-serif]">
+                <span className="text-xl font-bold text-[#29A9FF] font-['IBM_Plex_Sans_Arabic']">
                   {user?.savedScholarshipsCount ?? 5} منح محفوظة
                 </span>
                 <span className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">

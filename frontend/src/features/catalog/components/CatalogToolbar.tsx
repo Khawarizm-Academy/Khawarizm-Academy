@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ChevronDown, Filter } from 'lucide-react';
 import type { SortOption } from '../types';
 
 interface CatalogToolbarProps {
@@ -48,9 +49,7 @@ export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
             onClick={onOpenMobileFilters}
             className="lg:hidden flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#061A3A] border border-[#1B3F80] hover:border-[#E5B65C] text-[#E5B65C] text-xs font-semibold cursor-pointer shadow-sm transition-all"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-            </svg>
+            <Filter size={14} />
             <span>تصفية النتائج</span>
           </button>
         )}
@@ -62,9 +61,7 @@ export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#061A3A] border border-[#1B3F80] hover:border-[#29A9FF]/50 text-slate-300 text-xs font-medium cursor-pointer shadow-sm transition-all"
           >
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="none" className="text-slate-400">
-              <path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <ChevronDown size={12} className="text-slate-400" />
             <span className="text-[#E5B65C] font-semibold">{activeSortLabel}</span>
             <span className="text-slate-400">ترتيب حسب:</span>
           </button>

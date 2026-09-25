@@ -1,4 +1,5 @@
 import React from 'react';
+import { Hourglass } from 'lucide-react';
 
 interface FeaturePlaceholderProps {
   title: string;
@@ -19,12 +20,7 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({
     <main className="content-container">
       <div className="w-full py-20 px-6 flex-col-center text-center gap-5 animate-fade-in-up">
         <div className="w-20 h-20 rounded-2xl bg-[#092557] border border-[#1B3F80] flex-center text-[#E5B65C] shadow-lg">
-          {icon ?? (
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
-            </svg>
-          )}
+          {icon ?? <Hourglass size={36} />}
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-['IBM_Plex_Sans_Arabic'] tracking-tight">
           {title}

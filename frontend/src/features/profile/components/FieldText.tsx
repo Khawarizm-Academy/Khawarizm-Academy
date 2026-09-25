@@ -1,0 +1,52 @@
+import React from 'react';
+import type { LucideIcon } from 'lucide-react';
+
+interface FieldTextProps {
+  id: string;
+  label: React.ReactNode;
+  icon: LucideIcon;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  dir?: 'rtl' | 'ltr';
+  textLeft?: boolean;
+  iconPosition?: 'left' | 'right';
+  required?: boolean;
+}
+
+export const FieldText: React.FC<FieldTextProps> = ({
+  id,
+  label,
+  icon: Icon,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+  dir,
+  textLeft = false,
+  iconPosition = 'left',
+  required,
+}) => (
+  <div className="flex flex-col gap-2">
+    <label htmlFor={id} className="text-slate-300 text-xs font-medium font-['Tajawal']">
+      {label}
+    </label>
+    <div className="relative">
+      <input
+        id={id}
+        type={type}
+        dir={dir}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        className={`input-field ${iconPosition === 'left' ? 'pl-10' : 'pr-10'} ${textLeft ? 'text-left' : ''}`}
+      />
+      <Icon
+        size={16}
+        className={`absolute ${iconPosition === 'left' ? 'left-3.5' : 'right-3.5'} top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none`}
+      />
+    </div>
+  </div>
+);

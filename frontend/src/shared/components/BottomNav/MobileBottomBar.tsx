@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { BookOpen, GraduationCap, Home, LayoutDashboard, User } from 'lucide-react';
 import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
 
 interface MobileBottomBarProps {
@@ -16,55 +17,27 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
     {
       id: 'home',
       label: toArabicNav('home', true),
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-      ),
+      icon: <Home size={20} />,
     },
     {
       id: 'courses',
       label: toArabicNav('courses', true),
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
-          <path d="M6 6h10" />
-          <path d="M6 10h10" />
-        </svg>
-      ),
+      icon: <BookOpen size={20} />,
     },
     {
       id: 'scholarships',
       label: toArabicNav('scholarships', true),
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="6" />
-          <path d="m15.477 12.89 2.523 7.11-6-3-6 3 2.523-7.11" />
-        </svg>
-      ),
+      icon: <GraduationCap size={20} />,
     },
     {
       id: 'dashboard',
       label: toArabicNav('dashboard', true),
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect width="7" height="9" x="3" y="3" rx="1" />
-          <rect width="7" height="5" x="14" y="3" rx="1" />
-          <rect width="7" height="9" x="14" y="12" rx="1" />
-          <rect width="7" height="5" x="3" y="16" rx="1" />
-        </svg>
-      ),
+      icon: <LayoutDashboard size={20} />,
     },
     {
       id: 'profile',
       label: toArabicNav('profile', true),
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-      ),
+      icon: <User size={20} />,
     },
   ];
 
@@ -159,7 +132,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
                 className={`transition-all duration-300 ${
                   isActive
                     ? 'text-[#E5B65C] scale-110 drop-shadow-[0_0_8px_rgba(229,182,92,0.7)]'
-                    : 'text-[#8299B5] hover:text-[#DCE5EE]'
+                    : 'text-[#8299B5] hover:text-slate-100'
                 }`}
               >
                 {tab.icon}
@@ -168,7 +141,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
                 className={`text-[11px] font-['Tajawal'] transition-all duration-300 leading-none ${
                   isActive
                     ? 'font-bold text-[#E5B65C] drop-shadow-[0_0_6px_rgba(229,182,92,0.6)]'
-                    : 'text-[#8299B5] hover:text-[#DCE5EE]'
+                    : 'text-[#8299B5] hover:text-slate-100'
                 }`}
               >
                 {tab.label}

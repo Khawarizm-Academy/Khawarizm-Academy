@@ -1,4 +1,5 @@
 import React from 'react';
+import { Filter } from 'lucide-react';
 import type { CatalogFiltersState, CatalogTab } from '../types';
 
 interface CatalogFilterSidebarProps {
@@ -22,9 +23,7 @@ export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
       {/* Sidebar Header */}
       <div className="flex-between pb-3 border-b border-[#1B3F80]/50">
         <div className="flex items-center gap-2 text-white font-bold font-['IBM_Plex_Sans_Arabic'] text-base">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E5B65C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-          </svg>
+          <Filter size={16} className="text-[#E5B65C]" />
           <span>تصفية النتائج</span>
         </div>
 

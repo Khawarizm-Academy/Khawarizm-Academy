@@ -4,7 +4,7 @@ import { CatalogGridSkeleton } from '../../../features/catalog/components/Catalo
 import { DataSectionSkeleton } from './DataSectionSkeleton';
 
 interface PageSkeletonProps {
-  variant?: 'catalog' | 'home' | 'detail' | 'default';
+  variant?: 'catalog' | 'home' | 'detail' | 'dashboard' | 'default';
 }
 
 /**
@@ -115,6 +115,66 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
             </div>
           </section>
         </main>
+      </div>
+    );
+  }
+
+  if (variant === 'dashboard') {
+    return (
+      <div className="w-full flex-1 flex flex-col items-center animate-pulse" aria-busy="true">
+        <div className="w-full min-h-screen flex justify-start items-start">
+          {/* 1. Sidebar Placeholder (desktop only) */}
+          <aside className="hidden lg:flex w-60 shrink-0 self-stretch flex-col gap-6 p-5 bg-slate-900/80 border-b-0">
+            <SkeletonBox className="w-28 h-8 rounded-lg" />
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <SkeletonBox className="w-4 h-4 rounded" />
+                  <SkeletonBox className={i === 0 ? 'w-24 h-5' : 'w-20 h-4'} />
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          {/* 2. Main Workspace Column */}
+          <main className="flex-1 min-w-0 flex flex-col gap-6 md:gap-8 px-4 sm:px-6 md:px-10 py-4 md:py-6">
+            {/* Top Bar Placeholder (desktop) */}
+            <div className="hidden md:block w-full h-12 rounded-xl skeleton-box" />
+
+            {/* Greeting Header Row */}
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center gap-6 flex-wrap">
+                <div className="flex flex-col gap-2">
+                  <SkeletonBox className="w-56 h-7" />
+                  <SkeletonBox className="w-72 h-4" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <SkeletonBadge width="130px" />
+                  <SkeletonBadge width="160px" />
+                  <SkeletonBadge width="140px" />
+                </div>
+              </div>
+            </div>
+
+            {/* Two-Column Content */}
+            <div className="w-full flex flex-col lg:flex-row gap-8">
+              {/* Primary Column */}
+              <div className="flex-1 min-w-0 flex flex-col gap-6">
+                <div className="w-full h-44 rounded-2xl skeleton-card" />
+                <div className="flex flex-col gap-4">
+                  <SkeletonBox className="w-44 h-6" />
+                  <DataSectionSkeleton variant="list" count={3} />
+                </div>
+              </div>
+
+              {/* Stats Sidebar Placeholder (x-large only) */}
+              <aside className="hidden xl:flex w-80 shrink-0 flex-col gap-6">
+                <div className="w-full h-64 rounded-2xl skeleton-card" />
+                <div className="w-full h-44 rounded-2xl skeleton-card" />
+              </aside>
+            </div>
+          </main>
+        </div>
       </div>
     );
   }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { CircleAlert, SearchX } from 'lucide-react';
 import { CatalogCard } from './CatalogCard';
 import { CatalogPagination } from './CatalogPagination';
 import { CatalogGridSkeleton } from './CatalogGridSkeleton';
@@ -163,11 +164,7 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
         /* Error State with Retry */
         <div className="w-full py-16 px-6 glass-panel rounded-2xl flex-col-center text-center gap-4 border border-[#1B3F80]">
           <div className="w-16 h-16 rounded-full bg-[#092557] border border-[#1B3F80] flex-center text-[#D9534F]">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <CircleAlert size={32} />
           </div>
           <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
             تعذر تحميل النتائج
@@ -210,10 +207,7 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
         /* Empty State */
         <div className="w-full py-16 px-6 glass-panel rounded-2xl flex-col-center text-center gap-4 border border-[#1B3F80]">
           <div className="w-16 h-16 rounded-full bg-[#092557] border border-[#1B3F80] flex-center text-[#E5B65C]">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            <SearchX size={32} />
           </div>
           <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
             لم يتم العثور على نتائج تطابق معايير البحث

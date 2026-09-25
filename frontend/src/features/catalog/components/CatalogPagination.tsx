@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CatalogPaginationProps {
   currentPage: number;
@@ -23,9 +24,7 @@ export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
         className="w-9 h-9 rounded-lg bg-[#061A3A] border border-[#1B3F80] hover:border-[#29A9FF]/50 text-slate-300 disabled:opacity-40 disabled:pointer-events-none flex-center transition-all cursor-pointer shadow-sm"
         title="الصفحة السابقة"
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M5.25 10.5L8.75 7L5.25 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+        <ChevronLeft size={14} />
       </button>
 
       {/* Numbered Page Buttons */}
@@ -55,9 +54,7 @@ export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
         className="w-9 h-9 rounded-lg bg-[#061A3A] border border-[#1B3F80] hover:border-[#29A9FF]/50 text-slate-300 disabled:opacity-40 disabled:pointer-events-none flex-center transition-all cursor-pointer shadow-sm"
         title="الصفحة التالية"
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M8.75 10.5L5.25 7L8.75 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+        <ChevronRight size={14} />
       </button>
     </nav>
   );

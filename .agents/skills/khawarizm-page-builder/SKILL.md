@@ -313,7 +313,7 @@ export const MyFeaturePage: React.FC = () => {
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#1B3F80]/50 pb-6">
         <div>
           <span className="badge-gold mb-2 inline-block">مسار معتمد</span>
-          <h1 className="text-3xl font-bold text-[#DCE5EE] font-['Cairo',sans-serif]">
+          <h1 className="text-3xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
             عنوان الميزة أو الصفحة
           </h1>
           <p className="text-sm text-[#8299B5] font-['Tajawal',sans-serif] mt-1">
@@ -337,7 +337,7 @@ export const MyFeaturePage: React.FC = () => {
         <aside className="flex flex-col gap-6">
           {/* Sidebar / Quick Stats */}
           <div className="glass-panel rounded-2xl p-6 flex flex-col gap-4">
-            <h3 className="text-lg font-bold text-[#E5B65C] font-['Cairo',sans-serif]">
+            <h3 className="text-lg font-bold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic']">
               معلومات إضافية
             </h3>
             <p className="text-sm text-[#8299B5] font-['Tajawal',sans-serif]">
@@ -363,3 +363,6 @@ export const MyFeaturePage: React.FC = () => {
 | **Duplicating shell in page view** | Rendering `<DesktopNavbar>` inside a page causes duplicate headers | Never render headers/footers in page views; let `RootLayout` manage the frame. |
 | **Fake `setTimeout` loading timers** | Clutters components with unneeded state and causes layout shifts | Let Suspense handle Tier 1 cold load, and `useCachedData` handle Tier 2 data queries. |
 | **Missing `verbatimModuleSyntax`** | TypeScript build fails with error `TS1484` | Always use `import type { ... }` when importing types and interfaces. |
+| **Inverted RTL Right Sidebar** | Placing MainBody before DesktopSidebar in `dir="rtl"` flex renders sidebar on the left | In `dir="rtl" flex-row`, child #1 is on the far right. Put `<DesktopDashboardSidebar />` first, `<MainBody />` second. |
+| **Non-Self-Contained Workspace** | Bouncing users out of dashboard to Home or external pages for basic actions | Implement in-dashboard modal chambers (`CourseWorkspaceModal`, `LiveClassroomModal`, `ScholarshipApplicationModal`, `CompetitionArenaModal`). |
+| **Emoji / Raw SVG Icon Soup** | Inconsistent stroke weights, mismatched aesthetics, and emoji rendering discrepancies | Use `lucide-react` icons exclusively with standard size and stroke weights (`1.8` - `2.2`). |

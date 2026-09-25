@@ -1,55 +1,119 @@
-:root {
-  /* Core Navy & Space Blues */
-  --color-navy-950: #040F24;
-  --color-navy-900: #061A3A;
+/* ==========================================================================
+   Khawarizm Academy — Design Tokens (Tailwind CSS v4 @theme + CSS variables)
+   Single source of truth for the Observatory & Cyber-Intelligence palette.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Tailwind v4 theme tokens.
+   Every --color-* here registers a real Tailwind utility (bg-, text-,
+   border-, outline-, ring-, fill-, stroke-) in the OBSERVATORY palette.
+
+   IMPORTANT: Several tokens intentionally OVERRIDE Tailwind's default
+   color names (slate-*, sky-*, blue-*, amber-*, orange-*, emerald-*, red-*)
+   so that every classstring in the codebase resolves to a locked brand
+   color — there is NO Tailwind-default leakage anywhere in the app.
+   -------------------------------------------------------------------------- */
+@theme {
+  /* --- Brand Navy (canvases & surfaces) --- */
+  --color-navy-950: #040f24;
+  --color-navy-900: #061a3a;
   --color-navy-800: #092557;
   --color-navy-700: #123168;
-  --color-navy-600: #1B3F80;
+  --color-navy-600: #1b3f80;
 
-  /* Tech Accents */
-  --color-blue-500: #167BDB;
-  --color-blue-400: #29A9FF;
+  /* --- Brand Cyan (Courses pillar / tech accent) --- */
+  --color-blue-500: #167bdb;
+  --color-blue-400: #29a9ff;
 
-  /* Gold & Warm Accents */
-  --color-gold-600: #C88A32;
-  --color-gold-400: #E5B65C;
-  --color-orange-300: #E5B65C;
+  /* --- Brand Gold (Scholarships pillar / achievement accent) --- */
+  --color-gold-600: #c88a32;
+  --color-gold-400: #e5b65c;
+  --color-gold-200: #f3ce7a;
 
-  /* Neutrals & Text */
-  --color-white-100: #DCE5EE;
-  --color-slate-400: #8299B5;
-  --color-slate-600: #5C7291;
-  --color-white-000: #F5F8FC;
+  /* --- Brand text neutrals --- */
+  --color-white-000: #f5f8fc;
+  --color-white-100: #dce5ee;
 
-  /* Semantics */
-  --color-success-500: #3FAE6B;
-  --color-warning-500: #E0A23B;
-  --color-danger-500: #D9534F;
-  --color-overlay-scrim: rgba(4, 15, 36, 0.75);
+  /* --- Brand semantic status --- */
+  --color-success-500: #3fae6b;
+  --color-warning-500: #e0a23b;
+  --color-danger-500: #d9534f;
 
-  /* Fonts */
+  /* ========================================================================
+     OVERRIDES of Tailwind default scales → locked brand values.
+     Keep every value in the family of the brand sheet (derived shades are
+     pure lightness/saturation shifts of the source tokens, per docs §2.2).
+     ======================================================================== */
+
+  /* slate → muted navy-neutral text scale (#8299B5 source) */
+  --color-slate-100: #e6eef7;
+  --color-slate-200: #c5d3e4;
+  --color-slate-300: #9fb3cc;
+  --color-slate-400: #8299b5;
+  --color-slate-500: #6b84a3;
+  --color-slate-600: #5c7291;
+  --color-slate-700: #485f80;
+  --color-slate-800: #092557;
+  --color-slate-900: #061a3a;
+  --color-slate-950: #040f24;
+
+  /* sky → brand cyan accent (blue-400/500 source) */
+  --color-sky-300: #7bc9ff;
+  --color-sky-400: #29a9ff;
+  --color-sky-500: #167bdb;
+
+  /* blue-900/950 → navy border & deep-surface family (used by dashboard) */
+  --color-blue-900: #1b3f80;
+  --color-blue-950: #040f24;
+
+  /* amber → brand gold (achievement badges) */
+  --color-amber-300: #e5b65c;
+  --color-amber-400: #c88a32;
+
+  /* orange → brand gold (CTA buttons; token declares orange-300 = #E5B65C) */
+  --color-orange-300: #e5b65c;
+  --color-orange-400: #f3ce7a;
+
+  /* emerald → brand success (success-500 source) */
+  --color-emerald-300: #5fce8f;
+  --color-emerald-400: #4abf78;
+  --color-emerald-500: #3fae6b;
+
+  /* red → brand danger (danger-500 source) */
+  --color-red-400: #e06862;
+  --color-red-500: #d9534f;
+
+  /* --- Fonts (available as font-display / font-body / font-mono) --- */
   --font-display: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
   --font-body: 'Tajawal', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Inter', monospace;
+}
 
-  /* Radii */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-full: 9999px;
-
-  /* Shadows and Glows */
+/* --------------------------------------------------------------------------
+   Non-utility CSS variables (consumed via var(--…) in runtime CSS only).
+   -------------------------------------------------------------------------- */
+:root {
+  /* Elevation Shadows */
   --shadow-elev-1: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-elev-2: 0 8px 24px rgba(0, 0, 0, 0.45);
   --shadow-glow-gold: 0 0 24px rgba(229, 182, 92, 0.25);
   --shadow-glow-blue: 0 0 24px rgba(41, 169, 255, 0.25);
 
+  /* Radii Scale */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* Modal / Drawer backdrop */
+  --color-overlay-scrim: rgba(4, 15, 36, 0.75);
+
   /* Celestial Skeleton Shimmer Tokens */
-  --skeleton-base: #061A3A;
+  --skeleton-base: #061a3a;
   --skeleton-surface: #092557;
-  --skeleton-border: #1B3F80;
+  --skeleton-border: #1b3f80;
   --skeleton-highlight-cyan: rgba(41, 169, 255, 0.12);
-  --skeleton-highlight-gold: rgba(229, 182, 92, 0.10);
+  --skeleton-highlight-gold: rgba(229, 182, 92, 0.1);
 
   /* Page Transition Tokens */
   --transition-page-duration: 220ms;
