@@ -25,7 +25,7 @@ import {
 import { SettingsCard } from './SettingsCard';
 import { ToggleSwitch } from './ToggleSwitch';
 import { FieldText } from './FieldText';
-import { FieldSelect } from './FieldSelect';
+import { Dropdown } from '../../../shared/components/Form/Dropdown';
 
 interface ProfileViewProps {
   onBackToDashboard?: () => void;
@@ -82,7 +82,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
   return (
     <div dir="rtl" className="w-full max-w-[1100px] mx-auto flex flex-col gap-6 md:gap-8 pb-12">
       {/* 1. Identity Summary Card */}
-      <section className="workspace-row p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 relative overflow-hidden">
+      <section className="workspace-row p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 md:gap-6 relative overflow-hidden">
         <div className="absolute -top-12 -right-12 size-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-12 -left-12 size-48 bg-[#E5B65C]/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -150,9 +150,9 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
 
       {/* 2. Main Settings Form */}
       <form onSubmit={handleSaveChanges} className="w-full flex flex-col gap-6 md:gap-8">
-        <div className="w-full flex flex-col lg:flex-row gap-6 items-start">
+        <div className="w-full flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
           {/* Primary Column */}
-          <div className="flex-1 w-full flex flex-col gap-6">
+          <div className="flex-1 w-full flex flex-col gap-6 md:gap-8">
             <SettingsCard icon={User} title="المعلومات الشخصية">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FieldText
@@ -241,7 +241,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                   </span>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="flex flex-wrap gap-2 pt-1.5">
                   {AVAILABLE_INTERESTS.map((interest) => {
                     const isSelected = profile.interests.includes(interest);
                     return (
@@ -266,7 +266,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
           </div>
 
           {/* Secondary Column */}
-          <div className="w-full lg:w-80 flex flex-col gap-6 shrink-0">
+          <div className="w-full lg:w-80 flex flex-col gap-6 md:gap-8 shrink-0">
             <SettingsCard icon={Bell} title="الإشعارات والتذكيرات">
               <div className="flex flex-col gap-4">
                 <ToggleSwitch
@@ -288,7 +288,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             </SettingsCard>
 
             <SettingsCard icon={Globe} title="اللغة والحساب">
-              <FieldSelect
+              <Dropdown
                 id="language"
                 label="لغة الواجهة"
                 icon={Globe}
@@ -300,7 +300,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                 ]}
               />
 
-              <FieldSelect
+              <Dropdown
                 id="timezone"
                 label="المنطقة الزمنية"
                 icon={Clock}

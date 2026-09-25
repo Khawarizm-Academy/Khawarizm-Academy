@@ -507,6 +507,37 @@
   }
 }
 
+/* Dropdown panel reveal & dismiss */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdown-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+.animate-dropdown-in {
+  animation: dropdown-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-dropdown-out {
+  animation: dropdown-out 0.14s ease-in both;
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
