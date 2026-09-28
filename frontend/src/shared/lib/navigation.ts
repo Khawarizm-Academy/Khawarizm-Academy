@@ -1,9 +1,9 @@
 import {
   BookOpen,
-  GraduationCap,
   Home,
   LayoutGrid,
   User,
+  Award,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -20,40 +20,38 @@ export interface DashboardNavItem {
 }
 
 /**
- * Shared dashboard navigation config used by the desktop sidebar so pillar /
- * dashboard destinations stay in sync with the shell bottom bar.
+ * Shared dashboard navigation config used by the desktop sidebar so all
+ * destinations are self-contained within the dashboard workspace.
  */
 export const DASHBOARD_NAV: DashboardNavItem[] = [
   {
     id: 'main',
-    label: 'الرئيسية',
+    label: 'نظرة عامة',
     icon: Home,
     isExternalRoute: false,
   },
   {
-    id: 'courses',
-    label: 'الدورات',
+    id: 'enrolled',
+    label: 'الدورات المسجّلة',
     icon: BookOpen,
-    path: CATALOG_COURSES_ROUTE,
-    isExternalRoute: true,
-  },
-  {
-    id: 'scholarships',
-    label: 'المنح',
-    icon: GraduationCap,
-    path: CATALOG_SCHOLARSHIPS_ROUTE,
-    isExternalRoute: true,
-  },
-  {
-    id: 'saved',
-    label: 'لوحتي المحفوظة',
-    icon: LayoutGrid,
     isExternalRoute: false,
   },
   {
     id: 'profile',
-    label: 'حسابي',
+    label: 'الملف الشخصي',
     icon: User,
+    isExternalRoute: false,
+  },
+  {
+    id: 'saved',
+    label: 'المنح المحفوظة',
+    icon: LayoutGrid,
+    isExternalRoute: false,
+  },
+  {
+    id: 'achievements',
+    label: 'الشهادات والتحديات',
+    icon: Award,
     isExternalRoute: false,
   },
 ];

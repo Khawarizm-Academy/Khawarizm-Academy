@@ -1,6 +1,16 @@
 export type DashboardState = 'active' | 'live' | 'empty';
 
-export type DashboardView = 'overview' | 'saved' | 'achievements';
+export type DashboardView =
+  | 'overview'
+  | 'main'
+  | 'enrolled'
+  | 'courses'
+  | 'saved'
+  | 'achievements'
+  | 'notifications'
+  | 'profile'
+  | 'empty'
+  | 'live';
 
 export interface EnrolledCourse {
   id: string;
@@ -8,9 +18,15 @@ export interface EnrolledCourse {
   track: string;
   progress: number;
   lastLesson: string;
+  exactUnitLesson?: string;
   thumbnail: string;
   nextLiveTime?: string;
   instructor?: string;
+  totalLessons?: number;
+  isCompleted?: boolean;
+  completionDate?: string;
+  iconType?: 'python' | 'data' | 'ai' | 'uiux' | 'code';
+  slug?: string;
 }
 
 export interface LiveSessionInfo {

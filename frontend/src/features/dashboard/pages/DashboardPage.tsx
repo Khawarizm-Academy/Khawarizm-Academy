@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Trophy, GraduationCap, BookOpen, Award, User, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from '../../../app/routerContext';
-import { CATALOG_COURSES_ROUTE } from '../../../shared/lib/navigation';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
 import { fetchEnrolledCourses } from '../data/dashboardFetchers';
@@ -24,6 +23,8 @@ import { CourseWorkspaceModal } from '../components/CourseWorkspaceModal';
 import { LiveClassroomModal } from '../components/LiveClassroomModal';
 import { ScholarshipApplicationModal } from '../components/ScholarshipApplicationModal';
 import { CompetitionArenaModal } from '../components/CompetitionArenaModal';
+import { DashboardSubNavigation } from '../components/DashboardSubNavigation';
+import { EnrolledCoursesView } from '../components/EnrolledCoursesView';
 
 export const DashboardPage: React.FC = () => {
   const { search } = useLocation();
@@ -67,7 +68,7 @@ export const DashboardPage: React.FC = () => {
       icon: BookOpen,
       label: '3 دورات نشطة ومسجلة',
       iconColor: 'text-sky-400',
-      onClick: () => handleSelectView('main'),
+      onClick: () => handleSelectView('enrolled'),
     },
   ];
 
@@ -131,6 +132,23 @@ export const DashboardPage: React.FC = () => {
   } else if (currentView === 'notifications') {
     headerTitle = 'مركز الإشعارات';
     headerSubtitle = 'لديك 3 تنبيهات جديدة غير مقروءة';
+  } else if (currentView === 'enrolled' || currentView === 'courses') {
+    headerTitle = 'دوراتي المسجّلة';
+    headerSubtitle = 'تابع مساراتك الأكاديمية والدروس المكتملة وجلساتك المباشرة';
+    statChips = [
+      {
+        icon: BookOpen,
+        label: '3 دورات مسجلة',
+        iconColor: 'text-sky-400',
+        onClick: () => handleSelectView('enrolled'),
+      },
+      {
+        icon: Trophy,
+        label: 'دورة واحدة مكتملة 100%',
+        iconColor: 'text-[#E5B65C]',
+        onClick: () => handleSelectView('enrolled'),
+      },
+    ];
   } else if (currentView === 'profile') {
     headerTitle = 'الملف الشخصي';
     headerSubtitle = 'إدارة بياناتك الشخصية، تفضيلات التعلّم، وإعدادات الحساب';
@@ -221,7 +239,7 @@ export const DashboardPage: React.FC = () => {
         {/* Inner Padding Container */}
         <div className="w-full max-w-[1280px] px-4 sm:px-6 md:px-10 lg:px-14 pt-4 md:pt-8 pb-24 lg:pb-8 flex flex-col gap-6 md:gap-8">
           {/* Stats & Greeting Header */}
-          {stateParam !== 'empty' && currentView !== 'empty' && currentView !== 'profile' && (
+          {stateParam !== 'empty' && currentView !== 'empty' && currentView !== 'profile' && currentView !== 'enrolled' && currentView !== 'courses' && (
             <div className="animate-fade-in-up">
               <DashboardStatsHeader
                 title={headerTitle}
@@ -285,14 +303,54 @@ export const DashboardPage: React.FC = () => {
                 onNotificationsClick={() => handleSelectView('notifications')}
               />
 
-              <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
+              <div className="w-full flex flex-col gap-6 py-1 md:py-2 animate-fade-in-up animation-delay-100">
+                <DashboardSubNavigation
+                  activeView="profile"
+                  onSelectView={handleSelectView}
+                />
                 <ProfileView />
               </div>
             </>
           )}
 
+          {/* Enrolled Courses Dedicated View (الدورات المسجّلة) */}
+          {(currentView === 'enrolled' || currentView === 'courses') && stateParam !== 'empty' && (
+            <>
+              <MobileDashboardTopBar
+                title={
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-9 rounded-full bg-[#061A3A] border border-blue-900 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                      <BookOpen size={18} className="text-sky-400" />
+                    </div>
+                    <span className="text-slate-200 text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
+                      الدورات المسجّلة
+                    </span>
+                  </div>
+                }
+                onNotificationsClick={() => handleSelectView('notifications')}
+              />
+
+              <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
+                <EnrolledCoursesView
+                  onSelectView={handleSelectView}
+                  onResumeCourse={(course) => setActiveWorkspaceCourse(course.title)}
+                  onViewCertificate={(course) =>
+                    setPreviewCertificate({
+                      id: `cert-${course.id}`,
+                      title: `شهادة إتمام: ${course.title}`,
+                      issueDate: course.completionDate || '14 سبتمبر 2026',
+                      credentialId: `KHW-${course.id.toUpperCase()}-2026`,
+                      isOfficial: true,
+                    })
+                  }
+                  onJoinLive={() => setIsLiveClassroomOpen(true)}
+                />
+              </div>
+            </>
+          )}
+
           {/* Two-Column Grid for Main, Live, Saved, Achievements views */}
-          {currentView !== 'empty' && stateParam !== 'empty' && currentView !== 'notifications' && currentView !== 'profile' && (
+          {currentView !== 'empty' && stateParam !== 'empty' && currentView !== 'notifications' && currentView !== 'profile' && currentView !== 'enrolled' && currentView !== 'courses' && (
             <div
 
               className="self-stretch flex flex-col lg:flex-row justify-start items-start gap-8 w-full animate-fade-in-up animation-delay-100"
@@ -305,6 +363,12 @@ export const DashboardPage: React.FC = () => {
                 {/* 1. Main / Live View */}
                 {(currentView === 'main' || currentView === 'live') && (
                   <>
+                    {/* Sub-Navigation Strip */}
+                    <DashboardSubNavigation
+                      activeView="main"
+                      onSelectView={handleSelectView}
+                    />
+
                     {/* Hero Card: Live session or Priority continue */}
                     {stateParam === 'live' || currentView === 'live' ? (
                       <LiveSessionPriorityCard
@@ -346,7 +410,7 @@ export const DashboardPage: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => navigate(CATALOG_COURSES_ROUTE)}
+                          onClick={() => handleSelectView('enrolled')}
 
                           className="text-sky-400 hover:text-sky-300 text-sm md:text-base font-bold font-['Tajawal'] leading-6 transition-colors cursor-pointer"
                         >
