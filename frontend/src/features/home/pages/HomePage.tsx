@@ -14,7 +14,7 @@ import {
   mockEventDesktopFeatured,
   mockEventDesktopWorkshop,
   mockEventMobile,
-} from '../../../shared/data/mockHomepageData';
+} from '../../../mocks/homepage';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();

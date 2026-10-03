@@ -5,7 +5,7 @@ import { CatalogPagination } from './CatalogPagination';
 import { CatalogGridSkeleton } from './CatalogGridSkeleton';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import { dataCacheManager } from '../../../shared/lib/cacheManager';
-import { mockCatalogAll, type CatalogItem } from '../../../shared/data/mockCatalogData';
+import { mockCatalogAll, type CatalogItem } from '../../../mocks/catalog';
 import type { CatalogFiltersState, CatalogTab } from '../types';
 
 interface CatalogDataSectionProps {

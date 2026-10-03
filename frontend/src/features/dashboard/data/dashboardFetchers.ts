@@ -22,7 +22,7 @@ import {
   mockFavoriteCourses,
   mockCompetitions,
   mockCertificates,
-} from './mockDashboardData';
+} from '../../../mocks/dashboard';
 
 const COLD_LATENCY_MS = 400;
 
