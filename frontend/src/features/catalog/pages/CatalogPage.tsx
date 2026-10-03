@@ -5,7 +5,7 @@ import { CatalogMobileFilterDrawer } from '../components/CatalogMobileFilterDraw
 import { CatalogToolbar } from '../components/CatalogToolbar';
 import { CatalogDataSection } from '../components/CatalogDataSection';
 import { useNavigate, useSearchParams } from '../../../app/routerContext';
-import type { CatalogItem } from '../../../shared/data/mockCatalogData';
+import type { CatalogItem } from '../../../mocks/catalog';
 import type { CatalogTab, CatalogFiltersState, SortOption } from '../types';
 
 // Non-pillar filters live in local state; `type` and `q` are URL-derived.

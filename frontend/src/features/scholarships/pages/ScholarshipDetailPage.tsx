@@ -3,7 +3,7 @@ import { useParams } from '../../../app/routerContext';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import { PageSkeleton } from '../../../shared/components/Loading/PageSkeleton';
 import { ItemDetailView } from '../../../shared/components/Detail/ItemDetailView';
-import { mockCatalogAll, type CatalogItem } from '../../../shared/data/mockCatalogData';
+import { mockCatalogAll, type CatalogItem } from '../../../mocks/catalog';
 
 export const ScholarshipDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();

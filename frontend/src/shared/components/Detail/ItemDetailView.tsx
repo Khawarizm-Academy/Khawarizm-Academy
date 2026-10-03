@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from '../../../app/routerContext';
-import type { CatalogItem } from '../../../shared/data/mockCatalogData';
+import type { CatalogItem } from '../../../mocks/catalog';
 
 interface ItemDetailViewProps {
   item: CatalogItem;

@@ -123,6 +123,15 @@ export const routes: RouteDefinition[] = [
     skeletonVariant: 'dashboard',
   },
   {
+    path: '/dashboard/enrolled',
+    component: () => <Navigate to="/dashboard?view=enrolled" />,
+    meta: {
+      title: 'الدورات المسجّلة — أكاديمية خوارزم',
+      activeTab: 'dashboard',
+    },
+    skeletonVariant: 'dashboard',
+  },
+  {
     path: '/profile',
     component: ProfilePage,
     meta: {

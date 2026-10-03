@@ -44,7 +44,9 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
             const Icon = item.icon;
             const isActive =
               (item.id === 'main' && (currentView === 'main' || currentView === 'live' || currentView === 'overview' || currentView === 'empty')) ||
+              (item.id === 'enrolled' && (currentView === 'enrolled' || currentView === 'courses')) ||
               (item.id === 'saved' && currentView === 'saved') ||
+              (item.id === 'achievements' && (currentView === 'achievements' || currentView === 'certificates')) ||
               (item.id === 'profile' && currentView === 'profile');
 
             return (

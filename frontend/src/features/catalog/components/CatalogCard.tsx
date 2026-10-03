@@ -1,6 +1,6 @@
 import React from 'react';
 import { Award, Play, Star } from 'lucide-react';
-import type { CatalogItem } from '../../../shared/data/mockCatalogData';
+import type { CatalogItem } from '../../../mocks/catalog';
 
 interface CatalogCardProps {
   item: CatalogItem;
