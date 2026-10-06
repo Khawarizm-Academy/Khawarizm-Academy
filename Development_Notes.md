@@ -12,6 +12,10 @@
 - [`navigation.ts`](./frontend/src/shared/lib/navigation.ts) turns names into components with `resolveIcon()`; the mock files do the same with their types.
 - A `.ts` file next to a JSON file is only allowed to add types or hydrate data.
 
+### Code Style
+- One rule per line: short comments, no `if` chains, data over branching.
+- The full standard lives in [`.agents/skills/khawarizm-code-style`](./.agents/skills/khawarizm-code-style/SKILL.md).
+
 ### Refactors
 
 #### Routes
@@ -19,6 +23,7 @@
 - [`routes.tsx`](./frontend/src/app/routes.tsx) only adds the page component for each path.
 - A route renders a page **or** redirects, never both.
 - `resolveActiveTab(pathname, search)` and `findRoute()` do the lookups. No `if` chains.
+- `tabsByQuery` decides which tab a query value lights. See [`.agents/skills/khawarizm-routing`](./.agents/skills/khawarizm-routing/SKILL.md).
 
 #### Shell Tabs
 - [`shellNav.json`](./frontend/src/shared/json/shellNav.json) owns every path and tab.

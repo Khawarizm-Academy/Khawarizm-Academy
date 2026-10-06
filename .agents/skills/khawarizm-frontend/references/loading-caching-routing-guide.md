@@ -2,7 +2,7 @@
 
 This reference document details the architecture, code contracts, and design tokens for page loading, skeleton animations, route management, and in-memory SWR caching in Khawarizm Academy.
 
-> Live conventions supersede this summary: see `.agents/skills/khawarizm-navigation-cache/` (SKILL.md + `references/page-loading-caching-guide.md`) for the enforced workflow.
+> Live conventions supersede this summary: see `.agents/skills/khawarizm-navigation-cache/` (SKILL.md + `references/page-loading-caching-guide.md`) for the enforced workflow, `.agents/skills/khawarizm-routing/` for routes and URLs, and `.agents/skills/khawarizm-code-style/` for comment and branching rules.
 
 ---
 
@@ -16,7 +16,7 @@ src/
 │   │                               #   Suspense Tier-1 skeleton, RouteErrorBoundary
 │   ├── router.tsx                  # Core router engine (Router, Outlet, VT, scroll memory)
 │   ├── routerContext.ts            # Context + hooks (useNavigate, useLocation, useParams, useSearchParams)
-│   ├── routes.tsx                  # Declarative Route Registry (JSX: redirects use <Navigate/>)
+│   ├── routes.tsx                  # PAGE_BY_PATH (path -> chunk) + findRoute / resolveActiveTab
 │   ├── pageLoads.ts                # React.lazy per-page chunks (code splitting)
 │   ├── Navigate.tsx                # Declarative canonical-URL redirect helper
 │   ├── RouteErrorBoundary.tsx      # Per-route error UI (shell stays alive)
@@ -27,6 +27,7 @@ src/
 │   │   ├── Placeholder/FeaturePlaceholder.tsx  # Under-construction pages
 │   │   └── Detail/ItemDetailView.tsx           # Shared course/scholarship detail layout
 │   ├── hooks/useCachedData.ts      # Universal SWR hook (useSyncExternalStore + keepPreviousData)
+│   ├── json/                       # All static data: routes.json, shellNav.json, catalog.json, mocks…
 │   └── lib/cacheManager.ts         # In-memory SWR data cache engine
 └── features/
     └── catalog/

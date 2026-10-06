@@ -64,7 +64,7 @@ catalog_filters: {
 ---
 
 ### Step 3: Setup Mock Data
-In `src/shared/data/mock<Feature>Data.ts` or `src/features/<feature>/data/mockData.ts`:
+Put the records in `src/shared/json/mock<Feature>.json`. If the feature needs a typed adapter, create `src/mocks/<feature>.ts` that only casts the JSON — it must hold no data of its own.
 - Ensure entities match the Django REST backend schema defined in `docs/07-backend-notes.md`.
 - Use existing shared entities (`Course`, `Scholarship`, `Event`) whenever possible.
 
@@ -139,7 +139,7 @@ import { SmartSearchBox } from '@/shared/components/Search/SmartSearchBox';
 import { CourseCard } from '@/shared/components/Cards/CourseCard';
 import { ScholarshipCard } from '@/shared/components/Cards/ScholarshipCard';
 import { CatalogFilterSidebar } from '../components/CatalogFilterSidebar';
-import { mockCourses, mockScholarships } from '@/shared/data/mockHomepageData';
+import { mockCourses, mockScholarships } from '@/mocks/homepage';
 import type { NavTabKey } from '@/shared/lib/localization';
 import type { FilterDomain } from '../types';
 

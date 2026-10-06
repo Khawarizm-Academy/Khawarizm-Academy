@@ -8,6 +8,7 @@ description: Master engineering playbook for professional routing, dual-tier cel
 This skill is the **definitive operational guide and standard** for building high-performance, professional navigation, loading states, and data caching across Khawarizm Academy.
 
 > 📖 **Per-page workflow (8 steps):** read `references/page-loading-caching-guide.md` before touching any page.
+> 📖 **Routes and URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) owns the route table, redirects, tabs, and query params.
 
 ---
 
@@ -144,36 +145,34 @@ export const MyDataSection: React.FC<{ filters: MyFilters }> = ({ filters }) => 
 
 ## 5. Pillar 4: Declarative Route Registry
 
-All routes are declared in `src/app/routes.tsx` (JSX allowed because redirect routes render `<Navigate />`). Lazy loaders live in `src/app/pageLoads.ts` (one chunk per page).
+> 📖 **Full routing guide:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — adding routes, redirects, tabs, query params, and URL debugging.
 
-```tsx
-export const routes: RouteDefinition[] = [
-  {
-    path: '/',
-    component: HomePage,
-    meta: { title: '…', description: '…', activeTab: 'home' },
-    skeletonVariant: 'home',
-  },
-  {
-    path: '/courses',
-    component: () => <Navigate to="/catalog?type=courses" />, // canonical-URL redirect
-    meta: { title: '…', activeTab: 'courses' },
-    skeletonVariant: 'catalog',
-  },
-  {
-    path: '/courses/:slug',
-    component: CourseDetailPage,
-    meta: { title: '…', activeTab: 'courses' },
-    skeletonVariant: 'detail',
-  },
-  { path: '*', component: NotFoundPage, skeletonVariant: 'default' }, // never blank
-];
+Routes are **data in JSON**, not JSX. `src/shared/json/routes.json` declares each path, and `src/app/routes.tsx` only adds the lazy component. A route renders a page **or** redirects, never both.
+
+```json
+// src/shared/json/routes.json
+{ "path": "/", "title": "…", "activeTab": "home", "skeletonVariant": "home" }
+{ "path": "/courses", "redirect": "/catalog?type=courses", "activeTab": "courses", "skeletonVariant": "catalog" }
+{ "path": "/courses/:slug", "title": "…", "activeTab": "courses", "skeletonVariant": "detail" }
+{ "path": "/dashboard", "title": "…", "immersive": true, "tabsByQuery": { "profile": "profile" }, "skeletonVariant": "dashboard" }
+{ "path": "*", "title": "…", "skeletonVariant": "default" }
 ```
+
+```ts
+// src/app/routes.tsx — the only thing TS owns is the component per path
+const PAGE_BY_PATH: Record<string, ComponentType> = {
+  '/': HomePage, '/courses/:slug': CourseDetailPage, '*': NotFoundPage,
+};
+```
+
+Lookups live in the same file: `findRoute(pathname)`, `matchRoute(pattern, pathname)`, `resolveActiveTab(pathname, search)`. Lazy loaders are in `src/app/pageLoads.ts` (one chunk per page).
 
 ### Routing rules
 - **One canonical catalog URL:** `/catalog?type=courses|scholarships`. `/courses` & `/scholarships` **redirect** to it. Never register duplicate page routes for the same view.
-- **Placeholder policies:** tabs without a built page (events, competitions, dashboard, profile) get a lazy `FeaturePlaceholder` page + a route — **never** a blank `Outlet`.
-- `*` catch-all → `NotFoundPage` (never `null`).
+- **Redirects are data:** a `redirect` field, never an inline `<Navigate />` component.
+- **`skeletonVariant` drives Tier 1 automatically.** RootLayout reads it from the active route.
+- **Placeholder policies:** tabs without a built page get a lazy `FeaturePlaceholder` page + a route — **never** a blank `Outlet`.
+- `*` catch-all → `NotFoundPage` (never `null`), and it must be the **last** entry since `findRoute` returns the first match.
 - Each page is wrapped by `RouteErrorBoundary` in RootLayout → a crash shows a themed error, shell stays alive.
 
 ### Hooks (from `src/app/routerContext.ts`)
@@ -198,7 +197,7 @@ const filters: CatalogFiltersState = { ...persistentFilters, type: activeTab, se
 
 Walk through **`references/page-loading-caching-guide.md`** for the full 8-step flow. Summary:
 
-1. **Register lazy route** in `src/app/routes.tsx` + `pageLoads.ts` (path, `meta`, `activeTab`, `skeletonVariant`).
+1. **Register the lazy route** — chunk in `pageLoads.ts`, entry in `routes.json`, path in `PAGE_BY_PATH` (`routes.tsx`).
 2. **Build the page view** as `<main className="content-container">` — no shell markup, no `<PageSkeleton>`, no fake timers.
 3. **Derive URL-driven state** from `useSearchParams` / `useParams` at render; local `useState` only for the rest.
 4. **Extract dynamic parts** into an isolated Data Section component.
