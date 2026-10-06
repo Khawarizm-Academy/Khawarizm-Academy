@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from '../../../app/routerContext';
 import { DEFAULT_RETURNING_USER } from '../types';
+import { NAV_TARGETS } from '../../../shared/lib/navigation';
 import type { AuthMode } from '../types';
 import { AuthHeroPanel } from '../components/AuthHeroPanel';
 import { DefaultLoginCard } from '../components/DefaultLoginCard';
@@ -25,7 +26,7 @@ export const LoginPage: React.FC = () => {
   const handleSuccessfulAuth = () => {
     setToastMessage(`تم تسجيل الدخول بنجاح! مرحبًا بك.`);
     setTimeout(() => {
-      navigate('/dashboard');
+      navigate(NAV_TARGETS.dashboard);
     }, 800);
   };
 
@@ -39,18 +40,15 @@ export const LoginPage: React.FC = () => {
         </div>
       )}
 
-      {/* =========================================================================
-          1. DESKTOP VIEW (Split Screen 16:10 / >= 1024px)
-          Matches desktop-login.png and desktop-welcome-back.png
-         ========================================================================= */}
+      {/* Desktop split screen */}
       <div className="hidden lg:flex w-full max-w-[1280px] h-[800px] bg-[#040F24] rounded-2xl border border-[#1B3F80] shadow-[0_12px_40px_rgba(0,0,0,0.6)] overflow-hidden flex-row-reverse relative z-10 m-6">
         
-        {/* RIGHT (Start in RTL): Dynamic Cosmic Hero Branding Panel */}
+        {/* Hero panel, right in RTL */}
         <div className="w-[640px] xl:w-[704px] h-full">
           <AuthHeroPanel
             mode={authMode}
             user={DEFAULT_RETURNING_USER}
-            onLogoClick={() => navigate('/')}
+            onLogoClick={() => navigate(NAV_TARGETS.home)}
           />
         </div>
 
@@ -60,7 +58,7 @@ export const LoginPage: React.FC = () => {
           {/* Top Bar: Return to Home & Demo State Switcher */}
           <div className="w-full flex items-center justify-between">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(NAV_TARGETS.home)}
               className="inline-flex items-center gap-2 text-xs text-[#8299B5] hover:text-[#E5B65C] transition-colors font-['Tajawal',sans-serif] cursor-pointer"
               title="العودة للصفحة الرئيسية"
             >
@@ -146,10 +144,7 @@ export const LoginPage: React.FC = () => {
 
       </div>
 
-      {/* =========================================================================
-          2. MOBILE VIEW (< 1024px)
-          Matches mobile-login.png and creates mobile-welcome-back
-         ========================================================================= */}
+      {/* Mobile view */}
       <div className="flex lg:hidden min-h-screen w-full flex-col justify-between items-center px-4 py-8 relative z-10">
         
         {/* Background Radial Glow */}
@@ -164,7 +159,7 @@ export const LoginPage: React.FC = () => {
         {/* Top Bar: Return Link & Demo Switcher */}
         <div className="w-full max-w-md flex items-center justify-between mb-4">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(NAV_TARGETS.home)}
             className="inline-flex items-center gap-1.5 text-xs text-[#8299B5] hover:text-[#E5B65C] transition-colors font-['Tajawal',sans-serif] cursor-pointer"
           >
             <span>←</span>
@@ -200,7 +195,7 @@ export const LoginPage: React.FC = () => {
         {/* Centered Mobile Brand Seal & Headline */}
         <div className="w-full max-w-md flex flex-col items-center gap-3 mb-6 select-none">
           <div
-            onClick={() => navigate('/')}
+            onClick={() => navigate(NAV_TARGETS.home)}
             className="relative w-16 h-16 rounded-full p-0.5 bg-gradient-to-br from-[#E5B65C] via-[#092557] to-[#C88A32] shadow-[0_0_14px_rgba(229,182,92,0.4)] flex items-center justify-center cursor-pointer"
           >
             <div className="w-full h-full rounded-full bg-[#061A3A] overflow-hidden flex items-center justify-center border border-[#E5B65C]/50">
@@ -263,9 +258,7 @@ export const LoginPage: React.FC = () => {
 
       </div>
 
-      {/* =========================================================================
-          3. MODAL: Terms of Service & Privacy
-         ========================================================================= */}
+      {/* Terms and privacy modal */}
       {showTermsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#040F24]/80 backdrop-blur-md animate-fade-in">
           <div className="w-full max-w-lg bg-[#061A3A] border border-[#1B3F80] rounded-2xl p-6 sm:p-8 flex flex-col gap-4 text-right shadow-2xl">

@@ -54,6 +54,12 @@ export interface DashboardNavItem {
   icon: LucideIcon;
   path?: string;
   isExternalRoute: boolean;
+  /** Extra ?view= values that highlight this item. */
+  aliases: string[];
+  /** Shows in the pill strip above the dashboard content. */
+  inSubNav: boolean;
+  /** Every view value that highlights this item, its own id included. */
+  activeViews: string[];
 }
 
 /** Icons dashboardNav.json is allowed to reference. */
@@ -77,6 +83,8 @@ interface DashboardNavJsonItem {
   label: string;
   icon: DashboardNavIconName;
   isExternalRoute: boolean;
+  aliases: string[];
+  inSubNav: boolean;
   path?: string;
 }
 
@@ -99,5 +107,13 @@ export const DASHBOARD_NAV: DashboardNavItem[] = (
     );
   }
 
-  return { ...item, icon };
+  return { ...item, icon, activeViews: [item.id, ...item.aliases] };
 });
+
+/** The pill strip shown above dashboard content. */
+export const DASHBOARD_SUB_NAV = DASHBOARD_NAV.filter((item) => item.inSubNav);
+
+/** The nav item a ?view= value belongs to, or null for views outside the sidebar. */
+export function getDashboardNavItem(view: string): DashboardNavItem | null {
+  return DASHBOARD_NAV.find((item) => item.activeViews.includes(view)) ?? null;
+}
