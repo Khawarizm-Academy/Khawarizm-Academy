@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Trophy, GraduationCap, BookOpen, Award, User, Sparkles, type LucideIcon } from 'lucide-react';
+import { BookOpen, User, type LucideIcon } from 'lucide-react';
 import { useLocation, useNavigate } from '../../../app/routerContext';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
@@ -25,15 +25,14 @@ import { ScholarshipApplicationModal } from '../components/ScholarshipApplicatio
 import { CompetitionArenaModal } from '../components/CompetitionArenaModal';
 import { DashboardSubNavigation } from '../components/DashboardSubNavigation';
 import { EnrolledCoursesView } from '../components/EnrolledCoursesView';
-import { getDashboardNavItem } from '../../../shared/lib/navigation';
+import { getDashboardNavItem, resolveIcon } from '../../../shared/lib/navigation';
+import dashboardViewsJson from '../../../shared/json/dashboardViews.json';
+import notificationJson from '../../../shared/json/dashboardNotifications.json';
 
-const LIVE_COURSE = 'برمجة بايثون للمبتدئين';
+const LIVE_COURSE = dashboardViewsJson.liveCourseTitle;
 
-/** Views that fill the whole page instead of sitting under the stats header. */
-const FULL_PAGE_VIEWS = ['profile', 'enrolled'];
-
-/** Views rendered on their own, without the two-column grid. */
-const SINGLE_COLUMN_VIEWS = ['notifications', 'profile', 'enrolled'];
+const FULL_PAGE_VIEWS = dashboardViewsJson.fullPageViews;
+const SINGLE_COLUMN_VIEWS = dashboardViewsJson.singleColumnViews;
 
 interface ViewChip {
   icon: LucideIcon;
@@ -43,63 +42,28 @@ interface ViewChip {
   action?: 'live' | 'course'; // in-dashboard chamber to open
 }
 
+interface ViewHeader {
+  title: string;
+  subtitle: string;
+  chips?: ViewChip[];
+}
+
+/** Raw shape of a dashboardViews.json view entry. */
+interface RawViewHeader {
+  title: string;
+  subtitle: string;
+  chips?: Array<Omit<ViewChip, 'icon'> & { icon: string }>;
+}
+
+const RAW_VIEW_HEADERS = dashboardViewsJson.views as Record<string, RawViewHeader>;
+
 /** Header text and stat chips per view. Missing chips fall back to the main ones. */
-const VIEW_HEADERS: Record<string, { title: string; subtitle: string; chips?: ViewChip[] }> = {
-  main: {
-    title: 'مرحبًا، أحمد',
-    subtitle: 'لديك تقدم مميز اليوم. تابع إنجازك الدراسي!',
-    chips: [
-      { icon: Trophy, label: 'مسابقة ذكاء اصطناعي مسجّل بها', iconColor: 'text-[#E5B65C]', view: 'achievements' },
-      { icon: GraduationCap, label: 'منحتان دراسيتان قريبتا الانتهاء', iconColor: 'text-sky-400', view: 'saved' },
-      { icon: BookOpen, label: '3 دورات نشطة ومسجلة', iconColor: 'text-sky-400', view: 'enrolled' },
-    ],
-  },
-  live: {
-    title: 'الجلسات المباشرة',
-    subtitle: 'انضم للفصول الافتراضية التفاعلية مع المعلمين',
-    chips: [
-      { icon: Trophy, label: 'بث مباشر تفاعلي الآن', iconColor: 'text-red-400', action: 'live' },
-      { icon: BookOpen, label: 'حصة بايثون للمبتدئين', iconColor: 'text-sky-400', action: 'course' },
-    ],
-  },
-  saved: {
-    title: 'لوحتي المحفوظة',
-    subtitle: 'تابع المنح الدراسية والدورات المفضلة والتقديمات القادمة',
-    chips: [
-      { icon: Trophy, label: 'برامج ابتعاث تفاعلية', iconColor: 'text-[#E5B65C]', view: 'saved' },
-      { icon: GraduationCap, label: '4 منح محفوظات حاليًا', iconColor: 'text-sky-400', view: 'saved' },
-      { icon: BookOpen, label: 'مستندات جاهزة للتقديم', iconColor: 'text-sky-400', view: 'saved' },
-    ],
-  },
-  achievements: {
-    title: 'إنجازاتي وتحدياتي',
-    subtitle: 'سجل التحديات البرمجية والشهادات الرسمية المعتمدة',
-    chips: [
-      { icon: Trophy, label: '3 تحديات نشطة', iconColor: 'text-[#E5B65C]', view: 'achievements' },
-      { icon: Award, label: '6 شهادات موثقة', iconColor: 'text-sky-400', view: 'achievements' },
-    ],
-  },
-  notifications: {
-    title: 'مركز الإشعارات',
-    subtitle: 'لديك 3 تنبيهات جديدة غير مقروءة',
-  },
-  enrolled: {
-    title: 'دوراتي المسجّلة',
-    subtitle: 'تابع مساراتك الأكاديمية والدروس المكتملة وجلساتك المباشرة',
-    chips: [
-      { icon: BookOpen, label: '3 دورات مسجلة', iconColor: 'text-sky-400', view: 'enrolled' },
-      { icon: Trophy, label: 'دورة واحدة مكتملة 100%', iconColor: 'text-[#E5B65C]', view: 'enrolled' },
-    ],
-  },
-  profile: {
-    title: 'الملف الشخصي',
-    subtitle: 'إدارة بياناتك الشخصية، تفضيلات التعلّم، وإعدادات الحساب',
-    chips: [
-      { icon: User, label: 'بيانات الحساب مكتملة', iconColor: 'text-[#E5B65C]' },
-      { icon: Sparkles, label: '3 مسارات اهتمام نشطة', iconColor: 'text-sky-400' },
-    ],
-  },
-};
+const VIEW_HEADERS: Record<string, ViewHeader> = Object.fromEntries(
+  Object.entries(RAW_VIEW_HEADERS).map(([key, header]) => [
+    key,
+    { ...header, chips: header.chips?.map((chip) => ({ ...chip, icon: resolveIcon(chip.icon) })) },
+  ])
+);
 
 export const DashboardPage: React.FC = () => {
   const { search } = useLocation();
@@ -159,27 +123,10 @@ export const DashboardPage: React.FC = () => {
   // Every notification opens the chamber its type points to.
   const notificationActions: Record<NotificationItemData['type'], () => void> = {
     live: () => setIsLiveClassroomOpen(true),
-    scholarship: () =>
-      setSelectedScholarship({
-        id: 'sch-kaust-01',
-        title: 'منحة التميز لعلوم الحاسب والابتكار التقني',
-        provider: 'جامعة الملك عبدالله للعلوم والتقنية',
-        deadlineText: 'باقي 18 ساعة',
-        isUrgent: true,
-        coverage: 'تغطية كاملة 100% شاملة الرسوم الدراسية والسكن وبدل شهري',
-        gpaRequirement: '4.5 فما فوق (مكتمل لديك: 4.9)',
-      }),
-    competition: () =>
-      setSelectedCompetition({
-        id: 'comp-2',
-        title: 'مسابقة البرمجة التنافسية للأكاديميات',
-        statusText: 'جارية الآن (تحدي البث المباشر)',
-        statusColor: 'red',
-        actionLabel: 'ادخل الساحة',
-        actionVariant: 'gold',
-      }),
-    lesson: () => setActiveWorkspaceCourse('أساسيات الذكاء الاصطناعي وتعلم الآلة'),
-    exam: () => setActiveWorkspaceCourse('أساسيات الذكاء الاصطناعي وتعلم الآلة'),
+    scholarship: () => setSelectedScholarship(notificationJson.scholarship as SavedScholarshipItem),
+    competition: () => setSelectedCompetition(notificationJson.competition as CompetitionItem),
+    lesson: () => setActiveWorkspaceCourse(notificationJson.lesson.title),
+    exam: () => setActiveWorkspaceCourse(notificationJson.exam.title),
   };
 
   const handleNotificationAction = (notif: NotificationItemData) => {

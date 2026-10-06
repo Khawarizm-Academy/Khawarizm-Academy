@@ -1,14 +1,9 @@
 /**
- * Universal Key Converter and Localization System (English <-> Arabic)
- * 
- * Provides type-safe dictionaries, key-to-Arabic conversions, and reverse lookups
- * for navigation tabs, statuses, levels, coverages, search types, and action buttons.
- * Designed for future-proof i18n and clean separation of business logic and presentation.
+ * English-to-Arabic label lookup and reverse lookup for nav tabs, statuses,
+ * levels, coverages, search types, and action buttons.
  */
 
-// ============================================================================
-// 1. Domain Key Types (English Identifiers)
-// ============================================================================
+import enToArJson from '../json/localization.json';
 
 export type NavTabKey =
   | 'home'
@@ -45,86 +40,25 @@ export type ActionKey =
   | 'register'
   | 'search';
 
-// ============================================================================
-// 2. English-to-Arabic Dictionaries
-// ============================================================================
+/** Shape of localization.json: every group is keyed by its domain key type. */
+interface Dictionaries {
+  nav: Record<NavTabKey, string>;
+  mobileNav: Partial<Record<NavTabKey, string>>; // shorter labels for the bottom bar
+  search: Record<SearchTypeKey, string>;
+  courseLevels: Record<CourseLevelKey, string>;
+  courseStatus: Record<CourseStatusKey, string>;
+  coverage: Record<ScholarshipCoverageKey, string>;
+  degreeLevels: Record<DegreeLevelKey, string>;
+  eventFormats: Record<EventFormatKey, string>;
+  actions: Record<ActionKey, string>;
+}
 
-export const EN_TO_AR = {
-  // Navigation Tabs
-  nav: {
-    home: 'الرئيسية',
-    courses: 'الدورات',
-    scholarships: 'المنح والفرص',
-    catalog: 'الدورات والمنح',
-    events: 'الفعاليات',
-    competitions: 'المسابقات',
-    dashboard: 'لوحتي',
-    profile: 'حسابي',
-  },
-  // Mobile Navigation (Shorter labels where appropriate)
-  mobileNav: {
-    home: 'الرئيسية',
-    courses: 'الدورات',
-    scholarships: 'المنح',
-    dashboard: 'لوحتي',
-    profile: 'حسابي',
-  },
-  // Search Filters
-  search: {
-    course: 'دورة',
-    scholarship: 'منحة',
-    all: 'الكل',
-  },
-  // Course Levels
-  courseLevels: {
-    beginner: 'مبتدئ',
-    intermediate: 'متوسط',
-    advanced: 'متقدم',
-  },
-  // Course Status
-  courseStatus: {
-    available: 'متاح',
-    upcoming: 'قريباً',
-    closed: 'مغلق',
-  },
-  // Scholarship Coverage
-  coverage: {
-    fully_funded: 'ممولة بالكامل',
-    partially_funded: 'تمويل جزئي',
-    practical_training: 'تدريب عملي',
-    partial: 'جزئية',
-  },
-  // Degree Levels
-  degreeLevels: {
-    bachelor: 'بكالوريوس',
-    master: 'ماجستير',
-    phd: 'دكتوراه',
-    vocational: 'تدريب مهني',
-  },
-  // Event Formats
-  eventFormats: {
-    live: 'بث مباشر',
-    in_person: 'حضوري',
-    online: 'عبر الإنترنت',
-  },
-  // Action Buttons
-  actions: {
-    apply_now: 'تقدم الآن',
-    course_details: 'تفاصيل الدورة',
-    view_all: 'عرض الكل',
-    register_now: 'سجل الآن',
-    explore_agenda: 'استكشف الأجندة',
-    register: 'تسجيل',
-    search: 'بحث',
-  },
-} as const;
+/** Arabic labels live in localization.json; this cast gives them their key types. */
+export const EN_TO_AR = enToArJson as unknown as Dictionaries;
 
 export type LocalizationCategory = keyof typeof EN_TO_AR;
 
-// ============================================================================
-// 3. Reverse Dictionary (Arabic-to-English)
-// ============================================================================
-
+/** Arabic label back to its English key, per category. */
 type ReverseLookupMap = Record<string, string>;
 
 function buildReverseMap(): Record<LocalizationCategory, ReverseLookupMap> {
@@ -141,25 +75,18 @@ function buildReverseMap(): Record<LocalizationCategory, ReverseLookupMap> {
 
 export const AR_TO_EN = buildReverseMap();
 
-// Flat merged map for universal fallback lookups
+// Every category merged, for lookups without a category
 const FLAT_EN_TO_AR: Record<string, string> = {};
 const FLAT_AR_TO_EN: Record<string, string> = {};
 
-for (const group of Object.values(EN_TO_AR)) {
+for (const group of Object.values(EN_TO_AR) as Record<string, string>[]) {
   for (const [k, v] of Object.entries(group)) {
     FLAT_EN_TO_AR[k] = v;
     FLAT_AR_TO_EN[v] = k;
   }
 }
 
-// ============================================================================
-// 4. Type-Safe Conversion Helper Functions
-// ============================================================================
-
-/**
- * Type-safe lookup for a specific category and key.
- * Example: `toArabic('nav', 'home')` -> 'الرئيسية'
- */
+/** Label for one key inside one category: toArabic('nav', 'home'). */
 export function toArabic<
   C extends LocalizationCategory,
   K extends keyof (typeof EN_TO_AR)[C]
@@ -167,22 +94,12 @@ export function toArabic<
   return EN_TO_AR[category][key] as unknown as string;
 }
 
-/**
- * Dedicated helper for navigation tabs.
- * Example: `toArabicNav('home')` -> 'الرئيسية'
- */
+/** Nav tab label. The bottom bar uses its own shorter labels when it has one. */
 export function toArabicNav(key: NavTabKey, isMobile = false): string {
-  if (isMobile && key in EN_TO_AR.mobileNav) {
-    return EN_TO_AR.mobileNav[key as keyof typeof EN_TO_AR.mobileNav];
-  }
-  return EN_TO_AR.nav[key] ?? key;
+  return (isMobile && EN_TO_AR.mobileNav[key]) || EN_TO_AR.nav[key];
 }
 
-/**
- * Converts an Arabic label or English key to a normalized English NavTabKey.
- * Example: `toEnglishNav('الرئيسية')` -> 'home'
- * Example: `toEnglishNav('home')` -> 'home'
- */
+/** Accepts either an English key or an Arabic label; anything else is 'home'. */
 export function toEnglishNav(value?: string | null): NavTabKey {
   if (!value) return 'home';
   if (value in EN_TO_AR.nav) return value as NavTabKey;
@@ -191,47 +108,24 @@ export function toEnglishNav(value?: string | null): NavTabKey {
   return 'home';
 }
 
-/**
- * Universal key-to-Arabic converter.
- * Converts any English key to its Arabic display label.
- * If the value is already in Arabic or unknown, returns it safely without crashing.
- *
- * Example:
- * `convertKeyToAr('available')` -> 'متاح'
- * `convertKeyToAr('متاح')` -> 'متاح'
- * `convertKeyToAr('beginner', 'courseLevels')` -> 'مبتدئ'
- */
+/** Any English key to its Arabic label. Arabic and unknown text pass through. */
 export function convertKeyToAr(
   value?: string | null,
   category?: LocalizationCategory
 ): string {
   if (!value) return '';
 
-  // If a specific category was provided, look there first
+  // A named category wins, then the flat map, then the text is already Arabic
   if (category && category in EN_TO_AR) {
     const group = EN_TO_AR[category] as Record<string, string>;
     if (value in group) return group[value];
-    // If it's already an Arabic value in this group, return as-is
     if (Object.values(group).includes(value)) return value;
   }
 
-  // Universal flat lookup
-  if (value in FLAT_EN_TO_AR) {
-    return FLAT_EN_TO_AR[value];
-  }
-
-  // If already Arabic or custom text, return untouched
-  return value;
+  return FLAT_EN_TO_AR[value] ?? value;
 }
 
-/**
- * Universal Arabic-to-English converter.
- * Converts an Arabic label back to its canonical English key identifier.
- *
- * Example:
- * `convertArToKey('متاح')` -> 'available'
- * `convertArToKey('available')` -> 'available'
- */
+/** Any Arabic label back to its English key. English and unknown text pass through. */
 export function convertArToKey(
   value?: string | null,
   category?: LocalizationCategory
@@ -241,13 +135,8 @@ export function convertArToKey(
   if (category && category in AR_TO_EN) {
     const group = AR_TO_EN[category];
     if (value in group) return group[value];
-    // If it's already the English key, return as-is
     if (Object.values(group).includes(value)) return value;
   }
 
-  if (value in FLAT_AR_TO_EN) {
-    return FLAT_AR_TO_EN[value];
-  }
-
-  return value;
+  return FLAT_AR_TO_EN[value] ?? value;
 }

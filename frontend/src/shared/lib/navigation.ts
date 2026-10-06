@@ -1,34 +1,60 @@
 import {
+  Award,
+  Bell,
   BookOpen,
+  Brain,
   CalendarDays,
+  Code2,
   GraduationCap,
   Home,
   LayoutDashboard,
   LayoutGrid,
+  Palette,
+  Sparkles,
   Trophy,
   User,
-  Award,
   type LucideIcon,
 } from 'lucide-react';
 import dashboardNavJson from '../json/dashboardNav.json';
+import shellNavJson from '../json/shellNav.json';
 import type { NavTabKey } from './localization';
 
-/** Canonical catalog routes (single source of truth for ?type= query strings). */
-export const CATALOG_COURSES_ROUTE = '/catalog?type=courses';
-export const CATALOG_SCHOLARSHIPS_ROUTE = '/catalog?type=scholarships';
+/** Every icon a JSON config may reference. */
+const ICONS = {
+  Award,
+  Bell,
+  BookOpen,
+  Brain,
+  CalendarDays,
+  Code2,
+  GraduationCap,
+  Home,
+  LayoutDashboard,
+  LayoutGrid,
+  Palette,
+  Sparkles,
+  Trophy,
+  User,
+} satisfies Record<string, LucideIcon>;
+
+/** Icon names allowed inside any JSON config. */
+export type IconName = keyof typeof ICONS;
+
+/** Turns an icon name from JSON into a component. */
+export function resolveIcon(name: string): LucideIcon {
+  const icon = (ICONS as Record<string, LucideIcon | undefined>)[name];
+  if (!icon) {
+    throw new Error(`[navigation] Unknown icon "${name}". Add it to ICONS in navigation.ts.`);
+  }
+  return icon;
+}
 
 /** Where every shell tab and the login button navigate to. */
-export const NAV_TARGETS = {
-  home: '/',
-  catalog: '/catalog',
-  courses: CATALOG_COURSES_ROUTE,
-  scholarships: CATALOG_SCHOLARSHIPS_ROUTE,
-  events: '/events',
-  competitions: '/competitions',
-  dashboard: '/dashboard',
-  profile: '/dashboard?view=profile',
-  login: '/login',
-} as const satisfies Record<string, string>;
+export const NAV_TARGETS = shellNavJson.targets as Record<NavTabKey | 'login', string>;
+
+/** Canonical catalog routes (single source of truth for ?type= query strings). */
+export const CATALOG_COURSES_ROUTE = NAV_TARGETS.courses;
+export const CATALOG_SCHOLARSHIPS_ROUTE = NAV_TARGETS.scholarships;
 
 export interface ShellNavTab {
   key: NavTabKey;
@@ -38,15 +64,15 @@ export interface ShellNavTab {
 }
 
 /** One nav list; the desktop navbar and the mobile bottom bar render their own subset. */
-export const NAV_TABS: ShellNavTab[] = [
-  { key: 'home', icon: Home, desktop: true, mobile: true },
-  { key: 'courses', icon: BookOpen, desktop: true, mobile: true },
-  { key: 'scholarships', icon: GraduationCap, desktop: true, mobile: true },
-  { key: 'events', icon: CalendarDays, desktop: true, mobile: false },
-  { key: 'competitions', icon: Trophy, desktop: true, mobile: false },
-  { key: 'dashboard', icon: LayoutDashboard, desktop: false, mobile: true },
-  { key: 'profile', icon: User, desktop: false, mobile: true },
-];
+export const NAV_TABS: ShellNavTab[] = shellNavJson.tabs.map((tab) => ({
+  key: tab.key as NavTabKey,
+  icon: resolveIcon(tab.icon),
+  desktop: tab.desktop,
+  mobile: tab.mobile,
+}));
+
+/** The tabs the dashboard top bar shows. */
+export const DASHBOARD_TOP_BAR_TABS = NAV_TABS.filter((tab) => tab.desktop);
 
 export interface DashboardNavItem {
   id: string;
@@ -62,26 +88,11 @@ export interface DashboardNavItem {
   activeViews: string[];
 }
 
-/** Icons dashboardNav.json is allowed to reference. */
-const DASHBOARD_NAV_ICONS = {
-  Home,
-  BookOpen,
-  User,
-  LayoutGrid,
-  Award,
-} satisfies Record<string, LucideIcon>;
-
-/** Icon names allowed inside `dashboardNav.json`. */
-export type DashboardNavIconName = keyof typeof DASHBOARD_NAV_ICONS;
-
-/** Widened lookup so unknown names coming from the JSON are a runtime error, not a crash on `undefined`. */
-const ICON_BY_NAME: Readonly<Record<string, LucideIcon | undefined>> = DASHBOARD_NAV_ICONS;
-
 /** Raw (unhydrated) shape of a `dashboardNav.json` entry. */
 interface DashboardNavJsonItem {
   id: string;
   label: string;
-  icon: DashboardNavIconName;
+  icon: string;
   isExternalRoute: boolean;
   aliases: string[];
   inSubNav: boolean;
@@ -92,22 +103,17 @@ interface DashboardNavJsonItem {
 export const DASHBOARD_NAV: DashboardNavItem[] = (
   dashboardNavJson as DashboardNavJsonItem[]
 ).map((item) => {
-  const icon = ICON_BY_NAME[item.icon];
-
-  if (!icon) {
-    throw new Error(
-      `[navigation] Unknown icon "${item.icon}" for dashboard nav item "${item.id}". ` +
-        `Register it in DASHBOARD_NAV_ICONS (src/shared/lib/navigation.ts).`
-    );
-  }
-
   if (item.isExternalRoute && !item.path) {
     throw new Error(
       `[navigation] Dashboard nav item "${item.id}" is marked isExternalRoute but has no "path".`
     );
   }
 
-  return { ...item, icon, activeViews: [item.id, ...item.aliases] };
+  return {
+    ...item,
+    icon: resolveIcon(item.icon),
+    activeViews: [item.id, ...item.aliases],
+  };
 });
 
 /** The pill strip shown above dashboard content. */
