@@ -18,7 +18,7 @@ Use this decision table whenever you create, move, or import any file:
 | **Shared Hook** | `src/shared/hooks/` | `use<CamelCase>.ts` (e.g. `useHorizontalScroll.ts`) | Reusable logic across multiple features (e.g. timers, scroll, media queries). |
 | **Feature Hook** | `src/features/<feature>/hooks/` | `use<CamelCase>.ts` (e.g. `useCatalogFilters.ts`) | Logic and queries specific to this feature. |
 | **Shared Utility / Lib** | `src/shared/lib/` | `camelCase.ts` (e.g. `localization.ts`, `apiClient.ts`) | Global helpers, API wrappers, translation helpers. |
-| **Shared Mock Data** | `src/shared/data/` | `mock<Name>Data.ts` (e.g. `mockHomepageData.ts`, `mockCatalogData.ts`) | Shared realistic backend-shaped fake data. |
+| **Static Data (ANY kind)** | `src/shared/json/` | `<camelCase>.json` (e.g. `routes.json`, `catalog.json`, `mockDashboard.json`) | Every list, label, record, and config map. A `.ts` next to it may only add types or hydrate icon names. |
 | **Design Tokens & Styles** | `src/styles/` | `tokens.css`, `globals.css` | Global CSS variables and Tailwind v4 `@apply` concept classes. |
 | **Master Brand Assets** | `src/assets/brand/source/` | `KhawarizmLogo.jpg` | Single source of truth for branding. Output generated to `src/assets/brand/generated/` and `public/`. |
 | **App Routing & Shell** | `src/app/` | `router.tsx`, `App.tsx` | Root providers, route tree, and layout frames. |
@@ -45,8 +45,8 @@ Is this a new component or file?
  │    └── Feature data/filter logic? ──► src/features/<feature>/hooks/use<FeatureHook>.ts
  │
  └── Is it data or utilities?
-      ├── Shared mock data? ───────────► src/shared/data/mock<Feature>Data.ts
-      └── Translation / API helper? ───► src/shared/lib/<helper>.ts
+      ├── Static data (lists/labels/records)? ► src/shared/json/<name>.json
+      └── Translation / API / icon helper? ──► src/shared/lib/<helper>.ts
 ```
 
 ---

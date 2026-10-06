@@ -8,7 +8,8 @@ The universal run-book for applying the routing / dual-tier skeleton / caching /
 
 | Concern | File |
 | :--- | :--- |
-| Route registry (declarative) | `frontend/src/app/routes.tsx` |
+| Route table (paths, redirects, meta) | `frontend/src/shared/json/routes.json` |
+| Path → page component, plus lookups | `frontend/src/app/routes.tsx` |
 | Lazy page loaders (one chunk per page) | `frontend/src/app/pageLoads.ts` |
 | Persistent shell + Suspense skeleton + error boundary | `frontend/src/app/layouts/RootLayout.tsx` |
 | Router engine (scroll memory, View Transitions) | `frontend/src/app/router.tsx` |
@@ -26,16 +27,15 @@ The universal run-book for applying the routing / dual-tier skeleton / caching /
    ```ts
    export const MyPage = lazy(() => import('../features/my-feature/pages/MyPage').then((m) => ({ default: m.MyPage })));
    ```
-2. Add the route in `routes.tsx` with `meta.title` (Arabic), `meta.activeTab`, and `skeletonVariant`:
-   ```tsx
-   {
-     path: '/my-path',
-     component: MyPage,
-     meta: { title: '… — أكاديمية خوارزم', activeTab: 'myfeature' },
-     skeletonVariant: 'default', // 'home' | 'catalog' | 'detail' | 'default'
-   }
+2. Add the route entry in `src/shared/json/routes.json` with `title` (Arabic), `activeTab`, and `skeletonVariant`, then map the path to the chunk in `routes.tsx`:
+   ```json
+   { "path": "/my-path", "title": "… — أكاديمية خوارزم", "activeTab": "myfeature", "skeletonVariant": "default" }
    ```
-3. If the URL is a duplicate of another canonical path → use `component: () => <Navigate to="/canonical?…" />`.
+   ```ts
+   const PAGE_BY_PATH: Record<string, ComponentType> = { '/my-path': MyPage };
+   ```
+   `skeletonVariant` is one of `'home' | 'catalog' | 'detail' | 'dashboard' | 'default'`.
+3. If the URL is a duplicate of another canonical path → set `"redirect": "/canonical?…"` in the JSON. Redirects are data, never an inline `<Navigate />` component.
 4. If the feature isn't built yet → a tiny page that renders `<FeaturePlaceholder title description …/>` from `shared/components/Placeholder/FeaturePlaceholder.tsx`.
 
 > Rules: `*` catch-all → `NotFoundPage`, never `null`. No two routes render the same page view.

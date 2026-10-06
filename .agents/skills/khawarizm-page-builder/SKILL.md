@@ -33,7 +33,7 @@ This skill is the **authoritative, self-contained operational workflow** for add
 │ 5. Choose Shell Mode (Standard Shell vs hideShell: true in RouteMeta)            │
 │ 6. Wire State & URL Single Source of Truth (Derive from useSearchParams/Params)  │
 │ 7. Assemble Page & Data Sections (Modular components + useCachedData SWR)        │
-│ 8. Register Route & Lazy Chunk (pageLoads.ts + routes.tsx + Navbar link)         │
+│ 8. Register Route & Lazy Chunk (pageLoads.ts + routes.json + PAGE_BY_PATH)       │
 │ 9. Polish Polish Polish (RTL alignment, hover glows, micro-press scales, mobile) │
 │ 10. Run Verification Gates (npm run build -> tsc -b + npm run lint)              │
 └──────────────────────────────────────────────────────────────────────────────────┘
@@ -128,38 +128,40 @@ frontend/src/features/<feature>/
 
 ---
 
-### Step 5: Shell Layout Determination (`RootLayout.tsx`)
-In `src/app/routes.tsx`, declare whether the page needs the standard persistent shell or a dedicated full-screen layout:
+### Step 5: Shell Layout Determination (`routes.json`)
+Declare the shell mode in the route entry. `RootLayout` reads it — never check it inside a page.
 
-```tsx
-export interface RouteMeta {
-  title: string;
-  description?: string;
-  activeTab?: NavTabKey;
-  hideShell?: boolean; // Set true for Login, Course Player, Exam In-Progress
-}
+```json
+// src/shared/json/routes.json
+{ "path": "/my-page",    "title": "…", "skeletonVariant": "default" }
+{ "path": "/dashboard",  "title": "…", "immersive": true, "skeletonVariant": "dashboard" }
+{ "path": "/login",      "title": "…", "hideShell": true, "skeletonVariant": "default" }
 ```
 
-- **`hideShell: false` (Default):** `RootLayout` keeps `<DesktopNavbar>`, `<MobileHeader>`, `<Footer>`, and `<MobileBottomBar>` mounted. Page renders standard centered content:
+| Flags | navbar | footer | bottom bar | Use for |
+| :--- | :--- | :--- | :--- | :--- |
+| neither | ✅ | ✅ | ✅ | Normal pages |
+| `immersive: true` | ❌ | ❌ | ✅ | Pages that own their own nav (dashboard) |
+| `hideShell: true` | ❌ | ❌ | ❌ | Login, full-screen player, exam |
+
+- **Standard (no flags):** `RootLayout` keeps the whole shell mounted. Page renders centered content only:
   ```tsx
-  export const MyPage: React.FC = () => {
-    return (
-      <main className="content-container">
-        {/* Page Content */}
-      </main>
-    );
-  };
+  export const MyPage: React.FC = () => (
+    <main className="content-container">
+      {/* Page Content */}
+    </main>
+  );
   ```
-- **`hideShell: true`:** `RootLayout` omits headers, footers, and mobile tab bar. Page takes full window:
+- **`hideShell: true`:** page takes the full window:
   ```tsx
-  export const MyImmersivePage: React.FC = () => {
-    return (
-      <div className="min-h-screen w-full bg-[#040F24] flex items-center justify-center">
-        {/* Full-screen content + Exit/Home Link */}
-      </div>
-    );
-  };
+  export const MyImmersivePage: React.FC = () => (
+    <div className="min-h-screen w-full bg-[#040F24] flex items-center justify-center">
+      {/* Full-screen content + Exit/Home Link */}
+    </div>
+  );
   ```
+
+> 📖 **Route fields, redirects, and `tabsByQuery`:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md)
 
 ---
 
@@ -229,38 +231,40 @@ export const MyDataGrid: React.FC<{ category: string }> = ({ category }) => {
 ---
 
 ### Step 8: Route Chunk & Registry Wiring
-Every new page requires wiring in exactly 3 files:
+Every new page requires wiring in exactly 3 places:
 
-#### 1. Add Lazy Chunk in `src/app/pageLoads.ts`:
+#### 1. Add the Lazy Chunk in `src/app/pageLoads.ts`:
 ```ts
 export const MyNewPage = lazy(() =>
   import('../features/my-feature/pages/MyNewPage').then((m) => ({ default: m.MyNewPage }))
 );
 ```
 
-#### 2. Register Route in `src/app/routes.tsx`:
-```tsx
-import { MyNewPage } from './pageLoads';
-
-export const routes: RouteDefinition[] = [
-  ...
-  {
-    path: '/my-feature',
-    component: MyNewPage,
-    meta: {
-      title: 'عنوان الصفحة — أكاديمية خوارزم',
-      description: 'وصف الصفحة لمحركات البحث والتنقل الأكاديمي.',
-      activeTab: 'my-feature', // (Optional) maps to navbar active indicator
-      hideShell: false,        // true if full-screen immersive view
-    },
-    skeletonVariant: 'default', // 'home' | 'catalog' | 'detail' | 'default'
-  },
-  ...
-];
+#### 2. Add the route entry in `src/shared/json/routes.json`:
+```json
+{
+  "path": "/my-feature",
+  "title": "عنوان الصفحة — أكاديمية خوارزم",
+  "description": "وصف الصفحة لمحركات البحث والتنقل الأكاديمي.",
+  "activeTab": "home",
+  "skeletonVariant": "default"
+}
 ```
 
-#### 3. Wire Navigation Link (if top-level view):
-In `src/shared/components/Navbar/DesktopNavbar.tsx` and `MobileBottomBar.tsx`, add the tab to `navLinks` and wire the navigation callback in `RootLayout.tsx`.
+#### 3. Map the path to the component in `src/app/routes.tsx`:
+```ts
+const PAGE_BY_PATH: Record<string, ComponentType> = {
+  // ...
+  '/my-feature': MyNewPage,
+};
+```
+
+That is all. `skeletonVariant` drives the Tier 1 skeleton, `title` drives `document.title`, and `RootLayout` picks the shell — no JSX registration.
+
+#### If it is a top-level nav tab:
+Add the target and the tab row to `src/shared/json/shellNav.json`, register the `NavTabKey` in `localization.ts`, and add the Arabic label to `localization.json`. The navbar, the mobile bottom bar, and the dashboard top bar all read that one list — **do not** edit those components.
+
+> 📖 **Full routing walkthrough:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md)
 
 ---
 

@@ -42,10 +42,13 @@ Always follow this exact mapping when creating or moving files:
 | **Feature View Types** | `src/features/<feature>/` | `types.ts` (e.g. `CatalogTab`, `FilterDomain`) |
 | **Shared Hook** | `src/shared/hooks/` | `use<Name>.ts` (e.g. `useHorizontalScroll.ts`) |
 | **Feature Hook** | `src/features/<feature>/hooks/` | `use<FeatureHook>.ts` |
-| **Shared Mock Data** | `src/shared/data/` | `mock<Name>Data.ts` (e.g. `mockHomepageData.ts`) |
-| **Shared Utility / Helpers** | `src/shared/lib/` | `<name>.ts` (e.g. `localization.ts`, `apiClient.ts`) |
+| **Static Data (any kind)** | `src/shared/json/` | `<name>.json` (e.g. `routes.json`, `catalog.json`, `mockDashboard.json`) |
+| **Shared Utility / Helpers** | `src/shared/lib/` | `<name>.ts` (e.g. `localization.ts`, `navigation.ts`) |
 | **Styles & Tokens** | `src/styles/` | `tokens.css` (variables), `globals.css` (utilities) |
-| **Routes & Root App** | `src/app/` | `router.tsx`, `App.tsx` |
+| **Routes & Root App** | `src/app/` | `router.tsx`, `routes.tsx`, `App.tsx` |
+
+> 📖 **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — route table, redirects, tabs, query params.
+> 📖 **Code style:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) — comments, no if-chains, JSON data, no duplication.
 
 > 📖 **Full Directory Rules & Flowchart:** Read `references/code-reuse-and-directory-rules.md`.
 
@@ -101,8 +104,15 @@ Whenever asked to create any new page:
 
 ---
 
-## 5. Reference Documents Quick-Links
+## 5. Skills & Reference Quick-Links
 
+**Skills:**
+- **Code style & quality:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) — one-line comments, no if-chains, static data in JSON, no desktop/mobile duplication.
+- **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — routes.json, redirects, nav tabs, query params, URL debugging.
+- **Loading, caching & transitions:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md) — dual-tier skeletons, SWR, scroll memory.
+- **Page & feature creation:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md) — the full 10-step flow.
+
+**References:**
 - **Directory Placement & Anti-Duplication:** [`references/code-reuse-and-directory-rules.md`](references/code-reuse-and-directory-rules.md)
 - **Component & Class Catalog:** [`references/component-catalog.md`](references/component-catalog.md)
 - **Page Creation Blueprint & Real Case Study:** [`references/page-creation-blueprint.md`](references/page-creation-blueprint.md)
