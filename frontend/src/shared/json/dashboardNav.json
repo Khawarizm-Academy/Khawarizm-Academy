@@ -1,0 +1,32 @@
+[
+  {
+    "id": "main",
+    "label": "نظرة عامة",
+    "icon": "Home",
+    "isExternalRoute": false
+  },
+  {
+    "id": "enrolled",
+    "label": "الدورات المسجّلة",
+    "icon": "BookOpen",
+    "isExternalRoute": false
+  },
+  {
+    "id": "profile",
+    "label": "الملف الشخصي",
+    "icon": "User",
+    "isExternalRoute": false
+  },
+  {
+    "id": "saved",
+    "label": "المنح المحفوظة",
+    "icon": "LayoutGrid",
+    "isExternalRoute": false
+  },
+  {
+    "id": "achievements",
+    "label": "الشهادات والتحديات",
+    "icon": "Award",
+    "isExternalRoute": false
+  }
+]
