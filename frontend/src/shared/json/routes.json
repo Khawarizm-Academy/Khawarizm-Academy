@@ -1,0 +1,95 @@
+[
+  {
+    "path": "/",
+    "title": "أكاديمية خوارزم — المرصد الأكاديمي والفرص الدولية",
+    "description": "بوابة خوارزم للدورات التدريبية المتقدمة والمنح الدراسية العالمية الممولة بالكامل.",
+    "activeTab": "home",
+    "skeletonVariant": "home"
+  },
+  {
+    "path": "/catalog",
+    "title": "دليل الدورات والمنح — أكاديمية خوارزم",
+    "description": "استكشف مئات الدورات التدريبية المعتمدة وأرقى المنح الدراسية الدولية.",
+    "activeTab": "catalog",
+    "tabsByQuery": { "courses": "courses", "scholarships": "scholarships" },
+    "skeletonVariant": "catalog"
+  },
+  {
+    "path": "/courses",
+    "redirect": "/catalog?type=courses",
+    "title": "الدورات التدريبية — أكاديمية خوارزم",
+    "activeTab": "courses",
+    "skeletonVariant": "catalog"
+  },
+  {
+    "path": "/scholarships",
+    "redirect": "/catalog?type=scholarships",
+    "title": "المنح والفرص الأكاديمية — أكاديمية خوارزم",
+    "activeTab": "scholarships",
+    "skeletonVariant": "catalog"
+  },
+  {
+    "path": "/courses/:slug",
+    "title": "تفاصيل الدورة — أكاديمية خوارزم",
+    "activeTab": "courses",
+    "skeletonVariant": "detail"
+  },
+  {
+    "path": "/scholarships/:slug",
+    "title": "تفاصيل المنحة — أكاديمية خوارزم",
+    "activeTab": "scholarships",
+    "skeletonVariant": "detail"
+  },
+  {
+    "path": "/events",
+    "title": "الفعاليات والندوات — أكاديمية خوارزم",
+    "activeTab": "events",
+    "skeletonVariant": "default"
+  },
+  {
+    "path": "/competitions",
+    "title": "المسابقات والتحديات — أكاديمية خوارزم",
+    "activeTab": "competitions",
+    "skeletonVariant": "default"
+  },
+  {
+    "path": "/dashboard",
+    "title": "لوحة التحكم — أكاديمية خوارزم",
+    "activeTab": "dashboard",
+    "tabsByQuery": { "profile": "profile" },
+    "immersive": true,
+    "skeletonVariant": "dashboard"
+  },
+  {
+    "path": "/dashboard/enrolled",
+    "redirect": "/dashboard?view=enrolled",
+    "title": "الدورات المسجّلة — أكاديمية خوارزم",
+    "activeTab": "dashboard",
+    "skeletonVariant": "dashboard"
+  },
+  {
+    "path": "/profile",
+    "title": "الملف الشخصي — أكاديمية خوارزم",
+    "activeTab": "profile",
+    "skeletonVariant": "default"
+  },
+  {
+    "path": "/login",
+    "title": "تسجيل الدخول — أكاديمية خوارزم",
+    "description": "سجّل دخولك إلى منصة أكاديمية خوارزم واستكشف مساراتك الأكاديمية والمنح الممولة.",
+    "hideShell": true,
+    "skeletonVariant": "default"
+  },
+  {
+    "path": "/auth",
+    "redirect": "/login",
+    "title": "تسجيل الدخول — أكاديمية خوارزم",
+    "hideShell": true,
+    "skeletonVariant": "default"
+  },
+  {
+    "path": "*",
+    "title": "الصفحة غير موجودة — أكاديمية خوارزم",
+    "skeletonVariant": "default"
+  }
+]

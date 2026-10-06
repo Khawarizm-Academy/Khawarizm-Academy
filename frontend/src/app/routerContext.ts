@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback } from 'react';
+import { createContext, useContext, useCallback, useMemo } from 'react';
 import type { RouteDefinition } from './routes';
 
 export interface RouterContextType {
@@ -17,76 +17,32 @@ export const RouterContext = createContext<RouterContextType>({
   navigate: () => {},
 });
 
-/**
- * Matches a URL path against a route pattern with parameter support (e.g. /courses/:slug)
- */
-export function matchRoutePattern(
-  pattern: string,
-  pathname: string
-): { matches: boolean; params: Record<string, string> } {
-  if (pattern === pathname) {
-    return { matches: true, params: {} };
-  }
-
-  const patternSegments = pattern.split('/').filter(Boolean);
-  const pathSegments = pathname.split('/').filter(Boolean);
-
-  if (pattern === '*') {
-    return { matches: true, params: { wildcard: pathname } };
-  }
-
-  if (patternSegments.length !== pathSegments.length) {
-    return { matches: false, params: {} };
-  }
-
-  const params: Record<string, string> = {};
-  for (let i = 0; i < patternSegments.length; i++) {
-    const pSeg = patternSegments[i];
-    const uSeg = pathSegments[i];
-
-    if (pSeg.startsWith(':')) {
-      const paramName = pSeg.slice(1);
-      params[paramName] = decodeURIComponent(uSeg);
-    } else if (pSeg !== uSeg) {
-      return { matches: false, params: {} };
-    }
-  }
-
-  return { matches: true, params };
-}
-
+/** Everything about the current URL in one hook. */
 export const useRouter = () => useContext(RouterContext);
 
-export const useNavigate = () => {
-  const { navigate } = useContext(RouterContext);
-  return navigate;
-};
+export const useNavigate = () => useContext(RouterContext).navigate;
 
-export const useLocation = () => {
-  const { pathname, search } = useContext(RouterContext);
-  return { pathname, search };
-};
+export const useLocation = () => useContext(RouterContext);
 
-export const useParams = <T extends Record<string, string> = Record<string, string>>(): T => {
-  const { params } = useContext(RouterContext);
-  return params as T;
-};
+export const useParams = <T extends Record<string, string> = Record<string, string>>(): T =>
+  useContext(RouterContext).params as T;
 
-export const useActiveRoute = () => {
-  const { activeRoute } = useContext(RouterContext);
-  return activeRoute;
-};
+export const useActiveRoute = () => useContext(RouterContext).activeRoute;
 
-export const useSearchParams = (): [URLSearchParams, (params: URLSearchParams | Record<string, string>) => void] => {
-  const { search, pathname, navigate } = useContext(RouterContext);
-  const searchParams = new URLSearchParams(search);
+/** Query params plus a setter that replaces the URL and keeps the scroll. */
+export const useSearchParams = (): [
+  URLSearchParams,
+  (params: URLSearchParams | Record<string, string>) => void,
+] => {
+  const { pathname, search, navigate } = useContext(RouterContext);
+
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
 
   const setSearchParams = useCallback(
-    (newParams: URLSearchParams | Record<string, string>) => {
-      const paramsObj = newParams instanceof URLSearchParams ? newParams : new URLSearchParams(newParams);
-      const queryString = paramsObj.toString();
-      const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
-      navigate(newUrl, { replace: true });
+    (params: URLSearchParams | Record<string, string>) => {
+      const next = params instanceof URLSearchParams ? params : new URLSearchParams(params);
+      const query = next.toString();
+      navigate(query ? `${pathname}?${query}` : pathname, { replace: true });
     },
     [pathname, navigate]
   );

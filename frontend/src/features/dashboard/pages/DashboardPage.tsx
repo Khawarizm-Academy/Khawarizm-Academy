@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Trophy, GraduationCap, BookOpen, Award, User, Sparkles } from 'lucide-react';
+import { BookOpen, User, type LucideIcon } from 'lucide-react';
 import { useLocation, useNavigate } from '../../../app/routerContext';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
@@ -25,6 +25,45 @@ import { ScholarshipApplicationModal } from '../components/ScholarshipApplicatio
 import { CompetitionArenaModal } from '../components/CompetitionArenaModal';
 import { DashboardSubNavigation } from '../components/DashboardSubNavigation';
 import { EnrolledCoursesView } from '../components/EnrolledCoursesView';
+import { getDashboardNavItem, resolveIcon } from '../../../shared/lib/navigation';
+import dashboardViewsJson from '../../../shared/json/dashboardViews.json';
+import notificationJson from '../../../shared/json/dashboardNotifications.json';
+
+const LIVE_COURSE = dashboardViewsJson.liveCourseTitle;
+
+const FULL_PAGE_VIEWS = dashboardViewsJson.fullPageViews;
+const SINGLE_COLUMN_VIEWS = dashboardViewsJson.singleColumnViews;
+
+interface ViewChip {
+  icon: LucideIcon;
+  label: string;
+  iconColor: string;
+  view?: string; // dashboard view to open
+  action?: 'live' | 'course'; // in-dashboard chamber to open
+}
+
+interface ViewHeader {
+  title: string;
+  subtitle: string;
+  chips?: ViewChip[];
+}
+
+/** Raw shape of a dashboardViews.json view entry. */
+interface RawViewHeader {
+  title: string;
+  subtitle: string;
+  chips?: Array<Omit<ViewChip, 'icon'> & { icon: string }>;
+}
+
+const RAW_VIEW_HEADERS = dashboardViewsJson.views as Record<string, RawViewHeader>;
+
+/** Header text and stat chips per view. Missing chips fall back to the main ones. */
+const VIEW_HEADERS: Record<string, ViewHeader> = Object.fromEntries(
+  Object.entries(RAW_VIEW_HEADERS).map(([key, header]) => [
+    key,
+    { ...header, chips: header.chips?.map((chip) => ({ ...chip, icon: resolveIcon(chip.icon) })) },
+  ])
+);
 
 export const DashboardPage: React.FC = () => {
   const { search } = useLocation();
@@ -34,8 +73,10 @@ export const DashboardPage: React.FC = () => {
   const viewParam = queryParams.get('view') || 'main';
   const stateParam = queryParams.get('state'); // 'live' | 'empty' | undefined
 
-  // Active view state
-  const currentView = viewParam;
+  // One canonical id per view, so aliases like ?view=courses need no checks below.
+  const currentView = getDashboardNavItem(viewParam)?.id ?? viewParam;
+  const isLive = stateParam === 'live' || viewParam === 'live';
+  const isEmpty = stateParam === 'empty' || viewParam === 'empty';
 
   // In-Dashboard Self-Contained Modal Chambers state
   const [activeWorkspaceCourse, setActiveWorkspaceCourse] = useState<string | null>(null);
@@ -48,123 +89,25 @@ export const DashboardPage: React.FC = () => {
     navigate(`/dashboard?view=${viewId}`);
   };
 
-  // Header content and stat chips based on active view matching Figma
-  let headerTitle = 'مرحبًا، أحمد';
-  let headerSubtitle = 'لديك تقدم مميز اليوم. تابع إنجازك الدراسي!';
-  let statChips: StatChipItem[] = [
-    {
-      icon: Trophy,
-      label: 'مسابقة ذكاء اصطناعي مسجّل بها',
-      iconColor: 'text-[#E5B65C]',
-      onClick: () => handleSelectView('achievements'),
-    },
-    {
-      icon: GraduationCap,
-      label: 'منحتان دراسيتان قريبتا الانتهاء',
-      iconColor: 'text-sky-400',
-      onClick: () => handleSelectView('saved'),
-    },
-    {
-      icon: BookOpen,
-      label: '3 دورات نشطة ومسجلة',
-      iconColor: 'text-sky-400',
-      onClick: () => handleSelectView('enrolled'),
-    },
-  ];
+  const chamberActions: Record<string, () => void> = {
+    live: () => setIsLiveClassroomOpen(true),
+    course: () => setActiveWorkspaceCourse(LIVE_COURSE),
+  };
 
-  if (stateParam === 'live' || currentView === 'live') {
-    headerTitle = 'الجلسات المباشرة';
-    headerSubtitle = 'انضم للفصول الافتراضية التفاعلية مع المعلمين';
-    statChips = [
-      {
-        icon: Trophy,
-        label: 'بث مباشر تفاعلي الآن',
-        iconColor: 'text-red-400',
-        onClick: () => setIsLiveClassroomOpen(true),
-      },
-      {
-        icon: BookOpen,
-        label: 'حصة بايثون للمبتدئين',
-        iconColor: 'text-sky-400',
-        onClick: () => setActiveWorkspaceCourse('برمجة بايثون للمبتدئين'),
-      },
-    ];
-  } else if (currentView === 'saved') {
-    headerTitle = 'لوحتي المحفوظة';
-    headerSubtitle = 'تابع المنح الدراسية والدورات المفضلة والتقديمات القادمة';
-    statChips = [
-      {
-        icon: Trophy,
-        label: 'برامج ابتعاث تفاعلية',
-        iconColor: 'text-[#E5B65C]',
-        onClick: () => handleSelectView('saved'),
-      },
-      {
-        icon: GraduationCap,
-        label: '4 منح محفوظات حاليًا',
-        iconColor: 'text-sky-400',
-        onClick: () => handleSelectView('saved'),
-      },
-      {
-        icon: BookOpen,
-        label: 'مستندات جاهزة للتقديم',
-        iconColor: 'text-sky-400',
-        onClick: () => handleSelectView('saved'),
-      },
-    ];
-  } else if (currentView === 'achievements') {
-    headerTitle = 'إنجازاتي وتحدياتي';
-    headerSubtitle = 'سجل التحديات البرمجية والشهادات الرسمية المعتمدة';
-    statChips = [
-      {
-        icon: Trophy,
-        label: '3 تحديات نشطة',
-        iconColor: 'text-[#E5B65C]',
-        onClick: () => handleSelectView('achievements'),
-      },
-      {
-        icon: Award,
-        label: '6 شهادات موثقة',
-        iconColor: 'text-sky-400',
-        onClick: () => handleSelectView('achievements'),
-      },
-    ];
-  } else if (currentView === 'notifications') {
-    headerTitle = 'مركز الإشعارات';
-    headerSubtitle = 'لديك 3 تنبيهات جديدة غير مقروءة';
-  } else if (currentView === 'enrolled' || currentView === 'courses') {
-    headerTitle = 'دوراتي المسجّلة';
-    headerSubtitle = 'تابع مساراتك الأكاديمية والدروس المكتملة وجلساتك المباشرة';
-    statChips = [
-      {
-        icon: BookOpen,
-        label: '3 دورات مسجلة',
-        iconColor: 'text-sky-400',
-        onClick: () => handleSelectView('enrolled'),
-      },
-      {
-        icon: Trophy,
-        label: 'دورة واحدة مكتملة 100%',
-        iconColor: 'text-[#E5B65C]',
-        onClick: () => handleSelectView('enrolled'),
-      },
-    ];
-  } else if (currentView === 'profile') {
-    headerTitle = 'الملف الشخصي';
-    headerSubtitle = 'إدارة بياناتك الشخصية، تفضيلات التعلّم، وإعدادات الحساب';
-    statChips = [
-      {
-        icon: User,
-        label: 'بيانات الحساب مكتملة',
-        iconColor: 'text-[#E5B65C]',
-      },
-      {
-        icon: Sparkles,
-        label: '3 مسارات اهتمام نشطة',
-        iconColor: 'text-sky-400',
-      },
-    ];
-  }
+  // A chip opens a view or a chamber, and some chips are labels only.
+  const openChip = ({ view, action }: ViewChip) => {
+    if (action) return chamberActions[action];
+    if (view) return () => handleSelectView(view);
+    return undefined;
+  };
+
+  const header = VIEW_HEADERS[isLive ? 'live' : currentView] ?? VIEW_HEADERS.main;
+  const statChips: StatChipItem[] = (header.chips ?? VIEW_HEADERS.main.chips ?? []).map((chip) => ({
+    icon: chip.icon,
+    label: chip.label,
+    iconColor: chip.iconColor,
+    onClick: openChip(chip),
+  }));
 
   // Course rows for main / live views (Tier 2: real async load via cache)
   const { data: coursesData, isLoading: isLoadingCourses } = useCachedData<EnrolledCourse[]>(['dashboard', 'courses-list'], fetchEnrolledCourses, { initialData: [] });
@@ -177,31 +120,17 @@ export const DashboardPage: React.FC = () => {
     iconType: (c.id.includes('uiux') ? 'uiux' : c.id.includes('python') ? 'python' : 'ai') as 'uiux' | 'python' | 'ai',
   }));
 
+  // Every notification opens the chamber its type points to.
+  const notificationActions: Record<NotificationItemData['type'], () => void> = {
+    live: () => setIsLiveClassroomOpen(true),
+    scholarship: () => setSelectedScholarship(notificationJson.scholarship as SavedScholarshipItem),
+    competition: () => setSelectedCompetition(notificationJson.competition as CompetitionItem),
+    lesson: () => setActiveWorkspaceCourse(notificationJson.lesson.title),
+    exam: () => setActiveWorkspaceCourse(notificationJson.exam.title),
+  };
+
   const handleNotificationAction = (notif: NotificationItemData) => {
-    if (notif.type === 'live') {
-      setIsLiveClassroomOpen(true);
-    } else if (notif.type === 'scholarship') {
-      setSelectedScholarship({
-        id: 'sch-kaust-01',
-        title: 'منحة التميز لعلوم الحاسب والابتكار التقني',
-        provider: 'جامعة الملك عبدالله للعلوم والتقنية',
-        deadlineText: 'باقي 18 ساعة',
-        isUrgent: true,
-        coverage: 'تغطية كاملة 100% شاملة الرسوم الدراسية والسكن وبدل شهري',
-        gpaRequirement: '4.5 فما فوق (مكتمل لديك: 4.9)',
-      });
-    } else if (notif.type === 'competition') {
-      setSelectedCompetition({
-        id: 'comp-2',
-        title: 'مسابقة البرمجة التنافسية للأكاديميات',
-        statusText: 'جارية الآن (تحدي البث المباشر)',
-        statusColor: 'red',
-        actionLabel: 'ادخل الساحة',
-        actionVariant: 'gold',
-      });
-    } else {
-      setActiveWorkspaceCourse('أساسيات الذكاء الاصطناعي وتعلم الآلة');
-    }
+    notificationActions[notif.type]();
   };
 
   return (
@@ -215,20 +144,14 @@ export const DashboardPage: React.FC = () => {
         <div className="size-[600px] left-[800px] top-[800px] absolute bg-radial from-[#E5B65C]/5 to-transparent" />
       </div>
 
-      {/* ========================================================================= */}
-      {/* 1. PERMANENT RIGHT DESKTOP SIDEBAR (w-60, 240px) */}
-      {/* In RTL flex-row, Child #1 renders strictly on the FAR RIGHT */}
-      {/* ========================================================================= */}
+      {/* Sidebar first, so RTL puts it on the far right */}
       <DesktopDashboardSidebar
         currentView={currentView}
         onSelectView={handleSelectView}
         unreadNotificationsCount={5}
       />
 
-      {/* ========================================================================= */}
-      {/* 2. MAIN BODY CONTENT AREA (Fills screen to the left of the right sidebar) */}
-      {/* In RTL flex-row, Child #2 renders to the LEFT of Child #1 */}
-      {/* ========================================================================= */}
+      {/* Main body, second child in RTL so it fills the left */}
       <div
 
         className="flex-1 min-w-0 flex flex-col justify-start items-start relative z-10"
@@ -239,11 +162,11 @@ export const DashboardPage: React.FC = () => {
         {/* Inner Padding Container */}
         <div className="w-full max-w-[1280px] px-4 sm:px-6 md:px-10 lg:px-14 pt-4 md:pt-8 pb-24 lg:pb-8 flex flex-col gap-6 md:gap-8">
           {/* Stats & Greeting Header */}
-          {stateParam !== 'empty' && currentView !== 'empty' && currentView !== 'profile' && currentView !== 'enrolled' && currentView !== 'courses' && (
+          {!isEmpty && !FULL_PAGE_VIEWS.includes(currentView) && (
             <div className="animate-fade-in-up">
               <DashboardStatsHeader
-                title={headerTitle}
-                subtitle={headerSubtitle}
+                title={header.title}
+                subtitle={header.subtitle}
                 chips={statChips}
                 studentName="أحمد"
                 unreadNotificationsCount={5}
@@ -254,7 +177,7 @@ export const DashboardPage: React.FC = () => {
           )}
 
           {/* Empty State View */}
-          {(stateParam === 'empty' || currentView === 'empty') && (
+          {isEmpty && (
             <>
               <MobileDashboardTopBar
                 title={
@@ -314,7 +237,7 @@ export const DashboardPage: React.FC = () => {
           )}
 
           {/* Enrolled Courses Dedicated View (الدورات المسجّلة) */}
-          {(currentView === 'enrolled' || currentView === 'courses') && stateParam !== 'empty' && (
+          {currentView === 'enrolled' && !isEmpty && (
             <>
               <MobileDashboardTopBar
                 title={
@@ -350,7 +273,7 @@ export const DashboardPage: React.FC = () => {
           )}
 
           {/* Two-Column Grid for Main, Live, Saved, Achievements views */}
-          {currentView !== 'empty' && stateParam !== 'empty' && currentView !== 'notifications' && currentView !== 'profile' && currentView !== 'enrolled' && currentView !== 'courses' && (
+          {!isEmpty && !SINGLE_COLUMN_VIEWS.includes(currentView) && (
             <div
 
               className="self-stretch flex flex-col lg:flex-row justify-start items-start gap-8 w-full animate-fade-in-up animation-delay-100"
@@ -361,16 +284,16 @@ export const DashboardPage: React.FC = () => {
                 className="flex-1 min-w-0 w-full flex flex-col justify-start items-start gap-8 order-1"
               >
                 {/* 1. Main / Live View */}
-                {(currentView === 'main' || currentView === 'live') && (
+                {currentView === 'main' && (
                   <>
                     {/* Sub-Navigation Strip */}
                     <DashboardSubNavigation
-                      activeView="main"
+                      activeView={currentView}
                       onSelectView={handleSelectView}
                     />
 
                     {/* Hero Card: Live session or Priority continue */}
-                    {stateParam === 'live' || currentView === 'live' ? (
+                    {isLive ? (
                       <LiveSessionPriorityCard
                         courseTitle="برمجة بايثون للمبتدئين"
                         instructorName="م. خالد الشمري"
@@ -405,7 +328,7 @@ export const DashboardPage: React.FC = () => {
 
                           className="text-slate-200 text-lg md:text-xl font-bold font-['IBM_Plex_Sans_Arabic'] leading-6"
                         >
-                          {stateParam === 'live' || currentView === 'live' ? 'بقية دوراتك لليوم' : 'دوراتي الحالية'}
+                          {isLive ? 'بقية دوراتك لليوم' : 'دوراتي الحالية'}
                         </h2>
 
                         <button
@@ -469,37 +392,34 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 3. IN-DASHBOARD SELF-CONTAINED INTERACTIVE WORKSPACE MODALS */}
-      {/* ========================================================================= */}
-      {/* A. Course Workspace Modal */}
+      {/* In-dashboard chambers, no page change */}
       <CourseWorkspaceModal
         isOpen={!!activeWorkspaceCourse}
         onClose={() => setActiveWorkspaceCourse(null)}
         courseTitle={activeWorkspaceCourse || undefined}
       />
 
-      {/* B. Live Virtual Classroom Modal */}
+      {/* Live classroom */}
       <LiveClassroomModal
         isOpen={isLiveClassroomOpen}
         onClose={() => setIsLiveClassroomOpen(false)}
       />
 
-      {/* C. Scholarship Application Modal */}
+      {/* Scholarship application */}
       <ScholarshipApplicationModal
         isOpen={!!selectedScholarship}
         onClose={() => setSelectedScholarship(null)}
         scholarship={selectedScholarship}
       />
 
-      {/* D. Competition Challenge Arena Modal */}
+      {/* Competition arena */}
       <CompetitionArenaModal
         isOpen={!!selectedCompetition}
         onClose={() => setSelectedCompetition(null)}
         competition={selectedCompetition}
       />
 
-      {/* E. Certificate Document Preview Modal */}
+      {/* Certificate preview */}
       {previewCertificate && (
         <CertificatePreviewModal
           certificate={previewCertificate}

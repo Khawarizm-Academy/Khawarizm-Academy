@@ -1,10 +1,6 @@
 import { lazy } from 'react';
 
-/**
- * Lazy page loaders — one chunk per feature page.
- * Cold visits render the Tier 1 PageSkeleton (Suspense fallback in RootLayout)
- * while the page's chunk downloads.
- */
+/** Lazy pages, one chunk each; the Suspense skeleton in RootLayout covers the load. */
 
 export const HomePage = lazy(() => import('../features/home/pages/HomePage').then((m) => ({ default: m.HomePage })));
 export const CatalogPage = lazy(() => import('../features/catalog/pages/CatalogPage').then((m) => ({ default: m.CatalogPage })));

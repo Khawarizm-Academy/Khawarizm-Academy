@@ -1,156 +1,98 @@
 import React, {
-  useState,
-  useEffect,
   useCallback,
-  useTransition,
-  useRef,
   useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
 } from 'react';
-import type { RouteDefinition } from './routes';
-import { RouterContext, matchRoutePattern } from './routerContext';
+import { findRoute } from './routes';
+import { RouterContext } from './routerContext';
+import { Navigate } from './Navigate';
 
-interface RouterProps {
-  routes?: RouteDefinition[];
-  children: React.ReactNode;
+interface BrowserLocation {
+  pathname: string;
+  search: string;
 }
 
-export const Router: React.FC<RouterProps> = ({ routes = [], children }) => {
-  const [currentLocation, setCurrentLocation] = useState(() => ({
-    pathname: window.location.pathname || '/',
-    search: window.location.search || '',
-  }));
+/** Current URL as the browser sees it. */
+const readLocation = (): BrowserLocation => ({
+  pathname: window.location.pathname || '/',
+  search: window.location.search || '',
+});
 
+/** Runs a state update inside the native View Transition when the browser has it. */
+function withViewTransition(update: () => void) {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
+  if (doc.startViewTransition) doc.startViewTransition(update);
+  else update();
+}
+
+export const Router: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [location, setLocation] = useState(readLocation);
   const [, startTransition] = useTransition();
-  const scrollMap = useRef<Map<string, number>>(new Map());
-  const prevPathRef = useRef<string>(currentLocation.pathname);
+  const scrollPositions = useRef(new Map<string, number>());
+  const pathnameRef = useRef(location.pathname);
 
-  // Flag native View Transition support once so CSS can disable the
-  // CSS-entrance fallback (avoiding a double animation on supported browsers).
+  const match = useMemo(() => findRoute(location.pathname), [location.pathname]);
+
+  // Lets CSS drop the entrance animation so it never plays twice.
   useEffect(() => {
-    if ('startViewTransition' in document) {
-      document.documentElement.dataset.vtEnabled = 'true';
-    }
+    if ('startViewTransition' in document) document.documentElement.dataset.vtEnabled = 'true';
   }, []);
 
-  // Determine active route and params
-  let matchedRoute: RouteDefinition | null = null;
-  let matchedParams: Record<string, string> = {};
-
-  for (const route of routes) {
-    const result = matchRoutePattern(route.path, currentLocation.pathname);
-    if (result.matches) {
-      matchedRoute = route;
-      matchedParams = result.params;
-      break;
-    }
-  }
-
-  // Update document title when route changes
   useEffect(() => {
-    if (matchedRoute?.meta?.title) {
-      document.title = matchedRoute.meta.title;
-    }
-  }, [matchedRoute]);
+    if (match?.route.meta?.title) document.title = match.route.meta.title;
+  }, [match]);
 
-  // Handle browser popstate (Back / Forward)
-  useEffect(() => {
-    const handlePopState = () => {
-      const targetPath = window.location.pathname || '/';
-      const targetSearch = window.location.search || '';
-      const fullKey = `${targetPath}${targetSearch}`;
-
-      const updateState = () => {
-        setCurrentLocation({
-          pathname: targetPath,
-          search: targetSearch,
-        });
-      };
-
-      // Native View Transitions if supported
-      if ('startViewTransition' in document) {
-        (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(() => {
-          startTransition(updateState);
-        });
-      } else {
-        startTransition(updateState);
-      }
-
-      // Restore scroll position
-      requestAnimationFrame(() => {
-        const savedY = scrollMap.current.get(fullKey) ?? 0;
-        window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior });
-      });
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Programmatic navigation
   const navigate = useCallback((to: string, options?: { replace?: boolean }) => {
-    // Save current scroll position before leaving
-    const currentKey = `${window.location.pathname}${window.location.search}`;
-    scrollMap.current.set(currentKey, window.scrollY);
-
     const url = new URL(to, window.location.origin);
-    const newPathname = url.pathname || '/';
-    const newSearch = url.search || '';
-    const isDifferentPage = newPathname !== prevPathRef.current;
+    const next = { pathname: url.pathname || '/', search: url.search || '' };
+    const isNewPage = next.pathname !== pathnameRef.current;
 
-    if (options?.replace) {
-      window.history.replaceState(null, '', to);
-    } else {
-      window.history.pushState(null, '', to);
-    }
+    scrollPositions.current.set(`${pathnameRef.current}${window.location.search}`, window.scrollY);
+    window.history[options?.replace ? 'replaceState' : 'pushState'](null, '', to);
 
-    const performTransition = () => {
-      startTransition(() => {
-        setCurrentLocation({
-          pathname: newPathname,
-          search: newSearch,
-        });
-      });
-    };
+    withViewTransition(() => startTransition(() => setLocation(next)));
 
-    // Use native View Transitions API if supported
-    if ('startViewTransition' in document && isDifferentPage) {
-      (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(
-        performTransition
-      );
-    } else {
-      performTransition();
-    }
-
-    // Scroll handling:
-    // If navigating to a new page, smooth scroll to top.
-    // If only query params changed on the same page, PRESERVE current scroll position!
-    if (isDifferentPage) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      prevPathRef.current = newPathname;
-    }
+    pathnameRef.current = next.pathname;
+    // Same page + new query keeps the reader where they were.
+    if (isNewPage) window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  return (
-    <RouterContext.Provider
-      value={{
-        pathname: currentLocation.pathname,
-        search: currentLocation.search,
-        params: matchedParams,
-        activeRoute: matchedRoute,
-        navigate,
-      }}
-    >
-      {children}
-    </RouterContext.Provider>
+  // Back / Forward restores the exact scroll of the page being returned to.
+  useEffect(() => {
+    const onPopState = () => {
+      const next = readLocation();
+      pathnameRef.current = next.pathname;
+      withViewTransition(() => startTransition(() => setLocation(next)));
+      const saved = scrollPositions.current.get(`${next.pathname}${next.search}`) ?? 0;
+      requestAnimationFrame(() => window.scrollTo({ top: saved, behavior: 'instant' as ScrollBehavior }));
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      ...location,
+      params: match?.params ?? {},
+      activeRoute: match?.route ?? null,
+      navigate,
+    }),
+    [location, match, navigate]
   );
+
+  return <RouterContext.Provider value={value}>{children}</RouterContext.Provider>;
 };
 
-/**
- * Outlet component: Renders the active matched route component within a persistent layout
- */
+/** Renders the matched page, or redirects when the route only points elsewhere. */
 export const Outlet: React.FC = () => {
   const { activeRoute } = useContext(RouterContext);
   if (!activeRoute) return null;
-  const Component = activeRoute.component;
-  return <Component />;
+  if ('redirect' in activeRoute) return <Navigate to={activeRoute.redirect} replace />;
+  const Page = activeRoute.component;
+  return <Page />;
 };

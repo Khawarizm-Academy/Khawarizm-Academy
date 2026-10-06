@@ -1,11 +1,8 @@
 import React from 'react';
 import { Navigate } from '../../../app/Navigate';
+import { NAV_TARGETS } from '../../../shared/lib/navigation';
 
-/**
- * ProfilePage canonical route handler.
- * Seamlessly normalizes /profile to the unified dashboard Profile view (/dashboard?view=profile)
- * ensuring full self-contained dashboard workspace persistence.
- */
+/** Sends /profile to the dashboard profile view. */
 export const ProfilePage: React.FC = () => {
-  return <Navigate to="/dashboard?view=profile" replace />;
+  return <Navigate to={NAV_TARGETS.profile} replace />;
 };

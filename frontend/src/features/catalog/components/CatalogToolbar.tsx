@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, Filter } from 'lucide-react';
+import catalogJson from '../../../shared/json/catalog.json';
 import type { SortOption } from '../types';
 
 interface CatalogToolbarProps {
@@ -10,12 +11,7 @@ interface CatalogToolbarProps {
   onOpenMobileFilters?: () => void;
 }
 
-const SORT_OPTIONS: { id: SortOption; label: string }[] = [
-  { id: 'newest', label: 'الأحدث' },
-  { id: 'rating', label: 'التقييم' },
-  { id: 'deadline', label: 'الأقرب انتهاءً' },
-  { id: 'popular', label: 'الأكثر شيوعًا' },
-];
+const SORT_OPTIONS = catalogJson.sortOptions as { id: SortOption; label: string }[];
 
 export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
   totalCount,
@@ -31,7 +27,7 @@ export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
   return (
     <div className="w-full flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-[#1B3F80]/40 text-sm font-['Tajawal'] select-none">
       
-      {/* Right / Start (in RTL): Results Count */}
+      {/* Results count */}
       <div className="text-slate-300 font-medium flex items-center gap-2">
         <span>تم العثور على</span>
         <span className="font-bold text-white tabular-nums px-1.5 py-0.5 rounded-md bg-[#092557]/60 border border-[#1B3F80]/50 text-xs">
@@ -40,9 +36,8 @@ export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
         <span>{itemTypeLabel}</span>
       </div>
 
-      {/* Left / End (in RTL): Mobile Filter Trigger + Sort Dropdown */}
+      {/* Mobile filter trigger and sort dropdown */}
       <div className="flex items-center gap-3 justify-between sm:justify-end">
-        {/* Mobile Filter Trigger Button (Visible only on small screens) */}
         {onOpenMobileFilters && (
           <button
             type="button"
@@ -50,11 +45,10 @@ export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
             className="lg:hidden flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#061A3A] border border-[#1B3F80] hover:border-[#E5B65C] text-[#E5B65C] text-xs font-semibold cursor-pointer shadow-sm transition-all"
           >
             <Filter size={14} />
-            <span>تصفية النتائج</span>
+            <span>{catalogJson.filters.header}</span>
           </button>
         )}
 
-        {/* Sort Dropdown */}
         <div className="relative">
           <button
             type="button"

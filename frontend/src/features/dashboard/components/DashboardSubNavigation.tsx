@@ -1,4 +1,5 @@
 import React from 'react';
+import { DASHBOARD_SUB_NAV } from '../../../shared/lib/navigation';
 
 interface DashboardSubNavigationProps {
   activeView: string;
@@ -11,12 +12,6 @@ export const DashboardSubNavigation: React.FC<DashboardSubNavigationProps> = ({
   onSelectView,
   className = '',
 }) => {
-  const tabs = [
-    { id: 'main', label: 'نظرة عامة' },
-    { id: 'enrolled', label: 'الدورات المسجّلة' },
-    { id: 'profile', label: 'الملف الشخصي' },
-  ];
-
   return (
     <div
       dir="rtl"
@@ -24,11 +19,8 @@ export const DashboardSubNavigation: React.FC<DashboardSubNavigationProps> = ({
       aria-label="التنقل الداخلي للوحة التحكم"
       className={`self-stretch p-1 bg-slate-900 rounded-full outline outline-1 outline-offset-[-1px] outline-blue-900/80 inline-flex justify-start items-center gap-1 select-none shadow-[0px_4px_16px_rgba(0,0,0,0.2)] ${className}`}
     >
-      {tabs.map((tab) => {
-        const isActive =
-          (tab.id === 'main' && (activeView === 'main' || activeView === 'overview' || activeView === 'live')) ||
-          (tab.id === 'enrolled' && (activeView === 'enrolled' || activeView === 'courses')) ||
-          (tab.id === 'profile' && activeView === 'profile');
+      {DASHBOARD_SUB_NAV.map((tab) => {
+        const isActive = tab.activeViews.includes(activeView);
 
         return (
           <button

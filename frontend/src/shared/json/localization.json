@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "home": "الرئيسية",
+    "courses": "الدورات",
+    "scholarships": "المنح والفرص",
+    "catalog": "الدورات والمنح",
+    "events": "الفعاليات",
+    "competitions": "المسابقات",
+    "dashboard": "لوحتي",
+    "profile": "حسابي"
+  },
+  "mobileNav": {
+    "home": "الرئيسية",
+    "courses": "الدورات",
+    "scholarships": "المنح",
+    "dashboard": "لوحتي",
+    "profile": "حسابي"
+  },
+  "search": {
+    "course": "دورة",
+    "scholarship": "منحة",
+    "all": "الكل"
+  },
+  "courseLevels": {
+    "beginner": "مبتدئ",
+    "intermediate": "متوسط",
+    "advanced": "متقدم"
+  },
+  "courseStatus": {
+    "available": "متاح",
+    "upcoming": "قريباً",
+    "closed": "مغلق"
+  },
+  "coverage": {
+    "fully_funded": "ممولة بالكامل",
+    "partially_funded": "تمويل جزئي",
+    "practical_training": "تدريب عملي",
+    "partial": "جزئية"
+  },
+  "degreeLevels": {
+    "bachelor": "بكالوريوس",
+    "master": "ماجستير",
+    "phd": "دكتوراه",
+    "vocational": "تدريب مهني"
+  },
+  "eventFormats": {
+    "live": "بث مباشر",
+    "in_person": "حضوري",
+    "online": "عبر الإنترنت"
+  },
+  "actions": {
+    "apply_now": "تقدم الآن",
+    "course_details": "تفاصيل الدورة",
+    "view_all": "عرض الكل",
+    "register_now": "سجل الآن",
+    "explore_agenda": "استكشف الأجندة",
+    "register": "تسجيل",
+    "search": "بحث"
+  }
+}

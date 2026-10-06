@@ -5,11 +5,18 @@ import { CatalogMobileFilterDrawer } from '../components/CatalogMobileFilterDraw
 import { CatalogToolbar } from '../components/CatalogToolbar';
 import { CatalogDataSection } from '../components/CatalogDataSection';
 import { useNavigate, useSearchParams } from '../../../app/routerContext';
+import catalogJson from '../../../shared/json/catalog.json';
 import type { CatalogItem } from '../../../mocks/catalog';
 import type { CatalogTab, CatalogFiltersState, SortOption } from '../types';
 
 // Non-pillar filters live in local state; `type` and `q` are URL-derived.
 type PersistentFilters = Omit<CatalogFiltersState, 'type' | 'searchQuery'>;
+
+type SearchType = 'all' | 'course' | 'scholarship';
+
+/** The search box speaks SearchType, the URL speaks CatalogTab. */
+const SEARCH_TYPE_BY_TAB = catalogJson.searchTypeByTab as Record<CatalogTab, SearchType>;
+const TAB_BY_SEARCH_TYPE = catalogJson.tabBySearchType as Record<SearchType, CatalogTab>;
 
 const DEFAULT_FILTERS: PersistentFilters = {
   field: 'all',
@@ -40,7 +47,7 @@ export const CatalogPage: React.FC = () => {
     searchQuery: initialQueryFromUrl,
   };
 
-  // Handle Tab Switch (All / Courses / Scholarships)
+// Handle Tab Switch (All / Courses / Scholarships)
   const handleTabChange = (newTab: CatalogTab) => {
     setPersistentFilters((prev) => ({ ...prev, page: 1, level: 'all' }));
     setSearchParams({
@@ -50,15 +57,10 @@ export const CatalogPage: React.FC = () => {
   };
 
   // Handle search submit from SmartSearchBox
-  const handleSearch = (query: string, searchType?: 'all' | 'course' | 'scholarship') => {
-    let resolvedTab: CatalogTab = activeTab;
-    if (searchType === 'course') resolvedTab = 'courses';
-    if (searchType === 'scholarship') resolvedTab = 'scholarships';
-    if (searchType === 'all') resolvedTab = 'all';
-
+  const handleSearch = (query: string, searchType?: SearchType) => {
     setPersistentFilters((prev) => ({ ...prev, page: 1 }));
     setSearchParams({
-      type: resolvedTab,
+      type: searchType ? TAB_BY_SEARCH_TYPE[searchType] : activeTab,
       ...(query ? { q: query } : {}),
     });
   };
@@ -82,28 +84,11 @@ export const CatalogPage: React.FC = () => {
     else navigate(`/scholarships/${selected.id}`);
   };
 
-  // Dynamic Headlines
-  const pageTitles = {
-    all: {
-      title: 'دليل المعرفة والمنح الدولية',
-      subtitle: 'البوابة الموحدة لاستكشاف أرقى الفرص التعليمية والمسارات الأكاديمية والمنح الممولة حول العالم.',
-      countLabel: 'نتيجة منتقاة',
-    },
-    courses: {
-      title: 'الدورات التدريبية والبرامج التعليمية',
-      subtitle: 'مسارات تعليميه يقودها نخبة من الخبراء لتمكينك بالمهارات والشهادات الأكثر طلباً في سوق العمل.',
-      countLabel: 'دورة تدريبية',
-    },
-    scholarships: {
-      title: 'دليل المنح الدراسية والفرص الدولية',
-      subtitle: 'بوابة المنح والفرص الأكاديمية العالمية الممولة بالكامل للطلاب والباحثين المتميزين.',
-      countLabel: 'منحة دراسية',
-    },
-  }[activeTab];
+  const pageTitles = catalogJson.pageTitles[activeTab];
 
   return (
     <main className="content-container">
-      {/* 1. Hero Section (Header & Search) */}
+      {/* Hero section */}
       <section className="w-full flex-col-center text-center gap-3 pt-6 pb-2 animate-fade-in-up">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white font-['IBM_Plex_Sans_Arabic'] tracking-tight">
           {pageTitles.title}
@@ -112,34 +97,32 @@ export const CatalogPage: React.FC = () => {
           {pageTitles.subtitle}
         </p>
 
-        {/* Desktop Smart Search Box (Inline 3-Segment Toggle: الكل / دورة / منحة) */}
+        {/* Desktop and mobile search boxes differ only in layout */}
         <div className="hidden md:flex w-full justify-center mt-4">
           <SmartSearchBox
             variant="desktop"
-            selectedType={activeTab === 'courses' ? 'course' : activeTab === 'scholarships' ? 'scholarship' : 'all'}
-            onTypeChange={(t) => handleTabChange(t === 'course' ? 'courses' : t === 'scholarship' ? 'scholarships' : 'all')}
+            selectedType={SEARCH_TYPE_BY_TAB[activeTab]}
+            onTypeChange={(t) => handleTabChange(TAB_BY_SEARCH_TYPE[t])}
             initialQuery={filters.searchQuery}
-            onSearch={(q, t) => handleSearch(q, t)}
+            onSearch={handleSearch}
           />
         </div>
 
-        {/* Mobile Smart Search Box (3-Way Switcher ON TOP + Clean Search Bar Below) */}
         <div className="flex md:hidden w-full justify-center mt-3">
           <SmartSearchBox
             variant="mobile"
-            selectedType={activeTab === 'courses' ? 'course' : activeTab === 'scholarships' ? 'scholarship' : 'all'}
-            onTypeChange={(t) => handleTabChange(t === 'course' ? 'courses' : t === 'scholarship' ? 'scholarships' : 'all')}
+            selectedType={SEARCH_TYPE_BY_TAB[activeTab]}
+            onTypeChange={(t) => handleTabChange(TAB_BY_SEARCH_TYPE[t])}
             initialQuery={filters.searchQuery}
-            onSearch={(q, t) => handleSearch(q, t)}
+            onSearch={handleSearch}
           />
         </div>
       </section>
 
-      {/* 2. Split Content Area (Sidebar Filters + Isolated Results Pane) */}
+      {/* Results and filters */}
       <div className="w-full flex flex-col lg:flex-row items-start gap-8 animate-fade-in-up">
-        {/* Main Results Pane (Left in RTL) */}
+        {/* Results */}
         <div className="flex-1 w-full flex flex-col gap-6">
-          {/* Toolbar Row */}
           <CatalogToolbar
             totalCount={0}
             itemTypeLabel={pageTitles.countLabel}
@@ -148,7 +131,6 @@ export const CatalogPage: React.FC = () => {
             onOpenMobileFilters={() => setIsFilterDrawerOpen(true)}
           />
 
-          {/* Isolated Dynamic Data Boundary */}
           <CatalogDataSection
             filters={filters}
             activeTab={activeTab}
@@ -158,7 +140,6 @@ export const CatalogPage: React.FC = () => {
           />
         </div>
 
-        {/* Desktop Right Filter Sidebar (Start in RTL = Visual Right) */}
         <aside className="hidden lg:block shrink-0 sticky top-20">
           <CatalogFilterSidebar
             type={activeTab}
@@ -169,7 +150,6 @@ export const CatalogPage: React.FC = () => {
         </aside>
       </div>
 
-      {/* 3. Mobile Filter Drawer */}
       <CatalogMobileFilterDrawer
         isOpen={isFilterDrawerOpen}
         onClose={() => setIsFilterDrawerOpen(false)}

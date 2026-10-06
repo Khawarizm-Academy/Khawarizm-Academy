@@ -1,7 +1,7 @@
 import React from 'react';
 import { Bell } from 'lucide-react';
 import { useNavigate } from '../../../app/routerContext';
-import { DASHBOARD_NAV } from '../../../shared/lib/navigation';
+import { DASHBOARD_NAV, NAV_TARGETS } from '../../../shared/lib/navigation';
 
 interface DesktopDashboardSidebarProps {
   currentView: string;
@@ -25,7 +25,7 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
         {/* Brand */}
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate(NAV_TARGETS.home)}
           className="self-stretch inline-flex justify-start items-center gap-3 group text-right cursor-pointer"
         >
           <div className="size-9 bg-[#E5B65C] rounded-[10px] inline-flex flex-col justify-center items-center shadow-[0_0_12px_rgba(229,182,92,0.4)] group-hover:scale-105 transition-transform shrink-0">
@@ -42,24 +42,14 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
         <nav className="self-stretch flex flex-col justify-start items-start gap-2">
           {DASHBOARD_NAV.map((item) => {
             const Icon = item.icon;
-            const isActive =
-              (item.id === 'main' && (currentView === 'main' || currentView === 'live' || currentView === 'overview' || currentView === 'empty')) ||
-              (item.id === 'enrolled' && (currentView === 'enrolled' || currentView === 'courses')) ||
-              (item.id === 'saved' && currentView === 'saved') ||
-              (item.id === 'achievements' && (currentView === 'achievements' || currentView === 'certificates')) ||
-              (item.id === 'profile' && currentView === 'profile');
+            const isActive = item.activeViews.includes(currentView);
+            const target = item.isExternalRoute ? item.path : undefined;
 
             return (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => {
-                  if (item.isExternalRoute) {
-                    navigate(item.path as string);
-                  } else {
-                    onSelectView(item.id);
-                  }
-                }}
+                onClick={() => (target ? navigate(target) : onSelectView(item.id))}
                 className={`self-stretch px-3 py-2.5 rounded-xl inline-flex justify-start items-center gap-3 transition-all cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 outline outline-1 outline-offset-[-1px] outline-[#E5B65C] text-[#E5B65C] font-bold shadow-[0_0_10px_rgba(229,182,92,0.15)]'

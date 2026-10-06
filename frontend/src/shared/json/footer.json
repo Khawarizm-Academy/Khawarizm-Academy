@@ -1,0 +1,23 @@
+{
+  "tagline": "البوابة العربية الأولى لتمكين قادة المستقبل بالمهارات والفرص التعليمية والمنح الدولية الممولة.",
+  "columns": [
+    {
+      "title": "المنصة",
+      "links": [
+        { "label": "عن الأكاديمية", "href": "#about", "colorClass": "hover:text-[#E5B65C]" },
+        { "label": "الدورات المتاحة", "href": "#courses", "colorClass": "hover:text-[#29A9FF]" },
+        { "label": "منح متميزة", "href": "#scholarships", "colorClass": "hover:text-[#E5B65C]" }
+      ]
+    },
+    {
+      "title": "الدعم",
+      "links": [
+        { "label": "مركز المساعدة", "href": "#help", "colorClass": "hover:text-slate-100" },
+        { "label": "الشروط والأحكام", "href": "#terms", "colorClass": "hover:text-slate-100" },
+        { "label": "سياسة الخصوصية", "href": "#privacy", "colorClass": "hover:text-slate-100" }
+      ]
+    }
+  ],
+  "copyright": "© 2025 أكاديمية خوارزم. جميع الحقوق محفوظة",
+  "madeWith": "صُنع بكل حب لدعم المعرفة والتمكين التقني"
+}

@@ -1,0 +1,22 @@
+{
+  "targets": {
+    "home": "/",
+    "catalog": "/catalog",
+    "courses": "/catalog?type=courses",
+    "scholarships": "/catalog?type=scholarships",
+    "events": "/events",
+    "competitions": "/competitions",
+    "dashboard": "/dashboard",
+    "profile": "/dashboard?view=profile",
+    "login": "/login"
+  },
+  "tabs": [
+    { "key": "home", "icon": "Home", "desktop": true, "mobile": true },
+    { "key": "courses", "icon": "BookOpen", "desktop": true, "mobile": true },
+    { "key": "scholarships", "icon": "GraduationCap", "desktop": true, "mobile": true },
+    { "key": "events", "icon": "CalendarDays", "desktop": true, "mobile": false },
+    { "key": "competitions", "icon": "Trophy", "desktop": true, "mobile": false },
+    { "key": "dashboard", "icon": "LayoutDashboard", "desktop": false, "mobile": true },
+    { "key": "profile", "icon": "User", "desktop": false, "mobile": true }
+  ]
+}

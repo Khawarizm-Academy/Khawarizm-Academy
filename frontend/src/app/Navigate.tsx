@@ -6,11 +6,7 @@ interface NavigateProps {
   replace?: boolean;
 }
 
-/**
- * Declarative redirect used for canonical-route normalization.
- * Renders nothing; on mount it navigates to `to` (replace by default)
- * so browser history is not polluted with redirect hops.
- */
+/** Redirects on mount and renders nothing, so history keeps no extra hop. */
 export const Navigate: React.FC<NavigateProps> = ({ to, replace = true }) => {
   const navigate = useNavigate();
   useEffect(() => {

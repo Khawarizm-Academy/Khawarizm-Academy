@@ -35,11 +35,9 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({
           : 'outline outline-1 outline-offset-[-1px] outline-blue-900 hover:outline-sky-400/80 shadow-[0px_8px_24px_0px_rgba(41,169,255,0.1)]'
       }`}
     >
-      {/* ========================================================================= */}
-      {/* 1. DESKTOP LAYOUT (Horizontal row: Thumbnail right, Text center, Action left) */}
-      {/* ========================================================================= */}
+      {/* Desktop row */}
       <div className="hidden md:flex justify-between items-center gap-5 p-4">
-        {/* Child #1 in RTL: Action and Progress (renders on the FAR LEFT) */}
+        {/* Action and progress */}
         <div className="w-40 shrink-0 inline-flex flex-col justify-center items-center gap-3">
           <button
             type="button"
@@ -61,7 +59,7 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({
           />
         </div>
 
-        {/* Child #2 in RTL: Course Details (renders in the CENTER) */}
+        {/* Course details */}
         <div className="flex-1 min-w-0 flex flex-col justify-start items-start text-right gap-1.5">
           <h3
             onClick={() => onResume(course)}
@@ -91,7 +89,7 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({
           )}
         </div>
 
-        {/* Child #3 in RTL: Thumbnail (renders on the FAR RIGHT) */}
+        {/* Thumbnail */}
         <div className="w-44 h-28 rounded-xl overflow-hidden shrink-0 border border-blue-900/60 relative group">
           <img
             src={course.thumbnail}
@@ -103,9 +101,7 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. MOBILE LAYOUT (Vertical: Banner top, Progress & Action, Details below) */}
-      {/* ========================================================================= */}
+      {/* Mobile stack */}
       <div className="flex md:hidden flex-col justify-start items-start gap-4 p-3.5">
         {/* Banner Thumbnail */}
         <div className="w-full h-32 rounded-xl overflow-hidden border border-blue-900/60 relative">

@@ -1,7 +1,11 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from '../../../app/routerContext';
+import catalogJson from '../../json/catalog.json';
 import type { CatalogItem } from '../../../mocks/catalog';
+
+/** Scholarship status code to its Arabic label. */
+const STATUS_LABELS = catalogJson.statusLabels as Record<string, string>;
 
 interface ItemDetailViewProps {
   item: CatalogItem;
@@ -35,7 +39,7 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         { label: 'الدرجة العلمية', value: item.degreeLabel },
         { label: 'التغطية', value: item.coverageLabel },
         { label: 'الموعد النهائي', value: item.deadlineBadge },
-        { label: 'الحالة', value: item.status === 'open' ? 'مفتوح' : item.status === 'closing_soon' ? 'يغلق قريبًا' : 'مغلق' },
+        { label: 'الحالة', value: STATUS_LABELS[item.status ?? 'closed'] },
         { label: 'اللغة', value: item.language },
       ];
 

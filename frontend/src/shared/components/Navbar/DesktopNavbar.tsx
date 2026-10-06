@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Bell, Search, User } from 'lucide-react';
 import { BrandLogo } from '../Artwork/BrandVisuals';
 import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
+import { NAV_TABS } from '../../lib/navigation';
 
 interface DesktopNavbarProps {
   activeTab?: NavTabKey | string;
@@ -18,13 +19,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
 }) => {
   const normalizedActiveTab = toEnglishNav(activeTab);
 
-  const navLinks: { id: NavTabKey; label: string }[] = [
-    { id: 'home', label: toArabicNav('home') },
-    { id: 'courses', label: toArabicNav('courses') },
-    { id: 'scholarships', label: toArabicNav('scholarships') },
-    { id: 'events', label: toArabicNav('events') },
-    { id: 'competitions', label: toArabicNav('competitions') },
-  ];
+  const navLinks = NAV_TABS.filter((tab) => tab.desktop);
 
   const navRef = useRef<HTMLElement | null>(null);
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
@@ -66,21 +61,21 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
         {/* Center: Navigation Links with Physical Sliding Golden Beam Indicator */}
         <nav ref={navRef} className="relative flex items-center gap-8 text-sm font-['Tajawal'] font-medium h-full">
           {navLinks.map((link) => {
-            const isActive = normalizedActiveTab === link.id;
+            const isActive = normalizedActiveTab === link.key;
             return (
               <button
-                key={link.id}
+                key={link.key}
                 ref={(el) => {
-                  tabRefs.current[link.id] = el;
+                  tabRefs.current[link.key] = el;
                 }}
-                onClick={() => onSelectTab?.(link.id)}
+                onClick={() => onSelectTab?.(link.key)}
                 className={`relative py-5 px-1 transition-colors duration-300 cursor-pointer ${
                   isActive
                     ? 'text-[#E5B65C] font-bold drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]'
                     : 'text-[#8299B5] hover:text-slate-100'
                 }`}
               >
-                <span>{link.label}</span>
+                <span>{toArabicNav(link.key)}</span>
               </button>
             );
           })}

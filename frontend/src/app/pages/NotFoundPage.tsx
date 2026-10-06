@@ -1,6 +1,7 @@
 import React from 'react';
 import { Globe } from 'lucide-react';
 import { useNavigate } from '../routerContext';
+import { NAV_TARGETS } from '../../shared/lib/navigation';
 
 export const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export const NotFoundPage: React.FC = () => {
         <p className="max-w-md text-slate-400 text-sm font-['Tajawal'] leading-relaxed">
           عذرًا، الرابط الذي تحاول الوصول إليه غير صحيح أو لم يعد متاحًا. يمكنك العودة إلى الصفحة الرئيسية للاستكشاف.
         </p>
-        <button type="button" onClick={() => navigate('/')} className="btn-gold py-2.5 px-8 text-sm font-bold mt-4">
+        <button type="button" onClick={() => navigate(NAV_TARGETS.home)} className="btn-gold py-2.5 px-8 text-sm font-bold mt-4">
           العودة إلى الرئيسية
         </button>
       </div>

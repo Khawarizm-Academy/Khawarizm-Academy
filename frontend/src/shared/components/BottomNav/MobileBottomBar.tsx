@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { BookOpen, GraduationCap, Home, LayoutDashboard, User } from 'lucide-react';
 import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
+import { NAV_TABS } from '../../lib/navigation';
 
 interface MobileBottomBarProps {
   activeTab?: NavTabKey | string;
@@ -13,35 +13,9 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
 }) => {
   const normalizedActiveTab = toEnglishNav(activeTab);
 
-  const tabs: { id: NavTabKey; label: string; icon: React.ReactNode }[] = [
-    {
-      id: 'home',
-      label: toArabicNav('home', true),
-      icon: <Home size={20} />,
-    },
-    {
-      id: 'courses',
-      label: toArabicNav('courses', true),
-      icon: <BookOpen size={20} />,
-    },
-    {
-      id: 'scholarships',
-      label: toArabicNav('scholarships', true),
-      icon: <GraduationCap size={20} />,
-    },
-    {
-      id: 'dashboard',
-      label: toArabicNav('dashboard', true),
-      icon: <LayoutDashboard size={20} />,
-    },
-    {
-      id: 'profile',
-      label: toArabicNav('profile', true),
-      icon: <User size={20} />,
-    },
-  ];
+  const tabs = NAV_TABS.filter((tab) => tab.mobile);
 
-  const activeIndex = tabs.findIndex((t) => t.id === normalizedActiveTab);
+  const activeIndex = tabs.findIndex((tab) => tab.key === normalizedActiveTab);
   const safeIndex = activeIndex >= 0 ? activeIndex : 0;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -118,14 +92,15 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
         />
 
         {tabs.map((tab, idx) => {
-          const isActive = normalizedActiveTab === tab.id;
+          const isActive = normalizedActiveTab === tab.key;
+          const Icon = tab.icon;
           return (
             <button
-              key={tab.id}
+              key={tab.key}
               ref={(el) => {
                 tabRefs.current[idx] = el;
               }}
-              onClick={() => onSelectTab?.(tab.id)}
+              onClick={() => onSelectTab?.(tab.key)}
               className="relative z-10 w-full h-[52px] flex-col-center gap-1 cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
             >
               <div
@@ -135,7 +110,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
                     : 'text-[#8299B5] hover:text-slate-100'
                 }`}
               >
-                {tab.icon}
+                <Icon size={20} />
               </div>
               <span
                 className={`text-[11px] font-['Tajawal'] transition-all duration-300 leading-none ${
@@ -144,7 +119,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
                     : 'text-[#8299B5] hover:text-slate-100'
                 }`}
               >
-                {tab.label}
+                {toArabicNav(tab.key, true)}
               </span>
             </button>
           );

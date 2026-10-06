@@ -2,19 +2,12 @@ import React, { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { useNavigate } from '../../../app/routerContext';
 import { SmartSearchBox } from '../../../shared/components/Search/SmartSearchBox';
-import { CATALOG_COURSES_ROUTE, CATALOG_SCHOLARSHIPS_ROUTE } from '../../../shared/lib/navigation';
+import { DASHBOARD_TOP_BAR_TABS, NAV_TARGETS } from '../../../shared/lib/navigation';
+import { toArabicNav } from '../../../shared/lib/localization';
 
 export const DashboardTopBar: React.FC = () => {
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  const navLinks = [
-    { label: 'الرئيسية', path: '/' },
-    { label: 'الدورات', path: CATALOG_COURSES_ROUTE },
-    { label: 'المنح والفرص', path: CATALOG_SCHOLARSHIPS_ROUTE },
-    { label: 'الفعاليات', path: '/events' },
-    { label: 'المسابقات', path: '/competitions' },
-  ];
 
   return (
     <>
@@ -22,7 +15,7 @@ export const DashboardTopBar: React.FC = () => {
         dir="rtl"
         className="self-stretch h-12 px-6 bg-slate-900/90 border-b border-blue-900/80 backdrop-blur-md hidden md:flex justify-between items-center z-20 shrink-0 select-none"
       >
-        {/* 1. Right side in RTL: Circular Search Icon */}
+        {/* Circular search icon */}
         <div className="flex justify-start items-center gap-2">
           <button
             type="button"
@@ -34,16 +27,16 @@ export const DashboardTopBar: React.FC = () => {
           </button>
         </div>
 
-        {/* 2. Left side in RTL: Global Navigation Links */}
+        {/* Global navigation links */}
         <nav className="flex justify-start items-center gap-6">
-          {navLinks.map((link) => (
+          {DASHBOARD_TOP_BAR_TABS.map((tab) => (
             <button
-              key={link.label}
+              key={tab.key}
               type="button"
-              onClick={() => navigate(link.path)}
+              onClick={() => navigate(NAV_TARGETS[tab.key])}
               className="text-slate-400 hover:text-slate-200 text-sm font-medium font-['Tajawal'] transition-colors cursor-pointer"
             >
-              {link.label}
+              {toArabicNav(tab.key)}
             </button>
           ))}
         </nav>

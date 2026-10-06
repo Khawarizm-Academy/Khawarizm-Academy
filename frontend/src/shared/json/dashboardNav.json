@@ -1,0 +1,42 @@
+[
+  {
+    "id": "main",
+    "label": "نظرة عامة",
+    "icon": "Home",
+    "isExternalRoute": false,
+    "aliases": ["live", "overview", "empty"],
+    "inSubNav": true
+  },
+  {
+    "id": "enrolled",
+    "label": "الدورات المسجّلة",
+    "icon": "BookOpen",
+    "isExternalRoute": false,
+    "aliases": ["courses"],
+    "inSubNav": true
+  },
+  {
+    "id": "profile",
+    "label": "الملف الشخصي",
+    "icon": "User",
+    "isExternalRoute": false,
+    "aliases": [],
+    "inSubNav": true
+  },
+  {
+    "id": "saved",
+    "label": "المنح المحفوظة",
+    "icon": "LayoutGrid",
+    "isExternalRoute": false,
+    "aliases": [],
+    "inSubNav": false
+  },
+  {
+    "id": "achievements",
+    "label": "الشهادات والتحديات",
+    "icon": "Award",
+    "isExternalRoute": false,
+    "aliases": ["certificates"],
+    "inSubNav": false
+  }
+]
