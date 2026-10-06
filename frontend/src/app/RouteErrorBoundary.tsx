@@ -10,10 +10,7 @@ interface RouteErrorBoundaryState {
   message: string;
 }
 
-/**
- * Per-route error boundary. Catches runtime errors inside a page view so the
- * persistent shell (Navbars / Footer / Bottom Bar) never unmounts.
- */
+/** Catches page crashes so the shell around them stays alive. */
 export class RouteErrorBoundary extends React.Component<
   RouteErrorBoundaryProps,
   RouteErrorBoundaryState

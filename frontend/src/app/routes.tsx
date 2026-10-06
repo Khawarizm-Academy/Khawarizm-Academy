@@ -1,6 +1,9 @@
+import type { ComponentType } from 'react';
+import {
+  CATALOG_COURSES_ROUTE,
+  CATALOG_SCHOLARSHIPS_ROUTE,
+} from '../shared/lib/navigation';
 import type { NavTabKey } from '../shared/lib/localization';
-import { Navigate } from './Navigate';
-import { NotFoundPage } from './pages/NotFoundPage';
 import {
   HomePage,
   CatalogPage,
@@ -12,32 +15,36 @@ import {
   ScholarshipDetailPage,
   LoginPage,
 } from './pageLoads';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 export interface RouteMeta {
   title: string;
   description?: string;
   activeTab?: NavTabKey;
-  hideShell?: boolean;
+  /** Query values that switch the tab, e.g. ?type=courses lights the courses tab. */
+  tabsByQuery?: Record<string, NavTabKey>;
+  hideShell?: boolean; // no navbar, no footer, no bottom bar
+  immersive?: boolean; // page owns its own nav, so no navbar and no footer
 }
 
 export type SkeletonVariant = 'home' | 'catalog' | 'detail' | 'dashboard' | 'default';
 
-export interface RouteDefinition {
-  path: string;
-  component: React.ComponentType;
-  meta?: RouteMeta;
-  skeletonVariant?: SkeletonVariant;
-}
+/** A route either renders a page or redirects, never both. */
+export type RouteDefinition =
+  | {
+      path: string;
+      redirect: string;
+      meta?: RouteMeta;
+      skeletonVariant?: SkeletonVariant;
+    }
+  | {
+      path: string;
+      component: ComponentType;
+      meta?: RouteMeta;
+      skeletonVariant?: SkeletonVariant;
+    };
 
-/**
- * Master Route Registry for Khawarizm Academy.
- *
- * Routing rules:
- * - One canonical catalog URL: `/catalog?type=…`. `/courses` and `/scholarships`
- *   redirect to it so the URL and the catalog's `?type` filter never disagree.
- * - Detail pages use dynamic segments (`/courses/:slug`) resolved via `useParams`.
- * - The `*` catch-all renders a themed 404 instead of a blank page.
- */
+/** Every app route. First match wins, so `*` stays last. */
 export const routes: RouteDefinition[] = [
   {
     path: '/',
@@ -56,61 +63,44 @@ export const routes: RouteDefinition[] = [
       title: 'دليل الدورات والمنح — أكاديمية خوارزم',
       description: 'استكشف مئات الدورات التدريبية المعتمدة وأرقى المنح الدراسية الدولية.',
       activeTab: 'catalog',
+      tabsByQuery: { courses: 'courses', scholarships: 'scholarships' },
     },
     skeletonVariant: 'catalog',
   },
   {
     path: '/courses',
-    component: () => <Navigate to="/catalog?type=courses" />,
-    meta: {
-      title: 'الدورات التدريبية — أكاديمية خوارزم',
-      activeTab: 'courses',
-    },
+    redirect: CATALOG_COURSES_ROUTE,
+    meta: { title: 'الدورات التدريبية — أكاديمية خوارزم', activeTab: 'courses' },
     skeletonVariant: 'catalog',
   },
   {
     path: '/scholarships',
-    component: () => <Navigate to="/catalog?type=scholarships" />,
-    meta: {
-      title: 'المنح والفرص الأكاديمية — أكاديمية خوارزم',
-      activeTab: 'scholarships',
-    },
+    redirect: CATALOG_SCHOLARSHIPS_ROUTE,
+    meta: { title: 'المنح والفرص الأكاديمية — أكاديمية خوارزم', activeTab: 'scholarships' },
     skeletonVariant: 'catalog',
   },
   {
     path: '/courses/:slug',
     component: CourseDetailPage,
-    meta: {
-      title: 'تفاصيل الدورة — أكاديمية خوارزم',
-      activeTab: 'courses',
-    },
+    meta: { title: 'تفاصيل الدورة — أكاديمية خوارزم', activeTab: 'courses' },
     skeletonVariant: 'detail',
   },
   {
     path: '/scholarships/:slug',
     component: ScholarshipDetailPage,
-    meta: {
-      title: 'تفاصيل المنحة — أكاديمية خوارزم',
-      activeTab: 'scholarships',
-    },
+    meta: { title: 'تفاصيل المنحة — أكاديمية خوارزم', activeTab: 'scholarships' },
     skeletonVariant: 'detail',
   },
   {
     path: '/events',
     component: EventsPage,
-    meta: {
-      title: 'الفعاليات والندوات — أكاديمية خوارزم',
-      activeTab: 'events',
-    },
+    meta: { title: 'الفعاليات والندوات — أكاديمية خوارزم', activeTab: 'events' },
     skeletonVariant: 'default',
   },
   {
     path: '/competitions',
     component: CompetitionsPage,
-    meta: {
-      title: 'المسابقات والتحديات — أكاديمية خوارزم',
-      activeTab: 'competitions',
-    },
+    meta: { title: 'المسابقات والتحديات — أكاديمية خوارزم', activeTab: 'competitions' },
     skeletonVariant: 'default',
   },
   {
@@ -119,25 +109,21 @@ export const routes: RouteDefinition[] = [
     meta: {
       title: 'لوحة التحكم — أكاديمية خوارزم',
       activeTab: 'dashboard',
+      tabsByQuery: { profile: 'profile' },
+      immersive: true,
     },
     skeletonVariant: 'dashboard',
   },
   {
     path: '/dashboard/enrolled',
-    component: () => <Navigate to="/dashboard?view=enrolled" />,
-    meta: {
-      title: 'الدورات المسجّلة — أكاديمية خوارزم',
-      activeTab: 'dashboard',
-    },
+    redirect: '/dashboard?view=enrolled',
+    meta: { title: 'الدورات المسجّلة — أكاديمية خوارزم', activeTab: 'dashboard' },
     skeletonVariant: 'dashboard',
   },
   {
     path: '/profile',
     component: ProfilePage,
-    meta: {
-      title: 'الملف الشخصي — أكاديمية خوارزم',
-      activeTab: 'profile',
-    },
+    meta: { title: 'الملف الشخصي — أكاديمية خوارزم', activeTab: 'profile' },
     skeletonVariant: 'default',
   },
   {
@@ -152,19 +138,53 @@ export const routes: RouteDefinition[] = [
   },
   {
     path: '/auth',
-    component: () => <Navigate to="/login" />,
-    meta: {
-      title: 'تسجيل الدخول — أكاديمية خوارزم',
-      hideShell: true,
-    },
+    redirect: '/login',
+    meta: { title: 'تسجيل الدخول — أكاديمية خوارزم', hideShell: true },
     skeletonVariant: 'default',
   },
   {
     path: '*',
     component: NotFoundPage,
-    meta: {
-      title: 'الصفحة غير موجودة — أكاديمية خوارزم',
-    },
+    meta: { title: 'الصفحة غير موجودة — أكاديمية خوارزم' },
     skeletonVariant: 'default',
   },
 ];
+
+/** Params of a matched pattern like /courses/:slug, or null when it misses. */
+export function matchRoute(
+  pattern: string,
+  pathname: string
+): Record<string, string> | null {
+  if (pattern === '*') return { wildcard: pathname };
+
+  const patternParts = pattern.split('/').filter(Boolean);
+  const pathParts = pathname.split('/').filter(Boolean);
+  if (patternParts.length !== pathParts.length) return null;
+
+  const params: Record<string, string> = {};
+  for (let i = 0; i < patternParts.length; i++) {
+    const part = patternParts[i];
+    if (part.startsWith(':')) params[part.slice(1)] = decodeURIComponent(pathParts[i]);
+    else if (part !== pathParts[i]) return null;
+  }
+  return params;
+}
+
+/** First route matching the path, with its params. */
+export function findRoute(pathname: string) {
+  for (const route of routes) {
+    const params = matchRoute(route.path, pathname);
+    if (params) return { route, params };
+  }
+  return null;
+}
+
+/** Active navbar tab for a URL: a tab declared by a query value wins, then route meta. */
+export function resolveActiveTab(pathname: string, search: string): NavTabKey {
+  const meta = findRoute(pathname)?.route.meta;
+  if (!meta) return 'home';
+
+  const query = new URLSearchParams(search);
+  const fromQuery = [...query.values()].map((value) => meta.tabsByQuery?.[value]).find(Boolean);
+  return fromQuery ?? meta.activeTab ?? 'home';
+}

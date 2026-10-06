@@ -1,16 +1,52 @@
 import {
   BookOpen,
+  CalendarDays,
+  GraduationCap,
   Home,
+  LayoutDashboard,
   LayoutGrid,
+  Trophy,
   User,
   Award,
   type LucideIcon,
 } from 'lucide-react';
 import dashboardNavJson from '../json/dashboardNav.json';
+import type { NavTabKey } from './localization';
 
 /** Canonical catalog routes (single source of truth for ?type= query strings). */
 export const CATALOG_COURSES_ROUTE = '/catalog?type=courses';
 export const CATALOG_SCHOLARSHIPS_ROUTE = '/catalog?type=scholarships';
+
+/** Where every shell tab and the login button navigate to. */
+export const NAV_TARGETS = {
+  home: '/',
+  catalog: '/catalog',
+  courses: CATALOG_COURSES_ROUTE,
+  scholarships: CATALOG_SCHOLARSHIPS_ROUTE,
+  events: '/events',
+  competitions: '/competitions',
+  dashboard: '/dashboard',
+  profile: '/dashboard?view=profile',
+  login: '/login',
+} as const satisfies Record<string, string>;
+
+export interface ShellNavTab {
+  key: NavTabKey;
+  icon: LucideIcon;
+  desktop: boolean;
+  mobile: boolean;
+}
+
+/** One nav list; the desktop navbar and the mobile bottom bar render their own subset. */
+export const NAV_TABS: ShellNavTab[] = [
+  { key: 'home', icon: Home, desktop: true, mobile: true },
+  { key: 'courses', icon: BookOpen, desktop: true, mobile: true },
+  { key: 'scholarships', icon: GraduationCap, desktop: true, mobile: true },
+  { key: 'events', icon: CalendarDays, desktop: true, mobile: false },
+  { key: 'competitions', icon: Trophy, desktop: true, mobile: false },
+  { key: 'dashboard', icon: LayoutDashboard, desktop: false, mobile: true },
+  { key: 'profile', icon: User, desktop: false, mobile: true },
+];
 
 export interface DashboardNavItem {
   id: string;
@@ -20,6 +56,7 @@ export interface DashboardNavItem {
   isExternalRoute: boolean;
 }
 
+/** Icons dashboardNav.json is allowed to reference. */
 const DASHBOARD_NAV_ICONS = {
   Home,
   BookOpen,
@@ -43,18 +80,7 @@ interface DashboardNavJsonItem {
   path?: string;
 }
 
-/**
- * Shared dashboard navigation config used by the desktop sidebar.
- *
- * Source of truth is `src/shared/json/dashboardNav.json` (design-owned data);
- * this module only hydrates icon names into components so consumers get a
- * fully-typed `DashboardNavItem[]`.
- *
- * All current destinations are self-contained within the dashboard workspace:
- * `isExternalRoute: false` items are in-dashboard views and route through
- * `onSelectView(id)` to `/dashboard?view=<id>`; external items must ship a
- * `path` and navigate there directly.
- */
+/** Hydrates the icon names in dashboardNav.json into real components. */
 export const DASHBOARD_NAV: DashboardNavItem[] = (
   dashboardNavJson as DashboardNavJsonItem[]
 ).map((item) => {
