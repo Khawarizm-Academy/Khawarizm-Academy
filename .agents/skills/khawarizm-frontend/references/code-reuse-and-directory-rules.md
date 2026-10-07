@@ -137,3 +137,6 @@ Every page view must reuse the global layout primitives:
 | **Loading Spinner** | `<AstrolabeLoader message="جاري التحميل..." />` |
 | **Competition Banner** | `<CompetitionBanner competition={data} />` |
 | **Upcoming Events Section** | `<EventSection featuredEvent={e1} workshopEvent={e2} />` |
+| **Login mode pill (desktop + mobile)** | `<AuthModeSwitch mode={mode} onChange={setMode} />` — one pill, `lg:` breakpoints pick label/size |
+| **Google / Facebook sign-in** | `<AuthSocialButton provider="google" label={…} />` — `PROVIDERS` record, no provider branch |
+| **The same class string twice** | Extract it into a concept class in `globals.css` (`@layer components`) — skill §3.7 |

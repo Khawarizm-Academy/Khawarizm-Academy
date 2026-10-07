@@ -250,3 +250,30 @@ import { SmartSearchBox } from '@/shared/components/Search/SmartSearchBox';
 - **Path:** `src/shared/components/Events/EventSection.tsx`
 - **Props:** `featuredEvent: FeaturedEvent`, `workshopEvent: WorkshopEvent`, `variant?: 'desktop' | 'mobile'`
 - **Features:** Spotlight keynote banner + seminar calendar cards with speaker credentials and registration buttons.
+
+---
+
+## 8. Authentication (`src/features/auth/`)
+
+Feature-scoped components for the `hideShell: true` login route. All styling lives on the
+`.auth-*` concept classes in `globals.css` — see the Authentication index in `design-tokens-and-classes.md`.
+
+### 8.1 Page (`<LoginPage />`)
+- **Path:** `src/features/auth/pages/LoginPage.tsx`
+- **State:** `mode: 'login' | 'welcome-back'` derived from `?mode=` (`AUTH_MODE_OPTIONS` in `types.ts`, labels in `shared/json/auth.json`).
+- **Renders:** toast (`.auth-toast`), terms modal (`.auth-terms-scrim`), `<AuthModeSwitch />`, `<AuthHeroPanel />`, and either `<DefaultLoginCard />` or `<WelcomeBackCard />`.
+
+### 8.2 Mode Switcher (`<AuthModeSwitch />`)
+- **Path:** `src/features/auth/components/AuthModeSwitch.tsx`
+- **Props:** `mode: AuthMode`, `onChange: (mode: AuthMode) => void`
+- **Features:** One pill for desktop **and** mobile — `lg:` breakpoints plus short/long labels from `auth.json` pick label and size. Active color comes from the `ACTIVE_CLASS` record, not a branch.
+
+### 8.3 Social Button (`<AuthSocialButton />`)
+- **Path:** `src/features/auth/components/AuthSocialButton.tsx`
+- **Props:** `provider: 'google' | 'facebook'`, `label`, `onClick?`, `disabled?`
+- **Features:** `.auth-social-google` / `.auth-social-facebook` surface and the official brand mark come from the single `PROVIDERS` record (raw SVG allowed only for brand logos).
+
+### 8.4 Cards & Hero
+- `<DefaultLoginCard />` — email/password form on `.auth-field` / `.auth-input-wrap`, remember-me, gold submit.
+- `<WelcomeBackCard />` — avatar (`.auth-avatar`), user name/badge, stats bar (`.auth-stats-bar`), returning CTA.
+- `<AuthHeroPanel />` — split-screen right pane: brand seal, orbit stage (`.auth-orbit-ring-outer` + `.animate-orbit-slow`), hero title/text, trust row, hero stats.

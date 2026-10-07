@@ -9,6 +9,7 @@ This skill is the **definitive operational guide and standard** for building hig
 
 > 📖 **Per-page workflow (8 steps):** read `references/page-loading-caching-guide.md` before touching any page.
 > 📖 **Routes and URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) owns the route table, redirects, tabs, and query params.
+> 📖 **Styling & concept classes:** [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md) owns tokens, the class catalog, and the repeated-class-string rule (§3.7).
 
 ---
 
@@ -81,6 +82,7 @@ Pages **must never** render `<DesktopNavbar>`, `<MobileHeader>`, `<MobileBottomB
 - `router.tsx` wraps page-change state updates in `document.startViewTransition` and sets `html[data-vt-enabled='true']` so CSS disables the `.animate-page-enter` fallback (no double animation).
 - Themed `::view-transition-old(root)` / `::view-transition-new(root)` animations live in `src/styles/globals.css`.
 - **Never add new JS animation libs** for page transitions — the CSS + View Transitions API is the standard.
+- **Entrance fades use the concept class** `.animate-fade-in` (defined in `globals.css`) for modals, toasts, and data sections that mount after a cache hit. Check `references/design-tokens-and-classes.md` → *Animations* before typing an `animate-*` string — undefined classes render nothing.
 
 ### Smart Scroll Restoration (router.tsx)
 - Cross-page navigation → smooth scroll to `(0, 0)`.

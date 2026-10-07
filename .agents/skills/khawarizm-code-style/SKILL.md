@@ -1,6 +1,6 @@
 ---
 name: khawarizm-code-style
-description: Code style and code quality standard for Khawarizm Academy frontend. Use whenever writing, reviewing, or refactoring any TypeScript or TSX file. Covers short one-line comments, no clever code, no if/else chains, data-driven lookups instead of branching, static data in JSON, and no duplication between desktop and mobile.
+description: Code style and code quality standard for Khawarizm Academy frontend. Use whenever writing, reviewing, or refactoring any TypeScript or TSX file. Covers short one-line comments, no clever code, no if/else chains, data-driven lookups instead of branching, static data in JSON, no duplication between desktop and mobile, and extracting repeated class strings into CSS concept classes.
 ---
 
 # Khawarizm Academy — Code Style & Quality Standard
@@ -105,6 +105,7 @@ Every list, label, record, and config map goes in a JSON file under `frontend/sr
 
 ```
 src/shared/json/
+├── auth.json                    # login mode options (short/long labels per surface)
 ├── catalog.json                 # page titles, sort options, filter groups
 ├── dashboardNav.json            # dashboard sidebar items
 ├── dashboardNotifications.json  # notification type -> payload
@@ -164,6 +165,8 @@ const navLinks = [
 **Before writing a literal, ask:** does this value already exist in a config or a helper? Then import it, do not retype it.
 
 **Applies to:** paths, Arabic labels, icon choices, filter options, sort options, footer links, status labels, mock records, and CSS class strings for the same kind of element.
+
+**Class strings are values too.** The same utility run written twice for the same kind of element is duplicated data — extract it into a concept class in `src/styles/globals.css` and use the short name in JSX. Declare it in `@layer components` so JSX utilities can still override it; check the class actually exists (a typo like `animate-spin-very-slow` renders nothing). Full rule: `khawarizm-frontend` §3.7.
 
 ---
 
@@ -257,6 +260,7 @@ Run through this before finishing any change:
 - [ ] No clever line that needs a comment to decode.
 - [ ] New static data is in `src/shared/json/`, not inline in a component.
 - [ ] Any literal I typed already exists somewhere in config → import it instead.
+- [ ] A class string I caught myself repeating is a concept class in `globals.css`, not retyped.
 - [ ] Desktop and mobile share one component.
 - [ ] Casts live at the JSON boundary, not inside components.
 - [ ] JSON booleans are real booleans.

@@ -93,18 +93,18 @@ export const CatalogFilterSidebar: React.FC<FilterSidebarProps> = ({
   onReset
 }) => {
   return (
-    <aside className="w-72 p-6 bg-[#061A3A]/90 backdrop-blur-md rounded-xl border border-[#1B3F80] flex flex-col gap-6">
+    <aside className="w-72 p-6 bg-navy-900/90 backdrop-blur-md rounded-xl border border-navy-600 flex flex-col gap-6">
       {/* Header */}
-      <div className="flex-between pb-3 border-b border-[#1B3F80]/50">
-        <h4 className="text-white text-base font-bold font-['IBM_Plex_Sans_Arabic']">تصفية النتائج</h4>
-        <button onClick={onReset} className="text-[#E5B65C] hover:underline text-xs font-medium font-['Tajawal']">
+      <div className="flex-between pb-3 border-b border-navy-600/50">
+        <h4 className="text-white text-base font-bold font-display">تصفية النتائج</h4>
+        <button onClick={onReset} className="text-gold-400 hover:underline text-xs font-medium font-body">
           إعادة ضبط
         </button>
       </div>
 
       {/* Domain Category */}
       <div className="flex flex-col gap-3">
-        <label className="text-white text-sm font-bold font-['IBM_Plex_Sans_Arabic']">المجال</label>
+        <label className="text-white text-sm font-bold font-display">المجال</label>
         <div className="flex flex-wrap gap-2">
           {DOMAINS.map(domain => {
             const isActive = activeDomain === domain;
@@ -152,8 +152,8 @@ export const CatalogPage: React.FC = () => {
     <div className="page-wrapper">
       {/* 1. Atmospheric Celestial Glows */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[5%] right-[5%] w-[600px] h-[600px] rounded-full bg-[#29A9FF]/[0.04] blur-[140px]" />
-        <div className="absolute top-[35%] left-[5%] w-[550px] h-[550px] rounded-full bg-[#E5B65C]/[0.03] blur-[130px]" />
+        <div className="absolute top-[5%] right-[5%] w-[600px] h-[600px] rounded-full bg-blue-400/[0.04] blur-[140px]" />
+        <div className="absolute top-[35%] left-[5%] w-[550px] h-[550px] rounded-full bg-gold-400/[0.03] blur-[130px]" />
       </div>
 
       {/* 2. Top Navbars */}
@@ -168,10 +168,10 @@ export const CatalogPage: React.FC = () => {
       <main className="content-container">
         {/* Hero Section */}
         <section className="w-full flex flex-col items-center text-center gap-3 pt-6 pb-2 animate-fade-in-up animation-delay-100">
-          <h1 className="text-3xl md:text-4xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
+          <h1 className="text-3xl md:text-4xl font-bold text-white font-display">
             دليل المعرفة والمنح الدولية
           </h1>
-          <p className="max-w-2xl text-slate-400 text-sm md:text-base font-['Tajawal']">
+          <p className="max-w-2xl text-slate-400 text-sm md:text-base font-body">
             البوابة الموحدة لاستكشاف أرقى الفرص التعليمية والمسارات الأكاديمية والمنح الممولة حول العالم.
           </p>
           
@@ -189,7 +189,7 @@ export const CatalogPage: React.FC = () => {
           {/* Left / Main Results Pane */}
           <div className="flex-1 w-full flex flex-col gap-6">
             {/* Toolbar Row */}
-            <div className="w-full flex-between pb-2 border-b border-[#1B3F80]/40 text-sm text-[#8299B5]">
+            <div className="w-full flex-between pb-2 border-b border-navy-600/40 text-sm text-slate-400">
               <span>تم العثور على {mockCourses.length + mockScholarships.length} نتيجة</span>
               <div className="flex items-center gap-2">
                 <span>ترتيب حسب:</span>

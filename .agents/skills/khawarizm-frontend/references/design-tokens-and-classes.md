@@ -126,6 +126,11 @@ Non-utility CSS variables live in a `:root` block in the same file (consumed via
 
 ## 3. Comprehensive CSS Class Index
 
+> **Cascade rule:** classes declared **unlayered** (`.btn-gold`, `.glass-panel`, …) beat
+> Tailwind's `@layer utilities`, so JSX utilities cannot override them. New concept classes
+> go inside `@layer components` instead — there, JSX utilities win. `@apply` accepts only
+> real utilities: it fails on `.flex-center` and `group`.
+
 ### Layout Primitives
 - `.page-wrapper`: Root container with `bg-[#040F24]`, `text-[#DCE5EE]`, selection styling.
 - `.content-container`: Main content wrapper (`max-w-[1280px]`, responsive padding, flex column).
@@ -171,3 +176,26 @@ Non-utility CSS variables live in a `:root` block in the same file (consumed via
   - `scrollbar-width: none !important;`
   - `-ms-overflow-style: none !important;`
   - `::-webkit-scrollbar { display: none !important; width: 0 !important; }`
+
+### Authentication (`.auth-*`, in `@layer components`)
+Full-screen login / welcome-back chamber (`features/auth/`). Declared in `@layer components`
+so JSX utilities can override them — see §3.7 of the skill for the cascade rule.
+
+- **Shells:** `.auth-shell` (centered full-screen), `.auth-split-screen` (desktop frame), `.auth-chamber` (form side), `.auth-mobile` (single-column side).
+- **Toast & terms modal:** `.auth-toast`, `.auth-toast-dot`, `.auth-terms-scrim` (`var(--color-overlay-scrim)`), `.auth-terms-panel`, `.auth-terms-title`, `.auth-terms-body`, `.auth-terms-actions`.
+- **Top bar & mode switcher:** `.auth-top-bar`, `.auth-back-link`, `.auth-mode-switch`, `.auth-mode-option`, `.auth-mode-option-login`, `.auth-mode-option-returning`.
+- **Card:** `.auth-card-slot`, `.auth-body`, `.auth-card` (`var(--shadow-elev-2)`), `.auth-card-head`, `.auth-card-title`, `.auth-card-subtitle`.
+- **Social buttons:** `.auth-social-stack`, `.auth-social-btn`, `.auth-social-google`, `.auth-social-facebook`.
+- **Divider:** `.auth-divider`, `.auth-divider-line`, `.auth-divider-label`.
+- **Form:** `.auth-form`, `.auth-field`, `.auth-label`, `.auth-input-wrap` (+ `-error`), `.auth-input-icon`, `.auth-input`, `.auth-error`.
+- **Links & legal:** `.auth-link-slot`, `.auth-link-gold`, `.auth-link-muted`, `.auth-legal`, `.auth-legal-text`, `.auth-legal-link`.
+- **Welcome-back stats:** `.auth-avatar`, `.auth-avatar-inner`, `.auth-avatar-img`, `.auth-avatar-fallback`, `.auth-user-name`, `.auth-user-badge`, `.auth-stats-bar`, `.auth-stat`, `.auth-stat-value`, `.auth-stat-label`, `.auth-stat-divider`.
+- **Mobile header:** `.auth-mobile-brand`, `.auth-mobile-heading`, `.auth-mobile-title`, `.auth-mobile-subtitle`.
+- **Hero panel:** `.auth-hero`, `.auth-glow-gold`, `.auth-glow-cyan`, `.auth-glow-mobile`, `.auth-brand`, `.auth-brand-name`, `.auth-brand-tag`, `.auth-orbit-stage`, `.auth-orbit-canvas`, `.auth-orbit-ring-outer` (add `.animate-orbit-slow` in JSX), `.auth-orbit-ring-inner`, `.auth-orbit-line`, `.auth-orbit-core`, `.auth-orbit-core-glow`, `.auth-orbit-core-star`, `.auth-hero-foot`, `.auth-hero-group`, `.auth-hero-title`, `.auth-hero-text`, `.auth-trust`, `.auth-trust-text`, `.auth-hero-stats`.
+
+### Animations
+- `.animate-fade-in` — generic opacity fade (modals, toasts, view swaps). **Was used in 15+ files while undefined; now defined in `globals.css`.**
+- `.animate-fade-in-up` / `.animate-fade-in-down` — entrance slides (+ `animation-delay-*` helpers).
+- `.animate-page-enter` — page-level entrance (220ms, `--transition-page-ease`).
+- `.animate-orbit-slow` / `.animate-counter-orbit-slow` — rotating rings (`AstrolabeLoader`, brand seal, hero orbit). There is **no** `animate-spin-very-slow`.
+- `.animate-shimmer`, `.animate-celestial-pulse`, `.animate-radar-ping`, `.animate-dropdown-in` / `.animate-dropdown-out` — skeletons, pulses, dropdowns.

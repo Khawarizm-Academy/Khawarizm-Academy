@@ -73,6 +73,9 @@ This skill is the **authoritative, self-contained operational workflow** for add
 | **Astrolabe Spinner Loader** | `<AstrolabeLoader message="جاري تجهيز البيانات..." />` |
 | **Starfield Particles** | `<CelestialCanvas className="absolute inset-0 pointer-events-none opacity-60" />` |
 | **Horizontal Swipe Row** | `<div className="horizontal-scroll-row">...</div>` |
+| **A class string you have typed twice** | Extract it into a concept class in `globals.css` (`@layer components`) — see below. |
+
+**Class-extraction rule:** when the same utility run repeats for the same kind of element, it is a missing concept class, not styling. Add it to `src/styles/globals.css` **inside `@layer components`** (so JSX utilities can still override it), use `var(--shadow-elev-2)` / `var(--color-overlay-scrim)` / `var(--shadow-glow-gold)` instead of literals, and keep `group` in the JSX (`@apply` cannot target it). Full rule: `khawarizm-frontend` §3.7.
 
 ---
 
@@ -272,7 +275,7 @@ Add the target and the tab row to `src/shared/json/shellNav.json`, register the 
 Follow the **Observatory Design Grammar**:
 1. **Glassmorphism:** Use `.glass-panel` (`bg-[#061A3A]/40 backdrop-blur-md border border-[#1B3F80]/40`).
 2. **Cards:** Wrap custom cards with `.card-interactive-blue` or `.card-interactive-gold`.
-3. **Elevation & Glows:** Apply `shadow-[0_8px_24px_rgba(0,0,0,0.35)]` and subtle color glows on active elements (`shadow-[0_0_15px_rgba(229,182,92,0.4)]`).
+3. **Elevation & Glows:** use the variables, not literals — `box-shadow: var(--shadow-elev-2)` for cards/panels and `var(--shadow-glow-gold)` / `var(--shadow-glow-blue)` for active glows (these live in `:root`, so there is no `shadow-elev-2` utility). A raw `shadow-[0_8px_24px_rgba(0,0,0,0.35)]` is a token waiting to happen.
 4. **Interactive press states:** Buttons must have `active:scale-[0.98]` and smooth transitions (`transition-all duration-200`).
 5. **Mobile safe area:** Always ensure mobile views have adequate bottom clearance (`pb-28` or `pb-[max(env(safe-area-inset-bottom),16px)]`).
 
@@ -292,6 +295,7 @@ npm run lint
 **Quality Checklist:**
 - [ ] `npm run build` exits with code 0 (zero TypeScript errors).
 - [ ] `npm run lint` exits with code 0 (zero warnings, no unused variables).
+- [ ] No class string repeated across components — repetitions live as concept classes in `globals.css`.
 - [ ] Desktop viewport (1280px) renders without layout overflow.
 - [ ] Mobile viewport (390px) renders with readable fonts and >= 44px tap targets.
 - [ ] All inputs have proper RTL layout (icon on right, text aligned right).
@@ -317,10 +321,10 @@ export const MyFeaturePage: React.FC = () => {
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#1B3F80]/50 pb-6">
         <div>
           <span className="badge-gold mb-2 inline-block">مسار معتمد</span>
-          <h1 className="text-3xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
+          <h1 className="text-3xl font-bold text-white font-display">
             عنوان الميزة أو الصفحة
           </h1>
-          <p className="text-sm text-[#8299B5] font-['Tajawal',sans-serif] mt-1">
+          <p className="text-sm text-slate-400 font-body mt-1">
             وصف تفصيلي يشرح هدف الصفحة والخيارات المتاحة للطلاب.
           </p>
         </div>
@@ -341,10 +345,10 @@ export const MyFeaturePage: React.FC = () => {
         <aside className="flex flex-col gap-6">
           {/* Sidebar / Quick Stats */}
           <div className="glass-panel rounded-2xl p-6 flex flex-col gap-4">
-            <h3 className="text-lg font-bold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic']">
+            <h3 className="text-lg font-bold text-gold-400 font-display">
               معلومات إضافية
             </h3>
-            <p className="text-sm text-[#8299B5] font-['Tajawal',sans-serif]">
+            <p className="text-sm text-slate-400 font-body">
               تفاصيل جانبية مكملة للمحتوى الرئيسي.
             </p>
           </div>
@@ -362,6 +366,9 @@ export const MyFeaturePage: React.FC = () => {
 | Pitfall | Problem | Solution |
 | :--- | :--- | :--- |
 | **Raw utility button soup** | Inconsistent button padding, font, and active states | Always use `.btn-gold`, `.btn-outline-blue`, or `.btn-pill-subtle`. |
+| **Retyped utility runs** | The same 8-class string pasted in two files, drifting apart | Extract it into a `.concept-class` in `globals.css` (`@layer components`) and use the short name. |
+| **New concept class in the wrong layer** | Class declared unlayered beats every utility, so JSX overrides silently do nothing | Declare new classes in `@layer components`; only legacy classes (`.btn-gold`) are unlayered on purpose. |
+| **`@apply` on a custom class** | Build fails — `@apply` accepts only real Tailwind utilities | Write raw utilities inside the class; keep `group` markers in the JSX `className`. |
 | **Losing icon position in RTL** | Putting `<input>` first and `<icon>` second places the icon on the far left | In RTL flex, the first child is on the RIGHT. Put the icon first, `<input>` second. |
 | **`dir="ltr"` on Arabic email input** | Causes placeholder and cursor to jump to the left edge | Use `text-right` and `dir="auto"` on the input. |
 | **Duplicating shell in page view** | Rendering `<DesktopNavbar>` inside a page causes duplicate headers | Never render headers/footers in page views; let `RootLayout` manage the frame. |

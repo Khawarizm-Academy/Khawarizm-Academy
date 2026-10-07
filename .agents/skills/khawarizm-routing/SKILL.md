@@ -265,6 +265,8 @@ const navItem = getDashboardNavItem(view);   // null for views outside the sideb
 
 **Modes are not aliases.** `?view=live` and `?state=empty` are modes, not navigation targets, so they stay explicit booleans in `DashboardPage` (`isLive`, `isEmpty`) rather than becoming aliases.
 
+**A mode the URL must survive is a query param.** `/login?mode=welcome-back` reopens the returning-user card: `LoginPage` reads `mode` at render, writes it back via `setSearchParams({ mode })`, and `AuthModeSwitch` only calls the setter. Shareable view state belongs in the URL, not in `useState` alone.
+
 ---
 
 ## 10. Debugging a URL — A Checklist
@@ -316,6 +318,7 @@ console.log(hit?.route.path, hit?.params, resolveActiveTab(pathname, search), hi
 5. **`*` goes last** and renders `NotFoundPage`, never `null`.
 6. **Never branch on a route or view.** `resolveActiveTab`, `findRoute`, `getDashboardNavItem`.
 7. **Verify every URL you touch** — route, redirect, active tab, skeleton variant, params.
+8. **Shareable view state lives in the query** — `?mode=welcome-back`, `?type=courses` — derived at render, never kept only in `useState`.
 
 ---
 

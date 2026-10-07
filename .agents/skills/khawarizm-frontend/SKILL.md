@@ -1,6 +1,6 @@
 ---
 name: khawarizm-frontend
-description: Master design, engineering, and architecture playbook for Khawarizm Academy frontend. Use whenever creating, styling, refactoring, or extending pages, features, UI components, animations, or state in Khawarizm Academy. Covers the observatory celestial design system, directory placement matrix, anti-duplication rules, component reuse, Tailwind v4 @apply semantic classes, RTL localization, and page creation blueprints.
+description: Master design, engineering, and architecture playbook for Khawarizm Academy frontend. Use whenever creating, styling, refactoring, or extending pages, features, UI components, animations, or state in Khawarizm Academy. Covers the observatory celestial design system, directory placement matrix, anti-duplication rules, component reuse, Tailwind v4 @apply semantic classes, extracting repeated class strings into concept classes, RTL localization, and page creation blueprints.
 ---
 
 # Khawarizm Academy — Master Frontend Engineering & Design Skill
@@ -87,6 +87,22 @@ Always follow this exact mapping when creating or moving files:
 - Main content: `.content-container`.
 - Global footer: `<Footer />`.
 
+### 3.6 Authentication (Login & Welcome-Back)
+- **Page:** `<LoginPage />` (`features/auth/pages/LoginPage.tsx`, `hideShell: true`).
+- **Mode pill (demo switcher):** `<AuthModeSwitch mode={mode} onChange={setMode} />` — one component for desktop and mobile; `lg:` breakpoints and short/long labels pick the size. Never render two copies.
+- **Social providers:** `<AuthSocialButton provider="google" | "facebook" label={…} />` — one `PROVIDERS` record holds surface class + brand mark, so there is no provider if-chain.
+- **Cards & hero:** `<DefaultLoginCard />`, `<WelcomeBackCard />`, `<AuthHeroPanel />`.
+- **Styling:** every auth element sits on an `.auth-*` concept class (`.auth-shell`, `.auth-split-screen`, `.auth-chamber`, `.auth-card`, `.auth-field`, `.auth-hero`, `.auth-mode-switch`, `.auth-terms-scrim`, …). JSX only layers one-off utilities on top — never a 10-class string.
+
+### 3.7 Repeated Class Strings → Concept Class
+**The same run of utilities twice for the same kind of element is a missing concept class, not styling.** Extract it into `src/styles/globals.css` and use the short name in JSX.
+
+1. **Declare new concept classes inside `@layer components`.** Tailwind utilities live in `@layer utilities`, so a utility in JSX still wins over the class. An **unlayered** class (`.btn-gold`, `.link-action-blue`) beats every utility — leave a class unlayered only when JSX must never override it.
+2. **Use the CSS variables, not literals:** `var(--shadow-elev-2)`, `var(--shadow-elev-1)`, `var(--shadow-glow-gold)`, `var(--shadow-glow-blue)`, `var(--color-overlay-scrim)`. Elevation, scrim, and glow then stay editable in one place (`tokens.css`).
+3. **`@apply` accepts real Tailwind utilities only.** It fails on plain custom classes (`.flex-center`) and marker classes (`group`) — write raw utilities inside the class and keep `group` in the JSX `className`.
+4. **No ad-hoc hex or arbitrary fonts:** use token utilities (`bg-navy-950`, `text-gold-400`, `border-navy-600`, `text-slate-400`, `bg-success-500`, `text-danger-500`) and `font-display` / `font-body` instead of `font-['IBM_Plex_Sans_Arabic']` / `font-['Tajawal',sans-serif]`.
+5. **Check the class exists.** Dead classes render nothing: `.animate-fade-in` is now defined (it was used in 15+ files while missing), and `animate-spin-very-slow` never existed — use `.animate-orbit-slow`.
+
 > 📖 **Full Catalog & Prop APIs:** Read `references/component-catalog.md`.
 
 ---
@@ -96,9 +112,9 @@ Always follow this exact mapping when creating or moving files:
 Whenever asked to create any new page:
 1. **Analyze Design:** Identify what can be reused directly from the Component Catalog (usually 80%+ of the page!).
 2. **Setup Types & Localization:** Keep internal state in English; register display labels in `localization.ts`.
-3. **Assemble Subcomponents:** Build any unique feature sidebar or toolbar using existing concept classes.
+3. **Assemble Subcomponents:** Build any unique feature sidebar or toolbar using existing concept classes — and if you catch yourself repeating the same utility run, extract it into a concept class (`khawarizm-frontend` §3.7).
 4. **Compose Page Shell:** Use the standard 5-layer layout template (Atmosphere → Top Nav → Content Container → Bottom Nav → Footer).
-5. **Verify:** Run `npm run build` inside `frontend/` to confirm zero TypeScript and CSS errors.
+5. **Verify:** Run `npm run build` and `npx eslint src` inside `frontend/` to confirm zero TypeScript, CSS, and lint errors.
 
 > 📖 **Full Page Blueprint & Catalog Walkthrough:** Read `references/page-creation-blueprint.md`.
 
