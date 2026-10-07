@@ -166,7 +166,7 @@ const navLinks = [
 
 **Applies to:** paths, Arabic labels, icon choices, filter options, sort options, footer links, status labels, mock records, and CSS class strings for the same kind of element.
 
-**Class strings are values too.** The same utility run written twice for the same kind of element is duplicated data — extract it into a concept class in `src/styles/globals.css` and use the short name in JSX. Declare it in `@layer components` so JSX utilities can still override it; check the class actually exists (a typo like `animate-spin-very-slow` renders nothing). Full rule: `khawarizm-frontend` §3.7.
+**Class strings are values too.** The same utility run written twice for the same kind of element is duplicated data — extract it into a concept class and use the short name in JSX. Placement follows the 2+ features rule: **`src/features/<feature>/<feature>.css`** for one-feature classes, **`src/styles/globals.css`** for shared ones (it imports every feature CSS). Declare it in `@layer components` so JSX utilities can still override it; check the class actually exists (a typo like `animate-spin-very-slow` renders nothing). Full rule: `khawarizm-frontend` §3.7.
 
 ---
 
@@ -260,7 +260,7 @@ Run through this before finishing any change:
 - [ ] No clever line that needs a comment to decode.
 - [ ] New static data is in `src/shared/json/`, not inline in a component.
 - [ ] Any literal I typed already exists somewhere in config → import it instead.
-- [ ] A class string I caught myself repeating is a concept class in `globals.css`, not retyped.
+- [ ] A class string I caught myself repeating is a concept class in the owning CSS file, not retyped.
 - [ ] Desktop and mobile share one component.
 - [ ] Casts live at the JSON boundary, not inside components.
 - [ ] JSON booleans are real booleans.

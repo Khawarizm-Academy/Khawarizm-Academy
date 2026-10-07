@@ -15,7 +15,7 @@ Five skills. Read the one that matches what you are doing.
 1. **Static data goes in `src/shared/json/`.** A `.ts` next to it may only add types or hydrate icon names.
 2. **No `if` / `else` chains.** Every branch is a field in the config. `resolveActiveTab`, `findRoute`, `getDashboardNavItem` all exist so nothing needs to branch.
 3. **One value, written once.** Paths come from `NAV_TARGETS`, Arabic labels from `localization.json`, nav tabs from `shellNav.json`.
-4. **A class string you repeat is a missing concept class.** Extract it into `src/styles/globals.css` inside `@layer components` (so JSX utilities can still override it), use `var(--shadow-elev-2)` / `var(--color-overlay-scrim)` / `var(--shadow-glow-gold)` instead of literals, and check the class actually exists.
+4. **A class string you repeat is a missing concept class.** Extract it into the owning CSS file — `src/features/<feature>/<feature>.css` (e.g. `auth.css`) for one-feature classes, `src/styles/globals.css` for shared ones — inside `@layer components` (so JSX utilities can still override it), use `var(--shadow-elev-2)` / `var(--color-overlay-scrim)` / `var(--shadow-glow-gold)` instead of literals, and check the class actually exists.
 
 ## Before you finish
 

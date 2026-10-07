@@ -23,7 +23,7 @@ The Khawarizm Academy platform is built on two core educational pillars sharing 
 
 ### 1.2 Core Technology Stack
 - **Framework:** React 19 + TypeScript (Strict mode) + Vite.
-- **Styling Engine:** Tailwind CSS v4 (`@import "tailwindcss"`) augmented with `@import "./tokens.css"` and concept-oriented `@apply` classes in `src/styles/globals.css`.
+- **Styling Engine:** Tailwind CSS v4 (`@import "tailwindcss"`) augmented with `@import "./tokens.css"` and concept-oriented `@apply` classes in `src/styles/globals.css`, which also imports per-feature CSS files (e.g. `src/features/auth/auth.css`).
 - **Localization Engine:** English domain keys internally + `toArabic(category, key)` / `toArabicNav(key)` in `src/shared/lib/localization.ts`.
 - **Master Branding:** Official logo `src/assets/brand/source/KhawarizmLogo.jpg`. Run `npm run brand:generate` to regenerate all app icons and favicons.
 
@@ -42,9 +42,10 @@ Always follow this exact mapping when creating or moving files:
 | **Feature View Types** | `src/features/<feature>/` | `types.ts` (e.g. `CatalogTab`, `FilterDomain`) |
 | **Shared Hook** | `src/shared/hooks/` | `use<Name>.ts` (e.g. `useHorizontalScroll.ts`) |
 | **Feature Hook** | `src/features/<feature>/hooks/` | `use<FeatureHook>.ts` |
+| **Feature Styles (one feature only)** | `src/features/<feature>/` | `<feature>.css` (e.g. `auth.css`) — imported by `src/styles/globals.css` |
 | **Static Data (any kind)** | `src/shared/json/` | `<name>.json` (e.g. `routes.json`, `catalog.json`, `mockDashboard.json`) |
 | **Shared Utility / Helpers** | `src/shared/lib/` | `<name>.ts` (e.g. `localization.ts`, `navigation.ts`) |
-| **Styles & Tokens** | `src/styles/` | `tokens.css` (variables), `globals.css` (utilities) |
+| **Shared Styles & Tokens (2+ features)** | `src/styles/` | `tokens.css` (variables), `globals.css` (shared concept classes; imports every feature `*.css`) |
 | **Routes & Root App** | `src/app/` | `router.tsx`, `routes.tsx`, `App.tsx` |
 
 > 📖 **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — route table, redirects, tabs, query params.
@@ -92,10 +93,15 @@ Always follow this exact mapping when creating or moving files:
 - **Mode pill (demo switcher):** `<AuthModeSwitch mode={mode} onChange={setMode} />` — one component for desktop and mobile; `lg:` breakpoints and short/long labels pick the size. Never render two copies.
 - **Social providers:** `<AuthSocialButton provider="google" | "facebook" label={…} />` — one `PROVIDERS` record holds surface class + brand mark, so there is no provider if-chain.
 - **Cards & hero:** `<DefaultLoginCard />`, `<WelcomeBackCard />`, `<AuthHeroPanel />`.
-- **Styling:** every auth element sits on an `.auth-*` concept class (`.auth-shell`, `.auth-split-screen`, `.auth-chamber`, `.auth-card`, `.auth-field`, `.auth-hero`, `.auth-mode-switch`, `.auth-terms-scrim`, …). JSX only layers one-off utilities on top — never a 10-class string.
+- **Styling:** every auth element sits on an `.auth-*` concept class (`.auth-shell`, `.auth-split-screen`, `.auth-chamber`, `.auth-card`, `.auth-field`, `.auth-hero`, `.auth-mode-switch`, `.auth-terms-scrim`, …), all declared in **`src/features/auth/auth.css`** and imported by `globals.css`. JSX only layers one-off utilities on top — never a 10-class string.
 
 ### 3.7 Repeated Class Strings → Concept Class
-**The same run of utilities twice for the same kind of element is a missing concept class, not styling.** Extract it into `src/styles/globals.css` and use the short name in JSX.
+**The same run of utilities twice for the same kind of element is a missing concept class, not styling.** Extract it and use the short name in JSX.
+
+**Where it goes — the same placement rule as components (2+ features → shared):**
+- **Used by one feature only** → that feature's own CSS file: `src/features/<feature>/<feature>.css` (e.g. `features/auth/auth.css`). Feature-owned, edited next to the components that use it.
+- **Used by 2+ features** → `src/styles/globals.css`.
+- Every feature CSS is `@import`ed at the top of `globals.css` (`index.css → globals.css → features/*/*.css`), so there is still **one stylesheet entry point** — never import a feature CSS from a `.tsx`.
 
 1. **Declare new concept classes inside `@layer components`.** Tailwind utilities live in `@layer utilities`, so a utility in JSX still wins over the class. An **unlayered** class (`.btn-gold`, `.link-action-blue`) beats every utility — leave a class unlayered only when JSX must never override it.
 2. **Use the CSS variables, not literals:** `var(--shadow-elev-2)`, `var(--shadow-elev-1)`, `var(--shadow-glow-gold)`, `var(--shadow-glow-blue)`, `var(--color-overlay-scrim)`. Elevation, scrim, and glow then stay editable in one place (`tokens.css`).

@@ -27,7 +27,8 @@ This skill is the **authoritative, self-contained operational workflow** for add
 │                      KHAWARIZM PAGE CREATION PROTOCOL                            │
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │ 1. Ingest Design (Figma Code + Reference PNGs + docs/SCREEN_MAP.md)              │
-│ 2. Audit Reuse (Check src/shared/components/ & globals.css concept classes)      │
+│ 2. Audit Reuse (src/shared/components/ & concept classes in globals.css /        │
+│    the feature's own <feature>.css)                                              │
 │ 3. Setup File Structure (src/features/<feature>/pages, components, types.ts)     │
 │ 4. Define Types & RTL Localization (English internal keys + Arabic dictionary)   │
 │ 5. Choose Shell Mode (Standard Shell vs hideShell: true in RouteMeta)            │
@@ -73,9 +74,9 @@ This skill is the **authoritative, self-contained operational workflow** for add
 | **Astrolabe Spinner Loader** | `<AstrolabeLoader message="جاري تجهيز البيانات..." />` |
 | **Starfield Particles** | `<CelestialCanvas className="absolute inset-0 pointer-events-none opacity-60" />` |
 | **Horizontal Swipe Row** | `<div className="horizontal-scroll-row">...</div>` |
-| **A class string you have typed twice** | Extract it into a concept class in `globals.css` (`@layer components`) — see below. |
+| **A class string you have typed twice** | Extract it into the owning CSS file (`@layer components`) — see below. |
 
-**Class-extraction rule:** when the same utility run repeats for the same kind of element, it is a missing concept class, not styling. Add it to `src/styles/globals.css` **inside `@layer components`** (so JSX utilities can still override it), use `var(--shadow-elev-2)` / `var(--color-overlay-scrim)` / `var(--shadow-glow-gold)` instead of literals, and keep `group` in the JSX (`@apply` cannot target it). Full rule: `khawarizm-frontend` §3.7.
+**Class-extraction rule:** when the same utility run repeats for the same kind of element, it is a missing concept class, not styling. Put it in the owning CSS file — **`src/features/<feature>/<feature>.css`** when only that feature uses it, **`src/styles/globals.css`** when 2+ features do (globals imports every feature CSS, so there is one entry point) — **inside `@layer components`** so JSX utilities can still override it. Use `var(--shadow-elev-2)` / `var(--color-overlay-scrim)` / `var(--shadow-glow-gold)` instead of literals, and keep `group` in the JSX (`@apply` cannot target it). Full rule: `khawarizm-frontend` §3.7.
 
 ---
 
@@ -92,6 +93,8 @@ frontend/src/features/<feature>/
 ├── types.ts                  # Feature view state & prop types
 ├── hooks/                    # (Optional) Feature query or filter hook
 │   └── use<Feature>.ts
+├── <feature>.css             # (Optional) Concept classes used only by this feature,
+│                             #   imported by src/styles/globals.css (never by a .tsx)
 └── data/                     # (Optional) Feature mock data
     └── mock<Feature>Data.ts
 ```
@@ -295,7 +298,7 @@ npm run lint
 **Quality Checklist:**
 - [ ] `npm run build` exits with code 0 (zero TypeScript errors).
 - [ ] `npm run lint` exits with code 0 (zero warnings, no unused variables).
-- [ ] No class string repeated across components — repetitions live as concept classes in `globals.css`.
+- [ ] No class string repeated across components — repetitions live as concept classes in the owning CSS file.
 - [ ] Desktop viewport (1280px) renders without layout overflow.
 - [ ] Mobile viewport (390px) renders with readable fonts and >= 44px tap targets.
 - [ ] All inputs have proper RTL layout (icon on right, text aligned right).
@@ -366,7 +369,8 @@ export const MyFeaturePage: React.FC = () => {
 | Pitfall | Problem | Solution |
 | :--- | :--- | :--- |
 | **Raw utility button soup** | Inconsistent button padding, font, and active states | Always use `.btn-gold`, `.btn-outline-blue`, or `.btn-pill-subtle`. |
-| **Retyped utility runs** | The same 8-class string pasted in two files, drifting apart | Extract it into a `.concept-class` in `globals.css` (`@layer components`) and use the short name. |
+| **Retyped utility runs** | The same 8-class string pasted in two files, drifting apart | Extract it into a `.concept-class` in the owning CSS file (`@layer components`) and use the short name. |
+| **Feature classes dumped in `globals.css`** | The shared stylesheet bloats; every feature edit touches the same file | Feature-scoped classes go in `src/features/<feature>/<feature>.css` (e.g. `auth.css`); `globals.css` imports it and keeps only classes shared by 2+ features. |
 | **New concept class in the wrong layer** | Class declared unlayered beats every utility, so JSX overrides silently do nothing | Declare new classes in `@layer components`; only legacy classes (`.btn-gold`) are unlayered on purpose. |
 | **`@apply` on a custom class** | Build fails — `@apply` accepts only real Tailwind utilities | Write raw utilities inside the class; keep `group` markers in the JSX `className`. |
 | **Losing icon position in RTL** | Putting `<input>` first and `<icon>` second places the icon on the far left | In RTL flex, the first child is on the RIGHT. Put the icon first, `<input>` second. |

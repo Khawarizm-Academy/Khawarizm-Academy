@@ -256,7 +256,8 @@ import { SmartSearchBox } from '@/shared/components/Search/SmartSearchBox';
 ## 8. Authentication (`src/features/auth/`)
 
 Feature-scoped components for the `hideShell: true` login route. All styling lives on the
-`.auth-*` concept classes in `globals.css` — see the Authentication index in `design-tokens-and-classes.md`.
+`.auth-*` concept classes in **`src/features/auth/auth.css`** (imported by `globals.css`) —
+see the Authentication index in `design-tokens-and-classes.md`.
 
 ### 8.1 Page (`<LoginPage />`)
 - **Path:** `src/features/auth/pages/LoginPage.tsx`

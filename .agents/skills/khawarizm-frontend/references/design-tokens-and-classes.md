@@ -1,6 +1,8 @@
 # Khawarizm Academy — Design Tokens & CSS Classes Reference
 
-This reference provides a comprehensive lookup of all design tokens, gradients, CSS variables, and concept-oriented classes defined in `src/styles/globals.css` and `tokens.css`.
+This reference provides a comprehensive lookup of all design tokens, gradients, CSS variables, and concept-oriented classes defined in `src/styles/tokens.css`, `src/styles/globals.css`, and the per-feature CSS files.
+
+**Where a class lives:** `tokens.css` (variables) → `globals.css` (classes shared by 2+ features) → `src/features/<feature>/<feature>.css` (classes used by one feature, e.g. `features/auth/auth.css`). Every feature CSS is `@import`ed at the top of `globals.css`, so the app still loads one stylesheet — never import a feature CSS from a `.tsx`.
 
 ---
 
@@ -177,8 +179,9 @@ Non-utility CSS variables live in a `:root` block in the same file (consumed via
   - `-ms-overflow-style: none !important;`
   - `::-webkit-scrollbar { display: none !important; width: 0 !important; }`
 
-### Authentication (`.auth-*`, in `@layer components`)
-Full-screen login / welcome-back chamber (`features/auth/`). Declared in `@layer components`
+### Authentication (`.auth-*`, in `features/auth/auth.css`)
+Full-screen login / welcome-back chamber (`features/auth/`). The feature owns
+`src/features/auth/auth.css`, which `globals.css` imports. Declared in `@layer components`
 so JSX utilities can override them — see §3.7 of the skill for the cascade rule.
 
 - **Shells:** `.auth-shell` (centered full-screen), `.auth-split-screen` (desktop frame), `.auth-chamber` (form side), `.auth-mobile` (single-column side).
