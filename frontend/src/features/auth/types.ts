@@ -1,3 +1,5 @@
+import authJson from '../../shared/json/auth.json';
+
 export type AuthMode = 'login' | 'welcome-back';
 
 export interface ReturningUserData {
@@ -8,6 +10,15 @@ export interface ReturningUserData {
   activeCoursesCount: number;
   savedScholarshipsCount: number;
 }
+
+interface AuthModeOption {
+  key: AuthMode;
+  shortLabel: string;
+  longLabel: string;
+}
+
+/** Demo-mode pills; short label below lg, long label on the desktop split screen. */
+export const AUTH_MODE_OPTIONS = authJson.modeOptions as AuthModeOption[];
 
 export const DEFAULT_RETURNING_USER: ReturningUserData = {
   id: 'usr-ahmed-alghamdi',

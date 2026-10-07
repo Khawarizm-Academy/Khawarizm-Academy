@@ -41,21 +41,21 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
   const isDesktop = variant === 'desktop';
 
   return (
-    <div className="w-full bg-[#061A3A] rounded-2xl p-6 sm:p-9 border border-[#1B3F80] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.3)] flex flex-col justify-start items-stretch gap-6 sm:gap-7 transition-all duration-300">
-      {/* 1. Welcome Header */}
-      <div className="flex flex-col items-end text-right gap-1.5">
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-100 font-['IBM_Plex_Sans_Arabic']">
+    <div className="auth-card items-stretch gap-6 sm:gap-7">
+      {/* Welcome Header */}
+      <div className="auth-card-head">
+        <h2 className="auth-card-title">
           {isDesktop ? 'مرحبًا بك في خوارزم' : 'مرحبًا بك'}
         </h2>
-        <p className="text-xs sm:text-sm text-[#8299B5] font-['Tajawal',sans-serif]">
+        <p className="auth-card-subtitle">
           {isDesktop
             ? 'سجّل دخولك لمتابعة رحلة تعلّمك الرقمية'
             : 'سجّل دخولك للمتابعة والوصول للدروس'}
         </p>
       </div>
 
-      {/* 2. Social OAuth Buttons */}
-      <div className="flex flex-col gap-3">
+      {/* Social OAuth Buttons */}
+      <div className="auth-social-stack">
         <AuthSocialButton
           provider="google"
           label="المتابعة مع Google"
@@ -68,38 +68,28 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
         />
       </div>
 
-      {/* 3. Divider Row */}
-      <div className="flex items-center gap-3 select-none" aria-hidden="true">
-        <div className="flex-1 h-[1px] bg-[#1B3F80]" />
-        <span className="text-xs text-[#8299B5] font-medium font-['Tajawal',sans-serif] px-1">
-          أو
-        </span>
-        <div className="flex-1 h-[1px] bg-[#1B3F80]" />
+      {/* Divider Row */}
+      <div className="auth-divider" aria-hidden="true">
+        <div className="auth-divider-line" />
+        <span className="auth-divider-label">أو</span>
+        <div className="auth-divider-line" />
       </div>
 
-      {/* 4. Credentials Form */}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="auth-email"
-            className="text-xs font-bold text-slate-100 font-['IBM_Plex_Sans_Arabic'] text-right"
-          >
+      {/* Credentials Form */}
+      <form onSubmit={handleSubmit} className="auth-form">
+        <div className="auth-field">
+          <label htmlFor="auth-email" className="auth-label">
             البريد الإلكتروني
           </label>
           <div
-            className={`w-full h-12 px-4 bg-[#040F24] rounded-lg border ${
-              error
-                ? 'border-[#D9534F] ring-1 ring-[#D9534F]'
-                : 'border-[#1B3F80] focus-within:border-[#29A9FF] focus-within:ring-1 focus-within:ring-[#29A9FF]'
-            } flex items-center gap-3 transition-all duration-200 cursor-text`}
+            className={`auth-input-wrap ${error ? 'auth-input-wrap-error' : ''}`}
             onClick={() => document.getElementById('auth-email')?.focus()}
           >
-            {/* Mail Icon positioned at the right edge (start of input in RTL) */}
-            <div className="text-[#8299B5] shrink-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+            {/* Mail icon sits at the start edge (right) in RTL */}
+            <div className="auth-input-icon" aria-hidden="true">
               <Mail size={18} />
             </div>
 
-            {/* Email Input Field with clean right-alignment matching the label and icon */}
             <input
               id="auth-email"
               type="email"
@@ -110,37 +100,33 @@ export const DefaultLoginCard: React.FC<DefaultLoginCardProps> = ({
                 if (error) setError(null);
               }}
               placeholder="username@example.com"
-              className="flex-1 w-full bg-transparent text-sm text-slate-100 placeholder-[#5C7291] outline-none font-['Tajawal',sans-serif] text-right"
+              className="auth-input"
               autoComplete="email"
             />
           </div>
-          {error && (
-            <p className="text-xs text-[#D9534F] font-['Tajawal',sans-serif] text-right mt-0.5">
-              {error}
-            </p>
-          )}
+          {error && <p className="auth-error">{error}</p>}
         </div>
 
         {/* Primary CTA Submit */}
         <button
           type="submit"
           disabled={isLoading}
-          className="btn-gold w-full h-12 rounded-lg text-base font-bold font-['IBM_Plex_Sans_Arabic'] flex-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+          className="btn-gold w-full h-12 text-base disabled:opacity-50"
         >
           {isLoading ? (
-            <span className="inline-block w-5 h-5 border-2 border-[#040F24] border-t-transparent rounded-full animate-spin" />
+            <span className="inline-block w-5 h-5 border-2 border-navy-950 border-t-transparent rounded-full animate-spin" />
           ) : (
             <span>متابعة</span>
           )}
         </button>
 
-        {/* Demo Switch Option: Returning User Preview */}
+        {/* Returning-user quick preview */}
         {onSwitchToReturningUser && (
-          <div className="pt-1 flex-center">
+          <div className="auth-link-slot">
             <button
               type="button"
               onClick={onSwitchToReturningUser}
-              className="text-xs text-[#E5B65C] hover:text-white hover:underline transition-colors font-['Tajawal',sans-serif] cursor-pointer inline-flex items-center gap-1.5"
+              className="auth-link-gold"
             >
               <span>تسجيل دخول سريع لطالب مسجل مسبقاً (أحمد الغامدي)</span>
               <span>←</span>

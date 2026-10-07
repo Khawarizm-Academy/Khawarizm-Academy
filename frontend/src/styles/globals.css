@@ -249,6 +249,379 @@
 }
 
 /* ==========================================================================
+   Authentication — Login & Welcome-Back Chamber
+   Declared in @layer components so JSX utilities can still override them.
+   ========================================================================== */
+@layer components {
+  /* --- Full-screen shells --- */
+  .auth-shell {
+    @apply min-h-screen w-full bg-navy-950 flex items-center justify-center relative overflow-hidden select-text;
+  }
+
+  .auth-split-screen {
+    @apply hidden lg:flex w-full max-w-[1280px] h-[800px] bg-navy-950 rounded-2xl border border-navy-600 overflow-hidden flex-row-reverse relative z-10 m-6;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .auth-chamber {
+    @apply flex-1 h-full px-12 xl:px-16 py-10 border-l border-navy-600 flex flex-col justify-between items-center bg-navy-950/90 relative;
+  }
+
+  .auth-mobile {
+    @apply flex lg:hidden min-h-screen w-full flex-col justify-between items-center px-4 py-8 relative z-10;
+  }
+
+  /* --- Toast & terms modal --- */
+  .auth-toast {
+    @apply fixed top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl bg-navy-800 border border-blue-400 text-slate-100 text-sm font-bold flex items-center gap-2;
+    box-shadow: var(--shadow-elev-2);
+  }
+
+  .auth-toast-dot {
+    @apply w-2 h-2 rounded-full bg-success-500 animate-pulse;
+  }
+
+  .auth-terms-scrim {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md;
+    background: var(--color-overlay-scrim);
+  }
+
+  .auth-terms-panel {
+    @apply w-full max-w-lg bg-navy-900 border border-navy-600 rounded-2xl p-6 sm:p-8 flex flex-col gap-4 text-right;
+    box-shadow: var(--shadow-elev-2);
+  }
+
+  .auth-terms-title {
+    @apply text-xl font-bold text-gold-400 font-display;
+  }
+
+  .auth-terms-body {
+    @apply text-sm text-slate-400 font-body leading-relaxed space-y-3 max-h-64 overflow-y-auto pl-2;
+  }
+
+  .auth-terms-actions {
+    @apply pt-2 flex justify-end;
+  }
+
+  /* --- Top bars: back link + demo mode switcher --- */
+  .auth-top-bar {
+    @apply w-full flex items-center justify-between;
+  }
+
+  .auth-back-link {
+    @apply inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-gold-400 transition-colors font-body cursor-pointer;
+  }
+
+  .auth-mode-switch {
+    @apply inline-flex items-center p-0.5 rounded-full bg-navy-900 border border-navy-600/60 text-[11px] font-body;
+  }
+
+  .auth-mode-option {
+    @apply px-2.5 py-0.5 lg:px-3 lg:py-1 rounded-full transition-all cursor-pointer text-slate-400 hover:text-slate-100;
+  }
+
+  .auth-mode-option-login {
+    @apply bg-blue-500 text-white font-bold shadow-sm hover:text-white;
+  }
+
+  .auth-mode-option-returning {
+    @apply bg-gold-400 text-navy-950 font-bold shadow-sm hover:text-navy-950;
+  }
+
+  /* --- Card chamber --- */
+  .auth-card-slot {
+    @apply w-full max-w-[440px] py-4;
+  }
+
+  .auth-body {
+    @apply w-full max-w-md flex flex-col gap-6;
+  }
+
+  .auth-card {
+    @apply w-full bg-navy-900 rounded-2xl p-6 sm:p-9 border border-navy-600 flex flex-col justify-start transition-all duration-300;
+    box-shadow: var(--shadow-elev-2);
+  }
+
+  .auth-card-head {
+    @apply flex flex-col items-end text-right gap-1.5;
+  }
+
+  .auth-card-title {
+    @apply text-2xl sm:text-3xl font-bold text-slate-100 font-display;
+  }
+
+  .auth-card-subtitle {
+    @apply text-xs sm:text-sm text-slate-400 font-body;
+  }
+
+  /* --- Social provider buttons --- */
+  .auth-social-stack {
+    @apply w-full flex flex-col gap-3;
+  }
+
+  .auth-social-btn {
+    @apply w-full h-12 px-4 py-3 rounded-lg text-sm font-bold font-display inline-flex justify-center items-center gap-3 transition-all duration-200 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none;
+  }
+
+  .auth-social-google {
+    @apply bg-white hover:bg-slate-100 active:scale-[0.99] border border-slate-200 text-slate-900 focus:ring-2 focus:ring-gold-400;
+  }
+
+  .auth-social-facebook {
+    @apply bg-[#1877F2] hover:bg-[#166fe5] active:scale-[0.99] text-white focus:ring-2 focus:ring-blue-400;
+  }
+
+  /* --- Form: divider, field, input, states --- */
+  .auth-divider {
+    @apply flex items-center gap-3 select-none;
+  }
+
+  .auth-divider-line {
+    @apply flex-1 h-px bg-navy-600;
+  }
+
+  .auth-divider-label {
+    @apply text-xs text-slate-400 font-medium font-body px-1;
+  }
+
+  .auth-form {
+    @apply flex flex-col gap-5;
+  }
+
+  .auth-field {
+    @apply flex flex-col gap-2;
+  }
+
+  .auth-label {
+    @apply text-xs font-bold text-slate-100 font-display text-right;
+  }
+
+  .auth-input-wrap {
+    @apply w-full h-12 px-4 bg-navy-950 rounded-lg border border-navy-600 flex items-center gap-3 transition-all duration-200 cursor-text;
+  }
+
+  .auth-input-wrap:focus-within {
+    @apply border-blue-400 ring-1 ring-blue-400;
+  }
+
+  .auth-input-wrap.auth-input-wrap-error {
+    @apply border-danger-500 ring-1 ring-danger-500;
+  }
+
+  .auth-input-icon {
+    @apply text-slate-400 shrink-0 flex items-center justify-center pointer-events-none;
+  }
+
+  .auth-input {
+    @apply flex-1 w-full bg-transparent text-sm text-slate-100 font-body text-right outline-none;
+  }
+
+  .auth-input::placeholder {
+    color: var(--color-slate-600);
+  }
+
+  .auth-error {
+    @apply text-xs text-danger-500 font-body text-right mt-0.5;
+  }
+
+  /* --- Card foot links & legal text --- */
+  .auth-link-slot {
+    @apply pt-1 flex items-center justify-center;
+  }
+
+  .auth-link-gold {
+    @apply text-xs text-gold-400 hover:text-white hover:underline transition-colors font-body cursor-pointer inline-flex items-center gap-1.5;
+  }
+
+  .auth-link-muted {
+    @apply text-sm font-medium text-slate-400 hover:text-slate-100 hover:underline transition-colors font-body cursor-pointer;
+  }
+
+  .auth-legal {
+    @apply w-full text-center;
+  }
+
+  .auth-legal-text {
+    @apply text-xs text-slate-400 font-body leading-5;
+  }
+
+  .auth-legal-link {
+    @apply text-gold-400 underline hover:text-white cursor-pointer;
+  }
+
+  /* --- Returning-user identity --- */
+  .auth-avatar {
+    @apply relative w-20 h-20 rounded-full p-0.5 bg-gradient-to-tr from-gold-600 via-gold-400 to-gold-200 flex items-center justify-center;
+    box-shadow: 0 0 18px rgba(229, 182, 92, 0.6);
+  }
+
+  .auth-avatar-inner {
+    @apply w-full h-full rounded-full bg-navy-800 overflow-hidden flex items-center justify-center border border-gold-400/60;
+  }
+
+  .auth-avatar-img {
+    @apply w-full h-full object-cover;
+  }
+
+  .auth-avatar-fallback {
+    @apply w-full h-full bg-navy-900 flex items-center justify-center text-xl font-bold text-gold-400;
+  }
+
+  .auth-user-name {
+    @apply text-2xl font-bold text-slate-100 font-display;
+  }
+
+  .auth-user-badge {
+    @apply px-2.5 py-0.5 rounded bg-gold-400/15 border border-gold-400/30 inline-flex items-center text-gold-400 text-xs font-bold font-body;
+  }
+
+  /* --- Stats cells (mobile bar + hero row) --- */
+  .auth-stats-bar {
+    @apply w-full py-2.5 px-4 rounded-xl bg-navy-950/80 border border-navy-600/50 flex items-center justify-around select-none;
+  }
+
+  .auth-stat {
+    @apply flex flex-col;
+  }
+
+  .auth-stat-value {
+    @apply font-bold font-display;
+  }
+
+  .auth-stat-label {
+    @apply text-slate-400 font-body;
+  }
+
+  .auth-stat-divider {
+    @apply w-px bg-navy-600;
+  }
+
+  /* --- Mobile brand header --- */
+  .auth-mobile-brand {
+    @apply w-full max-w-md flex flex-col items-center gap-3 mb-6 select-none;
+  }
+
+  .auth-mobile-heading {
+    @apply flex flex-col items-center text-center gap-0.5;
+  }
+
+  .auth-mobile-title {
+    @apply text-xl font-bold text-gold-400 font-display;
+  }
+
+  .auth-mobile-subtitle {
+    @apply text-xs text-slate-400 font-body;
+  }
+
+  /* --- Illuminated brand ring (hero header + mobile header) --- */
+  .brand-seal {
+    @apply relative w-16 h-16 rounded-full p-0.5 bg-gradient-to-br from-gold-400 via-navy-800 to-gold-600 flex items-center justify-center cursor-pointer;
+    box-shadow: var(--shadow-glow-gold);
+  }
+
+  .brand-seal-inner {
+    @apply w-full h-full rounded-full bg-navy-900 overflow-hidden flex items-center justify-center border border-gold-400/50;
+  }
+
+  .brand-seal-inner img {
+    @apply w-full h-full object-cover;
+  }
+
+  /* --- Hero panel --- */
+  .auth-hero {
+    @apply relative w-full h-full p-10 lg:p-16 bg-gradient-to-br from-navy-900/80 via-navy-900/90 to-navy-950/95 flex flex-col justify-between items-end overflow-hidden select-none;
+  }
+
+  .auth-glow-gold {
+    @apply absolute top-[80px] left-[100px] w-[500px] h-[500px] rounded-full pointer-events-none opacity-40 blur-[100px];
+    background: radial-gradient(circle, rgba(229, 182, 92, 0.3) 0%, rgba(229, 182, 92, 0) 70%);
+  }
+
+  .auth-glow-cyan {
+    @apply absolute top-[200px] -left-[60px] w-[600px] h-[600px] rounded-full pointer-events-none opacity-30 blur-[120px];
+    background: radial-gradient(circle, rgba(41, 169, 255, 0.25) 0%, rgba(41, 169, 255, 0) 70%);
+  }
+
+  .auth-glow-mobile {
+    @apply absolute -left-20 top-0 w-80 h-80 rounded-full pointer-events-none opacity-30 blur-3xl;
+    background: radial-gradient(circle, rgba(229, 182, 92, 0.35) 0%, rgba(229, 182, 92, 0) 70%);
+  }
+
+  .auth-brand {
+    @apply relative z-10 inline-flex items-center gap-4 transition-transform duration-300 hover:scale-[1.02] cursor-pointer;
+  }
+
+  .auth-brand-name {
+    @apply text-2xl font-bold text-gold-400 font-display group-hover:text-white transition-colors;
+  }
+
+  .auth-brand-tag {
+    @apply text-xs text-slate-400 tracking-wider font-body;
+  }
+
+  .auth-orbit-stage {
+    @apply relative z-10 w-full py-8 flex flex-col items-center justify-center;
+  }
+
+  .auth-orbit-canvas {
+    @apply relative w-72 sm:w-80 h-72 sm:h-80 flex items-center justify-center;
+  }
+
+  .auth-orbit-ring-outer {
+    @apply absolute inset-0 rounded-full border border-gold-400/25 pointer-events-none;
+  }
+
+  .auth-orbit-ring-inner {
+    @apply absolute inset-8 sm:inset-10 rounded-full border border-blue-400/30 pointer-events-none;
+  }
+
+  .auth-orbit-line {
+    @apply absolute w-full h-0 border-t border-navy-600/40 pointer-events-none;
+  }
+
+  .auth-orbit-core {
+    @apply relative z-20 w-14 h-14 rounded-full flex items-center justify-center;
+  }
+
+  .auth-orbit-core-glow {
+    @apply absolute inset-0 rounded-full bg-gold-400 opacity-40 blur-md animate-pulse;
+  }
+
+  .auth-orbit-core-star {
+    @apply relative w-7 h-7 rounded-full bg-gradient-to-tr from-gold-600 to-gold-400;
+    box-shadow: 0 0 24px var(--color-gold-400);
+  }
+
+  .auth-hero-foot {
+    @apply relative z-10 w-full flex flex-col items-end gap-6 text-right;
+  }
+
+  .auth-hero-group {
+    @apply flex flex-col items-end gap-3 max-w-xl;
+  }
+
+  .auth-hero-title {
+    @apply font-bold text-slate-100 leading-tight font-display;
+  }
+
+  .auth-hero-text {
+    @apply text-slate-400 leading-relaxed font-body;
+  }
+
+  .auth-trust {
+    @apply inline-flex items-center gap-2 pt-2;
+  }
+
+  .auth-trust-text {
+    @apply text-xs text-slate-400 font-body;
+  }
+
+  .auth-hero-stats {
+    @apply inline-flex items-center gap-8 pt-2;
+  }
+}
+
+/* ==========================================================================
    Search Controls
    ========================================================================= */
 .search-form-desktop {
@@ -544,6 +917,20 @@
 
 .animate-fade-in-down {
   animation: fadeInDown 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Simple opacity fade for toasts, modals, and instant state swaps */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animation-delay-100 { animation-delay: 100ms; }
