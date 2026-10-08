@@ -370,9 +370,9 @@ export const MyFeaturePage: React.FC = () => {
 | :--- | :--- | :--- |
 | **Raw utility button soup** | Inconsistent button padding, font, and active states | Always use `.btn-gold`, `.btn-outline-blue`, or `.btn-pill-subtle`. |
 | **Retyped utility runs** | The same 8-class string pasted in two files, drifting apart | Extract it into a `.concept-class` in the owning CSS file (`@layer components`) and use the short name. |
-| **Feature classes dumped in `globals.css`** | The shared stylesheet bloats; every feature edit touches the same file | Feature-scoped classes go in `src/features/<feature>/<feature>.css` (e.g. `auth.css`); `globals.css` imports it and keeps only classes shared by 2+ features. |
+| **Feature classes dumped in `globals.css`** | The shared stylesheet bloats; every feature edit touches the same file | Feature-scoped classes go in `src/features/<feature>/<feature>.css` (e.g. `auth.css`, `catalog.css`, `dashboard.css`); `globals.css` imports it and keeps only classes shared by 2+ features. |
 | **New concept class in the wrong layer** | Class declared unlayered beats every utility, so JSX overrides silently do nothing | Declare new classes in `@layer components`; only legacy classes (`.btn-gold`) are unlayered on purpose. |
-| **`@apply` on a custom class** | Build fails — `@apply` accepts only real Tailwind utilities | Write raw utilities inside the class; keep `group` markers in the JSX `className`. |
+| **`@apply` on a custom class** | Build fails — `@apply` accepts only real Tailwind utilities | Write raw utilities inside the class; keep `group` markers and plain global helpers (`animate-fade-in-*`, `animation-delay-*`) in the JSX `className`. |
 | **Losing icon position in RTL** | Putting `<input>` first and `<icon>` second places the icon on the far left | In RTL flex, the first child is on the RIGHT. Put the icon first, `<input>` second. |
 | **`dir="ltr"` on Arabic email input** | Causes placeholder and cursor to jump to the left edge | Use `text-right` and `dir="auto"` on the input. |
 | **Duplicating shell in page view** | Rendering `<DesktopNavbar>` inside a page causes duplicate headers | Never render headers/footers in page views; let `RootLayout` manage the frame. |

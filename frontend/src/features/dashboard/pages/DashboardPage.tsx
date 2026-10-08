@@ -29,10 +29,12 @@ import { getDashboardNavItem, resolveIcon } from '../../../shared/lib/navigation
 import dashboardViewsJson from '../../../shared/json/dashboardViews.json';
 import notificationJson from '../../../shared/json/dashboardNotifications.json';
 
-const LIVE_COURSE = dashboardViewsJson.liveCourseTitle;
-
+const LIVE_COURSE = dashboardViewsJson.liveCard.courseTitle;
 const FULL_PAGE_VIEWS = dashboardViewsJson.fullPageViews;
 const SINGLE_COLUMN_VIEWS = dashboardViewsJson.singleColumnViews;
+
+/** Mock unread badge shared by every bell in the dashboard chrome. */
+const UNREAD_COUNT = 5;
 
 interface ViewChip {
   icon: LucideIcon;
@@ -65,6 +67,24 @@ const VIEW_HEADERS: Record<string, ViewHeader> = Object.fromEntries(
   ])
 );
 
+/** Mobile top-bar title: rounded avatar + heading, shared by the dedicated views. */
+const MobileTitle = ({
+  label,
+  avatar,
+  avatarClassName = '',
+  labelClassName = '',
+}: {
+  label: string;
+  avatar: React.ReactNode;
+  avatarClassName?: string;
+  labelClassName?: string;
+}) => (
+  <div className="dash-mtop-title">
+    <div className={`dash-avatar shadow-sm ${avatarClassName}`}>{avatar}</div>
+    <span className={`dash-mtop-label ${labelClassName}`}>{label}</span>
+  </div>
+);
+
 export const DashboardPage: React.FC = () => {
   const { search } = useLocation();
   const navigate = useNavigate();
@@ -78,7 +98,7 @@ export const DashboardPage: React.FC = () => {
   const isLive = stateParam === 'live' || viewParam === 'live';
   const isEmpty = stateParam === 'empty' || viewParam === 'empty';
 
-  // In-Dashboard Self-Contained Modal Chambers state
+  // In-dashboard self-contained modal chambers.
   const [activeWorkspaceCourse, setActiveWorkspaceCourse] = useState<string | null>(null);
   const [isLiveClassroomOpen, setIsLiveClassroomOpen] = useState(false);
   const [selectedScholarship, setSelectedScholarship] = useState<SavedScholarshipItem | null>(null);
@@ -109,16 +129,12 @@ export const DashboardPage: React.FC = () => {
     onClick: openChip(chip),
   }));
 
-  // Course rows for main / live views (Tier 2: real async load via cache)
-  const { data: coursesData, isLoading: isLoadingCourses } = useCachedData<EnrolledCourse[]>(['dashboard', 'courses-list'], fetchEnrolledCourses, { initialData: [] });
-
-  const enrolledCourses = coursesData.map((c) => ({
-    id: c.id,
-    title: c.title,
-    category: c.track,
-    progressPercent: c.progress,
-    iconType: (c.id.includes('uiux') ? 'uiux' : c.id.includes('python') ? 'python' : 'ai') as 'uiux' | 'python' | 'ai',
-  }));
+  // Course rows for main / live views (Tier 2: real async load via cache).
+  const { data: coursesData, isLoading: isLoadingCourses } = useCachedData<EnrolledCourse[]>(
+    ['dashboard', 'courses-list'],
+    fetchEnrolledCourses,
+    { initialData: [] }
+  );
 
   // Every notification opens the chamber its type points to.
   const notificationActions: Record<NotificationItemData['type'], () => void> = {
@@ -129,39 +145,32 @@ export const DashboardPage: React.FC = () => {
     exam: () => setActiveWorkspaceCourse(notificationJson.exam.title),
   };
 
-  const handleNotificationAction = (notif: NotificationItemData) => {
+  const handleNotificationAction = (notif: NotificationItemData) =>
     notificationActions[notif.type]();
-  };
 
   return (
-    <div
-      dir="rtl"
-      className="w-full min-h-screen bg-slate-900 flex justify-start items-start text-slate-100 selection:bg-sky-500/20 selection:text-sky-300 relative overflow-x-hidden"
-    >
-      {/* Ambient background glows matching Figma — strictly contained in an overflow-hidden layer to prevent expanding page scroll height */}
+    <div dir="rtl" className="dash-page">
+      {/* Ambient Figma glows, trapped in an overflow-hidden layer */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
-        <div className="size-[600px] -left-[200px] top-[400px] absolute bg-radial from-sky-400/5 to-transparent" />
-        <div className="size-[600px] left-[800px] top-[800px] absolute bg-radial from-[#E5B65C]/5 to-transparent" />
+        <div className="size-[600px] -left-[200px] top-[400px] absolute bg-radial from-blue-400/5 to-transparent" />
+        <div className="size-[600px] left-[800px] top-[800px] absolute bg-radial from-gold-400/5 to-transparent" />
       </div>
 
       {/* Sidebar first, so RTL puts it on the far right */}
       <DesktopDashboardSidebar
         currentView={currentView}
         onSelectView={handleSelectView}
-        unreadNotificationsCount={5}
+        unreadNotificationsCount={UNREAD_COUNT}
       />
 
       {/* Main body, second child in RTL so it fills the left */}
-      <div
-
-        className="flex-1 min-w-0 flex flex-col justify-start items-start relative z-10"
-      >
-        {/* Top-Bar matching Figma desktop (Search on right, Nav links on left) */}
+      <div className="dash-main">
+        {/* Top-bar matching Figma desktop (search on right, nav links on left) */}
         <DashboardTopBar />
 
-        {/* Inner Padding Container */}
-        <div className="w-full max-w-[1280px] px-4 sm:px-6 md:px-10 lg:px-14 pt-4 md:pt-8 pb-24 lg:pb-8 flex flex-col gap-6 md:gap-8">
-          {/* Stats & Greeting Header */}
+        {/* Inner padding container */}
+        <div className="dash-container">
+          {/* Stats & greeting header */}
           {!isEmpty && !FULL_PAGE_VIEWS.includes(currentView) && (
             <div className="animate-fade-in-up">
               <DashboardStatsHeader
@@ -169,37 +178,32 @@ export const DashboardPage: React.FC = () => {
                 subtitle={header.subtitle}
                 chips={statChips}
                 studentName="أحمد"
-                unreadNotificationsCount={5}
+                unreadNotificationsCount={UNREAD_COUNT}
                 onNotificationsClick={() => handleSelectView('notifications')}
                 onAvatarClick={() => handleSelectView('profile')}
               />
             </div>
           )}
 
-          {/* Empty State View */}
+          {/* Empty state view */}
           {isEmpty && (
             <>
               <MobileDashboardTopBar
                 title={
-                  <div className="flex items-center gap-2.5">
-                    <div className="size-9 rounded-full bg-[#061A3A] border border-blue-900 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                      <User size={18} className="text-sky-400" />
-                    </div>
-                    <span className="text-slate-200 text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
-                      مرحبًا، سارة
-                    </span>
-                  </div>
+                  <MobileTitle
+                    label="مرحبًا، سارة"
+                    avatar={<User size={18} className="text-blue-400" />}
+                  />
                 }
                 onNotificationsClick={() => handleSelectView('notifications')}
               />
-
               <div className="w-full py-2 md:py-6 animate-fade-in-up animation-delay-100">
                 <EmptyDashboardState userName="سارة" />
               </div>
             </>
           )}
 
-          {/* Notifications View */}
+          {/* Notifications view */}
           {currentView === 'notifications' && (
             <div className="w-full max-w-4xl mx-auto py-2 animate-fade-in-up">
               <NotificationsView
@@ -209,50 +213,39 @@ export const DashboardPage: React.FC = () => {
             </div>
           )}
 
-          {/* Profile View (حسابي) */}
+          {/* Profile view (حسابي) */}
           {currentView === 'profile' && (
             <>
               <MobileDashboardTopBar
                 title={
-                  <div className="flex items-center gap-2.5">
-                    <div className="size-8.5 rounded-full bg-[#061A3A] border border-[#E5B65C] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                      <span className="text-[#E5B65C] text-xs font-bold font-['IBM_Plex_Sans_Arabic']">أق</span>
-                    </div>
-                    <span className="text-white text-base font-bold font-['IBM_Plex_Sans_Arabic']">
-                      الملف الشخصي
-                    </span>
-                  </div>
+                  <MobileTitle
+                    label="الملف الشخصي"
+                    avatar={<span className="text-gold-400 text-xs font-bold font-display">أق</span>}
+                    avatarClassName="size-8.5 border-gold-400"
+                    labelClassName="text-white text-base"
+                  />
                 }
                 onNotificationsClick={() => handleSelectView('notifications')}
               />
-
               <div className="w-full flex flex-col gap-6 py-1 md:py-2 animate-fade-in-up animation-delay-100">
-                <DashboardSubNavigation
-                  activeView="profile"
-                  onSelectView={handleSelectView}
-                />
+                <DashboardSubNavigation activeView="profile" onSelectView={handleSelectView} />
                 <ProfileView />
               </div>
             </>
           )}
 
-          {/* Enrolled Courses Dedicated View (الدورات المسجّلة) */}
+          {/* Enrolled courses dedicated view (الدورات المسجّلة) */}
           {currentView === 'enrolled' && !isEmpty && (
             <>
               <MobileDashboardTopBar
                 title={
-                  <div className="flex items-center gap-2.5">
-                    <div className="size-9 rounded-full bg-[#061A3A] border border-blue-900 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                      <BookOpen size={18} className="text-sky-400" />
-                    </div>
-                    <span className="text-slate-200 text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
-                      الدورات المسجّلة
-                    </span>
-                  </div>
+                  <MobileTitle
+                    label="الدورات المسجّلة"
+                    avatar={<BookOpen size={18} className="text-blue-400" />}
+                  />
                 }
                 onNotificationsClick={() => handleSelectView('notifications')}
               />
-
               <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
                 <EnrolledCoursesView
                   onSelectView={handleSelectView}
@@ -272,91 +265,57 @@ export const DashboardPage: React.FC = () => {
             </>
           )}
 
-          {/* Two-Column Grid for Main, Live, Saved, Achievements views */}
+          {/* Two-column grid for main, live, saved, achievements views */}
           {!isEmpty && !SINGLE_COLUMN_VIEWS.includes(currentView) && (
-            <div
-
-              className="self-stretch flex flex-col lg:flex-row justify-start items-start gap-8 w-full animate-fade-in-up animation-delay-100"
-            >
-              {/* Primary Column (Center, flex-1) */}
-              <div
-
-                className="flex-1 min-w-0 w-full flex flex-col justify-start items-start gap-8 order-1"
-              >
-                {/* 1. Main / Live View */}
+            <div className="dash-grid animate-fade-in-up animation-delay-100">
+              {/* Primary column (center) */}
+              <div className="dash-grid-main">
+                {/* Main / live view */}
                 {currentView === 'main' && (
                   <>
-                    {/* Sub-Navigation Strip */}
+                    {/* Sub-navigation strip */}
                     <DashboardSubNavigation
                       activeView={currentView}
                       onSelectView={handleSelectView}
                     />
 
-                    {/* Hero Card: Live session or Priority continue */}
+                    {/* Hero card: live session or priority continue */}
                     {isLive ? (
                       <LiveSessionPriorityCard
-                        courseTitle="برمجة بايثون للمبتدئين"
-                        instructorName="م. خالد الشمري"
-                        sessionDescription="شاشة المباشرة والأسئلة تفاعلية"
-                        initialMinutes={14}
-                        initialSeconds={3}
                         onJoinSession={() => setIsLiveClassroomOpen(true)}
                       />
                     ) : (
                       <PriorityContinueCard
-                        courseId="course-ai"
-                        courseTitle="أساسيات الذكاء الاصطناعي وتعلم الآلة"
-                        courseTrack="المستوى المتوسط • 8 أسابيع • بإشراف نخبة من المختصين"
-                        currentLesson={4}
-                        totalLessons={10}
-                        completionPercentage={40}
-                        tagLabel="موصى به لليوم"
-                        onContinue={() => setActiveWorkspaceCourse('أساسيات الذكاء الاصطناعي وتعلم الآلة')}
+                        onContinue={() =>
+                          setActiveWorkspaceCourse('أساسيات الذكاء الاصطناعي وتعلم الآلة')
+                        }
                       />
                     )}
 
-                    {/* Courses Section */}
-                    <div
-
-                      className="self-stretch flex flex-col justify-start items-start gap-4 w-full"
-                    >
-                      <div
-
-                        className="self-stretch flex justify-between items-center w-full"
-                      >
-                        <h2
-
-                          className="text-slate-200 text-lg md:text-xl font-bold font-['IBM_Plex_Sans_Arabic'] leading-6"
-                        >
+                    {/* Courses section */}
+                    <div className="dash-section">
+                      <div className="dash-section-head">
+                        <h2 className="dash-view-title">
                           {isLive ? 'بقية دوراتك لليوم' : 'دوراتي الحالية'}
                         </h2>
-
                         <button
                           type="button"
                           onClick={() => handleSelectView('enrolled')}
-
-                          className="text-sky-400 hover:text-sky-300 text-sm md:text-base font-bold font-['Tajawal'] leading-6 transition-colors cursor-pointer"
+                          className="dash-section-link"
                         >
                           عرض الكل
                         </button>
                       </div>
 
-                      {/* Courses List */}
-                      <div
-
-                        className="self-stretch flex flex-col justify-start items-start gap-3 w-full"
-                      >
+                      {/* Courses list */}
+                      <div className="dash-list">
                         {isLoadingCourses ? (
                           <DataSectionSkeleton variant="list" count={3} />
                         ) : (
-                          enrolledCourses.map((course) => (
+                          coursesData.map((course) => (
                             <EnrolledCourseRow
                               key={course.id}
-                              id={course.id}
-                              title={course.title}
-                              category={course.category}
-                              progressPercent={course.progressPercent}
-                              iconType={course.iconType}
+                              course={course}
                               onContinue={() => setActiveWorkspaceCourse(course.title)}
                             />
                           ))
@@ -366,7 +325,7 @@ export const DashboardPage: React.FC = () => {
                   </>
                 )}
 
-                {/* 2. Saved Scholarships & Favorites View */}
+                {/* Saved scholarships & favorites view */}
                 {currentView === 'saved' && (
                   <SavedScholarshipsView
                     onSelectScholarship={(sch) => setSelectedScholarship(sch)}
@@ -374,7 +333,7 @@ export const DashboardPage: React.FC = () => {
                   />
                 )}
 
-                {/* 3. Competitions & Certificates View */}
+                {/* Competitions & certificates view */}
                 {currentView === 'achievements' && (
                   <CompetitionsCertificatesView
                     onOpenArena={(comp) => setSelectedCompetition(comp)}
@@ -383,8 +342,8 @@ export const DashboardPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Sidebar-Widgets Column (Left side in RTL desktop, 384px width) */}
-              <div className="order-2 w-full lg:w-auto">
+              {/* Sidebar widgets column (left side in RTL desktop) */}
+              <div className="dash-grid-aside">
                 <DashboardStatsSidebar />
               </div>
             </div>

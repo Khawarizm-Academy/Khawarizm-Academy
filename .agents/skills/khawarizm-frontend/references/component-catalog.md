@@ -310,3 +310,38 @@ see the Catalog index in `design-tokens-and-classes.md`.
 - `<CatalogToolbar />` — count chip (`.catalog-toolbar-count`), mobile filter trigger + sort dropdown (`.catalog-chip-btn`, `.catalog-sort-menu`); sort labels come from `shared/json/catalog.json`.
 - `<CatalogPagination />` — `.catalog-page-nav` arrows + `.catalog-page` numbers (`.catalog-page-active` / `.catalog-page-idle`).
 - `<CatalogGridSkeleton />` — Tier 2 skeleton that reuses `.catalog-grid`, `.catalog-card-media`, `.catalog-card-body`, so the skeleton is pixel-parallel to the real grid.
+
+---
+
+## 10. Dashboard Workspace (`src/features/dashboard/`)
+
+Components for the `/dashboard` learning workspace. All styling lives on the
+`.dash-*` concept classes in **`src/features/dashboard/dashboard.css`** (imported by `globals.css`) —
+see the Dashboard index in `design-tokens-and-classes.md`. Static content lives in
+`src/shared/json/dashboardViews.json` / `dashboardChambers.json`; `RING_COLORS` lives in
+`features/dashboard/data/radialRingColors.ts` (hex required for the `$(color)80` glow alpha).
+
+### 10.1 Page (`<DashboardPage />`)
+- **Path:** `src/features/dashboard/pages/DashboardPage.tsx`
+- **State:** `#view`/'?view=' from the URL (`getDashboardNavItem`, aliases resolve); `?state=live|empty` demo modes.
+- **Layout rules (§6.1):** RTL grid `.dash-grid` — `<DesktopDashboardSidebar />` is Child #1 (renders far right), main column second.
+
+### 10.2 Shell & Stats
+- `<DesktopDashboardSidebar />` — `.dash-side-row` rows (add `group` in JSX for `group-hover:*`), `.dash-nav-item-active/idle` from `dashboardNav.json`.
+- `<DashboardTopBar />` — search overlay (`.dash-search-overlay` + `.dash-search-panel`, `animate-fade-in` mirrored in CSS), `NAV_TARGETS[tab.key]` route links.
+- `<MobileDashboardTopBar />` — mobile-only top row; same `tab`s, no desktop/mobile duplication.
+- `<DashboardStatsHeader />` — desktop greet row + mobile bell row; `<DashboardStatsSidebar />` — widgets, stat rows, upcoming events.
+
+### 10.3 Priority Hero Cards
+- `<PriorityContinueCard />` (cyan) / `<LiveSessionPriorityCard />` (red live countdown) — share `.dash-hero*`, `.dash-progress*`, `<RadialProgressRing />`; records `STAT_ROWS` / `EVENT_TAG_TONE` replace per-card branches; the countdown uses `var(--color-danger)`.
+
+### 10.4 Views
+- `<EnrolledCoursesView />` — `.dash-filter-pill` pair, `.dash-sort-menu` (pair with inline `animate-fade-in-up`), `<EnrolledCourseCard />` + `<EnrolledCourseRow />` share `.dash-course-card-details`, empty state uses `.dash-empty-btn-primary`.
+- `<CompetitionsCertificatesView />` — `ToggleFilter` (`.dash-toggle-active` / `-idle`), `<CompetitionRow />` (`dash-row`), `.dash-cert-card` certs + `CertificatePreviewModal`.
+- `<SavedScholarshipsView />` — rows + `.dash-deadline-tag` tones (`DEADLINE_TONE`), undo toast (`.dash-toast`).
+- `<NotificationsView />` / `<NotificationsDrawer />` — `<NotificationListItem />` (`.dash-notif-unread/-read`, `NOTIF_TYPES` tone record), `.dash-drawer-*`.
+- `<EmptyDashboardState />` — brand-new account hero (`.dash-empty-hero`, `.dash-compass` + `.animate-orbit-slow`), CTAs route to catalog.
+
+### 10.5 In-Dashboard Chambers (modals)
+- `<CourseWorkspaceModal />` — lessons (`.dash-stage-*`), `<LiveClassroomModal />` — chat (`.dash-chat-*`) + `CHAT_TONE` record, `<CompetitionArenaModal />` — leaderboard/langs/editor (`.dash-arena-*`, `.dash-lead-*`, `.dash-code-*`), `<ScholarshipApplicationModal />` — qualification checks (`.dash-check-*`), `<CertificatePreviewModal />`.
+- All use the shared `.dash-modal-overlay` (scrim `bg-navy-950/85 backdrop-blur-md`) + `.dash-modal-shell` chrome; internals driven by JSON in `dashboardChambers.json`.

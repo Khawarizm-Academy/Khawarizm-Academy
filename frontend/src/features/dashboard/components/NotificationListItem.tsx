@@ -1,7 +1,13 @@
 import React from 'react';
-import { Radio, Award, BookOpen, Trophy, Bell } from 'lucide-react';
+import { Radio, Award, BookOpen, Trophy, Bell, type LucideIcon } from 'lucide-react';
 
-export type NotificationKind = 'live' | 'scholarship' | 'exam' | 'competition' | 'lesson' | 'application';
+export type NotificationKind =
+  | 'live'
+  | 'scholarship'
+  | 'exam'
+  | 'competition'
+  | 'lesson'
+  | 'application';
 
 interface NotificationListItemProps {
   text: string;
@@ -11,43 +17,18 @@ interface NotificationListItemProps {
   onClick?: () => void;
 }
 
-function getNotificationIcon(type: NotificationKind) {
-  const badge = 'size-10 shrink-0 rounded-full bg-[#061A3A] border flex items-center justify-center';
-  switch (type) {
-    case 'live':
-      return (
-        <div className={`${badge} border-red-500/40`}>
-          <Radio size={18} strokeWidth={2} className="text-red-500" />
-        </div>
-      );
-    case 'scholarship':
-    case 'application':
-      return (
-        <div className={`${badge} border-[#E5B65C]/40`}>
-          <Award size={18} strokeWidth={2} className="text-[#E5B65C]" />
-        </div>
-      );
-    case 'competition':
-      return (
-        <div className={`${badge} border-emerald-500/40`}>
-          <Trophy size={18} strokeWidth={2} className="text-emerald-500" />
-        </div>
-      );
-    case 'exam':
-    case 'lesson':
-      return (
-        <div className={`${badge} border-[#29A9FF]/40`}>
-          <BookOpen size={18} strokeWidth={2} className="text-[#29A9FF]" />
-        </div>
-      );
-    default:
-      return (
-        <div className={`${badge} border-[#167BDB]/40`}>
-          <Bell size={18} strokeWidth={2} className="text-[#29A9FF]" />
-        </div>
-      );
-  }
-}
+/** Icon badge spec per notification type; application mirrors scholarship. */
+const NOTIF_TYPES: Record<NotificationKind, { Icon: LucideIcon; badge: string; tone: string }> = {
+  live: { Icon: Radio, badge: 'border-red-500/40', tone: 'text-red-500' },
+  scholarship: { Icon: Award, badge: 'border-gold-400/40', tone: 'text-gold-400' },
+  application: { Icon: Award, badge: 'border-gold-400/40', tone: 'text-gold-400' },
+  competition: { Icon: Trophy, badge: 'border-emerald-500/40', tone: 'text-emerald-500' },
+  exam: { Icon: BookOpen, badge: 'border-blue-400/40', tone: 'text-blue-400' },
+  lesson: { Icon: BookOpen, badge: 'border-blue-400/40', tone: 'text-blue-400' },
+};
+
+/** Defensive badge for unexpected types at runtime. */
+const FALLBACK_BADGE = { Icon: Bell, badge: 'border-blue-500/40', tone: 'text-blue-400' };
 
 export const NotificationListItem: React.FC<NotificationListItemProps> = ({
   text,
@@ -55,31 +36,29 @@ export const NotificationListItem: React.FC<NotificationListItemProps> = ({
   type,
   unread = false,
   onClick,
-}) => (
-  <div
-    dir="rtl"
-    onClick={onClick}
-    className={`relative flex items-center gap-3.5 p-3.5 md:p-4 rounded-2xl transition-all cursor-pointer group ${
-      unread
-        ? 'bg-slate-900 outline outline-1 outline-sky-400/40 shadow-[0_4px_20px_rgba(41,169,255,0.06)]'
-        : 'bg-blue-950/60 border border-blue-900/50 opacity-90 hover:opacity-100'
-    }`}
-  >
-    {unread && (
-      <span className="absolute top-3.5 left-3 size-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(41,169,255,0.9)]" />
-    )}
+}) => {
+  const { Icon, badge, tone } = NOTIF_TYPES[type] ?? FALLBACK_BADGE;
 
-    {getNotificationIcon(type)}
+  return (
+    <div
+      dir="rtl"
+      onClick={onClick}
+      className={`dash-notif group ${unread ? 'dash-notif-unread' : 'dash-notif-read'}`}
+    >
+      {unread && <span className="dash-notif-dot" />}
 
-    <div className="flex-1 flex flex-col gap-1 text-right">
-      <p
-        className={`text-xs sm:text-sm font-['Tajawal'] leading-relaxed ${
-          unread ? 'text-white font-medium' : 'text-slate-200'
-        }`}
-      >
-        {text}
-      </p>
-      <span className="text-[11px] text-slate-400 font-['Tajawal']">{timeAgo}</span>
+      <div className={`dash-notif-badge ${badge}`}>
+        <Icon size={18} strokeWidth={2} className={tone} />
+      </div>
+
+      <div className="dash-notif-body">
+        <p
+          className={`dash-notif-text ${unread ? 'dash-notif-text-unread' : 'dash-notif-text-read'}`}
+        >
+          {text}
+        </p>
+        <span className="dash-notif-time">{timeAgo}</span>
+      </div>
     </div>
-  </div>
-);
+  );
+};

@@ -12,8 +12,8 @@ export const MobileDashboardTopBar: React.FC<MobileDashboardTopBarProps> = ({
   onNotificationsClick,
   unreadCount = 0,
 }) => (
-  <div className="flex md:hidden justify-between items-center w-full py-1 select-none">
-    <div className="flex items-center gap-2.5 text-right">{title}</div>
+  <div className="dash-mtop select-none">
+    <div className="dash-mtop-title">{title}</div>
 
     <button
       type="button"
@@ -23,8 +23,8 @@ export const MobileDashboardTopBar: React.FC<MobileDashboardTopBarProps> = ({
     >
       <Bell size={18} strokeWidth={2} />
       {unreadCount > 0 && (
-        <div className="px-1.5 py-0.5 -top-1 -right-1 absolute bg-red-500 rounded-full inline-flex justify-center items-center shadow-sm">
-          <span className="text-white text-[10px] font-bold leading-none">{unreadCount}</span>
+        <div className="dash-bell-badge -top-1 -right-1">
+          <span className="dash-bell-count">{unreadCount}</span>
         </div>
       )}
     </button>

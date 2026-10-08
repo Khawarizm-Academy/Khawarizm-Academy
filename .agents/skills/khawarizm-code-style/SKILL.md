@@ -107,6 +107,7 @@ Every list, label, record, and config map goes in a JSON file under `frontend/sr
 src/shared/json/
 ├── auth.json                    # login mode options (short/long labels per surface)
 ├── catalog.json                 # page titles, sort options, filter groups
+├── dashboardChambers.json       # in-dashboard modal content (workspace, arena, scholarship…)
 ├── dashboardNav.json            # dashboard sidebar items
 ├── dashboardNotifications.json  # notification type -> payload
 ├── dashboardViews.json          # per-view title, subtitle, chips
@@ -167,6 +168,8 @@ const navLinks = [
 **Applies to:** paths, Arabic labels, icon choices, filter options, sort options, footer links, status labels, mock records, and CSS class strings for the same kind of element.
 
 **Class strings are values too.** The same utility run written twice for the same kind of element is duplicated data — extract it into a concept class and use the short name in JSX. Placement follows the 2+ features rule: **`src/features/<feature>/<feature>.css`** for one-feature classes, **`src/styles/globals.css`** for shared ones (it imports every feature CSS). Declare it in `@layer components` so JSX utilities can still override it; check the class actually exists (a typo like `animate-spin-very-slow` renders nothing). Full rule: `khawarizm-frontend` §3.7.
+
+**What `@apply` accepts.** Real Tailwind utilities only. Plain custom classes (`.flex-center`), marker classes (`group`), and plain global helpers (`animate-fade-in`, `animate-fade-in-up`, `animation-delay-100`) cannot be `@apply`-ed — keep `group` and the global animation helpers in the JSX `className`, or mirror an animation with a raw `animation:` property inside the class (keyframes in `globals.css` stay global).
 
 ---
 

@@ -261,6 +261,8 @@ const navItem = getDashboardNavItem(view);   // null for views outside the sideb
 <DesktopDashboardSidebar activeItemId={navItem?.id ?? null} />
 ```
 
+**The pill strip is derived, not authored.** `DASHBOARD_SUB_NAV` is `DASHBOARD_NAV.filter(item => item.inSubNav)` and each item's `activeViews` is `[item.id, ...item.aliases]` — so `?view=courses` lights the same sidebar item **and** pill as `?view=enrolled`. Show/hide a pill by toggling `inSubNav` in `dashboardNav.json`, never by editing `DashboardSubNavigation`.
+
 `?view=notifications` intentionally has no sidebar item and resolves to `null`.
 
 **Modes are not aliases.** `?view=live` and `?state=empty` are modes, not navigation targets, so they stay explicit booleans in `DashboardPage` (`isLive`, `isEmpty`) rather than becoming aliases.

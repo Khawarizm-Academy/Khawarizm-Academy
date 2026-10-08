@@ -47,7 +47,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center sm:justify-end p-4 sm:p-6 bg-black/60 backdrop-blur-md animate-page-enter"
+      className="fixed inset-0 z-50 flex items-start justify-center sm:justify-end p-4 sm:p-6 bg-navy-950/85 backdrop-blur-md animate-page-enter"
       role="dialog"
       aria-modal="true"
       aria-label="مركز الإشعارات"
@@ -55,19 +55,17 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
       {/* Click outside to close */}
       <div className="fixed inset-0" onClick={onClose} />
 
-      {/* Notifications Modal Box */}
-      <div className="relative z-10 w-full max-w-lg max-h-[85vh] flex flex-col bg-[#061A3A]/95 border border-[#167BDB]/50 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden">
-        {/* Drawer Header */}
-        <div className="p-5 border-b border-[#1B3F80]/50 flex items-center justify-between">
+      {/* Notifications drawer box */}
+      <div className="dash-drawer">
+        {/* Drawer header */}
+        <div className="dash-drawer-head">
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-gradient-to-br from-[#167BDB]/30 to-[#29A9FF]/20 border border-[#29A9FF]/40 flex items-center justify-center text-[#29A9FF]">
+            <div className="dash-drawer-icon">
               <Bell size={18} strokeWidth={2} />
             </div>
             <div>
-              <h2 className="text-lg font-bold font-['IBM_Plex_Sans_Arabic'] text-white">
-                مركز الإشعارات
-              </h2>
-              <p className="text-xs text-[#8299B5] font-['Tajawal',sans-serif]">
+              <h2 className="text-lg font-bold font-display text-white">مركز الإشعارات</h2>
+              <p className="text-xs text-slate-400">
                 {unreadCount > 0
                   ? `لديك ${unreadCount} تنبيهات غير مقروءة`
                   : 'جميع التنبيهات مقروءة'}
@@ -79,14 +77,14 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-[#E5B65C] hover:text-[#FFD179] font-['Tajawal'] font-bold px-2 py-1 rounded-lg hover:bg-[#E5B65C]/10 transition-colors cursor-pointer"
+                className="text-xs text-gold-400 hover:text-gold-200 font-bold px-2 py-1 rounded-lg hover:bg-gold-400/10 transition-colors cursor-pointer"
               >
                 تحديد الكل كمقروء
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-[#8299B5] hover:text-slate-100 hover:bg-[#092557] transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-navy-800 transition-colors cursor-pointer"
               aria-label="إغلاق"
             >
               <X size={18} strokeWidth={2} />
@@ -94,7 +92,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
           </div>
         </div>
 
-{/* Scrollable Notification List */}
+        {/* Scrollable notification list */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
           {isLoading ? (
             <DataSectionSkeleton variant="list" count={5} />

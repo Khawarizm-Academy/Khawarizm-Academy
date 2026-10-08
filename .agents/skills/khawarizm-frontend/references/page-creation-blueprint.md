@@ -34,10 +34,13 @@ Create the standard feature hierarchy inside `src/features/<feature-name>/`:
 ```
 src/features/<feature-name>/
 ├── components/          # Feature-specific pieces (e.g. FilterSidebar, QuickSummaryStrip)
+├── data/                # Non-component modules (e.g. dashboard's radialRingColors.ts)
 ├── hooks/               # Feature queries and state hooks
 ├── pages/               # Top-level Page view (e.g. CatalogPage.tsx)
-└── types.ts             # Feature-specific state/props interfaces
+├── types.ts             # Feature-specific state/props interfaces
+└── <feature>.css        # Feature-owned concept classes (e.g. auth.css, catalog.css, dashboard.css)
 ```
+The feature CSS holds every 1-feature concept class in `@layer components` and is `@import`ed at the top of `globals.css` (never imported by a `.tsx`) — see `khawarizm-frontend` §3.7.
 
 ---
 

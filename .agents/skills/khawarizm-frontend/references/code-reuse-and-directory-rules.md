@@ -142,4 +142,9 @@ Every page view must reuse the global layout primitives:
 | **Google / Facebook sign-in** | `<AuthSocialButton provider="google" label={…} />` — `PROVIDERS` record, no provider branch |
 | **Catalog filter pills (sidebar + drawer)** | `<CatalogFilterGroups surface tab filters onChangeFilter />` — pill rows written once |
 | **Catalog result card / grid / states** | `<CatalogCard item={…} />` inside `.catalog-grid`; empty & error states share `.catalog-state` + `glass-panel` |
+| **Dashboard priority card (continue / live)** | `<PriorityContinueCard />` / `<LiveSessionPriorityCard />` — shared `.dash-hero*` family + `<RadialProgressRing />` |
+| **Dashboard section toggle pills** | `ToggleFilter` with `.dash-toggle-active` / `.dash-toggle-idle` (one concept pair, both surfaces) |
+| **Dashboard sort dropdown** | `isSortDropdownOpen && <div className="dash-sort-menu">…` — one `.dash-sort-option` pair (`-idle` / `-active`) |
+| **Dashboard notifications list item** | `<NotificationListItem data={…} />` — `.dash-notif-unread` / `.dash-notif-read`, tone record `NOTIF_TYPES`, no branch |
+| **In-dashboard chamber modals** | `.dash-modal-overlay` + `.dash-modal-shell` chrome shared by workspace / live / arena / scholarship / certificate |
 | **The same class string twice** | Extract it into the owning CSS file — `features/<feature>/<feature>.css` or `globals.css` (`@layer components`) — skill §3.7 |

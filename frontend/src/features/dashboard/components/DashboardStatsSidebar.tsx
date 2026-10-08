@@ -4,6 +4,35 @@ import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSect
 import { fetchDashboardStats, fetchUpcomingEvents } from '../data/dashboardFetchers';
 import type { DashboardStats, UpcomingEvent } from '../types';
 
+/** Label, value and note per achievement stat; rows read live values from stats. */
+const STAT_ROWS = [
+  {
+    label: 'معدل الحضور',
+    value: (s: DashboardStats) => `${s.attendanceRate}%`,
+    note: (s: DashboardStats) => s.attendanceNote,
+    tone: 'text-blue-400',
+  },
+  {
+    label: 'المعدل التراكمي',
+    value: (s: DashboardStats) => s.gpa,
+    note: (s: DashboardStats) => s.gpaRating,
+    tone: 'text-gold-400',
+  },
+  {
+    label: 'النقاط المكتسبة',
+    value: (s: DashboardStats) => `${s.pointsEarned.toLocaleString('en-US')} نقطة`,
+    note: (s: DashboardStats) => s.rankNote,
+    tone: 'text-emerald-400',
+  },
+];
+
+/** Tag tone per upcoming-event type; session is the fallback. */
+const EVENT_TAG_TONE: Record<string, string> = {
+  exam: 'bg-blue-400/10 border-blue-400/20 text-blue-400',
+  submission: 'bg-red-500/10 border-red-500/20 text-red-400',
+  session: 'bg-gold-400/10 border-gold-400/20 text-gold-400',
+};
+
 export const DashboardStatsSidebar: React.FC = () => {
   const { data: stats, isLoading: isLoadingStats } = useCachedData<DashboardStats>(
     ['dashboard', 'stats'],
@@ -18,190 +47,50 @@ export const DashboardStatsSidebar: React.FC = () => {
   );
 
   return (
-    <aside
-      dir="rtl"
-
-      className="w-full md:w-96 flex flex-col justify-start items-start gap-6 shrink-0"
-    >
-      {/* 1. Achievement Stats Widget Card */}
-      <div
-
-        className="workspace-card self-stretch p-6"
-      >
-        <h3
-
-          className="text-right text-orange-300 text-lg font-bold font-['IBM_Plex_Sans_Arabic'] leading-6"
-        >
-          إحصائيات الإنجاز
-        </h3>
+    <aside dir="rtl" className="w-full md:w-96 flex flex-col justify-start items-start gap-6 shrink-0">
+      {/* Achievement stats widget */}
+      <div className="workspace-card dash-widget">
+        <h3 className="dash-widget-title">إحصائيات الإنجاز</h3>
 
         {isLoadingStats ? (
           <DataSectionSkeleton variant="rail" count={1} className="flex-col" />
         ) : (
-          <div className="self-stretch flex flex-col justify-start items-start gap-3">
-          {/* Row 1: Attendance */}
-          <div
-
-            className="self-stretch p-3 bg-slate-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center"
-          >
-            {/* Right: Label in RTL */}
-            <span
-
-              className="text-right text-slate-200 text-sm md:text-base font-medium font-['Tajawal'] leading-6"
-            >
-              معدل الحضور
-            </span>
-
-            {/* Left: Value Group in RTL */}
-            <div
-
-              className="flex flex-col justify-start items-start gap-0.5 text-left"
-            >
-              <span
-
-                className="text-sky-400 text-base font-bold font-['Tajawal'] leading-6"
-              >
-                {stats.attendanceRate}%
-              </span>
-              <span
-
-                className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
-              >
-                {stats.attendanceNote}
-              </span>
-            </div>
+          <div className="dash-stat-stack">
+            {STAT_ROWS.map((row) => (
+              <div key={row.label} className="dash-stat-row">
+                <span className="dash-stat-label">{row.label}</span>
+                <div className="dash-stat-values">
+                  <span className={`dash-stat-value ${row.tone}`}>{row.value(stats)}</span>
+                  <span className="dash-meta">{row.note(stats)}</span>
+                </div>
+              </div>
+            ))}
           </div>
-
-          {/* Row 2: GPA */}
-          <div
-
-            className="self-stretch p-3 bg-slate-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center"
-          >
-            {/* Right: Label in RTL */}
-            <span
-
-              className="text-right text-slate-200 text-sm md:text-base font-medium font-['Tajawal'] leading-6"
-            >
-              المعدل التراكمي
-            </span>
-
-            {/* Left: Value Group in RTL */}
-            <div
-
-              className="flex flex-col justify-start items-start gap-0.5 text-left"
-            >
-              <span
-
-                className="text-[#E5B65C] text-base font-bold font-['Tajawal'] leading-6"
-              >
-                {stats.gpa}
-              </span>
-              <span
-
-                className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
-              >
-                {stats.gpaRating}
-              </span>
-            </div>
-          </div>
-
-          {/* Row 3: Earned Points */}
-          <div
-
-            className="self-stretch p-3 bg-slate-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center"
-          >
-            {/* Right: Label in RTL */}
-            <span
-
-              className="text-right text-slate-200 text-sm md:text-base font-medium font-['Tajawal'] leading-6"
-            >
-              النقاط المكتسبة
-            </span>
-
-            {/* Left: Value Group in RTL */}
-            <div
-
-              className="flex flex-col justify-start items-start gap-0.5 text-left"
-            >
-              <span
-
-                className="text-emerald-400 text-base font-bold font-['Tajawal'] leading-6"
-              >
-                {stats.pointsEarned.toLocaleString('en-US')} نقطة
-              </span>
-              <span
-
-                className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
-              >
-                {stats.rankNote}
-              </span>
-            </div>
-          </div>
-        </div>
         )}
       </div>
 
-      {/* 2. Upcoming Events Widget Card */}
-      <div
-
-        className="workspace-card self-stretch p-6"
-      >
-        <h3
-
-          className="text-right text-[#E5B65C] text-lg font-bold font-['IBM_Plex_Sans_Arabic'] leading-6"
-        >
-          الأحداث الهامة القادمة
-        </h3>
+      {/* Upcoming events widget */}
+      <div className="workspace-card dash-widget">
+        <h3 className="dash-widget-title">الأحداث الهامة القادمة</h3>
 
         {isLoadingEvents ? (
           <DataSectionSkeleton variant="list" count={2} />
         ) : (
-          <div className="self-stretch flex flex-col justify-start items-start gap-3">
-            {events.map((event) => {
-              const isSubmission = event.type === 'submission';
-              const isExam = event.type === 'exam';
-              const tagClass = isExam
-                ? 'bg-sky-400/10 border-sky-400/20 text-sky-400'
-                : isSubmission
-                  ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                  : 'bg-[#E5B65C]/10 border-[#E5B65C]/20 text-[#E5B65C]';
-              return (
-                <div
-                  key={event.id}
-
-                  className="self-stretch p-3 bg-slate-900/90 rounded-xl border border-blue-900/50 flex justify-between items-center gap-3"
-                >
-                  {/* Right: Event Details in RTL */}
-                  <div className="flex-1 flex flex-col justify-start items-start gap-0.5 text-right">
-                    <h4
-
-                      className="text-slate-200 text-sm font-bold font-['Tajawal'] leading-5 truncate w-full"
-                    >
-                      {event.title}
-                    </h4>
-                    <span
-
-                      className="text-slate-400 text-xs font-normal font-['Tajawal'] leading-4"
-                    >
-                      {event.dateText}
-                    </span>
-                  </div>
-
-                  {/* Left: Type Tag in RTL */}
-                  <div
-
-                    className={`px-2 py-1 rounded-md flex justify-center items-center shrink-0 border ${tagClass}`}
-                  >
-                    <span
-
-                      className="text-xs font-bold font-['Tajawal'] leading-4"
-                    >
-                      {event.typeLabel}
-                    </span>
-                  </div>
+          <div className="dash-stat-stack">
+            {events.map((event) => (
+              <div key={event.id} className="dash-event-row">
+                {/* Right: event details in RTL */}
+                <div className="dash-event-text">
+                  <h4 className="dash-event-title">{event.title}</h4>
+                  <span className="dash-meta">{event.dateText}</span>
                 </div>
-              );
-            })}
+
+                {/* Left: type tag in RTL */}
+                <div className={`dash-event-tag ${EVENT_TAG_TONE[event.type] ?? EVENT_TAG_TONE.session}`}>
+                  <span className="dash-event-tag-label">{event.typeLabel}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

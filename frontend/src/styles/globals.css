@@ -2,6 +2,7 @@
 @import "./tokens.css";
 @import "../features/auth/auth.css";
 @import "../features/catalog/catalog.css";
+@import "../features/dashboard/dashboard.css";
 
 @layer base {
   * {

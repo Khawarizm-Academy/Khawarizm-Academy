@@ -8,6 +8,7 @@ import { fetchEnrolledCourses } from '../data/dashboardFetchers';
 import type { EnrolledCourse } from '../types';
 import { DashboardSubNavigation } from './DashboardSubNavigation';
 import { EnrolledCourseCard } from './EnrolledCourseCard';
+import dashboardViewsJson from '../../../shared/json/dashboardViews.json';
 
 interface EnrolledCoursesViewProps {
   onSelectView: (viewId: string) => void;
@@ -19,6 +20,9 @@ interface EnrolledCoursesViewProps {
 
 type FilterStatus = 'all' | 'in-progress' | 'completed';
 type SortOption = 'recent' | 'progress-desc' | 'alphabetical';
+
+const FILTERS = dashboardViewsJson.enrolledFilters as { id: FilterStatus; label: string }[];
+const SORT_OPTIONS = dashboardViewsJson.enrolledSortOptions as { id: SortOption; label: string }[];
 
 export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
   onSelectView,
@@ -53,11 +57,8 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
     { initialData: [] }
   );
 
-  const courses = useMemo(() => {
-    return forceEmptyState ? [] : rawCourses;
-  }, [forceEmptyState, rawCourses]);
+  const courses = useMemo(() => (forceEmptyState ? [] : rawCourses), [forceEmptyState, rawCourses]);
 
-  // Filter courses
   const filteredCourses = useMemo(() => {
     return courses.filter((c) => {
       const isCompleted = c.isCompleted || c.progress >= 100;
@@ -67,7 +68,6 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
     });
   }, [courses, activeFilter]);
 
-  // Sort courses
   const sortedCourses = useMemo(() => {
     const result = [...filteredCourses];
     if (activeSort === 'progress-desc') {
@@ -79,116 +79,88 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
     return result;
   }, [filteredCourses, activeSort]);
 
-  // Counters
   const totalCount = courses.length;
-  const inProgressCount = courses.filter((c) => (c.progress < 100 && !c.isCompleted)).length;
-  const completedCount = courses.filter((c) => (c.progress >= 100 || c.isCompleted)).length;
-
-  const sortLabels: Record<SortOption, string> = {
-    recent: 'الأحدث نشاطًا',
-    'progress-desc': 'الأعلى إنجازًا',
-    alphabetical: 'أبجديًا',
+  const filterCounts: Record<FilterStatus, number> = {
+    all: totalCount,
+    'in-progress': courses.filter((c) => c.progress < 100 && !c.isCompleted).length,
+    completed: courses.filter((c) => c.progress >= 100 || c.isCompleted).length,
   };
+  const activeSortLabel = SORT_OPTIONS.find((o) => o.id === activeSort)?.label;
 
   return (
-    <div dir="rtl" className="w-full flex flex-col justify-start items-start gap-6 select-none animate-fade-in">
-      {/* 1. Dashboard Sub-Navigation Capsule */}
-      <DashboardSubNavigation
-        activeView="enrolled"
-        onSelectView={onSelectView}
-      />
+    <div
+      dir="rtl"
+      className="w-full flex flex-col justify-start items-start gap-6 select-none animate-fade-in"
+    >
+      {/* Dashboard sub-navigation capsule */}
+      <DashboardSubNavigation activeView="enrolled" onSelectView={onSelectView} />
 
-      {/* 2. Title Block */}
-      <div className="self-stretch flex flex-col justify-start items-start text-right gap-1.5">
-        <h1 className="text-white text-2xl md:text-3xl font-bold font-['IBM_Plex_Sans_Arabic'] leading-8">
-          دوراتي المسجّلة
-        </h1>
-        <p className="text-slate-400 text-sm font-normal font-['Tajawal'] leading-5">
+      {/* Title block */}
+      <div className="dash-view-heading">
+        <h1 className="dash-view-h1">دوراتي المسجّلة</h1>
+        <p className="dash-view-sub">
           {totalCount === 0
             ? 'لا توجد دورات مسجّلة حاليًا'
-            : `${totalCount} دورات · ${inProgressCount} قيد التقدم · ${completedCount} مكتملة`}
+            : `${totalCount} دورات · ${filterCounts['in-progress']} قيد التقدم · ${filterCounts.completed} مكتملة`}
         </p>
       </div>
 
-      {/* 3. List Controls: Sort and Filter Pills */}
+      {/* List controls: sort and filter pills */}
       {totalCount > 0 && (
         <div className="self-stretch flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-          {/* Right in RTL: Filters */}
+          {/* Right in RTL: filters */}
           <div className="inline-flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-            <button
-              type="button"
-              onClick={() => setActiveFilter('all')}
-              className={`px-4 py-2 rounded-full text-xs font-['Tajawal'] transition-all cursor-pointer whitespace-nowrap ${
-                activeFilter === 'all'
-                  ? 'bg-blue-950 outline outline-1 outline-offset-[-1px] outline-sky-400 text-white font-bold shadow-[0_0_10px_rgba(41,169,255,0.25)]'
-                  : 'bg-slate-900 outline outline-1 outline-offset-[-1px] outline-blue-900 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              الكل ({totalCount})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveFilter('in-progress')}
-              className={`px-4 py-2 rounded-full text-xs font-['Tajawal'] transition-all cursor-pointer whitespace-nowrap ${
-                activeFilter === 'in-progress'
-                  ? 'bg-blue-950 outline outline-1 outline-offset-[-1px] outline-sky-400 text-white font-bold shadow-[0_0_10px_rgba(41,169,255,0.25)]'
-                  : 'bg-slate-900 outline outline-1 outline-offset-[-1px] outline-blue-900 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              قيد التقدم ({inProgressCount})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveFilter('completed')}
-              className={`px-4 py-2 rounded-full text-xs font-['Tajawal'] transition-all cursor-pointer whitespace-nowrap ${
-                activeFilter === 'completed'
-                  ? 'bg-blue-950 outline outline-1 outline-offset-[-1px] outline-sky-400 text-white font-bold shadow-[0_0_10px_rgba(41,169,255,0.25)]'
-                  : 'bg-slate-900 outline outline-1 outline-offset-[-1px] outline-blue-900 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              مكتملة ({completedCount})
-            </button>
+            {FILTERS.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setActiveFilter(filter.id)}
+                className={`dash-filter-pill ${
+                  activeFilter === filter.id ? 'dash-pill-active' : 'dash-filter-pill-idle'
+                }`}
+              >
+                {filter.label} ({filterCounts[filter.id]})
+              </button>
+            ))}
           </div>
 
-          {/* Left in RTL: Sort Selector */}
+          {/* Left in RTL: sort selector */}
           <div ref={sortRef} className="relative shrink-0">
             <button
               type="button"
               onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-              className="w-full sm:w-52 px-3.5 py-2.5 bg-slate-900 rounded-xl outline outline-1 outline-offset-[-1px] outline-blue-900 flex justify-between items-center gap-3 cursor-pointer hover:outline-sky-400/60 transition-all text-right"
+              className="dash-sort-btn"
             >
-              <span className="text-slate-200 text-xs font-normal font-['Tajawal']">
-                {sortLabels[activeSort]}
-              </span>
+              <span className="dash-sort-label">{activeSortLabel}</span>
               <ChevronDown
                 size={14}
-                className={`text-[#8299B5] transition-transform duration-200 ${
-                  isSortDropdownOpen ? 'rotate-180 text-sky-400' : ''
+                className={`transition-transform duration-200 ${
+                  isSortDropdownOpen ? 'rotate-180 text-blue-400' : 'text-slate-400'
                 }`}
               />
             </button>
 
-            {/* Dropdown Menu */}
+            {/* Dropdown menu */}
             {isSortDropdownOpen && (
-              <div className="absolute left-0 sm:right-auto sm:left-0 top-full mt-1.5 w-full sm:w-52 bg-slate-900 border border-blue-900/90 rounded-xl shadow-2xl py-1.5 z-30 animate-fade-in-up">
-                {(['recent', 'progress-desc', 'alphabetical'] as SortOption[]).map((option) => (
+              <div className="dash-sort-menu animate-fade-in-up">
+                {SORT_OPTIONS.map((option) => (
                   <button
-                    key={option}
+                    key={option.id}
                     type="button"
                     onClick={() => {
-                      setActiveSort(option);
+                      setActiveSort(option.id);
                       setIsSortDropdownOpen(false);
                     }}
-                    className={`w-full px-3.5 py-2 text-right text-xs font-['Tajawal'] flex items-center justify-between transition-colors ${
-                      activeSort === option
-                        ? 'bg-blue-950/80 text-sky-300 font-bold'
-                        : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                    className={`dash-sort-option ${
+                      activeSort === option.id
+                        ? 'dash-sort-option-active'
+                        : 'dash-sort-option-idle'
                     }`}
                   >
-                    <span>{sortLabels[option]}</span>
-                    {activeSort === option && <CheckCircle2 size={13} className="text-sky-400" />}
+                    <span>{option.label}</span>
+                    {activeSort === option.id && (
+                      <CheckCircle2 size={13} className="text-blue-400" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -197,30 +169,29 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
         </div>
       )}
 
-      {/* 4. Course List / Skeletons / Empty State */}
-      <div className="self-stretch flex flex-col justify-start items-start gap-4 w-full">
+      {/* Course list / skeletons / empty state */}
+      <div className="dash-section">
         {isLoading ? (
           <DataSectionSkeleton variant="list" count={3} />
         ) : totalCount === 0 ? (
-          /* Empty State: Brand New Account / Zero Enrollments */
-          <div className="w-full py-8 md:py-16 px-6 bg-slate-900/90 rounded-3xl border border-blue-900/80 flex flex-col items-center justify-center text-center gap-6 shadow-[0px_16px_32px_rgba(41,169,255,0.06)]">
-            <div className="size-24 md:size-32 bg-blue-950 rounded-full border-2 border-sky-400 flex items-center justify-center relative shadow-[0_0_24px_rgba(41,169,255,0.2)]">
-              <Compass size={44} className="text-sky-400 animate-pulse" />
+          /* Empty state: brand new account / zero enrollments */
+          <div className="dash-empty">
+            <div className="dash-empty-icon">
+              <Compass size={44} className="text-blue-400 animate-pulse" />
             </div>
 
             <div className="max-w-md flex flex-col items-center gap-2">
-              <h3 className="text-xl md:text-2xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
-                لم تسجّل في أي دورة تدريبية بعد
-              </h3>
-              <p className="text-slate-400 text-sm font-normal font-['Tajawal'] leading-6">
-                ابدأ رحلتك التعليمية الآن واستكشف برامجنا المعتمدة في الذكاء الاصطناعي، علم البيانات، وتطوير البرمجيات بإشراف نخبة من الأكاديميين.
+              <h3 className="dash-empty-title">لم تسجّل في أي دورة تدريبية بعد</h3>
+              <p className="dash-empty-text">
+                ابدأ رحلتك التعليمية الآن واستكشف برامجنا المعتمدة في الذكاء الاصطناعي، علم
+                البيانات، وتطوير البرمجيات بإشراف نخبة من الأكاديميين.
               </p>
             </div>
 
             <button
               type="button"
               onClick={() => navigate(CATALOG_COURSES_ROUTE)}
-              className="btn-gold py-3 px-8 text-sm md:text-base flex items-center gap-2.5 font-bold cursor-pointer transition-transform active:scale-95 shadow-[0_4px_20px_rgba(229,182,92,0.3)]"
+              className="btn-gold text-sm md:text-base"
             >
               <BookOpen size={18} />
               <span>استكشف دليل الدورات الآن</span>
@@ -228,16 +199,14 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
             </button>
           </div>
         ) : filteredCourses.length === 0 ? (
-          /* Empty State: Filter Returned No Results */
-          <div className="w-full py-12 px-6 bg-slate-900/60 rounded-2xl border border-blue-900/60 flex flex-col items-center justify-center text-center gap-4">
-            <div className="size-16 rounded-full bg-blue-950 border border-blue-900 flex items-center justify-center">
+          /* Empty state: filter returned no results */
+          <div className="dash-empty-sm">
+            <div className="dash-empty-sm-icon">
               <BookOpen size={24} className="text-slate-400" />
             </div>
             <div className="flex flex-col items-center gap-1">
-              <h4 className="text-lg font-bold text-slate-200 font-['IBM_Plex_Sans_Arabic']">
-                لا توجد دورات في هذا القسم
-              </h4>
-              <p className="text-slate-400 text-xs md:text-sm font-['Tajawal']">
+              <h4 className="dash-empty-sm-title">لا توجد دورات في هذا القسم</h4>
+              <p className="dash-empty-sm-text">
                 {activeFilter === 'completed'
                   ? 'لم تكمل أي دورة بعد. واصل التعلّم في دوراتك الحالية لتحصل على شهادتك المعتمدة!'
                   : 'لا توجد دورات قيد التقدم حاليًا.'}
@@ -246,14 +215,14 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveFilter('all')}
-              className="btn-outline-blue py-2 px-5 text-xs font-bold cursor-pointer mt-1"
+              className="btn-outline-blue text-xs mt-1"
             >
               عرض جميع الدورات
             </button>
           </div>
         ) : (
-          /* Enrolled Courses Cards List */
-          <div className="self-stretch flex flex-col justify-start items-start gap-4 w-full">
+          /* Enrolled courses cards list */
+          <div className="dash-section">
             {sortedCourses.map((course) => (
               <EnrolledCourseCard
                 key={course.id}

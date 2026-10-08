@@ -30,11 +30,16 @@ src/
 │   ├── json/                       # All static data: routes.json, shellNav.json, catalog.json, mocks…
 │   └── lib/cacheManager.ts         # In-memory SWR data cache engine
 └── features/
-    └── catalog/
-        ├── catalog.css                # Feature-owned .catalog-* concept classes (imported by globals.css)
-        ├── components/CatalogGridSkeleton.tsx # 6-Card high-fidelity grid skeleton
-        ├── components/CatalogDataSection.tsx  # Isolated dynamic data boundary
-        └── pages/CatalogPage.tsx   # Page view: static controls + data boundary
+    ├── catalog/
+    │   ├── catalog.css                # Feature-owned .catalog-* concept classes (imported by globals.css)
+    │   ├── components/CatalogGridSkeleton.tsx # 6-Card high-fidelity grid skeleton
+    │   ├── components/CatalogDataSection.tsx  # Isolated dynamic data boundary
+    │   └── pages/CatalogPage.tsx   # Page view: static controls + data boundary
+    └── dashboard/
+        ├── dashboard.css                # Feature-owned .dash-* concept classes (imported by globals.css)
+        ├── components/                  # Views, hero cards, sidebar, drawers, chambers
+        ├── pages/DashboardPage.tsx      # Self-contained workspace page (?view= / ?state= demo modes)
+        └── data/radialRingColors.ts     # RING_COLORS hex map for the SVG progress ring
 ```
 
 ## 2. Design Tokens for Skeletons & Transitions

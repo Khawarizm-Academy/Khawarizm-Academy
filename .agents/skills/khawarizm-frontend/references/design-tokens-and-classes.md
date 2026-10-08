@@ -208,6 +208,25 @@ Catalog explorer route (`/catalog`). Same pattern as auth: the feature owns
 - **Filter pills:** `.catalog-group-label`, `.catalog-pill`, `.catalog-pill-idle`, `.catalog-pill-gold`, `.catalog-pill-sky`, `.catalog-pill-glow-gold`, `.catalog-pill-glow-sky`.
 - **Pagination:** `.catalog-pagination`, `.catalog-page-nav`, `.catalog-page` (+ `-idle` / `-active`).
 
+### Dashboard (`.dash-*`, in `features/dashboard/dashboard.css`)
+Learning workspace (`/dashboard`). Same pattern as auth/catalog: the feature owns
+`src/features/dashboard/dashboard.css`, `globals.css` imports it, classes sit in `@layer components`.
+`dashboard.css` orders variant classes after their base (hero → hero-cyan/hero-red,
+nav-item → nav-item-active/idle, modal-icon → -red/-sky/-gold, …).
+
+- **Page shell:** `.dash-page` (`selection:` variant), `.dash-grid` (RTL 2-col; pair with inline `animate-fade-in-up animation-delay-100` — plain globals helpers stay in JSX), `.dash-grid-main`, `.dash-grid-aside`.
+- **View scaffold:** `.dash-view-title`, `.dash-section-head`, `.dash-row-title`, `.dash-mobile-top-row` (+ `-title` / `-back`), `.dash-chip`, `.dash-chip-mobile` / `.dash-chip-desktop`, `.dash-chip-row` (+ `.no-scrollbar`).
+- **Desktop sidebar (Right / Child #1):** `.dash-sidebar`, `.dash-side-section`, `.dash-side-row` (add `group` in JSX), `.dash-nav-item` (+ `-active` / `-idle`), `.dash-avatar`, `.dash-brand-mark`, `.dash-brand-name`, `.dash-user-name` (hover via `group-hover:*`), `.dash-notif-bell`.
+- **Top bar & search:** `.dash-topbar`, `.dash-topbar-search` (add `group` in JSX), `.dash-search-overlay`, `.dash-search-panel`, `.dash-chamber-card`, `.dash-view-tab` (+ `-idle` / `-active`), `.dash-subnav`, `.dash-tab` / `.dash-pill-active`.
+- **Stats header & sidebar:** `.dash-greet-*`, `.dash-bell-*` (+ `-active` / `-idle`), `.dash-stat-chip-row`, `.dash-widget`, `.dash-widget-icon`, `.dash-widget-head`, `.dash-widget-title`, `.dash-stat/stat-value/stat-label-row`, `.dash-upcoming-row`, `.dash-course-live-dot`.
+- **Hero priority cards:** `.dash-hero`, `.dash-hero-cyan`, `.dash-hero-red`, `.dash-hero-tag` (+ `-cyan` / `-red`), `.dash-hero-tag-label` (+ `-live`), `.dash-hero-thumb` (+ `-cyan` / `-red`), `.dash-progress` / `.dash-progress-bar` / `.dash-progress-fill`, `.dash-course-title`, `.dash-countdown-*` (uses `var(--color-danger)`), `.dash-cta*`.
+- **Rows & cards:** `.dash-row` (+ `-meta`, `-label`, `-value`, `-icon`), `.dash-deadline-tag`, `.dash-course-icon` (+ tone records `COURSE_ICON`), `.dash-card`, `.dash-card-head`, `.dash-card-body`, `.dash-course-card-details`, `.dash-course-score`.
+- **Enrolled view:** `.dash-chip-btn` (+ `-filters` / `-sort`), `.dash-sort-menu` (pair with inline `animate-fade-in-up`), `.dash-sort-option` (+ `-idle` / `-active`, `cursor-pointer`), `.dash-filter-pill` (+ `-idle` / `-active`), `.dash-empty-btn` (+ `-primary` / `-ghost`).
+- **Empty hero:** `.dash-empty-hero`, `.dash-empty-badge`, `.dash-empty-title`, `.dash-empty-text`, `.dash-compass` (+ `.animate-orbit-slow` in JSX).
+- **Competitions & certificates:** `.dash-toggle`, `.dash-toggle-btn`, `.dash-toggle-active` / `.dash-toggle-idle`, `.dash-cert-card`, `.dash-cert-badge`, `.dash-cert-title`, `.dash-cert-cta`, `.dash-cert-cta-blue`.
+- **Notifications:** `.dash-notif` (add `group` in JSX; + `-unread` / `-read`), `.dash-notif-icon` (+ `-tone-*`), `.dash-drawer-scrim`, `.dash-drawer-panel`, `.dash-drawer-head`, `.dash-drawer-item`, `.dash-toast`.
+- **Modal chrome (chambers):** `.dash-modal-overlay`, `.dash-modal-shell` (built on `workspace-card`), `.dash-modal-head`, `.dash-modal-title`, `.dash-modal-close`, `.dash-modal-icon` (+ `-red` / `-sky` / `-gold`), `.dash-modal-divider`, plus chamber internals: `.dash-stage-*`, `.dash-chat-*`, `.dash-arena-*`, `.dash-code-*`, `.dash-lead-*`, `.dash-check-*`, `.dash-editor-*`.
+
 ### Animations
 - `.animate-fade-in` — generic opacity fade (modals, toasts, view swaps). **Was used in 15+ files while undefined; now defined in `globals.css`.**
 - `.animate-fade-in-up` / `.animate-fade-in-down` — entrance slides (+ `animation-delay-*` helpers).
