@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import catalogJson from '../../../shared/json/catalog.json';
 import { CatalogFilterGroups } from './CatalogFilterGroups';
 import type { CatalogFiltersState, CatalogTab } from '../types';
@@ -23,34 +24,23 @@ export const CatalogMobileFilterDrawer: React.FC<CatalogMobileFilterDrawerProps>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-end justify-center">
-      <div
-        onClick={onClose}
-        className="absolute inset-0 bg-[#040F24]/80 backdrop-blur-sm transition-opacity animate-fade-in-up"
-      />
+    <div className="catalog-drawer">
+      <div onClick={onClose} className="catalog-drawer-scrim animate-fade-in-up" />
 
-      <div className="relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto bg-[#061A3A] border-t-2 border-[#1B3F80] rounded-t-2xl p-6 flex flex-col gap-6 shadow-2xl animate-fade-in-up">
-        <div className="w-12 h-1.5 bg-[#1B3F80] rounded-full mx-auto -mt-2" />
+      <div className="catalog-drawer-panel animate-fade-in-up">
+        <div className="catalog-drawer-handle" />
 
-        <div className="flex-between pb-3 border-b border-[#1B3F80]/50">
-          <div className="flex items-center gap-2 text-white font-bold font-['IBM_Plex_Sans_Arabic'] text-lg">
+        <div className="catalog-panel-head">
+          <div className="catalog-panel-title text-lg">
             <span>{catalogJson.filters.header}</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={onReset}
-              className="text-[#E5B65C] hover:underline text-xs font-medium font-['Tajawal']"
-            >
+            <button type="button" onClick={onReset} className="catalog-reset hover:underline">
               {catalogJson.filters.resetLabel}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-icon-box w-8 h-8 text-slate-400"
-            >
-              ✕
+            <button type="button" onClick={onClose} className="btn-icon-box" aria-label="إغلاق">
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -63,11 +53,7 @@ export const CatalogMobileFilterDrawer: React.FC<CatalogMobileFilterDrawerProps>
         />
 
         <div className="pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full btn-gold py-3 text-sm font-bold"
-          >
+          <button type="button" onClick={onClose} className="w-full btn-gold text-sm">
             {catalogJson.filters.applyLabel}
           </button>
         </div>

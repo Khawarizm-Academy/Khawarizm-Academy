@@ -73,53 +73,33 @@ Put the records in `src/shared/json/mock<Feature>.json`. If the feature needs a 
 ### Step 4: Build Feature Subcomponents (Using Concept Classes!)
 If a section or sidebar is unique to this feature, build it using **existing semantic classes**, avoiding ad-hoc inline styles.
 
-Example (`CatalogFilterSidebar.tsx`):
+Example — the real `CatalogFilterSidebar.tsx` builds its chrome from the feature's concept classes (`.catalog-sidebar`, `.catalog-panel-head`, `.catalog-panel-title`, `.catalog-reset` in `features/catalog/catalog.css`), and delegates the pill rows to the shared `<CatalogFilterGroups />`:
 ```tsx
-import React from 'react';
-import { toArabic } from '@/shared/lib/localization';
-import type { FilterDomain } from '../types';
-
-interface FilterSidebarProps {
-  activeDomain: FilterDomain;
-  onSelectDomain: (domain: FilterDomain) => void;
-  onReset: () => void;
-}
-
-const DOMAINS: FilterDomain[] = ['all', 'ai', 'programming', 'cybersecurity', 'space'];
-
-export const CatalogFilterSidebar: React.FC<FilterSidebarProps> = ({
-  activeDomain,
-  onSelectDomain,
-  onReset
+export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
+  type,
+  filters,
+  onChangeFilter,
+  onReset,
 }) => {
   return (
-    <aside className="w-72 p-6 bg-navy-900/90 backdrop-blur-md rounded-xl border border-navy-600 flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex-between pb-3 border-b border-navy-600/50">
-        <h4 className="text-white text-base font-bold font-display">تصفية النتائج</h4>
-        <button onClick={onReset} className="text-gold-400 hover:underline text-xs font-medium font-body">
-          إعادة ضبط
+    <aside className="catalog-sidebar">
+      <div className="catalog-panel-head">
+        <div className="catalog-panel-title">
+          <Filter size={16} className="text-gold-400" />
+          <span>{catalogJson.filters.header}</span>
+        </div>
+
+        <button type="button" onClick={onReset} className="catalog-reset hover:text-gold-200">
+          {catalogJson.filters.resetLabel}
         </button>
       </div>
 
-      {/* Domain Category */}
-      <div className="flex flex-col gap-3">
-        <label className="text-white text-sm font-bold font-display">المجال</label>
-        <div className="flex flex-wrap gap-2">
-          {DOMAINS.map(domain => {
-            const isActive = activeDomain === domain;
-            return (
-              <button
-                key={domain}
-                onClick={() => onSelectDomain(domain)}
-                className={isActive ? 'btn-gold py-1.5 px-3 text-xs' : 'btn-pill-subtle py-1.5 px-3 text-xs'}
-              >
-                {toArabic('catalog_filters', domain)}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <CatalogFilterGroups
+        tab={type}
+        filters={filters}
+        surface="desktop"
+        onChangeFilter={onChangeFilter}
+      />
     </aside>
   );
 };

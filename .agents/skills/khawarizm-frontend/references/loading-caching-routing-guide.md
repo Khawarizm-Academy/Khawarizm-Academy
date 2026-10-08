@@ -31,6 +31,7 @@ src/
 │   └── lib/cacheManager.ts         # In-memory SWR data cache engine
 └── features/
     └── catalog/
+        ├── catalog.css                # Feature-owned .catalog-* concept classes (imported by globals.css)
         ├── components/CatalogGridSkeleton.tsx # 6-Card high-fidelity grid skeleton
         ├── components/CatalogDataSection.tsx  # Isolated dynamic data boundary
         └── pages/CatalogPage.tsx   # Page view: static controls + data boundary

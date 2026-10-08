@@ -25,16 +25,12 @@ interface FilterResult {
 
 const ITEMS_PER_PAGE = 6;
 
-/**
- * Filter evaluation engine — pure computation cached in memory
- */
+/** Pure filter + sort + pagination engine; the caller caches its result. */
 function computeFilteredCatalog(filters: CatalogFiltersState, activeTab: CatalogTab): FilterResult {
   const filtered = mockCatalogAll.filter((item) => {
-    // 1. Pillar Type Filter
     if (activeTab === 'courses' && item.type !== 'course') return false;
     if (activeTab === 'scholarships' && item.type !== 'scholarship') return false;
 
-    // 2. Search Query Filter
     if (filters.searchQuery.trim()) {
       const q = filters.searchQuery.toLowerCase();
       const matchTitle = item.title.toLowerCase().includes(q);
@@ -44,28 +40,23 @@ function computeFilteredCatalog(filters: CatalogFiltersState, activeTab: Catalog
       if (!matchTitle && !matchCat && !matchInst && !matchProv) return false;
     }
 
-    // 3. Field Filter
     if (filters.field !== 'all' && item.categorySlug !== filters.field) {
       return false;
     }
 
-    // 4. Level Filter
     if (filters.level !== 'all') {
       if (item.type === 'course' && item.courseLevel !== filters.level) return false;
       if (item.type === 'scholarship' && item.degreeLevel !== filters.level) return false;
     }
 
-    // 5. Cost Filter (Courses)
     if (filters.cost !== 'all' && item.type === 'course' && item.priceType !== filters.cost) {
       return false;
     }
 
-    // 6. Country Filter (Scholarships)
     if (filters.country !== 'all' && item.type === 'scholarship' && item.countrySlug !== filters.country) {
       return false;
     }
 
-    // 7. Status Filter (Scholarships)
     if (filters.status !== 'all' && item.type === 'scholarship' && item.status !== filters.status) {
       return false;
     }
@@ -96,12 +87,7 @@ function computeFilteredCatalog(filters: CatalogFiltersState, activeTab: Catalog
   };
 }
 
-/**
- * Isolated Dynamic Data Boundary Component.
- *
- * ONLY this component re-renders when data updates, filters change, or pagination shifts.
- * Surrounding page controls (Hero, Search Box, Filter Sidebar, Toolbar) remain completely stable.
- */
+/** The only part of the page that re-renders on data/filter changes; surrounding chrome stays stable. */
 export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
   filters,
   activeTab,
@@ -126,9 +112,8 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
     },
   ];
 
-  // Fast fetcher with simulated micro-latency on cold miss to demonstrate Tier 2 skeleton
+  // Cold miss waits 200ms so the Tier 2 skeleton is visible.
   const fetcher = async (): Promise<FilterResult> => {
-    // Artificial small delay (200ms) on cold misses to make Tier 2 skeleton visible
     await new Promise((res) => setTimeout(res, 200));
     return computeFilteredCatalog(filters, activeTab);
   };
@@ -148,42 +133,29 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 relative">
-      {/* Background Revalidation Indicator (Starlight Shimmer Line) */}
-      {isFetching && !isLoading && (
-        <div
-          className="absolute -top-3 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#29A9FF] to-transparent animate-pulse"
-          aria-hidden="true"
-        />
-      )}
+    <div className="catalog-data">
+      {/* Revalidation shimmer while a new filter set loads */}
+      {isFetching && !isLoading && <div className="catalog-revalidation-line" aria-hidden="true" />}
 
-      {/* Tier 2 Data-Section Skeleton during cold query */}
       {isLoading ? (
         <CatalogGridSkeleton count={6} />
       ) : isError ? (
-        /* Error State with Retry */
-        <div className="w-full py-16 px-6 glass-panel rounded-2xl flex-col-center text-center gap-4 border border-[#1B3F80]">
-          <div className="w-16 h-16 rounded-full bg-[#092557] border border-[#1B3F80] flex-center text-[#D9534F]">
+        /* Error state with retry */
+        <div className="glass-panel catalog-state">
+          <div className="catalog-state-icon text-danger-500">
             <CircleAlert size={32} />
           </div>
-          <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
-            تعذر تحميل النتائج
-          </h3>
-          <p className="text-slate-400 text-sm font-['Tajawal'] max-w-md">
+          <h3 className="catalog-state-title">تعذر تحميل النتائج</h3>
+          <p className="catalog-state-text">
             {error?.message || 'حدث خطأ أثناء جلب البيانات. حاول مرة أخرى.'}
           </p>
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="btn-outline-blue py-2 px-6 text-xs font-bold mt-2"
-          >
+          <button type="button" onClick={() => refetch()} className="btn-outline-blue text-xs mt-2">
             إعادة المحاولة
           </button>
         </div>
       ) : data && data.items.length > 0 ? (
         <>
-          {/* Active Cards Grid */}
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch">
+          <div className="catalog-grid">
             {data.items.map((item) => (
               <CatalogCard
                 key={item.id}
@@ -194,7 +166,6 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
             ))}
           </div>
 
-          {/* Pagination Controls */}
           {data.totalPages > 1 && (
             <CatalogPagination
               currentPage={data.currentPage}
@@ -204,21 +175,19 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
           )}
         </>
       ) : (
-        /* Empty State */
-        <div className="w-full py-16 px-6 glass-panel rounded-2xl flex-col-center text-center gap-4 border border-[#1B3F80]">
-          <div className="w-16 h-16 rounded-full bg-[#092557] border border-[#1B3F80] flex-center text-[#E5B65C]">
+        /* Empty state */
+        <div className="glass-panel catalog-state">
+          <div className="catalog-state-icon text-gold-400">
             <SearchX size={32} />
           </div>
-          <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
-            لم يتم العثور على نتائج تطابق معايير البحث
-          </h3>
-          <p className="text-slate-400 text-sm font-['Tajawal'] max-w-md">
+          <h3 className="catalog-state-title">لم يتم العثور على نتائج تطابق معايير البحث</h3>
+          <p className="catalog-state-text">
             جرب تغيير كلمات البحث أو إعادة ضبط الفلاتر لاستعراض جميع الدورات والمنح المتاحة.
           </p>
           <button
             type="button"
             onClick={onResetFilters}
-            className="btn-gold py-2 px-6 text-xs font-bold mt-2"
+            className="btn-gold text-xs mt-2"
           >
             إعادة ضبط الفلاتر
           </button>

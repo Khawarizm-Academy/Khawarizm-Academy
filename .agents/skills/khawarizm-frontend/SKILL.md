@@ -42,7 +42,7 @@ Always follow this exact mapping when creating or moving files:
 | **Feature View Types** | `src/features/<feature>/` | `types.ts` (e.g. `CatalogTab`, `FilterDomain`) |
 | **Shared Hook** | `src/shared/hooks/` | `use<Name>.ts` (e.g. `useHorizontalScroll.ts`) |
 | **Feature Hook** | `src/features/<feature>/hooks/` | `use<FeatureHook>.ts` |
-| **Feature Styles (one feature only)** | `src/features/<feature>/` | `<feature>.css` (e.g. `auth.css`) — imported by `src/styles/globals.css` |
+| **Feature Styles (one feature only)** | `src/features/<feature>/` | `<feature>.css` (e.g. `auth.css`, `catalog.css`) — imported by `src/styles/globals.css` |
 | **Static Data (any kind)** | `src/shared/json/` | `<name>.json` (e.g. `routes.json`, `catalog.json`, `mockDashboard.json`) |
 | **Shared Utility / Helpers** | `src/shared/lib/` | `<name>.ts` (e.g. `localization.ts`, `navigation.ts`) |
 | **Shared Styles & Tokens (2+ features)** | `src/styles/` | `tokens.css` (variables), `globals.css` (shared concept classes; imports every feature `*.css`) |
@@ -110,6 +110,13 @@ Always follow this exact mapping when creating or moving files:
 5. **Check the class exists.** Dead classes render nothing: `.animate-fade-in` is now defined (it was used in 15+ files while missing), and `animate-spin-very-slow` never existed — use `.animate-orbit-slow`.
 
 > 📖 **Full Catalog & Prop APIs:** Read `references/component-catalog.md`.
+
+### 3.8 Catalog (Explorer & Filters)
+- **Page:** `<CatalogPage />` (`features/catalog/pages/CatalogPage.tsx`, standard shell). `type` and `q` are URL-derived; the two `<SmartSearchBox />` slots share one `searchProps` object — only the wrapper differs (`hidden md:flex` / `md:hidden`).
+- **Filter panels:** `<CatalogFilterSidebar />` (desktop) and `<CatalogMobileFilterDrawer />` (mobile sheet) both render `<CatalogFilterGroups surface tab … />` — pill rows are written once; `PILL_ACTIVE` / `PILL_IDLE` records pick the `.catalog-pill*` classes.
+- **Data boundary:** `<CatalogDataSection />` — the only section that re-renders on filter/data changes; error and empty states share `glass-panel` + `.catalog-state`.
+- **Card & chrome:** `<CatalogCard />` (shell from `card-interactive-blue|gold`, `pillarStyle()` + `DEADLINE_ACCENT` records instead of branches), `<CatalogToolbar />`, `<CatalogPagination />`, `<CatalogGridSkeleton />`.
+- **Styling:** every catalog element sits on a `.catalog-*` concept class (`.catalog-hero`, `.catalog-toolbar`, `.catalog-card-media`, `.catalog-pill*`, `.catalog-drawer*`, `.catalog-page*`, …) declared in **`src/features/catalog/catalog.css`** and imported by `globals.css` — the same feature-CSS pattern as `auth.css`.
 
 ---
 

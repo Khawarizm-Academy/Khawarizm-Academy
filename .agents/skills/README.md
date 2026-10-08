@@ -7,7 +7,7 @@ Five skills. Read the one that matches what you are doing.
 | **[khawarizm-code-style](khawarizm-code-style/SKILL.md)** | Writing, reviewing, or refactoring **any** `.ts` / `.tsx`. One-line comments, no if-chains, static data in JSON, no desktop/mobile duplication, repeated class strings → CSS, verification gates. |
 | **[khawarizm-routing](khawarizm-routing/SKILL.md)** | Adding or changing a **route, path, redirect, nav tab, or query param** — or debugging a URL that renders the wrong thing. |
 | **[khawarizm-navigation-cache](khawarizm-navigation-cache/SKILL.md)** | **Loading states, skeletons, caching, page transitions, scroll memory.** Read `references/page-loading-caching-guide.md` before touching a page. |
-| **[khawarizm-frontend](khawarizm-frontend/SKILL.md)** | **Design system** — observatory tokens, Tailwind v4 concept classes (incl. `.auth-*`), repeated-class extraction (§3.7), component catalog, RTL rules, directory placement. |
+| **[khawarizm-frontend](khawarizm-frontend/SKILL.md)** | **Design system** — observatory tokens, Tailwind v4 concept classes (incl. `.auth-*`, `.catalog-*`), repeated-class extraction (§3.7), component catalog, RTL rules, directory placement. |
 | **[khawarizm-page-builder](khawarizm-page-builder/SKILL.md)** | Building a **new page or feature end to end** — the 10-step protocol. |
 
 ## The four rules that cause most rework

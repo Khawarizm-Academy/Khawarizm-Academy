@@ -278,3 +278,35 @@ see the Authentication index in `design-tokens-and-classes.md`.
 - `<DefaultLoginCard />` — email/password form on `.auth-field` / `.auth-input-wrap`, remember-me, gold submit.
 - `<WelcomeBackCard />` — avatar (`.auth-avatar`), user name/badge, stats bar (`.auth-stats-bar`), returning CTA.
 - `<AuthHeroPanel />` — split-screen right pane: brand seal, orbit stage (`.auth-orbit-ring-outer` + `.animate-orbit-slow`), hero title/text, trust row, hero stats.
+
+---
+
+## 9. Catalog Explorer (`src/features/catalog/`)
+
+Feature-scoped components for the `/catalog` route. All styling lives on the
+`.catalog-*` concept classes in **`src/features/catalog/catalog.css`** (imported by `globals.css`) —
+see the Catalog index in `design-tokens-and-classes.md`.
+
+### 9.1 Page (`<CatalogPage />`)
+- **Path:** `src/features/catalog/pages/CatalogPage.tsx`
+- **State:** `type` and `q` are URL-derived; every other filter lives in local `PersistentFilters` state.
+- **Renders:** `.catalog-hero` with two `<SmartSearchBox />` slots sharing one `searchProps` object, `<CatalogToolbar />`, `<CatalogDataSection />`, `<CatalogFilterSidebar />`, `<CatalogMobileFilterDrawer />`.
+
+### 9.2 Data Boundary (`<CatalogDataSection />`)
+- **Path:** `src/features/catalog/components/CatalogDataSection.tsx`
+- **Features:** the only section that re-renders on filter/data changes (cache key includes every filter). Cold miss shows `<CatalogGridSkeleton count={6} />`; error and empty states share `glass-panel` + `.catalog-state`; background revalidation shows `.catalog-revalidation-line`.
+
+### 9.3 Filter Panels (written once)
+- `<CatalogFilterSidebar />` — desktop `w-72` panel on `.catalog-sidebar`.
+- `<CatalogMobileFilterDrawer />` — mobile bottom sheet on `.catalog-drawer` / `.catalog-drawer-panel`.
+- Both render **`<CatalogFilterGroups surface tab filters onChangeFilter />`** — the pill rows exist in one place; `PILL_ACTIVE` / `PILL_IDLE` records map tone + surface to `.catalog-pill*` classes. Never copy pill markup between the two surfaces.
+
+### 9.4 Result Card (`<CatalogCard />`)
+- **Path:** `src/features/catalog/components/CatalogCard.tsx`
+- **Shell:** `group card-interactive-blue | card-interactive-gold` — the shared class supplies the whole card shell; JSX only adds `group`.
+- **Records, not branches:** `pillarStyle(item)` picks accent, strip, and meta line per pillar; `DEADLINE_ACCENT` picks the badge accent per urgency (critical pulses).
+
+### 9.5 Toolbar, Pagination & Skeleton
+- `<CatalogToolbar />` — count chip (`.catalog-toolbar-count`), mobile filter trigger + sort dropdown (`.catalog-chip-btn`, `.catalog-sort-menu`); sort labels come from `shared/json/catalog.json`.
+- `<CatalogPagination />` — `.catalog-page-nav` arrows + `.catalog-page` numbers (`.catalog-page-active` / `.catalog-page-idle`).
+- `<CatalogGridSkeleton />` — Tier 2 skeleton that reuses `.catalog-grid`, `.catalog-card-media`, `.catalog-card-body`, so the skeleton is pixel-parallel to the real grid.

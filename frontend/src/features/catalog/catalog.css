@@ -1,0 +1,234 @@
+/* ==========================================================================
+   Catalog Feature — Filters, Toolbar & Result Cards  (features/catalog/catalog.css)
+   Feature-owned concept classes. Imported by styles/globals.css, which keeps
+   only classes shared by 2+ features. Declared in @layer components so JSX
+   utilities can still override them.
+   ========================================================================== */
+@layer components {
+  /* --- Page hero & result columns --- */
+  .catalog-hero {
+    @apply w-full flex flex-col items-center justify-center text-center gap-3 pt-6 pb-2;
+  }
+
+  .catalog-hero-title {
+    @apply text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white font-display tracking-tight;
+  }
+
+  .catalog-hero-subtitle {
+    @apply max-w-2xl text-slate-400 text-sm sm:text-base font-body leading-relaxed;
+  }
+
+  .catalog-search-slot {
+    @apply w-full justify-center mt-4;
+  }
+
+  .catalog-results {
+    @apply w-full flex flex-col lg:flex-row items-start gap-8;
+  }
+
+  .catalog-results-main {
+    @apply flex-1 w-full flex flex-col gap-6;
+  }
+
+  .catalog-results-aside {
+    @apply hidden lg:block shrink-0 sticky top-20;
+  }
+
+  /* --- Toolbar: count chip, filter trigger, sort dropdown --- */
+  .catalog-toolbar {
+    @apply w-full flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-navy-600/40 text-sm font-body select-none;
+  }
+
+  .catalog-toolbar-count {
+    @apply font-bold text-white tabular-nums px-1.5 py-0.5 rounded-md bg-navy-800/60 border border-navy-600/50 text-xs;
+  }
+
+  .catalog-chip-btn {
+    @apply flex items-center gap-2 px-3.5 py-1.5 text-xs cursor-pointer shadow-sm transition-all;
+  }
+
+  .catalog-chip-filters {
+    @apply lg:hidden rounded-full bg-navy-900 border border-navy-600 hover:border-gold-400 text-gold-400 font-semibold;
+  }
+
+  .catalog-chip-sort {
+    @apply rounded-lg bg-navy-900 border border-navy-600 hover:border-blue-400/50 text-slate-300 font-medium;
+  }
+
+  .catalog-sort-menu {
+    @apply absolute left-0 mt-1.5 w-40 bg-navy-900 border border-navy-600 rounded-xl shadow-2xl py-1.5 z-30;
+  }
+
+  .catalog-sort-option {
+    @apply w-full text-right px-4 py-2 text-xs transition-colors cursor-pointer;
+  }
+
+  .catalog-sort-option-idle {
+    @apply text-slate-300 hover:bg-navy-700 hover:text-white;
+  }
+
+  .catalog-sort-option-active {
+    @apply bg-gold-400/15 text-gold-400 font-bold;
+  }
+
+  /* --- Data section: grid, revalidation line, empty & error states --- */
+  .catalog-data {
+    @apply w-full flex flex-col gap-6 relative;
+  }
+
+  .catalog-revalidation-line {
+    @apply absolute -top-3 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse;
+  }
+
+  .catalog-grid {
+    @apply w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch;
+  }
+
+  .catalog-state {
+    @apply w-full py-16 px-6 rounded-2xl flex flex-col items-center justify-center text-center gap-4;
+  }
+
+  .catalog-state-icon {
+    @apply w-16 h-16 rounded-full bg-navy-800 border border-navy-600 flex items-center justify-center;
+  }
+
+  .catalog-state-title {
+    @apply text-xl font-bold text-white font-display;
+  }
+
+  .catalog-state-text {
+    @apply text-slate-400 text-sm font-body max-w-md;
+  }
+
+  /* --- Result card --- */
+  .catalog-card-media {
+    @apply relative w-full h-36 bg-navy-950 overflow-hidden flex items-center justify-center;
+  }
+
+  .catalog-card-thumb {
+    @apply absolute inset-0 w-full h-full object-cover opacity-35 group-hover:scale-105 group-hover:opacity-45 transition-all duration-500;
+  }
+
+  .catalog-card-media-shade {
+    @apply absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-navy-950/40;
+  }
+
+  .catalog-card-symbol {
+    @apply relative z-10 w-11 h-11 rounded-full bg-navy-950/85 border border-navy-600 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:border-blue-400/60 shadow-lg;
+  }
+
+  .catalog-skeleton-symbol {
+    @apply relative z-10 w-11 h-11 rounded-full bg-navy-950/90 border border-navy-600/70 flex items-center justify-center;
+  }
+
+  .catalog-card-badge {
+    @apply absolute top-2.5 right-2.5 px-2.5 py-1 rounded-md bg-navy-950/90 text-[11px] font-display font-semibold shadow-md border;
+  }
+
+  .catalog-card-body {
+    @apply p-4 flex-1 flex flex-col justify-between gap-3;
+  }
+
+  .catalog-card-category {
+    @apply text-xs font-medium font-body;
+  }
+
+  .catalog-card-title {
+    @apply text-base font-bold text-white font-display leading-snug line-clamp-2 group-hover:text-gold-400 transition-colors;
+  }
+
+  .catalog-card-meta {
+    @apply text-xs text-slate-400 font-body line-clamp-1;
+  }
+
+  .catalog-card-divider {
+    @apply w-full h-px bg-navy-600/50 my-0.5;
+  }
+
+  .catalog-card-footer {
+    @apply flex items-center justify-between pt-1;
+  }
+
+  /* --- Filter panels: desktop sidebar & mobile drawer --- */
+  .catalog-sidebar {
+    @apply w-72 p-5 sm:p-6 bg-navy-900/90 backdrop-blur-md rounded-xl border border-navy-600 flex flex-col gap-5 select-none shadow-xl sticky top-24;
+  }
+
+  .catalog-panel-head {
+    @apply flex items-center justify-between pb-3 border-b border-navy-600/50;
+  }
+
+  .catalog-panel-title {
+    @apply flex items-center gap-2 text-white font-bold font-display text-base;
+  }
+
+  .catalog-reset {
+    @apply text-gold-400 text-xs font-medium font-body cursor-pointer transition-colors;
+  }
+
+  .catalog-drawer {
+    @apply fixed inset-0 z-[120] flex items-end justify-center;
+  }
+
+  .catalog-drawer-scrim {
+    @apply absolute inset-0 bg-navy-950/80 backdrop-blur-sm transition-opacity;
+  }
+
+  .catalog-drawer-panel {
+    @apply relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto bg-navy-900 border-t-2 border-navy-600 rounded-t-2xl p-6 flex flex-col gap-6 shadow-2xl;
+  }
+
+  .catalog-drawer-handle {
+    @apply w-12 h-1.5 bg-navy-600 rounded-full mx-auto -mt-2;
+  }
+
+  /* --- Filter pills (shared by sidebar & drawer) --- */
+  .catalog-group-label {
+    @apply text-white text-sm font-bold font-display text-right;
+  }
+
+  .catalog-pill {
+    @apply py-1.5 px-3 rounded-lg text-xs font-body font-medium transition-all duration-200 cursor-pointer;
+  }
+
+  .catalog-pill-idle {
+    @apply bg-navy-950/80 border border-navy-600/70 text-slate-400;
+  }
+
+  .catalog-pill-gold {
+    @apply bg-gold-400/15 border border-gold-400 text-gold-400;
+  }
+
+  .catalog-pill-sky {
+    @apply bg-blue-400/15 border border-blue-400 text-blue-400;
+  }
+
+  .catalog-pill-glow-gold {
+    @apply shadow-[0_0_10px_rgba(229,182,92,0.25)];
+  }
+
+  .catalog-pill-glow-sky {
+    @apply shadow-[0_0_10px_rgba(41,169,255,0.25)];
+  }
+
+  /* --- Pagination --- */
+  .catalog-pagination {
+    @apply w-full flex items-center justify-center gap-2 pt-6 select-none;
+  }
+
+  .catalog-page-nav {
+    @apply w-9 h-9 rounded-lg bg-navy-900 border border-navy-600 hover:border-blue-400/50 text-slate-300 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer shadow-sm;
+  }
+
+  .catalog-page {
+    @apply min-w-9 h-9 px-3 rounded-lg text-xs font-body font-bold transition-all duration-200 cursor-pointer shadow-sm flex items-center justify-center;
+  }
+
+  .catalog-page-idle {
+    @apply bg-navy-900 border border-navy-600 text-slate-400 hover:text-white hover:border-blue-400/40;
+  }
+
+  .catalog-page-active {
+    @apply bg-gold-400/15 border border-gold-400 text-gold-400 shadow-[0_0_12px_rgba(229,182,92,0.3)];
+  }
+}

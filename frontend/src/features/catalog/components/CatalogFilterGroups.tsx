@@ -2,30 +2,25 @@ import React from 'react';
 import { getFilterGroups, type Surface, type Tone } from '../data/catalogFilters';
 import type { CatalogFiltersState, CatalogTab } from '../types';
 
-/** Pill classes per tone and surface; the glow variant is used by groups that ask for it. */
+/** Active pill per tone and surface; the mobile surface drops a stronger background, glow groups add their ring. */
 const PILL_ACTIVE = {
   gold: {
-    desktop: 'bg-[#E5B65C]/15 border border-[#E5B65C] text-[#E5B65C]',
-    desktopGlow:
-      'bg-[#E5B65C]/15 border border-[#E5B65C] text-[#E5B65C] shadow-[0_0_10px_rgba(229,182,92,0.25)]',
-    mobile: 'bg-[#E5B65C]/20 border border-[#E5B65C] text-[#E5B65C]',
+    desktop: 'catalog-pill-gold',
+    desktopGlow: 'catalog-pill-gold catalog-pill-glow-gold',
+    mobile: 'catalog-pill-gold bg-gold-400/20',
   },
   sky: {
-    desktop: 'bg-[#29A9FF]/15 border border-[#29A9FF] text-[#29A9FF]',
-    desktopGlow:
-      'bg-[#29A9FF]/15 border border-[#29A9FF] text-[#29A9FF] shadow-[0_0_10px_rgba(41,169,255,0.25)]',
-    mobile: 'bg-[#29A9FF]/20 border border-[#29A9FF] text-[#29A9FF]',
+    desktop: 'catalog-pill-sky',
+    desktopGlow: 'catalog-pill-sky catalog-pill-glow-sky',
+    mobile: 'catalog-pill-sky bg-blue-400/20',
   },
 } satisfies Record<Tone, Record<string, string>>;
 
+/** Only the desktop surface gets hover feedback — touch has no hover. */
 const PILL_IDLE = {
-  desktop:
-    'bg-[#040F24]/80 border border-[#1B3F80]/70 text-[#8299B5] hover:text-white hover:border-[#29A9FF]/50',
-  mobile: 'bg-[#040F24]/80 border border-[#1B3F80]/70 text-[#8299B5]',
+  desktop: 'catalog-pill-idle hover:text-white hover:border-blue-400/50',
+  mobile: 'catalog-pill-idle',
 } satisfies Record<Surface, string>;
-
-const PILL_BASE =
-  "py-1.5 px-3 rounded-lg text-xs font-['Tajawal'] font-medium transition-all duration-200 cursor-pointer";
 
 /** One labelled row of filter pills. The sidebar and the drawer both use it. */
 export const CatalogFilterGroups: React.FC<{
@@ -40,9 +35,7 @@ export const CatalogFilterGroups: React.FC<{
     <>
       {groups.map((group) => (
         <div key={group.key} className="flex flex-col gap-2.5">
-          <label className="text-white text-sm font-bold font-['IBM_Plex_Sans_Arabic'] text-right">
-            {group.label}
-          </label>
+          <label className="catalog-group-label">{group.label}</label>
           <div className="flex flex-wrap gap-2">
             {group.options.map((option) => {
               const isActive = filters[group.key] === option.id;
@@ -56,7 +49,7 @@ export const CatalogFilterGroups: React.FC<{
                   key={option.id}
                   type="button"
                   onClick={() => onChangeFilter(group.key, option.id)}
-                  className={`${PILL_BASE} ${isActive ? activeClass : PILL_IDLE[surface]}`}
+                  className={`catalog-pill ${isActive ? activeClass : PILL_IDLE[surface]}`}
                 >
                   {option.label}
                 </button>

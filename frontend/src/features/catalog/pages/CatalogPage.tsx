@@ -47,7 +47,7 @@ export const CatalogPage: React.FC = () => {
     searchQuery: initialQueryFromUrl,
   };
 
-// Handle Tab Switch (All / Courses / Scholarships)
+  // Tab switch resets paging and drops the level filter.
   const handleTabChange = (newTab: CatalogTab) => {
     setPersistentFilters((prev) => ({ ...prev, page: 1, level: 'all' }));
     setSearchParams({
@@ -56,7 +56,7 @@ export const CatalogPage: React.FC = () => {
     });
   };
 
-  // Handle search submit from SmartSearchBox
+  // Search submit rewrites the URL — `type` and `q` both live there.
   const handleSearch = (query: string, searchType?: SearchType) => {
     setPersistentFilters((prev) => ({ ...prev, page: 1 }));
     setSearchParams({
@@ -86,43 +86,35 @@ export const CatalogPage: React.FC = () => {
 
   const pageTitles = catalogJson.pageTitles[activeTab];
 
+  // Both search surfaces share every prop except the variant wrapper.
+  const searchProps = {
+    selectedType: SEARCH_TYPE_BY_TAB[activeTab],
+    onTypeChange: (t: SearchType) => handleTabChange(TAB_BY_SEARCH_TYPE[t]),
+    initialQuery: filters.searchQuery,
+    onSearch: handleSearch,
+  };
+
   return (
     <main className="content-container">
       {/* Hero section */}
-      <section className="w-full flex-col-center text-center gap-3 pt-6 pb-2 animate-fade-in-up">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white font-['IBM_Plex_Sans_Arabic'] tracking-tight">
-          {pageTitles.title}
-        </h1>
-        <p className="max-w-2xl text-slate-400 text-sm sm:text-base font-['Tajawal'] leading-relaxed">
-          {pageTitles.subtitle}
-        </p>
+      <section className="catalog-hero animate-fade-in-up">
+        <h1 className="catalog-hero-title">{pageTitles.title}</h1>
+        <p className="catalog-hero-subtitle">{pageTitles.subtitle}</p>
 
         {/* Desktop and mobile search boxes differ only in layout */}
-        <div className="hidden md:flex w-full justify-center mt-4">
-          <SmartSearchBox
-            variant="desktop"
-            selectedType={SEARCH_TYPE_BY_TAB[activeTab]}
-            onTypeChange={(t) => handleTabChange(TAB_BY_SEARCH_TYPE[t])}
-            initialQuery={filters.searchQuery}
-            onSearch={handleSearch}
-          />
+        <div className="hidden md:flex catalog-search-slot">
+          <SmartSearchBox variant="desktop" {...searchProps} />
         </div>
 
-        <div className="flex md:hidden w-full justify-center mt-3">
-          <SmartSearchBox
-            variant="mobile"
-            selectedType={SEARCH_TYPE_BY_TAB[activeTab]}
-            onTypeChange={(t) => handleTabChange(TAB_BY_SEARCH_TYPE[t])}
-            initialQuery={filters.searchQuery}
-            onSearch={handleSearch}
-          />
+        <div className="flex md:hidden catalog-search-slot mt-3">
+          <SmartSearchBox variant="mobile" {...searchProps} />
         </div>
       </section>
 
       {/* Results and filters */}
-      <div className="w-full flex flex-col lg:flex-row items-start gap-8 animate-fade-in-up">
+      <div className="catalog-results animate-fade-in-up">
         {/* Results */}
-        <div className="flex-1 w-full flex flex-col gap-6">
+        <div className="catalog-results-main">
           <CatalogToolbar
             totalCount={0}
             itemTypeLabel={pageTitles.countLabel}
@@ -140,7 +132,7 @@ export const CatalogPage: React.FC = () => {
           />
         </div>
 
-        <aside className="hidden lg:block shrink-0 sticky top-20">
+        <aside className="catalog-results-aside">
           <CatalogFilterSidebar
             type={activeTab}
             filters={filters}

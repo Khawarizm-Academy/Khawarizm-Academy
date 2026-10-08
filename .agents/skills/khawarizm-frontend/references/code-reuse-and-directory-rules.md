@@ -140,4 +140,6 @@ Every page view must reuse the global layout primitives:
 | **Upcoming Events Section** | `<EventSection featuredEvent={e1} workshopEvent={e2} />` |
 | **Login mode pill (desktop + mobile)** | `<AuthModeSwitch mode={mode} onChange={setMode} />` — one pill, `lg:` breakpoints pick label/size |
 | **Google / Facebook sign-in** | `<AuthSocialButton provider="google" label={…} />` — `PROVIDERS` record, no provider branch |
+| **Catalog filter pills (sidebar + drawer)** | `<CatalogFilterGroups surface tab filters onChangeFilter />` — pill rows written once |
+| **Catalog result card / grid / states** | `<CatalogCard item={…} />` inside `.catalog-grid`; empty & error states share `.catalog-state` + `glass-panel` |
 | **The same class string twice** | Extract it into the owning CSS file — `features/<feature>/<feature>.css` or `globals.css` (`@layer components`) — skill §3.7 |

@@ -196,6 +196,18 @@ so JSX utilities can override them — see §3.7 of the skill for the cascade ru
 - **Mobile header:** `.auth-mobile-brand`, `.auth-mobile-heading`, `.auth-mobile-title`, `.auth-mobile-subtitle`.
 - **Hero panel:** `.auth-hero`, `.auth-glow-gold`, `.auth-glow-cyan`, `.auth-glow-mobile`, `.auth-brand`, `.auth-brand-name`, `.auth-brand-tag`, `.auth-orbit-stage`, `.auth-orbit-canvas`, `.auth-orbit-ring-outer` (add `.animate-orbit-slow` in JSX), `.auth-orbit-ring-inner`, `.auth-orbit-line`, `.auth-orbit-core`, `.auth-orbit-core-glow`, `.auth-orbit-core-star`, `.auth-hero-foot`, `.auth-hero-group`, `.auth-hero-title`, `.auth-hero-text`, `.auth-trust`, `.auth-trust-text`, `.auth-hero-stats`.
 
+### Catalog (`.catalog-*`, in `features/catalog/catalog.css`)
+Catalog explorer route (`/catalog`). Same pattern as auth: the feature owns
+`src/features/catalog/catalog.css`, `globals.css` imports it, classes sit in `@layer components`.
+
+- **Page layout:** `.catalog-hero`, `.catalog-hero-title`, `.catalog-hero-subtitle`, `.catalog-search-slot` (mobile adds `mt-3`), `.catalog-results`, `.catalog-results-main`, `.catalog-results-aside`.
+- **Toolbar:** `.catalog-toolbar`, `.catalog-toolbar-count`, `.catalog-chip-btn` (+ `.catalog-chip-filters` / `.catalog-chip-sort`), `.catalog-sort-menu`, `.catalog-sort-option` (+ `-idle` / `-active`).
+- **Data section:** `.catalog-data`, `.catalog-revalidation-line`, `.catalog-grid` (cards **and** skeleton), `.catalog-state`, `.catalog-state-icon`, `.catalog-state-title`, `.catalog-state-text`.
+- **Result card:** `.catalog-card-media`, `.catalog-card-thumb`, `.catalog-card-media-shade`, `.catalog-card-symbol` (skeleton: `.catalog-skeleton-symbol`), `.catalog-card-badge`, `.catalog-card-body`, `.catalog-card-category`, `.catalog-card-title`, `.catalog-card-meta`, `.catalog-card-divider`, `.catalog-card-footer`.
+- **Filter panels:** `.catalog-sidebar`, `.catalog-panel-head`, `.catalog-panel-title`, `.catalog-reset`, `.catalog-drawer`, `.catalog-drawer-scrim`, `.catalog-drawer-panel`, `.catalog-drawer-handle`.
+- **Filter pills:** `.catalog-group-label`, `.catalog-pill`, `.catalog-pill-idle`, `.catalog-pill-gold`, `.catalog-pill-sky`, `.catalog-pill-glow-gold`, `.catalog-pill-glow-sky`.
+- **Pagination:** `.catalog-pagination`, `.catalog-page-nav`, `.catalog-page` (+ `-idle` / `-active`).
+
 ### Animations
 - `.animate-fade-in` — generic opacity fade (modals, toasts, view swaps). **Was used in 15+ files while undefined; now defined in `globals.css`.**
 - `.animate-fade-in-up` / `.animate-fade-in-down` — entrance slides (+ `animation-delay-*` helpers).
