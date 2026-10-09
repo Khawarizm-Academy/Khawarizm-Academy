@@ -73,6 +73,19 @@
     @apply text-slate-300 text-xs font-medium;
   }
 
+  /* --- Account summary rows --- */
+  .profile-stat {
+    @apply flex items-center justify-between gap-3 p-3 rounded-xl bg-navy-950/50 border border-navy-600/40;
+  }
+
+  .profile-stat-label {
+    @apply text-slate-300 text-xs font-medium;
+  }
+
+  .profile-stat-value {
+    @apply text-sm font-bold text-blue-400;
+  }
+
   /* --- Interest chips --- */
   .profile-interest {
     @apply px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer select-none active:scale-95;

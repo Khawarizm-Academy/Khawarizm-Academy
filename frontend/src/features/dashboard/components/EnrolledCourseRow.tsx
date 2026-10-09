@@ -52,7 +52,11 @@ export const EnrolledCourseRow: React.FC<EnrolledCourseRowProps> = ({
       {/* Left side in RTL: progress ring + "استمر" action button */}
       <div className="dash-row-side md:gap-4">
         <RadialProgressRing progress={course.progress} size={44} strokeWidth={4} />
-        <button type="button" onClick={onContinue} className="btn-pill-subtle">
+        <button
+          type="button"
+          onClick={onContinue}
+          className="dash-course-action dash-course-action-active px-5 py-2.5 text-sm"
+        >
           استمر
         </button>
       </div>

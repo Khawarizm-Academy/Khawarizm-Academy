@@ -87,6 +87,9 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
     setProfile(INITIAL_USER_PROFILE);
   };
 
+  const currentLevelLabel = LEARNING_LEVELS.find((lvl) => lvl.id === profile.learningLevel)?.label;
+  const activeReminders = Object.values(profile.notifications).filter(Boolean).length;
+
   return (
     <div dir="rtl" className="profile-root">
       {/* Identity hero */}
@@ -294,6 +297,23 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                 ]}
               />
             </SettingsCard>
+
+            <SettingsCard icon={Award} title="ملخص الحساب" iconClassName="text-gold-400" index={4}>
+              <div className="flex flex-col gap-3">
+                <div className="profile-stat">
+                  <span className="profile-stat-label">المستوى الأكاديمي</span>
+                  <span className="profile-stat-value">{currentLevelLabel}</span>
+                </div>
+                <div className="profile-stat">
+                  <span className="profile-stat-label">المسارات المختارة</span>
+                  <span className="profile-stat-value">{profile.interests.length}</span>
+                </div>
+                <div className="profile-stat">
+                  <span className="profile-stat-label">التنبيهات المفعّلة</span>
+                  <span className="profile-stat-value">{activeReminders}</span>
+                </div>
+              </div>
+            </SettingsCard>
           </div>
         </div>
 
@@ -302,7 +322,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
           <button
             type="submit"
             disabled={isSaving}
-            className="btn-gold w-full sm:w-auto px-8 py-3.5 text-sm sm:text-base disabled:opacity-70"
+            className="btn-gold btn-attention w-full sm:w-auto px-8 py-3.5 text-sm sm:text-base disabled:opacity-70"
           >
             {isSaving ? (
               <>
