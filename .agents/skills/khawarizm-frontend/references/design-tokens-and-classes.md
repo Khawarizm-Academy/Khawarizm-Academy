@@ -134,10 +134,15 @@ Non-utility CSS variables live in a `:root` block in the same file (consumed via
 > real utilities: it fails on `.flex-center` and `group`.
 
 ### Layout Primitives
-- `.page-wrapper`: Root container with `bg-[#040F24]`, `text-[#DCE5EE]`, selection styling.
+- `.page-wrapper`: Root container with `bg-[#040F24]`, `text-[#DCE5EE]`, selection styling, and `overflow-x-clip`.
 - `.content-container`: Main content wrapper (`max-w-[1280px]`, responsive padding, flex column).
 - `.flex-center`, `.flex-between`, `.flex-start`, `.flex-end`, `.flex-col-center`, `.flex-col-between`.
 - `.horizontal-scroll-row`: Horizontal flex swipe row with `-mx-4 px-4 overflow-x-auto` and hidden scrollbar.
+
+> **Sticky rules (learned the hard way):**
+> 1. **Never `overflow-x-hidden` on an ancestor of sticky chrome.** `hidden` on one axis computes the other axis to `auto`, creating a scroll container that swallows `position: sticky` — the sidebar/navbar scrolls away with the page. Use `overflow-x-clip` (clips the same, creates no scroll container). `.page-wrapper`, `.dash-page` and every future page shell use `clip`.
+> 2. **A sticky element only travels inside its parent.** The RootLayout navbar wrappers are `sticky top-0` themselves (their parent is the tall `.page-wrapper`); the navbar inside a wrapper of its own height can never stick.
+> 3. **Isolated rails** (dashboard sidebar): `sticky top-0 h-screen overflow-y-auto` — pinned to the viewport for the whole page, scrolling internally if their content is taller than the screen.
 
 ### Surfaces & Cards
 - `.glass-panel`: Glassmorphic panel with `#061A3A/40`, blur, and `#1B3F80/40` border.
@@ -207,6 +212,32 @@ Catalog explorer route (`/catalog`). Same pattern as auth: the feature owns
 - **Filter panels:** `.catalog-sidebar`, `.catalog-panel-head`, `.catalog-panel-title`, `.catalog-reset`, `.catalog-drawer`, `.catalog-drawer-scrim`, `.catalog-drawer-panel`, `.catalog-drawer-handle`.
 - **Filter pills:** `.catalog-group-label`, `.catalog-pill`, `.catalog-pill-idle`, `.catalog-pill-gold`, `.catalog-pill-sky`, `.catalog-pill-glow-gold`, `.catalog-pill-glow-sky`.
 - **Pagination:** `.catalog-pagination`, `.catalog-page-nav`, `.catalog-page` (+ `-idle` / `-active`).
+
+### Dashboard (`.dash-*`, in `features/dashboard/dashboard.css`)
+Learning workspace (`/dashboard`). Same pattern as auth/catalog: the feature owns
+`src/features/dashboard/dashboard.css`, `globals.css` imports it, classes sit in `@layer components`.
+`dashboard.css` orders variant classes after their base (hero → hero-cyan/hero-red,
+nav-item → nav-item-active/idle, modal-icon → -red/-sky/-gold, …).
+
+**Canvas & elevation (aligned with every other page):**
+- `.dash-page` paints **no background** — the dashboard sits on the navy-950 page-wrapper and the global celestial washes glow through it. Never add a page-level background to a feature page; the shell owns the canvas.
+- **Cards are lighter than the canvas:** floating surfaces are translucent glass (`bg-navy-900/70–80 + backdrop-blur-md + border-navy-600/50`), wells inside them go darker (`bg-navy-950/50`). Never flip this (dark cards on a dark page read as holes).
+- Chrome is `.glass-navbar`-grade: `.dash-sidebar` / `.dash-topbar` use `bg-navy-950/90 + backdrop-blur-md`, and both are `sticky top-0`. The sidebar is an **isolated rail** — `sticky top-0 h-screen overflow-y-auto`: pinned to the viewport on every view, scrolling internally if the nav outgrows the screen (see the sticky rules under Layout Primitives).
+- Modals, drawer, dropdowns and search panels stay **solid navy-900** for readability over the scrim (same idiom as `.auth-terms-panel`).
+- Accent pills are translucent, never solid fills: active nav = `bg-gold-400/10 outline-gold-400/50 text-gold-400`, subnav/filter pills = `bg-blue-400/15`, toggles & sort = `bg-gold-400/15 text-gold-400` (mirrors `.catalog-pill-gold`).
+
+- **Page shell:** `.dash-page` (`selection:` variant), `.dash-grid` (RTL 2-col; pair with inline `animate-fade-in-up animation-delay-100` — plain globals helpers stay in JSX), `.dash-grid-main`, `.dash-grid-aside`.
+- **View scaffold:** `.dash-view-title`, `.dash-section-head`, `.dash-row-title`, `.dash-mobile-top-row` (+ `-title` / `-back`), `.dash-chip`, `.dash-chip-mobile` / `.dash-chip-desktop`, `.dash-chip-row` (+ `.no-scrollbar`).
+- **Desktop sidebar (Right / Child #1):** `.dash-sidebar`, `.dash-side-section`, `.dash-side-row` (add `group` in JSX), `.dash-nav-item` (+ `-active` / `-idle`), `.dash-avatar`, `.dash-brand-mark`, `.dash-brand-name`, `.dash-user-name` (hover via `group-hover:*`), and the bottom icon pair: saved `.dash-bell` bookmark + notification `.dash-bell` (both `-active` / `-idle`, badge via `.dash-bell-badge` / `.dash-bell-count`).
+- **Top bar & search:** `.dash-topbar` (sticky glass, matches `.glass-navbar`), `.dash-topbar-search`, `.dash-search-overlay`, `.dash-search-panel`, `.dash-subnav` (mobile/tablet-only — carries `lg:hidden`), `.dash-tab` / `.dash-pill-active`.
+- **Stats header & sidebar:** `.dash-greet-*`, `.dash-bell-*` (+ `-active` / `-idle`), `.dash-stat-chip-row`, `.dash-widget`, `.dash-widget-icon`, `.dash-widget-head`, `.dash-widget-title`, `.dash-stat/stat-value/stat-label-row`, `.dash-upcoming-row`, `.dash-course-live-dot`.
+- **Hero priority cards:** `.dash-hero`, `.dash-hero-cyan`, `.dash-hero-red`, `.dash-hero-tag` (+ `-cyan` / `-red`), `.dash-hero-tag-label` (+ `-live`), `.dash-hero-thumb` (+ `-cyan` / `-red`), `.dash-progress` / `.dash-progress-bar` / `.dash-progress-fill`, `.dash-course-title`, `.dash-countdown-*` (uses `var(--color-danger)`), `.dash-cta*`.
+- **Rows & cards:** `.dash-row` (+ `-meta`, `-label`, `-value`, `-icon`), `.dash-deadline-tag`, `.dash-course-icon` (+ tone records `COURSE_ICON`), `.dash-card`, `.dash-card-head`, `.dash-card-body`, `.dash-course-card-details`, `.dash-course-score`.
+- **Enrolled view:** `.dash-chip-btn` (+ `-filters` / `-sort`), `.dash-sort-menu` (pair with inline `animate-fade-in-up`), `.dash-sort-option` (+ `-idle` / `-active`, `cursor-pointer`), `.dash-filter-pill` (+ `-idle` / `-active`), `.dash-empty-btn` (+ `-primary` / `-ghost`).
+- **Empty hero:** `.dash-empty-hero`, `.dash-empty-badge`, `.dash-empty-title`, `.dash-empty-text`, `.dash-compass` (+ `.animate-orbit-slow` in JSX).
+- **Competitions & certificates:** `.dash-toggle`, `.dash-toggle-btn`, `.dash-toggle-active` / `.dash-toggle-idle`, `.dash-cert-card`, `.dash-cert-badge`, `.dash-cert-title`, `.dash-cert-cta`, `.dash-cert-cta-blue`.
+- **Notifications:** `.dash-notif` (add `group` in JSX; + `-unread` / `-read`), `.dash-notif-icon` (+ `-tone-*`), `.dash-drawer-scrim`, `.dash-drawer-panel`, `.dash-drawer-head`, `.dash-drawer-item`, `.dash-toast`.
+- **Modal chrome (chambers):** `.dash-modal-overlay`, `.dash-modal-shell` (built on `workspace-card`), `.dash-modal-head`, `.dash-modal-title`, `.dash-modal-close`, `.dash-modal-icon` (+ `-red` / `-sky` / `-gold`), `.dash-modal-divider`, plus chamber internals: `.dash-stage-*`, `.dash-chat-*`, `.dash-arena-*`, `.dash-code-*`, `.dash-lead-*`, `.dash-check-*`, `.dash-editor-*`.
 
 ### Animations
 - `.animate-fade-in` — generic opacity fade (modals, toasts, view swaps). **Was used in 15+ files while undefined; now defined in `globals.css`.**

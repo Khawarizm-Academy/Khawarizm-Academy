@@ -79,6 +79,8 @@ const { data, isLoading, isFetching, isError, error, refetch } = useCachedData<M
 ```
 Render order: `isLoading` → Tier 2 skeleton → `isError` → retry block → `data` empty → empty state → grid.
 
+> **Dashboard convention:** dashboard sections key under the `'dashboard'` namespace with a per-section token — `['dashboard', 'stats']`, `['dashboard', 'courses-list']`, `['dashboard', 'competitions']`, `['dashboard', 'saved-scholarships']`, `['dashboard', 'notifications-view']`, … (mocks/fetchers live in `features/dashboard/data/dashboardFetchers.ts`).
+
 ## Step 6 — Warm the detail page (prefetch on hover)
 
 ```tsx

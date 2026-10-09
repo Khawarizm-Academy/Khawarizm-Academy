@@ -41,20 +41,16 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
 
   return (
     <div dir="rtl" className="w-full flex flex-col gap-6 select-none">
-      {/* Mobile Top Navigation Bar matching media_1789837891270.png */}
-      <div className="flex md:hidden justify-between items-center w-full py-1">
-        {/* Right: Title */}
-        <h2 className="text-slate-200 text-xl font-bold font-['IBM_Plex_Sans_Arabic'] text-right">
-          الإشعارات
-        </h2>
+      {/* Mobile top bar: title + mark-read + back */}
+      <div className="dash-mtop">
+        <h2 className="text-white text-xl font-bold font-display text-right">الإشعارات</h2>
 
-        {/* Left: Mark all read + Back Chevron button */}
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={handleMarkAllRead}
-              className="text-xs text-sky-400 font-bold px-2.5 py-1 rounded-lg bg-sky-400/10 cursor-pointer"
+              className="text-xs text-blue-400 font-bold px-2.5 py-1 rounded-lg bg-blue-400/10 cursor-pointer"
             >
               تحديد الكل كمقروء
             </button>
@@ -72,49 +68,42 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         </div>
       </div>
 
-      {/* Desktop Section-Header matching media_1789837891286.png */}
-      <div
-
-        className="self-stretch hidden md:flex justify-between items-center"
-      >
-        {/* Left: Mark All as Read button */}
+      {/* Desktop section header: mark-read on the left, title on the right */}
+      <div className="dash-notif-head">
         <div className="self-stretch">
-          <button
-            type="button"
-            onClick={handleMarkAllRead}
-            className="btn-pill-subtle px-4 py-2 text-sm"
-          >
+          <button type="button" onClick={handleMarkAllRead} className="btn-pill-subtle">
             تحديد الكل كمقروء
           </button>
         </div>
 
-        {/* Right: Title & Unread Count info */}
         <div className="flex flex-col justify-start items-start text-right gap-1">
-          <h2 className="text-slate-200 text-2xl font-bold font-['IBM_Plex_Sans_Arabic']">
-            مركز الإشعارات
-          </h2>
-          <span className="text-slate-400 text-sm font-normal font-['Tajawal']">
-            {unreadCount > 0 ? `لديك ${unreadCount} تنبيهات جديدة غير مقروءة` : 'لا توجد تنبيهات جديدة غير مقروءة'}
+          <div className="section-accent-title-blue">
+            <h2 className="text-white text-2xl font-bold font-display">مركز الإشعارات</h2>
+          </div>
+          <span className="text-slate-400 text-sm font-normal">
+            {unreadCount > 0
+              ? `لديك ${unreadCount} تنبيهات جديدة غير مقروءة`
+              : 'لا توجد تنبيهات جديدة غير مقروءة'}
           </span>
         </div>
       </div>
 
-      {/* Notification-List matching Figma & Screenshots */}
+      {/* Notification list */}
       {isLoading ? (
         <DataSectionSkeleton variant="list" count={5} />
       ) : (
-        <div className="self-stretch flex flex-col justify-start items-start gap-3">
-        {notifications.map((item) => (
-          <NotificationListItem
-            key={item.id}
-            text={item.message}
-            timeAgo={item.timeAgo}
-            type={item.type}
-            unread={item.isUnread}
-            onClick={() => handleToggleRead(item.id, item)}
-          />
-        ))}
-      </div>
+        <div className="dash-list">
+          {notifications.map((item) => (
+            <NotificationListItem
+              key={item.id}
+              text={item.message}
+              timeAgo={item.timeAgo}
+              type={item.type}
+              unread={item.isUnread}
+              onClick={() => handleToggleRead(item.id, item)}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

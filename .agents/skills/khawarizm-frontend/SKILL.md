@@ -23,7 +23,7 @@ The Khawarizm Academy platform is built on two core educational pillars sharing 
 
 ### 1.2 Core Technology Stack
 - **Framework:** React 19 + TypeScript (Strict mode) + Vite.
-- **Styling Engine:** Tailwind CSS v4 (`@import "tailwindcss"`) augmented with `@import "./tokens.css"` and concept-oriented `@apply` classes in `src/styles/globals.css`, which also imports per-feature CSS files (e.g. `src/features/auth/auth.css`).
+- **Styling Engine:** Tailwind CSS v4 (`@import "tailwindcss"`) augmented with `@import "./tokens.css"` and concept-oriented `@apply` classes in `src/styles/globals.css`, which also imports per-feature CSS files (e.g. `src/features/auth/auth.css`, `src/features/catalog/catalog.css`, `src/features/dashboard/dashboard.css`).
 - **Localization Engine:** English domain keys internally + `toArabic(category, key)` / `toArabicNav(key)` in `src/shared/lib/localization.ts`.
 - **Master Branding:** Official logo `src/assets/brand/source/KhawarizmLogo.jpg`. Run `npm run brand:generate` to regenerate all app icons and favicons.
 
@@ -42,7 +42,7 @@ Always follow this exact mapping when creating or moving files:
 | **Feature View Types** | `src/features/<feature>/` | `types.ts` (e.g. `CatalogTab`, `FilterDomain`) |
 | **Shared Hook** | `src/shared/hooks/` | `use<Name>.ts` (e.g. `useHorizontalScroll.ts`) |
 | **Feature Hook** | `src/features/<feature>/hooks/` | `use<FeatureHook>.ts` |
-| **Feature Styles (one feature only)** | `src/features/<feature>/` | `<feature>.css` (e.g. `auth.css`, `catalog.css`) — imported by `src/styles/globals.css` |
+| **Feature Styles (one feature only)** | `src/features/<feature>/` | `<feature>.css` (e.g. `auth.css`, `catalog.css`, `dashboard.css`) — imported by `src/styles/globals.css` |
 | **Static Data (any kind)** | `src/shared/json/` | `<name>.json` (e.g. `routes.json`, `catalog.json`, `mockDashboard.json`) |
 | **Shared Utility / Helpers** | `src/shared/lib/` | `<name>.ts` (e.g. `localization.ts`, `navigation.ts`) |
 | **Shared Styles & Tokens (2+ features)** | `src/styles/` | `tokens.css` (variables), `globals.css` (shared concept classes; imports every feature `*.css`) |
@@ -105,7 +105,7 @@ Always follow this exact mapping when creating or moving files:
 
 1. **Declare new concept classes inside `@layer components`.** Tailwind utilities live in `@layer utilities`, so a utility in JSX still wins over the class. An **unlayered** class (`.btn-gold`, `.link-action-blue`) beats every utility — leave a class unlayered only when JSX must never override it.
 2. **Use the CSS variables, not literals:** `var(--shadow-elev-2)`, `var(--shadow-elev-1)`, `var(--shadow-glow-gold)`, `var(--shadow-glow-blue)`, `var(--color-overlay-scrim)`. Elevation, scrim, and glow then stay editable in one place (`tokens.css`).
-3. **`@apply` accepts real Tailwind utilities only.** It fails on plain custom classes (`.flex-center`) and marker classes (`group`) — write raw utilities inside the class and keep `group` in the JSX `className`.
+3. **`@apply` accepts real Tailwind utilities only.** It fails on plain custom classes (`.flex-center`), marker classes (`group`), and plain global helpers (`animate-fade-in`, `animate-fade-in-up`, `animation-delay-100`) — write raw utilities inside the class, keep `group` in the JSX `className`, and either keep global animation helpers inline in JSX or mirror them with a raw `animation:` property inside the class (the `fadeIn` / `fadeInUp` keyframes stay global). `animate-spin`, `animate-pulse`, `animate-bounce` ARE real utilities and may be `@apply`-ed.
 4. **No ad-hoc hex or arbitrary fonts:** use token utilities (`bg-navy-950`, `text-gold-400`, `border-navy-600`, `text-slate-400`, `bg-success-500`, `text-danger-500`) and `font-display` / `font-body` instead of `font-['IBM_Plex_Sans_Arabic']` / `font-['Tajawal',sans-serif]`.
 5. **Check the class exists.** Dead classes render nothing: `.animate-fade-in` is now defined (it was used in 15+ files while missing), and `animate-spin-very-slow` never existed — use `.animate-orbit-slow`.
 
@@ -117,6 +117,14 @@ Always follow this exact mapping when creating or moving files:
 - **Data boundary:** `<CatalogDataSection />` — the only section that re-renders on filter/data changes; error and empty states share `glass-panel` + `.catalog-state`.
 - **Card & chrome:** `<CatalogCard />` (shell from `card-interactive-blue|gold`, `pillarStyle()` + `DEADLINE_ACCENT` records instead of branches), `<CatalogToolbar />`, `<CatalogPagination />`, `<CatalogGridSkeleton />`.
 - **Styling:** every catalog element sits on a `.catalog-*` concept class (`.catalog-hero`, `.catalog-toolbar`, `.catalog-card-media`, `.catalog-pill*`, `.catalog-drawer*`, `.catalog-page*`, …) declared in **`src/features/catalog/catalog.css`** and imported by `globals.css` — the same feature-CSS pattern as `auth.css`.
+
+### 3.9 Dashboard (Learning Workspace)
+- **Page:** `<DashboardPage />` (`features/dashboard/pages/DashboardPage.tsx`) — self-contained layout: right sidebar + top bar, RTL grid declared with the sidebar as **Child #1** (§6.1). `?view=` drives the active view through `getDashboardNavItem` (aliases resolve too); `?state=live|empty` are demo modes.
+- **Shell & stats:** `<DesktopDashboardSidebar />` (Child #1) — its bottom row pairs the **saved bookmark + notification bell** icons (both `.dash-bell` tone family; saved opens `?view=saved`, which has no sidebar nav item), `<DashboardTopBar />` (search overlay), `<MobileDashboardTopBar />` (bookmark + bell pair on mobile), `<DashboardStatsHeader />`, `<DashboardStatsSidebar />` (widgets + stat rows), `<DashboardSubNavigation />` (mobile/tablet-only pill strip — `.dash-subnav` is `lg:hidden`; at `lg+` the sidebar owns navigation).
+- **Priority cards:** `<PriorityContinueCard />` (cyan) and `<LiveSessionPriorityCard />` (red live countdown) share the `.dash-hero*` family and `<RadialProgressRing />` (its `RING_COLORS` live in `features/dashboard/data/radialRingColors.ts` — hex is required for the `$(color)80` glow alpha).
+- **Views:** `<EnrolledCoursesView />` (filters + sort dropdown + empty state), `<CompetitionsCertificatesView />` (toggle pills + rows + cert cards), `<SavedScholarshipsView />` (rows, deadline tags, undo toast), `<NotificationsView />` + `<NotificationsDrawer />`, `<EmptyDashboardState />` — every view is data-driven from `src/shared/json/dashboardViews.json` / `dashboardChambers.json`.
+- **In-dashboard chambers (§6.2):** `<CourseWorkspaceModal />`, `<LiveClassroomModal />`, `<CompetitionArenaModal />`, `<ScholarshipApplicationModal />`, `<CertificatePreviewModal />` — all share the `.dash-modal-*` chrome.
+- **Styling:** every dashboard element sits on a `.dash-*` concept class (`.dash-hero*`, `.dash-side-row`, `.dash-nav-item`, `.dash-tab`, `.dash-stat*`, `.dash-row`, `.dash-modal*`, `.dash-toast`, `.dash-notif*`, `.dash-cert-*`, …) declared in **`src/features/dashboard/dashboard.css`** and imported by `globals.css` — the same feature-CSS pattern as `auth.css` / `catalog.css`. The canvas, elevation, and accent rules live in §6.7.
 
 ---
 
@@ -194,8 +202,20 @@ Whenever asked to create any new page:
 
 ### 6.6 Dashboard Tab Architecture & Prohibition of Prototype Tabs
 - **Prohibited:** Never inject dashboard-wide ad-hoc view tabs (e.g. `DashboardTabFilter` with `overview / saved / achievements` and emoji state buttons).
-- Primary dashboard navigation is strictly governed by the **Right Sidebar** (Desktop) and **Mobile Bottom Bar** / URL queries.
+- Primary dashboard navigation is strictly governed by the **Right Sidebar** (Desktop) and the **mobile pill strip** (`.dash-subnav`, mobile/tablet-only — `lg:hidden`) / URL queries.
+- **Icon-only views:** the saved courses & opportunities view and the notifications view have **no sidebar nav item** — both open from icons beside each other in the chrome (bookmark + bell in the desktop sidebar bottom row and in every mobile top bar). Never re-add them as nav tabs; `getDashboardNavItem` resolving them to `null` is by design.
 - The ONLY valid tabs inside the dashboard are section-level pill toggle filters:
-  - **Saved Scholarships:** `ToggleFilter` (`المنح المحفوظة` vs `الدورات المفضلة`) with active pill `bg-orange-300/10 text-orange-300 font-bold`.
-  - **Competitions & Certificates:** `ToggleFilter` (`أكمل المسابقة` vs `لم يحل المسابقة`) with active pill `bg-orange-300/10 text-orange-300 font-bold`.
+  - **Saved Scholarships:** `ToggleFilter` (`المنح المحفوظة` vs `الدورات المفضلة`) using `.dash-toggle-active` (`bg-gold-400/15 text-gold-400 font-bold`) vs `.dash-toggle-idle`.
+  - **Competitions & Certificates:** `ToggleFilter` (`أكمل المسابقة` vs `لم يحل المسابقة`) using the same `.dash-toggle-*` classes — one concept pair, two surfaces.
+
+### 6.7 Dashboard Canvas & Elevation = The App Design System
+The dashboard is an `immersive` page (own sidebar + topbar) but it must still look like the same product:
+- **Never paint a page-level background.** `.dash-page` is transparent; every page sits on the navy-950 `.page-wrapper` with the global celestial washes glowing through. A solid `bg-navy-900` page is what made the dashboard feel like a different app — do not reintroduce it.
+- **Elevation direction:** cards are *lighter* than the canvas — translucent glass (`bg-navy-900/70–80 backdrop-blur-md border-navy-600/50`) for hero, rows, widgets, chips and cards; darker inset wells (`bg-navy-950/50`) only *inside* a raised surface. Dark cards on the void read as holes.
+- **Chrome matches `.glass-navbar`:** `.dash-sidebar` / `.dash-topbar` are `bg-navy-950/90 backdrop-blur-md` with navy-600 borders; the topbar is sticky.
+- **Panels over scrims stay solid** (`bg-navy-900`): modals, drawer, sort menus, search panels — readability beats ambience there (same as `.auth-terms-panel`).
+- **Active accents are translucent, never solid fills:** gold for the sidebar (`bg-gold-400/10 outline-gold-400/50 text-gold-400`), blue for subnav/filter pills (`bg-blue-400/15`), gold for toggles/sort (`bg-gold-400/15`).
+- **Titles are white** (`text-white`), section titles carry the app's accent bar (`section-accent-title-blue|gold`), and hovers must use real `border` utilities (an `outline`-based card has a dead `hover:border-*`).
+- **CTAs follow the app button idioms:** gold `btn-gold` for the one primary action, cyan gradient (`from-blue-400 to-blue-500 text-white`) for course-domain actions, `btn-outline-blue` styling for secondary blue CTAs.
+- **Sticky chrome needs two things:** (1) no ancestor with `overflow-x-hidden` — that creates a scroll container and swallows sticky; page shells use `overflow-x-clip`; (2) a parent taller than the sticky element to travel in. The sidebar is an isolated rail: `sticky top-0 h-screen overflow-y-auto` — pinned on every view, scrolling internally if long. The topbar is `sticky top-0` inside the tall `.dash-main`.
 

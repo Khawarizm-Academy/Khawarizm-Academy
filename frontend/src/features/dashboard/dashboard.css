@@ -1,0 +1,845 @@
+/* ==========================================================================
+   Dashboard Feature — Page Shell, Sidebar, TopBar, Stats, Cards, Views,
+   Empty States, Drawer & Modal Chambers  (features/dashboard/dashboard.css)
+   Feature-owned concept classes. Imported by styles/globals.css, which keeps
+   only classes shared by 2+ features. Declared in @layer components so JSX
+   utilities can still override them.
+   ========================================================================== */
+@layer components {
+  /* --- Page shell & layout --- */
+  .dash-page {
+    /* No background paint: sits on the navy-950 page-wrapper so the global
+       celestial washes glow through — same canvas as every other page.
+       overflow-x CLIP (not hidden) so sticky chrome keeps resolving to the viewport. */
+    @apply w-full min-h-screen flex justify-start items-start text-slate-100 relative overflow-x-clip;
+  }
+
+  .dash-main {
+    @apply flex-1 min-w-0 flex flex-col justify-start items-start relative z-10;
+  }
+
+  .dash-container {
+    @apply w-full max-w-[1280px] px-4 sm:px-6 md:px-10 lg:px-14 pt-4 md:pt-8 pb-24 lg:pb-8 flex flex-col gap-6 md:gap-8;
+  }
+
+  .dash-grid {
+    @apply self-stretch flex flex-col lg:flex-row justify-start items-start gap-8 w-full;
+  }
+
+  .dash-grid-main {
+    @apply flex-1 min-w-0 w-full flex flex-col justify-start items-start gap-8 order-1;
+  }
+
+  .dash-grid-aside {
+    @apply order-2 w-full lg:w-auto;
+  }
+
+  .dash-section {
+    @apply self-stretch flex flex-col justify-start items-start gap-4 w-full;
+  }
+
+  .dash-section-head {
+    @apply self-stretch flex justify-between items-center w-full;
+  }
+
+  .dash-section-link {
+    @apply text-blue-400 hover:text-sky-300 text-sm md:text-base font-bold leading-6 transition-colors cursor-pointer;
+  }
+
+  .dash-list {
+    @apply self-stretch flex flex-col justify-start items-stretch gap-3 w-full;
+  }
+
+  /* --- View scaffold: shared titles, section heads & mobile top rows --- */
+  .dash-view-head {
+    @apply self-stretch flex justify-between items-center flex-wrap gap-4;
+  }
+
+  .dash-view-title {
+    @apply text-white text-lg md:text-xl font-bold font-display leading-6;
+  }
+
+  .dash-view-heading {
+    @apply self-stretch flex flex-col justify-start items-start text-right gap-1.5;
+  }
+
+  .dash-view-h1 {
+    @apply text-white text-2xl md:text-3xl font-bold font-display leading-8;
+  }
+
+  .dash-view-sub {
+    @apply text-slate-400 text-sm font-normal leading-5;
+  }
+
+  .dash-mtop {
+    @apply flex md:hidden justify-between items-center w-full py-1;
+  }
+
+  .dash-mtop-title {
+    @apply flex items-center gap-2.5 text-right;
+  }
+
+  .dash-mtop-label {
+    @apply text-white text-lg font-bold font-display;
+  }
+
+  .dash-avatar {
+    @apply size-9 rounded-full bg-navy-900 border border-navy-600 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-blue-400 transition-colors;
+  }
+
+  /* --- Desktop sidebar --- */
+  .dash-sidebar {
+    /* Isolated rail: pinned to the viewport for the whole page, scrolls internally if long. */
+    @apply w-60 self-stretch shrink-0 px-4 py-6 bg-navy-950/90 backdrop-blur-md border-l border-navy-600/80 sticky top-0 h-screen overflow-y-auto hidden lg:flex flex-col justify-between items-start z-30 select-none;
+  }
+
+  .dash-side-top {
+    @apply self-stretch flex flex-col justify-start items-start gap-6;
+  }
+
+  .dash-side-row {
+    @apply self-stretch inline-flex justify-start items-center gap-3 text-right cursor-pointer;
+  }
+
+  .dash-side-bottom {
+    @apply self-stretch flex flex-col justify-start items-start gap-4 pt-4 border-t border-navy-600/40;
+  }
+
+  .dash-brand-mark {
+    @apply size-9 bg-gold-400 rounded-[10px] inline-flex flex-col justify-center items-center shadow-[0_0_12px_rgba(229,182,92,0.4)] group-hover:scale-105 transition-transform shrink-0;
+  }
+
+  .dash-brand-glyph {
+    @apply text-navy-950 text-xl font-black font-display leading-none;
+  }
+
+  .dash-brand-name {
+    @apply text-slate-200 text-xl font-bold font-display leading-6 group-hover:text-gold-400 transition-colors;
+  }
+
+  .dash-nav {
+    @apply self-stretch flex flex-col justify-start items-start gap-2;
+  }
+
+  .dash-nav-item {
+    @apply self-stretch px-3 py-2.5 rounded-xl inline-flex justify-start items-center gap-3 transition-all cursor-pointer;
+  }
+
+  .dash-nav-item-active {
+    @apply bg-gold-400/10 outline outline-1 outline-offset-[-1px] outline-gold-400/50 text-gold-400 font-bold shadow-[0_0_10px_rgba(229,182,92,0.2)];
+  }
+
+  .dash-nav-item-idle {
+    @apply text-slate-400 hover:text-slate-200 hover:bg-navy-800/60 font-medium;
+  }
+
+  .dash-nav-icon {
+    @apply shrink-0 transition-colors;
+  }
+
+  .dash-nav-label {
+    @apply text-base leading-6;
+  }
+
+  .dash-user-names {
+    @apply inline-flex flex-col justify-start items-start gap-0.5;
+  }
+
+  .dash-user-name {
+    @apply text-slate-200 text-sm font-bold leading-5 group-hover:text-sky-300 transition-colors;
+  }
+
+  .dash-user-role {
+    @apply text-slate-400 text-xs font-normal leading-4;
+  }
+
+  .dash-bell {
+    @apply size-10 relative bg-navy-900 rounded-full outline outline-1 outline-offset-[-1px] flex justify-center items-center cursor-pointer transition-all hover:scale-105;
+  }
+
+  .dash-bell-active {
+    @apply outline-gold-400 text-gold-400 shadow-[0_0_12px_rgba(229,182,92,0.3)];
+  }
+
+  .dash-bell-idle {
+    @apply outline-navy-600 text-slate-400 hover:outline-blue-400 hover:text-sky-300;
+  }
+
+  .dash-bell-badge {
+    @apply px-1.5 py-0.5 absolute bg-red-500 rounded-full inline-flex justify-center items-center shadow-sm;
+  }
+
+  .dash-bell-count {
+    @apply text-white text-[10px] font-bold leading-none;
+  }
+
+  /* --- Top bar & search overlay --- */
+  .dash-topbar {
+    @apply self-stretch h-12 px-6 bg-navy-950/90 backdrop-blur-md border-b border-navy-600/80 hidden md:flex justify-between items-center z-20 shrink-0 sticky top-0 select-none;
+  }
+
+  .dash-topbar-search {
+    @apply size-8 bg-navy-900 hover:bg-navy-800 rounded-full outline outline-1 outline-offset-[-1px] outline-navy-600 hover:outline-blue-400 flex flex-col justify-center items-center cursor-pointer transition-all shadow-sm;
+  }
+
+  .dash-topbar-link {
+    @apply text-slate-400 hover:text-slate-200 text-sm font-medium transition-colors cursor-pointer;
+  }
+
+  .dash-search-overlay {
+    @apply fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-navy-950/80 backdrop-blur-sm;
+    /* Mirrors the global .animate-fade-in helper (fadeIn keyframes live in globals.css). */
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .dash-search-panel {
+    @apply w-full max-w-2xl bg-navy-900 border border-navy-600/80 rounded-2xl p-6 shadow-2xl relative;
+  }
+
+  /* --- Sub-navigation capsule (mobile/tablet only — the desktop sidebar covers lg+) --- */
+  .dash-subnav {
+    @apply self-stretch p-1 bg-navy-900 rounded-full outline outline-1 outline-offset-[-1px] outline-navy-600/80 inline-flex justify-start items-center gap-1 select-none shadow-[0px_4px_16px_rgba(0,0,0,0.2)] lg:hidden;
+  }
+
+  .dash-tab {
+    @apply flex-1 py-2 sm:py-2.5 px-3 rounded-full inline-flex flex-col justify-center items-center transition-all duration-200 cursor-pointer text-xs sm:text-sm;
+  }
+
+  .dash-tab-idle {
+    @apply text-slate-400 hover:text-slate-200 hover:bg-navy-800/60 font-medium;
+  }
+
+  .dash-pill-active {
+    @apply bg-blue-400/15 outline outline-1 outline-offset-[-1px] outline-blue-400/50 text-blue-400 font-bold shadow-[0_0_12px_rgba(41,169,255,0.25)];
+  }
+
+  /* --- Stats header: mobile bell row, chips & desktop welcome row --- */
+  .dash-stats-head {
+    @apply w-full flex flex-col gap-4 select-none;
+  }
+
+  .dash-stats-row {
+    @apply self-stretch hidden md:flex justify-between items-center gap-6;
+  }
+
+  .dash-chip-row {
+    @apply flex md:hidden items-center gap-2 overflow-x-auto no-scrollbar pb-1;
+  }
+
+  .dash-chip {
+    @apply rounded-full outline outline-1 outline-offset-[-1px] outline-navy-600 transition-all;
+  }
+
+  .dash-chip-mobile {
+    @apply shrink-0 px-3.5 py-2 bg-navy-900/80 flex items-center gap-2;
+  }
+
+  .dash-chip-desktop {
+    @apply px-5 py-2.5 bg-navy-900/80 flex justify-start items-center gap-3 shadow-sm;
+  }
+
+  .dash-chip-click {
+    @apply cursor-pointer hover:border-blue-400/50 active:scale-95;
+  }
+
+  .dash-chip-label {
+    @apply text-slate-200 text-xs font-medium whitespace-nowrap;
+  }
+
+  .dash-chip-label-lg {
+    @apply text-slate-200 text-sm md:text-base font-medium leading-6;
+  }
+
+  .dash-greet {
+    @apply flex flex-col justify-start items-start text-right gap-1 shrink-0;
+  }
+
+  .dash-greet-title {
+    @apply text-white text-2xl md:text-[26px] font-bold font-display leading-8;
+  }
+
+  .dash-greet-sub {
+    @apply text-slate-400 text-sm font-medium leading-5;
+  }
+
+  /* --- Stats sidebar widgets --- */
+  .dash-widget {
+    @apply self-stretch p-6;
+  }
+
+  .dash-widget-title {
+    @apply text-right text-gold-400 text-lg font-bold font-display leading-6;
+  }
+
+  .dash-stat-stack {
+    @apply self-stretch flex flex-col justify-start items-start gap-3;
+  }
+
+  .dash-stat-row {
+    @apply self-stretch p-3 bg-navy-950/50 rounded-xl border border-navy-600/40 flex justify-between items-center;
+  }
+
+  .dash-stat-label {
+    @apply text-right text-slate-200 text-sm md:text-base font-medium leading-6;
+  }
+
+  .dash-stat-values {
+    @apply flex flex-col justify-start items-start gap-0.5 text-left;
+  }
+
+  .dash-stat-value {
+    @apply text-base font-bold leading-6;
+  }
+
+  .dash-event-row {
+    @apply self-stretch p-3 bg-navy-950/50 rounded-xl border border-navy-600/40 flex justify-between items-center gap-3;
+  }
+
+  .dash-event-text {
+    @apply flex-1 flex flex-col justify-start items-start gap-0.5 text-right;
+  }
+
+  .dash-event-title {
+    @apply text-slate-200 text-sm font-bold leading-5 truncate w-full;
+  }
+
+  .dash-event-tag {
+    @apply px-2 py-1 rounded-md flex justify-center items-center shrink-0 border;
+  }
+
+  .dash-event-tag-label {
+    @apply text-xs font-bold leading-4;
+  }
+
+  .dash-meta {
+    @apply text-slate-400 text-xs font-normal leading-4;
+  }
+
+  /* --- Hero priority cards (cyan continue / red live) --- */
+  .dash-hero {
+    @apply self-stretch p-6 md:p-7 bg-navy-900/70 backdrop-blur-md rounded-2xl flex flex-col justify-start items-start gap-5 md:gap-6 relative overflow-hidden select-none;
+  }
+
+  .dash-hero-cyan {
+    @apply shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-blue-400;
+  }
+
+  .dash-hero-red {
+    @apply shadow-[0px_8px_24px_0px_rgba(255,77,77,0.12)] outline outline-[1.5px] outline-offset-[-1.5px] outline-red-500/80;
+  }
+
+  .dash-hero-glow {
+    @apply absolute top-0 right-0 rounded-full blur-3xl pointer-events-none;
+  }
+
+  .dash-hero-tag {
+    @apply px-3 py-1.5 rounded-lg inline-flex border;
+  }
+
+  .dash-hero-tag-cyan {
+    @apply bg-blue-400/10 items-start border-blue-400/20;
+  }
+
+  .dash-hero-tag-red {
+    @apply bg-red-500/10 items-center gap-2 border-red-500/20;
+  }
+
+  .dash-hero-tag-label {
+    @apply text-blue-400 text-xs font-medium leading-4;
+  }
+
+  .dash-hero-tag-label-live {
+    @apply text-red-500 font-bold leading-3;
+  }
+
+  .dash-hero-row {
+    @apply self-stretch flex justify-start items-center gap-4 md:gap-6;
+  }
+
+  .dash-hero-thumb {
+    @apply size-16 md:size-20 bg-navy-950 rounded-2xl flex justify-center items-center overflow-hidden shrink-0 border shadow-inner transition-colors;
+  }
+
+  .dash-hero-thumb-cyan {
+    @apply border-navy-600;
+  }
+
+  .dash-hero-thumb-red {
+    @apply border-red-500/30;
+  }
+
+  .dash-hero-figure {
+    @apply relative flex items-center justify-center;
+  }
+
+  .dash-hero-dot {
+    @apply size-2 rounded-full bg-gold-400 absolute;
+  }
+
+  .dash-hero-text {
+    @apply flex-1 flex flex-col justify-start items-start gap-1.5 md:gap-2 text-right;
+  }
+
+  .dash-hero-title {
+    @apply text-white text-lg md:text-xl font-bold font-display leading-6 md:leading-7;
+  }
+
+  .dash-hero-sub {
+    @apply text-slate-400 text-xs font-medium leading-5;
+  }
+
+  .dash-hero-action {
+    @apply self-stretch;
+  }
+
+  .dash-progress {
+    @apply self-stretch flex flex-col justify-start items-start gap-2.5 md:gap-3;
+  }
+
+  .dash-progress-head {
+    @apply self-stretch flex justify-between items-center text-xs md:text-sm;
+  }
+
+  .dash-progress-label {
+    @apply text-slate-400 font-medium;
+  }
+
+  .dash-progress-value {
+    @apply text-blue-400 font-bold;
+  }
+
+  .dash-progress-track {
+    @apply self-stretch h-2.5 bg-navy-950/80 rounded-full overflow-hidden border border-navy-600/60;
+  }
+
+  .dash-progress-fill {
+    @apply h-full bg-gradient-to-l from-blue-400 to-blue-500 rounded-full shadow-[0_0_8px_rgba(41,169,255,0.6)] transition-all duration-700;
+  }
+
+  .dash-countdown {
+    @apply w-full bg-navy-950/80 border border-navy-600/60 rounded-2xl py-4 px-6 flex flex-col items-center justify-center gap-1 shadow-inner;
+  }
+
+  .dash-countdown-label {
+    @apply text-slate-400 text-xs font-normal;
+  }
+
+  .dash-countdown-time {
+    @apply text-3xl md:text-4xl font-extrabold text-slate-100 font-mono tracking-widest;
+  }
+
+  /* --- Course / competition rows, deadline tags & saved-list rows --- */
+  .dash-row {
+    @apply self-stretch p-3.5 md:p-4 bg-navy-900/70 backdrop-blur-md rounded-2xl border border-navy-600/50 flex justify-between items-center gap-3 hover:border-sky-400/40 transition-all;
+  }
+
+  .dash-row-thumb {
+    @apply size-11 md:size-14 rounded-xl bg-navy-900 border border-navy-600/80 flex items-center justify-center shrink-0 shadow-inner;
+  }
+
+  .dash-row-info {
+    @apply flex-1 flex flex-col justify-start items-start gap-1 min-w-0;
+  }
+
+  .dash-row-title {
+    @apply text-white text-sm md:text-base font-bold leading-6 truncate w-full;
+  }
+
+  .dash-row-side {
+    @apply flex items-center gap-2.5 shrink-0;
+  }
+
+  .dash-tag {
+    @apply px-3 py-1.5 rounded-lg border flex items-center justify-center;
+  }
+
+  .dash-tag-label {
+    @apply text-xs font-bold leading-4 whitespace-nowrap;
+  }
+
+  .dash-remove {
+    @apply size-8 rounded-full bg-navy-900 hover:bg-navy-800 border border-gold-400/70 hover:border-gold-400 flex items-center justify-center text-gold-400 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm;
+  }
+
+  .dash-list-empty {
+    @apply p-10 text-center bg-navy-900/50 rounded-2xl border border-navy-600/50 text-slate-400 text-sm;
+  }
+
+  .dash-toast {
+    @apply w-full bg-navy-900/95 border border-gold-400/60 text-slate-200 px-4 py-3 rounded-xl flex justify-between items-center shadow-lg;
+    /* Mirrors the global .animate-fade-in helper (fadeIn keyframes live in globals.css). */
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .dash-toggle {
+    @apply p-1 bg-navy-900 rounded-full outline outline-1 outline-offset-[-1px] outline-navy-600 flex items-center;
+  }
+
+  .dash-toggle-btn {
+    @apply px-5 md:px-6 py-2 rounded-full text-xs md:text-sm transition-all cursor-pointer;
+  }
+
+  .dash-toggle-active {
+    @apply bg-gold-400/15 text-gold-400 font-bold shadow-[0_0_10px_rgba(229,182,92,0.25)];
+  }
+
+  .dash-toggle-idle {
+    @apply text-slate-400 hover:text-slate-200 font-medium;
+  }
+
+  /* --- Enrolled courses view: filter pills, sort dropdown & empty states --- */
+  .dash-filter-pill {
+    @apply px-4 py-2 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap;
+  }
+
+  .dash-filter-pill-idle {
+    @apply bg-navy-900 outline outline-1 outline-offset-[-1px] outline-navy-600 text-slate-400 hover:text-slate-200;
+  }
+
+  .dash-sort-btn {
+    @apply w-full sm:w-52 px-3.5 py-2.5 bg-navy-900 rounded-xl outline outline-1 outline-offset-[-1px] outline-navy-600 flex justify-between items-center gap-3 cursor-pointer hover:outline-blue-400/60 transition-all text-right;
+  }
+
+  .dash-sort-label {
+    @apply text-slate-200 text-xs font-normal;
+  }
+
+  .dash-sort-menu {
+    @apply absolute left-0 top-full mt-1.5 w-full sm:w-52 bg-navy-900 border border-navy-600/90 rounded-xl shadow-2xl py-1.5 z-30;
+  }
+
+  .dash-sort-option {
+    @apply w-full px-3.5 py-2 text-right text-xs flex items-center justify-between transition-colors cursor-pointer;
+  }
+
+  .dash-sort-option-active {
+    @apply bg-gold-400/15 text-gold-400 font-bold;
+  }
+
+  .dash-sort-option-idle {
+    @apply text-slate-300 hover:bg-navy-800/60 hover:text-white;
+  }
+
+  .dash-empty {
+    @apply w-full py-8 md:py-16 px-6 bg-navy-900/70 backdrop-blur-md rounded-2xl border border-navy-600/80 flex flex-col items-center justify-center text-center gap-6 shadow-[0px_16px_32px_rgba(41,169,255,0.06)];
+  }
+
+  .dash-empty-icon {
+    @apply size-24 md:size-32 bg-navy-950 rounded-full border-2 border-blue-400 flex items-center justify-center relative shadow-[0_0_24px_rgba(41,169,255,0.2)];
+  }
+
+  .dash-empty-title {
+    @apply text-xl md:text-2xl font-bold text-white font-display;
+  }
+
+  .dash-empty-text {
+    @apply text-slate-400 text-sm font-normal leading-6;
+  }
+
+  .dash-empty-sm {
+    @apply w-full py-12 px-6 bg-navy-900/60 backdrop-blur-md rounded-2xl border border-navy-600/60 flex flex-col items-center justify-center text-center gap-4;
+  }
+
+  .dash-empty-sm-icon {
+    @apply size-16 rounded-full bg-navy-950 border border-navy-600 flex items-center justify-center;
+  }
+
+  .dash-empty-sm-title {
+    @apply text-lg font-bold text-white font-display;
+  }
+
+  .dash-empty-sm-text {
+    @apply text-slate-400 text-xs md:text-sm;
+  }
+
+  /* --- Enrolled course card (desktop row + mobile stack share details) --- */
+  .dash-course-card {
+    @apply self-stretch bg-navy-900/80 backdrop-blur-md rounded-2xl transition-all duration-300 overflow-hidden select-none;
+  }
+
+  .dash-course-card-done {
+    @apply outline outline-1 outline-offset-[-1px] outline-gold-400/40 hover:outline-gold-400 shadow-[0px_8px_24px_0px_rgba(229,182,92,0.12)];
+  }
+
+  .dash-course-card-active {
+    @apply outline outline-1 outline-offset-[-1px] outline-navy-600 hover:outline-blue-400/80 shadow-[0px_8px_24px_0px_rgba(41,169,255,0.1)];
+  }
+
+  .dash-course-action {
+    @apply rounded-full inline-flex justify-center items-center text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95;
+  }
+
+  .dash-course-action-done {
+    @apply bg-navy-950 outline outline-1 outline-offset-[-1px] outline-gold-400 text-gold-400 hover:bg-gold-400/10 shadow-[0_0_12px_rgba(229,182,92,0.25)];
+  }
+
+  .dash-course-action-active {
+    @apply bg-gradient-to-l from-blue-400 to-blue-500 hover:brightness-110 text-white shadow-[0_0_14px_rgba(41,169,255,0.35)];
+  }
+
+  .dash-course-details {
+    @apply flex flex-col justify-start items-start text-right gap-1.5;
+  }
+
+  .dash-course-title {
+    @apply self-stretch text-white text-base md:text-lg font-bold leading-5 md:leading-6 font-display hover:text-sky-300 transition-colors cursor-pointer md:truncate;
+  }
+
+  .dash-course-unit {
+    @apply self-stretch text-blue-400 text-xs font-medium leading-4;
+  }
+
+  .dash-course-live {
+    @apply self-stretch text-right text-gold-400 text-xs font-normal leading-4 inline-flex items-center gap-1.5 hover:underline cursor-pointer mt-0.5;
+  }
+
+  .dash-course-live-dot {
+    @apply size-2 rounded-full bg-gold-200 animate-pulse;
+  }
+
+  .dash-course-thumb {
+    @apply rounded-xl overflow-hidden border border-navy-600/60 relative;
+  }
+
+  .dash-course-thumb-img {
+    @apply w-full h-full object-cover group-hover:scale-105 transition-transform duration-500;
+  }
+
+  .dash-course-shade {
+    @apply absolute inset-0 bg-gradient-to-t from-navy-950/60 via-transparent to-transparent pointer-events-none;
+  }
+
+  /* --- Dashboard empty hero (brand-new account) --- */
+  .dash-empty-hero {
+    @apply w-full max-w-[900px] mx-auto p-6 md:p-16 bg-navy-900/70 backdrop-blur-md rounded-2xl md:rounded-3xl shadow-[0px_16px_32px_0px_rgba(41,169,255,0.06)] outline outline-1 md:outline-[1.50px] outline-offset-[-1.50px] outline-navy-600 flex flex-col justify-center items-center gap-6 md:gap-10 text-center relative overflow-hidden;
+  }
+
+  .dash-empty-compass {
+    @apply size-24 md:size-40 bg-navy-950 rounded-full shadow-[0px_4px_16px_0px_rgba(41,169,255,0.10)] outline outline-2 outline-offset-[-2px] outline-blue-400 flex items-center justify-center relative;
+  }
+
+  .dash-empty-hero-title {
+    @apply text-center text-slate-200 text-xl md:text-3xl font-bold font-display;
+  }
+
+  .dash-empty-hero-text {
+    @apply text-center text-slate-400 text-sm md:text-base font-normal leading-5 md:leading-7 max-w-[640px];
+  }
+
+  .dash-empty-btn {
+    @apply w-full md:w-72 px-8 py-3 md:py-4 rounded-full font-bold text-sm md:text-base transition-all flex justify-center items-center cursor-pointer;
+  }
+
+  .dash-empty-btn-primary {
+    @apply bg-gradient-to-l from-blue-400 to-blue-500 hover:brightness-110 text-white shadow-[0_4px_16px_rgba(41,169,255,0.25)] hover:shadow-[0_4px_24px_rgba(41,169,255,0.4)];
+  }
+
+  .dash-empty-btn-ghost {
+    @apply bg-transparent outline outline-2 outline-offset-[-2px] outline-gold-400 hover:bg-gold-400/10 active:scale-95 text-gold-400;
+  }
+
+  /* --- Competitions & certificates --- */
+  .dash-cert-card {
+    @apply p-5 bg-navy-900/70 backdrop-blur-md rounded-2xl border border-navy-600/50 flex flex-col justify-between gap-4 relative overflow-hidden hover:border-gold-400/50 transition-colors;
+  }
+
+  .dash-cert-badge {
+    @apply px-2.5 py-0.5 bg-gold-400/10 rounded border border-gold-400 flex items-center gap-1.5;
+  }
+
+  .dash-cert-cta {
+    @apply self-stretch py-2.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-xl border border-blue-400/50 hover:border-blue-400 text-blue-400 text-xs font-bold flex justify-center items-center gap-2 cursor-pointer transition-all;
+  }
+
+  .dash-cta-blue {
+    @apply px-4 md:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer outline outline-1 outline-offset-[-1px] outline-blue-400 text-blue-400 hover:bg-blue-400/10;
+  }
+
+  /* --- Notifications view & list items --- */
+  .dash-notif-head {
+    @apply self-stretch hidden md:flex justify-between items-center;
+  }
+
+  .dash-notif {
+    @apply relative flex items-center gap-3.5 p-3.5 md:p-4 rounded-2xl transition-all cursor-pointer;
+  }
+
+  .dash-notif-unread {
+    @apply bg-navy-900/90 backdrop-blur-md outline outline-1 outline-offset-[-1px] outline-blue-400/40 shadow-[0_4px_20px_rgba(41,169,255,0.06)];
+  }
+
+  .dash-notif-read {
+    @apply bg-navy-900/40 border border-navy-600/40 opacity-90 hover:opacity-100;
+  }
+
+  .dash-notif-dot {
+    @apply absolute top-3.5 left-3 size-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(41,169,255,0.9)];
+  }
+
+  .dash-notif-badge {
+    @apply size-10 shrink-0 rounded-full bg-navy-900 border flex items-center justify-center;
+  }
+
+  .dash-notif-body {
+    @apply flex-1 flex flex-col gap-1 text-right;
+  }
+
+  .dash-notif-text {
+    @apply text-xs sm:text-sm leading-relaxed;
+  }
+
+  .dash-notif-text-unread {
+    @apply text-white font-medium;
+  }
+
+  .dash-notif-text-read {
+    @apply text-slate-200;
+  }
+
+  .dash-notif-time {
+    @apply text-[11px] text-slate-400;
+  }
+
+  /* --- Notifications drawer --- */
+  .dash-drawer {
+    @apply relative z-10 w-full max-w-lg max-h-[85vh] flex flex-col bg-navy-900/95 border border-navy-600 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden;
+  }
+
+  .dash-drawer-head {
+    @apply p-5 border-b border-navy-600/50 flex items-center justify-between;
+  }
+
+  .dash-drawer-icon {
+    @apply size-10 rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-400/20 border border-blue-400/40 flex items-center justify-center text-blue-400;
+  }
+
+  /* --- Modal chrome (live classroom / workspace / arena / scholarship) --- */
+  .dash-modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-navy-950/85 backdrop-blur-md select-none;
+    /* Mirrors the global .animate-fade-in helper (fadeIn keyframes live in globals.css). */
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .dash-modal-shell {
+    @apply w-full bg-navy-900 border border-navy-600/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh];
+  }
+
+  .dash-modal-head {
+    @apply px-6 py-4 border-b border-navy-600/60 bg-navy-950/40 flex justify-between items-center shrink-0;
+  }
+
+  .dash-modal-lead {
+    @apply flex items-center gap-3;
+  }
+
+  .dash-modal-icon {
+    @apply size-9 rounded-xl flex items-center justify-center;
+  }
+
+  .dash-modal-icon-red {
+    @apply bg-red-500/10 border border-red-500/30 text-red-500;
+  }
+
+  .dash-modal-icon-sky {
+    @apply bg-blue-400/10 border border-blue-400/30 text-blue-400;
+  }
+
+  .dash-modal-icon-gold {
+    @apply bg-gold-400/15 border border-gold-400/40 text-gold-400;
+  }
+
+  .dash-modal-title {
+    @apply text-slate-100 font-bold font-display text-base md:text-lg;
+  }
+
+  .dash-modal-sub {
+    @apply text-slate-400 text-xs;
+  }
+
+  .dash-modal-close {
+    @apply size-9 rounded-full bg-navy-800 hover:bg-slate-700 text-slate-400 hover:text-slate-100 flex items-center justify-center transition-colors cursor-pointer;
+  }
+
+  .dash-modal-body {
+    @apply flex-1 overflow-hidden flex flex-col lg:flex-row;
+  }
+
+  .dash-modal-h3 {
+    @apply text-slate-200 font-bold text-sm font-display;
+  }
+
+  .dash-input {
+    @apply w-full bg-navy-950 border border-navy-600/80 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 outline-none focus:border-blue-400 transition-colors;
+  }
+
+  /* --- Live classroom chamber: stage controls & curriculum --- */
+  .dash-ctrl {
+    @apply rounded-full transition-all cursor-pointer;
+  }
+
+  .dash-ctrl-round {
+    @apply p-3;
+  }
+
+  .dash-ctrl-pill {
+    @apply px-4 py-2.5 flex items-center gap-2 text-xs font-bold;
+  }
+
+  .dash-complete {
+    @apply px-5 py-2.5 rounded-xl font-bold text-xs md:text-sm flex items-center gap-2 transition-all cursor-pointer;
+  }
+
+  .dash-complete-done {
+    @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/40;
+  }
+
+  .dash-lesson {
+    @apply w-full p-3 rounded-xl flex items-center justify-between gap-2 text-right transition-all cursor-pointer;
+  }
+
+  .dash-lesson-active {
+    @apply bg-navy-600/60 border border-gold-400/60 text-gold-400 font-bold shadow-sm;
+  }
+
+  .dash-lesson-idle {
+    @apply bg-navy-900/70 hover:bg-navy-800/80 border border-navy-600/40 text-slate-300;
+  }
+
+  .dash-lesson-dot {
+    @apply size-6 rounded-full flex items-center justify-center text-xs shrink-0;
+  }
+
+  /* --- Competition arena chamber: leaderboard, languages & editor --- */
+  .dash-leader {
+    @apply p-2 rounded-lg flex justify-between items-center;
+  }
+
+  .dash-lang {
+    @apply px-3 py-1 rounded-lg transition-all;
+  }
+
+  .dash-lang-on {
+    @apply bg-blue-400 text-navy-900 font-bold;
+  }
+
+  .dash-lang-off {
+    @apply text-slate-400 hover:text-slate-200;
+  }
+
+  .dash-editor {
+    @apply w-full h-full bg-navy-950 border border-navy-600/80 rounded-2xl p-4 font-mono text-xs md:text-sm text-sky-300 outline-none focus:border-blue-400 leading-relaxed transition-colors resize-none shadow-inner;
+  }
+
+  .dash-cta-run {
+    @apply px-6 py-2.5 rounded-xl border border-blue-400 text-blue-400 hover:bg-blue-400/10 font-bold text-xs md:text-sm flex items-center gap-2 cursor-pointer transition-all;
+  }
+
+  /* --- Scholarship application chamber: compliance checks --- */
+  .dash-check {
+    @apply p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between text-xs;
+  }
+
+  .dash-check-ok {
+    @apply text-emerald-400 font-bold flex items-center gap-1;
+  }
+}

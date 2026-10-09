@@ -139,8 +139,9 @@ export const MyDataSection: React.FC<{ filters: MyFilters }> = ({ filters }) => 
 
 ### Cache API (`src/shared/lib/cacheManager.ts`)
 - `dataCacheManager.set(key, data)` — optimistic update / mutation result.
-- `dataCacheManager.invalidate('catalog-items')` — marks **every** `['catalog-items', …]` variant stale (namespace-token matching).
+- `dataCacheManager.invalidate('catalog-items')` — marks **every** `['catalog-items', …]` variant stale (namespace-token matching). Dashboard sections use the same pattern: `dataCacheManager.invalidate(['dashboard', '…'])` matches every dashboard section key.
 - `dataCacheManager.prefetch(['catalog-detail', id], fetcher)` — warm cache on hover → instant detail navigation.
+- **Dashboard keys are per-section, namespace-prefixed:** `['dashboard', 'stats']`, `['dashboard', 'upcoming-events']`, `['dashboard', 'courses-list']`, `['dashboard', 'competitions']`, `['dashboard', 'certificates']`, `['dashboard', 'saved-scholarships']`, `['dashboard', 'favorite-courses']`, `['dashboard', 'notifications-view']`, `['dashboard', 'notifications-drawer']`. Each holds its own data (mocks or `blogPosting` fetchers in `features/dashboard/data/dashboardFetchers.ts`).
 - `dataCacheManager.clear()` — logout / hard reset.
 
 ---
