@@ -327,10 +327,11 @@ see the Dashboard index in `design-tokens-and-classes.md`. Static content lives 
 - **Layout rules (§6.1):** RTL grid `.dash-grid` — `<DesktopDashboardSidebar />` is Child #1 (renders far right), main column second.
 
 ### 10.2 Shell & Stats
-- `<DesktopDashboardSidebar />` — **isolated rail**: `.dash-sidebar` (`sticky top-0 h-screen overflow-y-auto`, glass navy-950/90 + blur) stays pinned to the viewport on every view and scrolls internally if long; `.dash-side-row` rows (add `group` in JSX for `group-hover:*`), `.dash-nav-item-active` (translucent gold) / `-idle` from `dashboardNav.json`.
+- `<DesktopDashboardSidebar />` — **isolated rail**: `.dash-sidebar` (`sticky top-0 h-screen overflow-y-auto`, glass navy-950/90 + blur) stays pinned to the viewport on every view and scrolls internally if long; `.dash-side-row` rows (add `group` in JSX for `group-hover:*`), `.dash-nav-item-active` (translucent gold) / `-idle` from `dashboardNav.json`. The bottom row pairs the **saved bookmark + notification bell** (`.dash-bell-active/-idle`; saved has no nav item — `?view=saved` is icon-only).
 - `<DashboardTopBar />` — sticky glass topbar (`.dash-topbar`, mirrors `.glass-navbar`); search overlay (`.dash-search-overlay` + `.dash-search-panel`), `NAV_TARGETS[tab.key]` route links.
-- `<MobileDashboardTopBar />` — mobile-only top row; same `tab`s, no desktop/mobile duplication.
-- `<DashboardStatsHeader />` — desktop greet row (white `.dash-greet-title`) + mobile bell row; `<DashboardStatsSidebar />` — glass `workspace-card` widgets, inset stat rows, upcoming events.
+- `<MobileDashboardTopBar />` — mobile-only top row with the same **bookmark + bell** pair (`onSavedClick` / `onNotificationsClick`); no desktop/mobile duplication.
+- `<DashboardStatsHeader />` — desktop greet row (white `.dash-greet-title`) + mobile row with the bookmark + bell pair (`onSavedClick`, `isSavedActive`); `<DashboardStatsSidebar />` — glass `workspace-card` widgets, inset stat rows, upcoming events.
+- `<DashboardSubNavigation />` — **mobile/tablet-only** pill strip (`.dash-subnav` is `lg:hidden`): below `lg` it is the only in-dashboard nav (`DASHBOARD_SUB_NAV`: main, enrolled, profile); at `lg+` the sidebar owns navigation and it disappears.
 - `notifications` is a `fullPageViews` entry: the page-level stats header is hidden and `<NotificationsView />` renders its own single header + `btn-pill-subtle` mark-all-read action.
 
 ### 10.3 Priority Hero Cards

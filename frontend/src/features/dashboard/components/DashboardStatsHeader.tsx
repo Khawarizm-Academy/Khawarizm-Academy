@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, User, type LucideIcon } from 'lucide-react';
+import { Bell, Bookmark, User, type LucideIcon } from 'lucide-react';
 
 export interface StatChipItem {
   icon: LucideIcon;
@@ -16,6 +16,8 @@ interface DashboardStatsHeaderProps {
   unreadNotificationsCount?: number;
   onNotificationsClick?: () => void;
   onAvatarClick?: () => void;
+  onSavedClick?: () => void;
+  isSavedActive?: boolean;
 }
 
 export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
@@ -26,6 +28,8 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
   unreadNotificationsCount = 5,
   onNotificationsClick,
   onAvatarClick,
+  onSavedClick,
+  isSavedActive = false,
 }) => {
   const chipState = (chip: StatChipItem) => (chip.onClick ? 'dash-chip-click' : 'cursor-default');
 
@@ -47,20 +51,33 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
           </span>
         </button>
 
-        {/* Left: mobile notification bell */}
-        <button
-          type="button"
-          onClick={onNotificationsClick}
-          title="الإشعارات"
-          className="btn-icon-circle relative"
-        >
-          <Bell size={18} strokeWidth={2} />
-          {unreadNotificationsCount > 0 && (
-            <div className="dash-bell-badge -top-1 -right-1">
-              <span className="dash-bell-count">{unreadNotificationsCount}</span>
-            </div>
+        {/* Left: saved (bookmark) + notification bell */}
+        <div className="flex items-center gap-2">
+          {onSavedClick && (
+            <button
+              type="button"
+              onClick={onSavedClick}
+              title="المحفوظات"
+              className={`dash-bell relative ${isSavedActive ? 'dash-bell-active' : 'dash-bell-idle'}`}
+            >
+              <Bookmark size={18} strokeWidth={2} />
+            </button>
           )}
-        </button>
+
+          <button
+            type="button"
+            onClick={onNotificationsClick}
+            title="الإشعارات"
+            className="dash-bell dash-bell-idle relative"
+          >
+            <Bell size={18} strokeWidth={2} />
+            {unreadNotificationsCount > 0 && (
+              <div className="dash-bell-badge -top-1 -right-1">
+                <span className="dash-bell-count">{unreadNotificationsCount}</span>
+              </div>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile stat chips horizontal scrollable row */}

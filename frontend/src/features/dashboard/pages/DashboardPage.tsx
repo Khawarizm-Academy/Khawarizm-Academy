@@ -175,6 +175,8 @@ export const DashboardPage: React.FC = () => {
                 unreadNotificationsCount={UNREAD_COUNT}
                 onNotificationsClick={() => handleSelectView('notifications')}
                 onAvatarClick={() => handleSelectView('profile')}
+                onSavedClick={() => handleSelectView('saved')}
+                isSavedActive={currentView === 'saved'}
               />
             </div>
           )}
@@ -190,6 +192,8 @@ export const DashboardPage: React.FC = () => {
                   />
                 }
                 onNotificationsClick={() => handleSelectView('notifications')}
+                onSavedClick={() => handleSelectView('saved')}
+                isSavedActive={currentView === 'saved'}
               />
               <div className="w-full py-2 md:py-6 animate-fade-in-up animation-delay-100">
                 <EmptyDashboardState userName="سارة" />
@@ -220,6 +224,8 @@ export const DashboardPage: React.FC = () => {
                   />
                 }
                 onNotificationsClick={() => handleSelectView('notifications')}
+                onSavedClick={() => handleSelectView('saved')}
+                isSavedActive={currentView === 'saved'}
               />
               <div className="w-full flex flex-col gap-6 py-1 md:py-2 animate-fade-in-up animation-delay-100">
                 <DashboardSubNavigation activeView="profile" onSelectView={handleSelectView} />
@@ -239,6 +245,8 @@ export const DashboardPage: React.FC = () => {
                   />
                 }
                 onNotificationsClick={() => handleSelectView('notifications')}
+                onSavedClick={() => handleSelectView('saved')}
+                isSavedActive={currentView === 'saved'}
               />
               <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
                 <EnrolledCoursesView

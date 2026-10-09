@@ -196,9 +196,9 @@
     @apply w-full max-w-2xl bg-navy-900 border border-navy-600/80 rounded-2xl p-6 shadow-2xl relative;
   }
 
-  /* --- Sub-navigation capsule --- */
+  /* --- Sub-navigation capsule (mobile/tablet only — the desktop sidebar covers lg+) --- */
   .dash-subnav {
-    @apply self-stretch p-1 bg-navy-900 rounded-full outline outline-1 outline-offset-[-1px] outline-navy-600/80 inline-flex justify-start items-center gap-1 select-none shadow-[0px_4px_16px_rgba(0,0,0,0.2)];
+    @apply self-stretch p-1 bg-navy-900 rounded-full outline outline-1 outline-offset-[-1px] outline-navy-600/80 inline-flex justify-start items-center gap-1 select-none shadow-[0px_4px_16px_rgba(0,0,0,0.2)] lg:hidden;
   }
 
   .dash-tab {

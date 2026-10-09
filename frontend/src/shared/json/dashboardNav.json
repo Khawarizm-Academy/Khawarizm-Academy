@@ -24,14 +24,6 @@
     "inSubNav": true
   },
   {
-    "id": "saved",
-    "label": "المنح المحفوظة",
-    "icon": "LayoutGrid",
-    "isExternalRoute": false,
-    "aliases": [],
-    "inSubNav": false
-  },
-  {
     "id": "achievements",
     "label": "الشهادات والتحديات",
     "icon": "Award",

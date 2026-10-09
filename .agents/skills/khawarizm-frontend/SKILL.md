@@ -120,7 +120,7 @@ Always follow this exact mapping when creating or moving files:
 
 ### 3.9 Dashboard (Learning Workspace)
 - **Page:** `<DashboardPage />` (`features/dashboard/pages/DashboardPage.tsx`) — self-contained layout: right sidebar + top bar, RTL grid declared with the sidebar as **Child #1** (§6.1). `?view=` drives the active view through `getDashboardNavItem` (aliases resolve too); `?state=live|empty` are demo modes.
-- **Shell & stats:** `<DesktopDashboardSidebar />` (Child #1), `<DashboardTopBar />` (search overlay), `<MobileDashboardTopBar />`, `<DashboardStatsHeader />`, `<DashboardStatsSidebar />` (widgets + stat rows), `<DashboardSubNavigation />` (pill strip from `DASHBOARD_SUB_NAV`).
+- **Shell & stats:** `<DesktopDashboardSidebar />` (Child #1) — its bottom row pairs the **saved bookmark + notification bell** icons (both `.dash-bell` tone family; saved opens `?view=saved`, which has no sidebar nav item), `<DashboardTopBar />` (search overlay), `<MobileDashboardTopBar />` (bookmark + bell pair on mobile), `<DashboardStatsHeader />`, `<DashboardStatsSidebar />` (widgets + stat rows), `<DashboardSubNavigation />` (mobile/tablet-only pill strip — `.dash-subnav` is `lg:hidden`; at `lg+` the sidebar owns navigation).
 - **Priority cards:** `<PriorityContinueCard />` (cyan) and `<LiveSessionPriorityCard />` (red live countdown) share the `.dash-hero*` family and `<RadialProgressRing />` (its `RING_COLORS` live in `features/dashboard/data/radialRingColors.ts` — hex is required for the `$(color)80` glow alpha).
 - **Views:** `<EnrolledCoursesView />` (filters + sort dropdown + empty state), `<CompetitionsCertificatesView />` (toggle pills + rows + cert cards), `<SavedScholarshipsView />` (rows, deadline tags, undo toast), `<NotificationsView />` + `<NotificationsDrawer />`, `<EmptyDashboardState />` — every view is data-driven from `src/shared/json/dashboardViews.json` / `dashboardChambers.json`.
 - **In-dashboard chambers (§6.2):** `<CourseWorkspaceModal />`, `<LiveClassroomModal />`, `<CompetitionArenaModal />`, `<ScholarshipApplicationModal />`, `<CertificatePreviewModal />` — all share the `.dash-modal-*` chrome.
@@ -202,7 +202,8 @@ Whenever asked to create any new page:
 
 ### 6.6 Dashboard Tab Architecture & Prohibition of Prototype Tabs
 - **Prohibited:** Never inject dashboard-wide ad-hoc view tabs (e.g. `DashboardTabFilter` with `overview / saved / achievements` and emoji state buttons).
-- Primary dashboard navigation is strictly governed by the **Right Sidebar** (Desktop) and **Mobile Bottom Bar** / URL queries.
+- Primary dashboard navigation is strictly governed by the **Right Sidebar** (Desktop) and the **mobile pill strip** (`.dash-subnav`, mobile/tablet-only — `lg:hidden`) / URL queries.
+- **Icon-only views:** the saved courses & opportunities view and the notifications view have **no sidebar nav item** — both open from icons beside each other in the chrome (bookmark + bell in the desktop sidebar bottom row and in every mobile top bar). Never re-add them as nav tabs; `getDashboardNavItem` resolving them to `null` is by design.
 - The ONLY valid tabs inside the dashboard are section-level pill toggle filters:
   - **Saved Scholarships:** `ToggleFilter` (`المنح المحفوظة` vs `الدورات المفضلة`) using `.dash-toggle-active` (`bg-gold-400/15 text-gold-400 font-bold`) vs `.dash-toggle-idle`.
   - **Competitions & Certificates:** `ToggleFilter` (`أكمل المسابقة` vs `لم يحل المسابقة`) using the same `.dash-toggle-*` classes — one concept pair, two surfaces.

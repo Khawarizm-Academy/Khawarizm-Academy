@@ -263,7 +263,9 @@ const navItem = getDashboardNavItem(view);   // null for views outside the sideb
 
 **The pill strip is derived, not authored.** `DASHBOARD_SUB_NAV` is `DASHBOARD_NAV.filter(item => item.inSubNav)` and each item's `activeViews` is `[item.id, ...item.aliases]` — so `?view=courses` lights the same sidebar item **and** pill as `?view=enrolled`. Show/hide a pill by toggling `inSubNav` in `dashboardNav.json`, never by editing `DashboardSubNavigation`.
 
-`?view=notifications` intentionally has no sidebar item and resolves to `null`.
+`?view=notifications` intentionally has no sidebar item and resolves to `null`. **So does `?view=saved`**: the saved courses & opportunities view is icon-only — it opens from the bookmark button beside the notification bell (desktop sidebar bottom + every mobile top bar). Its `dashboardNav.json` entry is gone; `getDashboardNavItem('saved')` returns `null` and `DashboardPage` falls back to the raw view id, so `?view=saved` still renders.
+
+**The pill strip is mobile/tablet-only** (`.dash-subnav` carries `lg:hidden`): below `lg` there is no sidebar, so the capsule is the only in-dashboard nav; at `lg+` the right sidebar owns navigation and the capsule disappears.
 
 **Modes are not aliases.** `?view=live` and `?state=empty` are modes, not navigation targets, so they stay explicit booleans in `DashboardPage` (`isLive`, `isEmpty`) rather than becoming aliases.
 
