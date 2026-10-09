@@ -216,4 +216,5 @@ The dashboard is an `immersive` page (own sidebar + topbar) but it must still lo
 - **Active accents are translucent, never solid fills:** gold for the sidebar (`bg-gold-400/10 outline-gold-400/50 text-gold-400`), blue for subnav/filter pills (`bg-blue-400/15`), gold for toggles/sort (`bg-gold-400/15`).
 - **Titles are white** (`text-white`), section titles carry the app's accent bar (`section-accent-title-blue|gold`), and hovers must use real `border` utilities (an `outline`-based card has a dead `hover:border-*`).
 - **CTAs follow the app button idioms:** gold `btn-gold` for the one primary action, cyan gradient (`from-blue-400 to-blue-500 text-white`) for course-domain actions, `btn-outline-blue` styling for secondary blue CTAs.
+- **Sticky chrome needs two things:** (1) no ancestor with `overflow-x-hidden` — that creates a scroll container and swallows sticky; page shells use `overflow-x-clip`; (2) a parent taller than the sticky element to travel in. The sidebar is an isolated rail: `sticky top-0 h-screen overflow-y-auto` — pinned on every view, scrolling internally if long. The topbar is `sticky top-0` inside the tall `.dash-main`.
 

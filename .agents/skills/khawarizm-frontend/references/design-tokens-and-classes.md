@@ -134,10 +134,15 @@ Non-utility CSS variables live in a `:root` block in the same file (consumed via
 > real utilities: it fails on `.flex-center` and `group`.
 
 ### Layout Primitives
-- `.page-wrapper`: Root container with `bg-[#040F24]`, `text-[#DCE5EE]`, selection styling.
+- `.page-wrapper`: Root container with `bg-[#040F24]`, `text-[#DCE5EE]`, selection styling, and `overflow-x-clip`.
 - `.content-container`: Main content wrapper (`max-w-[1280px]`, responsive padding, flex column).
 - `.flex-center`, `.flex-between`, `.flex-start`, `.flex-end`, `.flex-col-center`, `.flex-col-between`.
 - `.horizontal-scroll-row`: Horizontal flex swipe row with `-mx-4 px-4 overflow-x-auto` and hidden scrollbar.
+
+> **Sticky rules (learned the hard way):**
+> 1. **Never `overflow-x-hidden` on an ancestor of sticky chrome.** `hidden` on one axis computes the other axis to `auto`, creating a scroll container that swallows `position: sticky` — the sidebar/navbar scrolls away with the page. Use `overflow-x-clip` (clips the same, creates no scroll container). `.page-wrapper`, `.dash-page` and every future page shell use `clip`.
+> 2. **A sticky element only travels inside its parent.** The RootLayout navbar wrappers are `sticky top-0` themselves (their parent is the tall `.page-wrapper`); the navbar inside a wrapper of its own height can never stick.
+> 3. **Isolated rails** (dashboard sidebar): `sticky top-0 h-screen overflow-y-auto` — pinned to the viewport for the whole page, scrolling internally if their content is taller than the screen.
 
 ### Surfaces & Cards
 - `.glass-panel`: Glassmorphic panel with `#061A3A/40`, blur, and `#1B3F80/40` border.
@@ -217,7 +222,7 @@ nav-item → nav-item-active/idle, modal-icon → -red/-sky/-gold, …).
 **Canvas & elevation (aligned with every other page):**
 - `.dash-page` paints **no background** — the dashboard sits on the navy-950 page-wrapper and the global celestial washes glow through it. Never add a page-level background to a feature page; the shell owns the canvas.
 - **Cards are lighter than the canvas:** floating surfaces are translucent glass (`bg-navy-900/70–80 + backdrop-blur-md + border-navy-600/50`), wells inside them go darker (`bg-navy-950/50`). Never flip this (dark cards on a dark page read as holes).
-- Chrome is `.glass-navbar`-grade: `.dash-sidebar` / `.dash-topbar` use `bg-navy-950/90 + backdrop-blur-md`, and the topbar is `sticky top-0`.
+- Chrome is `.glass-navbar`-grade: `.dash-sidebar` / `.dash-topbar` use `bg-navy-950/90 + backdrop-blur-md`, and both are `sticky top-0`. The sidebar is an **isolated rail** — `sticky top-0 h-screen overflow-y-auto`: pinned to the viewport on every view, scrolling internally if the nav outgrows the screen (see the sticky rules under Layout Primitives).
 - Modals, drawer, dropdowns and search panels stay **solid navy-900** for readability over the scrim (same idiom as `.auth-terms-panel`).
 - Accent pills are translucent, never solid fills: active nav = `bg-gold-400/10 outline-gold-400/50 text-gold-400`, subnav/filter pills = `bg-blue-400/15`, toggles & sort = `bg-gold-400/15 text-gold-400` (mirrors `.catalog-pill-gold`).
 

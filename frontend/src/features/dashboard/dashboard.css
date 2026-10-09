@@ -9,8 +9,9 @@
   /* --- Page shell & layout --- */
   .dash-page {
     /* No background paint: sits on the navy-950 page-wrapper so the global
-       celestial washes glow through — same canvas as every other page. */
-    @apply w-full min-h-screen flex justify-start items-start text-slate-100 relative overflow-x-hidden;
+       celestial washes glow through — same canvas as every other page.
+       overflow-x CLIP (not hidden) so sticky chrome keeps resolving to the viewport. */
+    @apply w-full min-h-screen flex justify-start items-start text-slate-100 relative overflow-x-clip;
   }
 
   .dash-main {
@@ -88,7 +89,8 @@
 
   /* --- Desktop sidebar --- */
   .dash-sidebar {
-    @apply w-60 self-stretch shrink-0 px-4 py-6 bg-navy-950/90 backdrop-blur-md border-l border-navy-600/80 sticky top-0 h-screen hidden lg:flex flex-col justify-between items-start z-30 select-none;
+    /* Isolated rail: pinned to the viewport for the whole page, scrolls internally if long. */
+    @apply w-60 self-stretch shrink-0 px-4 py-6 bg-navy-950/90 backdrop-blur-md border-l border-navy-600/80 sticky top-0 h-screen overflow-y-auto hidden lg:flex flex-col justify-between items-start z-30 select-none;
   }
 
   .dash-side-top {

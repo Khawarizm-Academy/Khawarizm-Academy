@@ -35,17 +35,19 @@ export const RootLayout: React.FC = () => {
         <div className="absolute bottom-[10%] left-[15%] w-[700px] h-[500px] rounded-full bg-[#E5B65C]/[0.03] blur-[160px]" />
       </div>
 
-      {/* Sticky header, desktop and mobile handled by CSS */}
+      {/* Sticky header, desktop and mobile handled by CSS.
+          The wrapper is sticky (not the navbar) — a sticky element can only
+          travel inside its parent, so the parent must be the tall page-wrapper. */}
       {showHeaderAndFooter && (
         <>
-          <div className="w-full hidden md:block relative z-30">
+          <div className="w-full hidden md:block sticky top-0 z-30">
             <DesktopNavbar
               activeTab={activeTab}
               onSelectTab={selectTab}
               onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
             />
           </div>
-          <div className="w-full block md:hidden relative z-30">
+          <div className="w-full block md:hidden sticky top-0 z-30">
             <MobileHeader
               onLogoClick={() => navigate(NAV_TARGETS.home)}
               onLoginClick={() => navigate(NAV_TARGETS.login)}

@@ -76,7 +76,9 @@
 }
 
 .page-wrapper {
-  @apply min-h-screen bg-[#040F24] text-slate-100 flex flex-col items-center relative overflow-x-hidden selection:bg-[#E5B65C]/30 selection:text-[#E5B65C];
+  /* overflow-x CLIP, never hidden: hidden would create a scroll container and
+     break every sticky child (navbar, sidebars, dashboard chrome). */
+  @apply min-h-screen bg-[#040F24] text-slate-100 flex flex-col items-center relative overflow-x-clip selection:bg-[#E5B65C]/30 selection:text-[#E5B65C];
 }
 
 .content-container {
