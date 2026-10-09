@@ -90,7 +90,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
         <div className="w-full p-1 bg-[#061A3A]/90 backdrop-blur-md rounded-full border border-[#1B3F80] shadow-[0_4px_20px_rgba(4,15,36,0.6)] flex items-center relative select-none">
           {/* Physical Sliding Highlight Puck */}
           <div
-            className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
               currentType === 'all'
                 ? 'bg-gradient-to-r from-[#E5B65C] to-[#29A9FF] shadow-[0_0_14px_rgba(41,169,255,0.4)]'
                 : currentType === 'course'
@@ -164,7 +164,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
       <div className="search-pills-container w-[270px] h-12 relative p-1 bg-[#040F24] rounded-full border border-[#1B3F80]/60 flex items-center select-none shrink-0">
         {/* Physical Sliding Highlight Puck */}
         <div
-          className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
             currentType === 'all'
               ? 'bg-gradient-to-r from-[#E5B65C]/25 to-[#29A9FF]/25 border border-[#E5B65C]/50 shadow-[0_0_12px_rgba(229,182,92,0.35)]'
               : currentType === 'course'

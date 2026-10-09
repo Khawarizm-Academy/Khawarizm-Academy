@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Bell, Search, User } from 'lucide-react';
+import { Bell, LayoutDashboard, Search, User } from 'lucide-react';
 import { BrandLogo } from '../Artwork/BrandVisuals';
 import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
 import { NAV_TABS } from '../../lib/navigation';
@@ -94,6 +94,18 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
 
         {/* Left (End in RTL): Actions & Profile */}
         <div className="flex items-center gap-3">
+          {/* Fast lane into the learning dashboard */}
+          <button
+            onClick={() => onSelectTab?.('dashboard' as NavTabKey)}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#061A3A]/80 hover:bg-[#092557] border border-[#1B3F80] hover:border-[#29A9FF]/50 text-slate-100 hover:text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer group"
+          >
+            <LayoutDashboard
+              size={15}
+              className="text-[#29A9FF] transition-transform duration-300 group-hover:-translate-y-0.5"
+            />
+            <span>لوحتي</span>
+          </button>
+
           {/* Guest Login CTA */}
           <button
             onClick={() => onSelectTab?.('login' as NavTabKey)}
@@ -105,20 +117,24 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
           {/* Search Button */}
           <button
             aria-label="بحث في المنصة"
-            className="btn-icon-box"
+            className="btn-icon-box group"
           >
-            <Search size={18} />
+            <Search size={18} className="transition-transform duration-300 group-hover:rotate-12" />
           </button>
 
           {/* Notifications Bell with Unread Badge */}
           <button
             onClick={onNotificationsClick}
             aria-label="الإشعارات"
-            className="btn-icon-box relative cursor-pointer"
+            className="btn-icon-box group relative cursor-pointer"
           >
-            <Bell size={18} />
+            <Bell size={18} className="group-hover:animate-bell-ring" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#040F24]" />
+              <span className="absolute top-1.5 right-1.5 flex w-2 h-2">
+                {/* Ping halo behind the solid unread dot */}
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-60" />
+                <span className="relative inline-flex w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#040F24]" />
+              </span>
             )}
           </button>
 

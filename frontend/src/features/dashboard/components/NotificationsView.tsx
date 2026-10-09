@@ -93,9 +93,10 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         <DataSectionSkeleton variant="list" count={5} />
       ) : (
         <div className="dash-list">
-          {notifications.map((item) => (
+          {notifications.map((item, idx) => (
             <NotificationListItem
               key={item.id}
+              index={idx}
               text={item.message}
               timeAgo={item.timeAgo}
               type={item.type}

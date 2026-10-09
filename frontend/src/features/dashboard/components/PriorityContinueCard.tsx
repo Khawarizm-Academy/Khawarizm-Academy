@@ -10,7 +10,7 @@ const CARD = dashboardViewsJson.priorityCard;
 
 export const PriorityContinueCard: React.FC<PriorityContinueCardProps> = ({ onContinue }) => {
   return (
-    <div dir="rtl" className="dash-hero dash-hero-cyan">
+    <div dir="rtl" className="dash-hero dash-hero-cyan group animate-pop-in">
       {/* Background ambient gradient glow */}
       <div className="dash-hero-glow w-64 h-64 bg-blue-500/5" />
 
@@ -26,9 +26,9 @@ export const PriorityContinueCard: React.FC<PriorityContinueCardProps> = ({ onCo
             <Brain
               size={36}
               strokeWidth={1.8}
-              className="text-blue-400 drop-shadow-[0_0_10px_rgba(41,169,255,0.8)]"
+              className="text-blue-400 drop-shadow-[0_0_10px_rgba(41,169,255,0.8)] group-hover:animate-wiggle"
             />
-            <span className="dash-hero-dot" />
+            <span className="dash-hero-dot animate-star-twinkle" />
           </div>
         </div>
 

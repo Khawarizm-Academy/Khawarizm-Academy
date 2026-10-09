@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Trophy } from 'lucide-react';
 import type { Competition } from '../../types/entities';
+import { useCountdown } from '../../hooks/useCountdown';
+import { CountdownDigits } from './CountdownDigits';
 
 interface CompetitionBannerProps {
   competition: Competition;
@@ -13,34 +15,13 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
   variant = 'desktop',
   onRegister,
 }) => {
-  // Live Real-Time Countdown Engine
-  const [timeLeft, setTimeLeft] = useState({
+  // Live real-time countdown shared with the dashboard challenge spotlight
+  const timeLeft = useCountdown({
     days: parseInt(competition.daysRemaining, 10) || 3,
     hours: parseInt(competition.hoursRemaining, 10) || 14,
     minutes: 36,
     seconds: 48,
   });
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 };
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: 59, seconds: 59 };
-        } else if (prev.hours > 0) {
-          return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        } else if (prev.days > 0) {
-          return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
-        }
-        return prev;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const format2Digits = (num: number) => num.toString().padStart(2, '0');
 
   // Mobile Variant matching media_1788955065979.png with timer directly unified with registration button
   if (variant === 'mobile') {
@@ -63,53 +44,7 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
         {/* Action & Timer Unit — Placed right above & tightly coupled with registration button */}
         <div className="w-full flex-col-center gap-4">
           {/* Live Countdown Digits — Thick, Solid 3D Digit Boxes matching Figma */}
-          <div className="flex-center gap-2 sm:gap-3 font-['IBM_Plex_Sans_Arabic'] my-1">
-            {/* Days (Right in RTL) */}
-            <div className="flex-col-center">
-              <div className="digit-box-mobile">
-                <span className="digit-text text-2xl sm:text-3xl drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
-                  {format2Digits(timeLeft.days)}
-                </span>
-              </div>
-              <span className="digit-label text-xs mt-1.5">أيام</span>
-            </div>
-
-            <span className="text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse">:</span>
-
-            {/* Hours */}
-            <div className="flex-col-center">
-              <div className="digit-box-mobile">
-                <span className="digit-text text-2xl sm:text-3xl drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
-                  {format2Digits(timeLeft.hours)}
-                </span>
-              </div>
-              <span className="digit-label text-xs mt-1.5">ساعة</span>
-            </div>
-
-            <span className="text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse">:</span>
-
-            {/* Minutes */}
-            <div className="flex-col-center">
-              <div className="digit-box-mobile">
-                <span className="digit-text text-2xl sm:text-3xl drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]">
-                  {format2Digits(timeLeft.minutes)}
-                </span>
-              </div>
-              <span className="digit-label text-xs mt-1.5">دقيقة</span>
-            </div>
-
-            <span className="text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse">:</span>
-
-            {/* Seconds (Left in RTL) */}
-            <div className="flex-col-center">
-              <div className="digit-box-mobile-active">
-                <span className="digit-text text-2xl sm:text-3xl drop-shadow-[0_0_10px_rgba(229,182,92,0.7)]">
-                  {format2Digits(timeLeft.seconds)}
-                </span>
-              </div>
-              <span className="digit-label text-xs mt-1.5">ثانية</span>
-            </div>
-          </div>
+          <CountdownDigits value={timeLeft} variant="mobile" />
 
           {/* Primary CTA Button (سجل الآن) */}
           <button
@@ -153,53 +88,7 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
         {/* Left (End in RTL): Integrated Action Cluster — Timer Placed Directly Beside the "سجل الآن" Button */}
         <div className="flex items-center gap-4 shrink-0">
           {/* Live Countdown Timer Unit — Thick Substantial Digit Cards */}
-          <div className="flex items-center gap-2 sm:gap-2.5 font-['IBM_Plex_Sans_Arabic']">
-            {/* Days */}
-            <div className="flex-col-center">
-              <div className="digit-box min-w-[54px] h-[48px] px-2.5">
-                <span className="digit-text text-xl">
-                  {format2Digits(timeLeft.days)}
-                </span>
-              </div>
-              <span className="digit-label text-[11px] mt-1">أيام</span>
-            </div>
-
-            <span className="text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse">:</span>
-
-            {/* Hours */}
-            <div className="flex-col-center">
-              <div className="digit-box min-w-[54px] h-[48px] px-2.5">
-                <span className="digit-text text-xl">
-                  {format2Digits(timeLeft.hours)}
-                </span>
-              </div>
-              <span className="digit-label text-[11px] mt-1">ساعة</span>
-            </div>
-
-            <span className="text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse">:</span>
-
-            {/* Minutes */}
-            <div className="flex-col-center">
-              <div className="digit-box min-w-[54px] h-[48px] px-2.5">
-                <span className="digit-text text-xl">
-                  {format2Digits(timeLeft.minutes)}
-                </span>
-              </div>
-              <span className="digit-label text-[11px] mt-1">دقيقة</span>
-            </div>
-
-            <span className="text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse">:</span>
-
-            {/* Seconds */}
-            <div className="flex-col-center">
-              <div className="digit-box-active min-w-[54px] h-[48px] px-2.5">
-                <span className="digit-text text-xl drop-shadow-[0_0_6px_rgba(229,182,92,0.6)]">
-                  {format2Digits(timeLeft.seconds)}
-                </span>
-              </div>
-              <span className="digit-label text-[11px] mt-1">ثانية</span>
-            </div>
-          </div>
+          <CountdownDigits value={timeLeft} variant="desktop" />
 
           {/* Button "سجل الآن" */}
           <button

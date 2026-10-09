@@ -1,5 +1,6 @@
 import React from 'react';
 import { Hourglass } from 'lucide-react';
+import { OrbitalEmblem, OrbitalStageStars } from './OrbitalEmblem';
 
 interface FeaturePlaceholderProps {
   title: string;
@@ -18,19 +19,26 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({
 }) => {
   return (
     <main className="content-container">
-      <div className="w-full py-20 px-6 flex-col-center text-center gap-5 animate-fade-in-up">
-        <div className="w-20 h-20 rounded-2xl bg-[#092557] border border-[#1B3F80] flex-center text-[#E5B65C] shadow-lg">
-          {icon ?? <Hourglass size={36} />}
+      <div className="w-full py-20 px-6 flex-col-center text-center gap-5 relative overflow-hidden">
+        {/* Starfield behind the coming-soon chamber */}
+        <OrbitalStageStars />
+
+        <div className="animate-pop-in">
+          <OrbitalEmblem tone="gold" icon={icon ?? <Hourglass size={36} />} />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-['IBM_Plex_Sans_Arabic'] tracking-tight">
+
+        <h1 className="relative z-10 text-3xl sm:text-4xl font-extrabold text-white font-['IBM_Plex_Sans_Arabic'] tracking-tight animate-pop-in animation-delay-100">
           {title}
         </h1>
-        <p className="max-w-xl text-slate-400 text-sm sm:text-base font-['Tajawal'] leading-relaxed">
+        <p className="relative z-10 max-w-xl text-slate-400 text-sm sm:text-base font-['Tajawal'] leading-relaxed animate-pop-in animation-delay-200">
           {description}
         </p>
-        <span className="mt-4 px-4 py-1.5 rounded-full bg-[#061A3A] border border-[#E5B65C]/50 text-[#E5B65C] text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold">
+        <button
+          type="button"
+          className="relative z-10 mt-4 px-4 py-1.5 rounded-full bg-[#061A3A] border border-[#E5B65C]/50 text-[#E5B65C] text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold cursor-default animate-pop-in animation-delay-300 hover:animate-wiggle"
+        >
           قيد الإعداد — قريبًا
-        </span>
+        </button>
       </div>
     </main>
   );

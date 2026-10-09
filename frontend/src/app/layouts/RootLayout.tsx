@@ -27,12 +27,21 @@ export const RootLayout: React.FC = () => {
 
   return (
     <div className="page-wrapper">
-      {/* Celestial ambient washes */}
+      {/* Celestial ambient washes — slowly drifting so every page breathes */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute top-[4%] right-[5%] w-[650px] h-[650px] rounded-full bg-[#29A9FF]/[0.045] blur-[140px]" />
-        <div className="absolute top-[20%] left-[5%] w-[550px] h-[550px] rounded-full bg-[#E5B65C]/[0.035] blur-[130px]" />
-        <div className="absolute top-[50%] right-[10%] w-[600px] h-[600px] rounded-full bg-[#167BDB]/[0.035] blur-[150px]" />
-        <div className="absolute bottom-[10%] left-[15%] w-[700px] h-[500px] rounded-full bg-[#E5B65C]/[0.03] blur-[160px]" />
+        <div className="absolute top-[4%] right-[5%] w-[650px] h-[650px] rounded-full bg-[#29A9FF]/[0.045] blur-[140px] animate-float-slow" />
+        <div
+          className="absolute top-[20%] left-[5%] w-[550px] h-[550px] rounded-full bg-[#E5B65C]/[0.035] blur-[130px] animate-float-slow"
+          style={{ animationDelay: '2s' }}
+        />
+        <div
+          className="absolute top-[50%] right-[10%] w-[600px] h-[600px] rounded-full bg-[#167BDB]/[0.035] blur-[150px] animate-float-slow"
+          style={{ animationDelay: '4s' }}
+        />
+        <div
+          className="absolute bottom-[10%] left-[15%] w-[700px] h-[500px] rounded-full bg-[#E5B65C]/[0.03] blur-[160px] animate-float-slow"
+          style={{ animationDelay: '6s' }}
+        />
       </div>
 
       {/* Sticky header, desktop and mobile handled by CSS.

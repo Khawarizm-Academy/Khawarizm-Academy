@@ -15,14 +15,24 @@ const COURSE_ICON: Record<NonNullable<EnrolledCourse['iconType']>, { Icon: Lucid
 interface EnrolledCourseRowProps {
   course: EnrolledCourse;
   onContinue?: () => void;
+  /** Position in the list, used to stagger the entrance. */
+  index?: number;
 }
 
-export const EnrolledCourseRow: React.FC<EnrolledCourseRowProps> = ({ course, onContinue }) => {
+export const EnrolledCourseRow: React.FC<EnrolledCourseRowProps> = ({
+  course,
+  onContinue,
+  index = 0,
+}) => {
   const track = COURSE_ICON[course.iconType ?? 'uiux'];
   const TrackIcon = track.Icon;
 
   return (
-    <div dir="rtl" className="dash-row md:gap-5 duration-200 select-none">
+    <div
+      dir="rtl"
+      className="dash-row md:gap-5 duration-200 select-none animate-pop-in"
+      style={{ animationDelay: `${index * 70}ms` }}
+    >
       {/* Right side in RTL: thumbnail + course text info */}
       <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 text-right">
         {/* Course thumbnail */}

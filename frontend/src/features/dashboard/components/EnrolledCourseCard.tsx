@@ -8,6 +8,8 @@ interface EnrolledCourseCardProps {
   onResume: (course: EnrolledCourse) => void;
   onViewCertificate?: (course: EnrolledCourse) => void;
   onJoinLive?: (course: EnrolledCourse) => void;
+  /** Position in the list, used to stagger the entrance. */
+  index?: number;
 }
 
 export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({
@@ -15,6 +17,7 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({
   onResume,
   onViewCertificate,
   onJoinLive,
+  index = 0,
 }) => {
   const isCompleted = course.isCompleted || course.progress >= 100;
   const cardTone = isCompleted ? 'dash-course-card-done' : 'dash-course-card-active';
@@ -58,7 +61,11 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({
   );
 
   return (
-    <article dir="rtl" className={`dash-course-card ${cardTone}`}>
+    <article
+      dir="rtl"
+      className={`dash-course-card ${cardTone} animate-pop-in`}
+      style={{ animationDelay: `${index * 70}ms` }}
+    >
       {/* Desktop row */}
       <div className="hidden md:flex justify-between items-center gap-5 p-4">
         {/* Action and progress */}

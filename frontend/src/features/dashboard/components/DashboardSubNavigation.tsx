@@ -1,5 +1,6 @@
 import React from 'react';
 import { DASHBOARD_SUB_NAV } from '../../../shared/lib/navigation';
+import { SlidingSegmentedControl } from '../../../shared/components/Controls/SlidingSegmentedControl';
 
 interface DashboardSubNavigationProps {
   activeView: string;
@@ -12,29 +13,18 @@ export const DashboardSubNavigation: React.FC<DashboardSubNavigationProps> = ({
   onSelectView,
   className = '',
 }) => {
-  return (
-    <div
-      dir="rtl"
-      role="tablist"
-      aria-label="التنقل الداخلي للوحة التحكم"
-      className={`dash-subnav ${className}`}
-    >
-      {DASHBOARD_SUB_NAV.map((tab) => {
-        const isActive = tab.activeViews.includes(activeView);
+  // Aliases like ?view=live (main) or ?view=courses (enrolled) resolve to a tab id.
+  const activeId =
+    DASHBOARD_SUB_NAV.find((tab) => tab.activeViews.includes(activeView))?.id ?? activeView;
 
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            onClick={() => onSelectView(tab.id)}
-            className={`dash-tab ${isActive ? 'dash-pill-active' : 'dash-tab-idle'}`}
-          >
-            <span>{tab.label}</span>
-          </button>
-        );
-      })}
-    </div>
+  return (
+    <SlidingSegmentedControl
+      options={DASHBOARD_SUB_NAV.map((tab) => ({ id: tab.id, label: tab.label }))}
+      value={activeId}
+      onChange={onSelectView}
+      tone="blue"
+      aria-label="التنقل الداخلي للوحة التحكم"
+      className={`w-full lg:hidden ${className}`}
+    />
   );
 };

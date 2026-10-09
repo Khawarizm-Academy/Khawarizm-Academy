@@ -29,9 +29,9 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           <button
             onClick={onNotificationsClick}
             aria-label="الإشعارات"
-            className="relative p-2 rounded-full bg-[#061A3A]/80 border border-[#167BDB]/40 text-[#8299B5] hover:text-slate-100 transition-colors cursor-pointer"
+            className="group relative p-2 rounded-full bg-[#061A3A]/80 border border-[#167BDB]/40 text-[#8299B5] hover:text-slate-100 transition-all hover:scale-105 active:scale-95 cursor-pointer"
           >
-            <Bell size={18} />
+            <Bell size={18} className="group-hover:animate-bell-ring" />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-[#040F24]">
                 {unreadCount}

@@ -25,7 +25,7 @@ export const CatalogMobileFilterDrawer: React.FC<CatalogMobileFilterDrawerProps>
 
   return (
     <div className="catalog-drawer">
-      <div onClick={onClose} className="catalog-drawer-scrim animate-fade-in-up" />
+      <div onClick={onClose} className="catalog-drawer-scrim animate-fade-in" />
 
       <div className="catalog-drawer-panel animate-fade-in-up">
         <div className="catalog-drawer-handle" />

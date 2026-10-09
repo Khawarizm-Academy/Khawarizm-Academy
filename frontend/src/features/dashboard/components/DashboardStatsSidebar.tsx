@@ -56,8 +56,12 @@ export const DashboardStatsSidebar: React.FC = () => {
           <DataSectionSkeleton variant="rail" count={1} className="flex-col" />
         ) : (
           <div className="dash-stat-stack">
-            {STAT_ROWS.map((row) => (
-              <div key={row.label} className="dash-stat-row">
+            {STAT_ROWS.map((row, idx) => (
+              <div
+                key={row.label}
+                className="dash-stat-row animate-pop-in"
+                style={{ animationDelay: `${idx * 70}ms` }}
+              >
                 <span className="dash-stat-label">{row.label}</span>
                 <div className="dash-stat-values">
                   <span className={`dash-stat-value ${row.tone}`}>{row.value(stats)}</span>
@@ -77,8 +81,12 @@ export const DashboardStatsSidebar: React.FC = () => {
           <DataSectionSkeleton variant="list" count={2} />
         ) : (
           <div className="dash-stat-stack">
-            {events.map((event) => (
-              <div key={event.id} className="dash-event-row">
+            {events.map((event, idx) => (
+              <div
+                key={event.id}
+                className="dash-event-row animate-pop-in"
+                style={{ animationDelay: `${idx * 70}ms` }}
+              >
                 {/* Right: event details in RTL */}
                 <div className="dash-event-text">
                   <h4 className="dash-event-title">{event.title}</h4>

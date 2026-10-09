@@ -89,7 +89,8 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
               key={idx}
               type="button"
               onClick={chip.onClick}
-              className={`dash-chip dash-chip-mobile ${chipState(chip)}`}
+              className={`dash-chip dash-chip-mobile ${chipState(chip)} animate-pop-in`}
+              style={{ animationDelay: `${idx * 60}ms` }}
             >
               <Icon size={16} className={chip.iconColor || 'text-blue-400'} strokeWidth={2} />
               <span className="dash-chip-label">{chip.label}</span>
@@ -113,7 +114,8 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
                 key={idx}
                 type="button"
                 onClick={chip.onClick}
-                className={`dash-chip dash-chip-desktop ${chipState(chip)}`}
+                className={`dash-chip dash-chip-desktop ${chipState(chip)} animate-pop-in`}
+                style={{ animationDelay: `${idx * 60}ms` }}
               >
                 <Icon size={18} className={chip.iconColor || 'text-blue-400'} strokeWidth={2} />
                 <span className="dash-chip-label-lg">{chip.label}</span>

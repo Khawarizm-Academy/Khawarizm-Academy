@@ -156,10 +156,11 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
       ) : data && data.items.length > 0 ? (
         <>
           <div className="catalog-grid">
-            {data.items.map((item) => (
+            {data.items.map((item, index) => (
               <CatalogCard
                 key={item.id}
                 item={item}
+                index={index}
                 onSelect={onSelectCard}
                 onPrefetch={() => handlePrefetchDetail(item)}
               />

@@ -56,9 +56,9 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
       <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up">
         {/* 1. Media / CTA Column */}
-        <div className="lg:col-span-1 flex flex-col gap-5">
-          <div className={`relative w-full aspect-video lg:aspect-[4/3] rounded-2xl overflow-hidden border border-[#1B3F80] bg-[#040F24] ${isCourse ? 'card-interactive-blue' : 'card-interactive-gold'}`}>
-            <img src={item.thumbnailUrl} alt={item.title} className="absolute inset-0 w-full h-full object-cover opacity-45" />
+        <div className="lg:col-span-1 flex flex-col gap-5 animate-pop-in animation-delay-100">
+          <div className={`group relative w-full aspect-video lg:aspect-[4/3] rounded-2xl overflow-hidden border border-[#1B3F80] bg-[#040F24] ${isCourse ? 'card-interactive-blue' : 'card-interactive-gold'}`}>
+            <img src={item.thumbnailUrl} alt={item.title} className="absolute inset-0 w-full h-full object-cover opacity-45 transition-all duration-500 group-hover:scale-105 group-hover:opacity-55" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#061A3A] via-transparent to-[#040F24]/60" />
             <span
               className={`absolute top-3 right-3 px-3 py-1 rounded-md text-[11px] font-['IBM_Plex_Sans_Arabic'] font-semibold shadow-md ${
@@ -99,9 +99,14 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
           {/* Meta Chips Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {metaChips.map((chip) =>
+            {metaChips.map((chip, idx) =>
               chip.value ? (
-                <div key={chip.label} className="glass-panel rounded-xl p-3.5 border border-[#1B3F80]/50 flex flex-col gap-1">
+                /* Chips cascade with a soft stagger after the title lands */
+                <div
+                  key={chip.label}
+                  className="glass-panel rounded-xl p-3.5 border border-[#1B3F80]/50 flex flex-col gap-1 animate-pop-in"
+                  style={{ animationDelay: `${180 + idx * 60}ms` }}
+                >
                   <span className="text-[11px] text-[#8299B5] font-['Tajawal']">{chip.label}</span>
                   <span className="text-sm font-bold text-white font-['IBM_Plex_Sans_Arabic']">{chip.value}</span>
                 </div>

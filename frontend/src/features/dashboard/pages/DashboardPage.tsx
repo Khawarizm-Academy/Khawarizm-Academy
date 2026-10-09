@@ -11,6 +11,7 @@ import { MobileDashboardTopBar } from '../components/MobileDashboardTopBar';
 import { CertificatePreviewModal } from '../components/CertificatePreviewModal';
 import { DashboardStatsHeader, type StatChipItem } from '../components/DashboardStatsHeader';
 import { PriorityContinueCard } from '../components/PriorityContinueCard';
+import { ChallengeSpotlightCard } from '../components/ChallengeSpotlightCard';
 import { LiveSessionPriorityCard } from '../components/LiveSessionPriorityCard';
 import { EmptyDashboardState } from '../components/EmptyDashboardState';
 import { EnrolledCourseRow } from '../components/EnrolledCourseRow';
@@ -32,6 +33,8 @@ import notificationJson from '../../../shared/json/dashboardNotifications.json';
 const LIVE_COURSE = dashboardViewsJson.liveCard.courseTitle;
 const FULL_PAGE_VIEWS = dashboardViewsJson.fullPageViews;
 const SINGLE_COLUMN_VIEWS = dashboardViewsJson.singleColumnViews;
+const SPOTLIGHT = dashboardViewsJson.spotlight;
+const CHALLENGE_ITEM = dashboardViewsJson.challengeItem as CompetitionItem;
 
 /** Mock unread badge shared by every bell in the dashboard chrome. */
 const UNREAD_COUNT = 5;
@@ -283,17 +286,27 @@ export const DashboardPage: React.FC = () => {
                       onSelectView={handleSelectView}
                     />
 
-                    {/* Hero card: live session or priority continue */}
+                    {/* Hero cards: live session dominates, otherwise the
+                        challenge spotlight and the continue-learning card */}
                     {isLive ? (
                       <LiveSessionPriorityCard
                         onJoinSession={() => setIsLiveClassroomOpen(true)}
                       />
                     ) : (
-                      <PriorityContinueCard
-                        onContinue={() =>
-                          setActiveWorkspaceCourse('أساسيات الذكاء الاصطناعي وتعلم الآلة')
-                        }
-                      />
+                      <>
+                        {SPOTLIGHT.hasChallenge && (
+                          <ChallengeSpotlightCard
+                            onEnter={() => setSelectedCompetition(CHALLENGE_ITEM)}
+                          />
+                        )}
+                        {SPOTLIGHT.hasCourse && (
+                          <PriorityContinueCard
+                            onContinue={() =>
+                              setActiveWorkspaceCourse('أساسيات الذكاء الاصطناعي وتعلم الآلة')
+                            }
+                          />
+                        )}
+                      </>
                     )}
 
                     {/* Courses section */}
@@ -318,9 +331,10 @@ export const DashboardPage: React.FC = () => {
                         {isLoadingCourses ? (
                           <DataSectionSkeleton variant="list" count={3} />
                         ) : (
-                          coursesData.map((course) => (
+                          coursesData.map((course, idx) => (
                             <EnrolledCourseRow
                               key={course.id}
+                              index={idx}
                               course={course}
                               onContinue={() => setActiveWorkspaceCourse(course.title)}
                             />

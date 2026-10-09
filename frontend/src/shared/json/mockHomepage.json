@@ -112,5 +112,39 @@
     "date": "22 نوفمبر",
     "format": "عبر الإنترنت",
     "thumbnailType": "academic_workshop"
-  }
+  },
+  "quickLinks": [
+    {
+      "id": "dashboard",
+      "icon": "LayoutDashboard",
+      "label": "لوحة التعلّم",
+      "subtitle": "تابع دوراتك وشهاداتك",
+      "tone": "gold",
+      "target": "dashboard"
+    },
+    {
+      "id": "courses",
+      "icon": "BookOpen",
+      "label": "دليل الدورات",
+      "subtitle": "اكتشف مسارك القادم",
+      "tone": "blue",
+      "target": "courses"
+    },
+    {
+      "id": "scholarships",
+      "icon": "GraduationCap",
+      "label": "المنح والفرص",
+      "subtitle": "قدّم لمنحة أحلامك",
+      "tone": "blue",
+      "target": "scholarships"
+    },
+    {
+      "id": "competitions",
+      "icon": "Trophy",
+      "label": "المسابقات",
+      "subtitle": "تحدَّ نفسك واربح",
+      "tone": "gold",
+      "target": "competitions"
+    }
+  ]
 }

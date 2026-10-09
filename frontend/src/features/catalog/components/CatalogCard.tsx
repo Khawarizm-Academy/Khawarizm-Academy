@@ -4,6 +4,7 @@ import type { CatalogItem } from '../../../mocks/catalog';
 
 interface CatalogCardProps {
   item: CatalogItem;
+  index?: number;
   onSelect?: (item: CatalogItem) => void;
   onPrefetch?: () => void;
 }
@@ -30,7 +31,7 @@ const DEADLINE_ACCENT: Record<'critical' | 'warning' | 'normal', string> = {
   normal: 'border-blue-400/50 text-slate-400',
 };
 
-export const CatalogCard: React.FC<CatalogCardProps> = ({ item, onSelect, onPrefetch }) => {
+export const CatalogCard: React.FC<CatalogCardProps> = ({ item, index = 0, onSelect, onPrefetch }) => {
   const isCourse = item.type === 'course';
   const pillar = pillarStyle(item);
 
@@ -38,8 +39,10 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({ item, onSelect, onPref
     <article
       onClick={() => onSelect?.(item)}
       onMouseEnter={onPrefetch}
-      /* card-interactive-* supplies the whole shell; group enables the accent hovers */
-      className={`group ${isCourse ? 'card-interactive-blue' : 'card-interactive-gold'}`}
+      /* card-interactive-* supplies the whole shell; group enables the accent hovers;
+         cards cascade in with a short stagger so filtered results feel alive */
+      className={`group animate-pop-in ${isCourse ? 'card-interactive-blue' : 'card-interactive-gold'}`}
+      style={{ animationDelay: `${index * 70}ms` }}
     >
       {/* Thumbnail */}
       <div className="catalog-card-media">

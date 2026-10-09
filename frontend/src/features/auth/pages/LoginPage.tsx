@@ -84,8 +84,8 @@ export const LoginPage: React.FC = () => {
             <AuthModeSwitch mode={authMode} onChange={handleModeChange} />
           </div>
 
-          {/* Active Card */}
-          <div className="auth-card-slot">{activeCard('desktop')}</div>
+          {/* Active Card — remounts with a spring pop when the mode switches */}
+          <div key={`desktop-${authMode}`} className="auth-card-slot animate-pop-in">{activeCard('desktop')}</div>
 
           {/* Bottom Legal Disclaimer */}
           <div className="auth-legal max-w-sm">
@@ -152,7 +152,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Mobile Auth Body */}
-        <div className="auth-body">
+        <div key={`mobile-${authMode}`} className="auth-body animate-pop-in">
           {activeCard('mobile')}
 
           {/* Mobile Footer Disclaimer */}
@@ -181,7 +181,7 @@ export const LoginPage: React.FC = () => {
       {/* Terms and privacy modal */}
       {showTermsModal && (
         <div className="auth-terms-scrim animate-fade-in">
-          <div className="auth-terms-panel">
+          <div className="auth-terms-panel animate-pop-in">
             <h3 className="auth-terms-title">شروط الاستخدام وسياسة الخصوصية</h3>
             <div className="auth-terms-body">
               <p>

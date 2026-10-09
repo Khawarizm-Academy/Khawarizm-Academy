@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trophy, Award, Download } from 'lucide-react';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
+import { SlidingSegmentedControl } from '../../../shared/components/Controls/SlidingSegmentedControl';
 import { fetchCompetitions, fetchCertificates } from '../data/dashboardFetchers';
 import type { CompetitionItem, CertificateItem } from '../types';
 import dashboardViewsJson from '../../../shared/json/dashboardViews.json';
@@ -58,20 +59,14 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
           <h2 className="dash-view-title text-xl">مسابقاتي وتحدياتي</h2>
         </div>
 
-        <div className="dash-toggle">
-          {COMP_FILTERS.map((filter) => (
-            <button
-              key={filter.id}
-              type="button"
-              onClick={() => setFilterMode(filter.id)}
-              className={`dash-toggle-btn ${
-                filterMode === filter.id ? 'dash-toggle-active' : 'dash-toggle-idle'
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+        <SlidingSegmentedControl
+          options={COMP_FILTERS}
+          value={filterMode}
+          onChange={setFilterMode}
+          tone="gold"
+          aria-label="تصفية المسابقات"
+          className="w-full sm:w-80"
+        />
       </div>
 
       {/* Competitions list */}
@@ -79,8 +74,12 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
         {isLoadingCompetitions ? (
           <DataSectionSkeleton variant="list" count={3} />
         ) : (
-          competitions.map((comp) => (
-            <div key={comp.id} className="dash-row p-4 shadow-none gap-4">
+          competitions.map((comp, idx) => (
+            <div
+              key={comp.id}
+              className="dash-row p-4 shadow-none gap-4 animate-pop-in"
+              style={{ animationDelay: `${idx * 70}ms` }}
+            >
               {/* Right: text details */}
               <div className="dash-row-info">
                 <div className="flex items-center gap-2">
@@ -119,8 +118,12 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
           {isLoadingCertificates ? (
             <DataSectionSkeleton variant="grid" count={2} className="md:col-span-2" />
           ) : (
-            certificates.map((cert) => (
-              <div key={cert.id} className="dash-cert-card group">
+            certificates.map((cert, idx) => (
+              <div
+                key={cert.id}
+                className="dash-cert-card group animate-pop-in"
+                style={{ animationDelay: `${idx * 70}ms` }}
+              >
                 {/* Official badge row */}
                 <div className="flex justify-between items-center">
                   <div className="dash-cert-badge">

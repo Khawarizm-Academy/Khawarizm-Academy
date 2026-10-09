@@ -188,7 +188,7 @@
   }
 
   .catalog-pill {
-    @apply py-1.5 px-3 rounded-lg text-xs font-body font-medium transition-all duration-200 cursor-pointer;
+    @apply py-1.5 px-3 rounded-lg text-xs font-body font-medium transition-all duration-200 cursor-pointer active:scale-95;
   }
 
   .catalog-pill-idle {

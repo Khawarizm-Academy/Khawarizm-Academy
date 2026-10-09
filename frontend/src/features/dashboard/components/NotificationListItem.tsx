@@ -15,6 +15,8 @@ interface NotificationListItemProps {
   type: NotificationKind;
   unread?: boolean;
   onClick?: () => void;
+  /** Position in the list, used to stagger the entrance. */
+  index?: number;
 }
 
 /** Icon badge spec per notification type; application mirrors scholarship. */
@@ -36,6 +38,7 @@ export const NotificationListItem: React.FC<NotificationListItemProps> = ({
   type,
   unread = false,
   onClick,
+  index = 0,
 }) => {
   const { Icon, badge, tone } = NOTIF_TYPES[type] ?? FALLBACK_BADGE;
 
@@ -43,7 +46,8 @@ export const NotificationListItem: React.FC<NotificationListItemProps> = ({
     <div
       dir="rtl"
       onClick={onClick}
-      className={`dash-notif group ${unread ? 'dash-notif-unread' : 'dash-notif-read'}`}
+      className={`dash-notif group ${unread ? 'dash-notif-unread' : 'dash-notif-read'} animate-pop-in`}
+      style={{ animationDelay: `${index * 60}ms` }}
     >
       {unread && <span className="dash-notif-dot" />}
 

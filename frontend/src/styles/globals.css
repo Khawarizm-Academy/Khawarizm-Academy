@@ -3,6 +3,7 @@
 @import "../features/auth/auth.css";
 @import "../features/catalog/catalog.css";
 @import "../features/dashboard/dashboard.css";
+@import "../features/home/home.css";
 
 @layer base {
   * {
@@ -222,7 +223,7 @@
 }
 
 .btn-gold {
-  @apply rounded-full py-2.5 px-4 bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] text-[#040F24] font-bold font-['IBM_Plex_Sans_Arabic'] hover:brightness-110 active:scale-[0.98] shadow-[0_2px_12px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_16px_rgba(229,182,92,0.45)] transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 select-none;
+  @apply rounded-full py-2.5 px-4 bg-gradient-to-r from-[#E5B65C] to-[#F3CE7A] text-[#040F24] font-bold font-['IBM_Plex_Sans_Arabic'] hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.98] shadow-[0_2px_12px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_16px_rgba(229,182,92,0.45)] transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 select-none;
 }
 
 .btn-outline-blue {
@@ -273,6 +274,46 @@
 }
 
 /* ==========================================================================
+   Sliding Segmented Control — the spring-glide puck shared by every
+   side-by-side switcher (view toggles, filters, sub-navigation).
+   ========================================================================== */
+.seg-control {
+  @apply relative inline-grid grid-flow-col auto-cols-fr items-stretch p-1 bg-[#061A3A] rounded-full outline outline-1 outline-offset-[-1px] outline-[#1B3F80] select-none shadow-[0px_4px_16px_rgba(0,0,0,0.25)];
+}
+
+.seg-track {
+  @apply absolute inset-1 pointer-events-none;
+}
+
+.seg-puck {
+  @apply absolute top-0 bottom-0 right-0 rounded-full transition-transform duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)];
+}
+
+.seg-puck-blue {
+  @apply bg-[#29A9FF]/15 outline outline-1 outline-offset-[-1px] outline-[#29A9FF]/50 shadow-[0_0_12px_rgba(41,169,255,0.3)];
+}
+
+.seg-puck-gold {
+  @apply bg-[#E5B65C]/15 outline outline-1 outline-offset-[-1px] outline-[#E5B65C]/50 shadow-[0_0_12px_rgba(229,182,92,0.3)];
+}
+
+.seg-option {
+  @apply relative z-10 px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap text-center font-['IBM_Plex_Sans_Arabic'];
+}
+
+.seg-option-idle {
+  @apply text-[#8299B5] hover:text-slate-100;
+}
+
+.seg-option-on-blue {
+  @apply text-[#29A9FF] font-bold drop-shadow-[0_0_8px_rgba(41,169,255,0.35)];
+}
+
+.seg-option-on-gold {
+  @apply text-[#E5B65C] font-bold drop-shadow-[0_0_8px_rgba(229,182,92,0.35)];
+}
+
+/* ==========================================================================
    Banners & Live Countdown
    ========================================================================== */
 .banner-frame-gold {
@@ -312,7 +353,8 @@
 }
 
 .sliding-chamber-indicator {
-  @apply absolute top-1/2 -translate-y-1/2 rounded-xl bg-gradient-to-b from-[#092350] via-[#061A3A] to-[#040F24] border-2 border-[#E5B65C] shadow-[0_0_16px_rgba(229,182,92,0.65),inset_0_1px_3px_rgba(255,255,255,0.15)] pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)];
+  /* Spring overshoot: the golden chamber bounces into place between tabs */
+  @apply absolute top-1/2 -translate-y-1/2 rounded-xl bg-gradient-to-b from-[#092350] via-[#061A3A] to-[#040F24] border-2 border-[#E5B65C] shadow-[0_0_16px_rgba(229,182,92,0.65),inset_0_1px_3px_rgba(255,255,255,0.15)] pointer-events-none transition-all duration-[380ms] ease-[cubic-bezier(0.34,1.56,0.64,1)];
 }
 
 /* ==========================================================================
@@ -565,7 +607,162 @@
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ==========================================================================
+   Celestial Motion System — playful micro-animations shared by all features.
+   Every motion is transform/opacity-only (GPU cheap) and is flattened by the
+   global prefers-reduced-motion media query at the bottom of this file.
+   Declared as @utility so variants (hover:, group-hover:) compose.
+   ========================================================================== */
+
+/* Springy entrance for badges, icons, cards & modal panels */
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(12px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Gentle ambient bobbing for decorative elements */
+@keyframes float-y {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Playful one-shot jiggle for icons */
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+/* Notification bell swing (pivot from the clapper point) */
+@keyframes bell-ring {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  15% {
+    transform: rotate(15deg);
+  }
+  30% {
+    transform: rotate(-12deg);
+  }
+  45% {
+    transform: rotate(8deg);
+  }
+  60% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+}
+
+/* Twinkling star dot */
+@keyframes star-twinkle {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.75);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Light sweep that crosses gold CTAs on hover */
+@keyframes shine-sweep {
+  from {
+    transform: translateX(-260%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(260%) skewX(-20deg);
+  }
+}
+
+@utility animate-pop-in {
+  animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Ambient floaters: atmosphere washes & decorative emblems */
+@utility animate-float {
+  animation: float-y 5s ease-in-out infinite;
+}
+
+@utility animate-float-slow {
+  animation: float-y 8s ease-in-out infinite;
+}
+
+@utility animate-wiggle {
+  transform-origin: center;
+  animation: wiggle 0.5s ease-in-out both;
+}
+
+@utility animate-bell-ring {
+  transform-origin: top center;
+  animation: bell-ring 0.8s cubic-bezier(0.28, 0.84, 0.42, 1) both;
+}
+
+@utility animate-star-twinkle {
+  animation: star-twinkle 3s ease-in-out infinite;
+}
+
+/* Gold CTA signature: a soft light beam sweeps the button on hover */
+.btn-gold {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-gold::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-260%) skewX(-20deg);
+  pointer-events: none;
+}
+
+.btn-gold:hover::after {
+  animation: shine-sweep 0.7s ease;
+}
+
+/* The single hero CTA on a screen breathes a soft golden halo.
+   box-shadow (not a scaled ring) because .btn-gold clips overflow. */
+@keyframes cta-halo {
+  0%, 100% {
+    box-shadow: 0 2px 12px rgba(229, 182, 92, 0.30), 0 0 0 0 rgba(229, 182, 92, 0.40);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(229, 182, 92, 0.50), 0 0 0 7px rgba(229, 182, 92, 0);
+  }
+}
+
+.btn-attention {
+  animation: cta-halo 2.4s ease-in-out infinite;
+}
+
 .animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-150 { animation-delay: 150ms; }
 .animation-delay-200 { animation-delay: 200ms; }
 .animation-delay-300 { animation-delay: 300ms; }
 .animation-delay-400 { animation-delay: 400ms; }

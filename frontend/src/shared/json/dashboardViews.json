@@ -89,5 +89,27 @@
     "sessionDescription": "شاشة المباشرة والأسئلة تفاعلية",
     "initialMinutes": 14,
     "initialSeconds": 3
+  },
+  "spotlight": {
+    "hasChallenge": true,
+    "hasCourse": true
+  },
+  "challengeCard": {
+    "badge": "تحدي الخوارزميات السنوي",
+    "title": "تحدي الخوارزميات السنوي",
+    "description": "شارك في المسابقة الوطنية واربح منحة دراسية كاملة ومكافآت قيّمة.",
+    "days": 14,
+    "hours": 6,
+    "minutes": 36,
+    "seconds": 45,
+    "ctaLabel": "ادخل التحدي الآن"
+  },
+  "challengeItem": {
+    "id": "comp-annual",
+    "title": "تحدي الخوارزميات السنوي",
+    "statusText": "التسجيل مفتوح الآن",
+    "statusColor": "red",
+    "actionLabel": "ادخل الساحة",
+    "actionVariant": "gold"
   }
 }

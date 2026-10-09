@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Undo2 } from 'lucide-react';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
+import { SlidingSegmentedControl } from '../../../shared/components/Controls/SlidingSegmentedControl';
 import { fetchSavedScholarships, fetchFavoriteCourses } from '../data/dashboardFetchers';
 import type { SavedScholarshipItem, FavoriteCourseItem } from '../types';
 import dashboardViewsJson from '../../../shared/json/dashboardViews.json';
@@ -98,20 +99,14 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
         </div>
 
         {/* Toggle filter on left in RTL */}
-        <div className="dash-toggle">
-          {SAVED_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`dash-toggle-btn ${
-                activeTab === tab.id ? 'dash-toggle-active' : 'dash-toggle-idle'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <SlidingSegmentedControl
+          options={SAVED_TABS}
+          value={activeTab}
+          onChange={setActiveTab}
+          tone="gold"
+          aria-label="تصفية المحفوظات"
+          className="w-full sm:w-72"
+        />
       </div>
 
       {/* List of saved scholarships */}
@@ -122,11 +117,12 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
           ) : scholarships.length === 0 ? (
             <div className="dash-list-empty">لا توجد منح دراسية محفوظة حالياً في لوحتك.</div>
           ) : (
-            scholarships.map((item) => (
+            scholarships.map((item, idx) => (
               <div
                 key={item.id}
                 onClick={() => onSelectScholarship?.(item)}
-                className="dash-row md:gap-4 cursor-pointer group"
+                className="dash-row md:gap-4 cursor-pointer group animate-pop-in"
+                style={{ animationDelay: `${idx * 60}ms` }}
               >
                 {/* Right side in RTL: title and provider */}
                 <div className="dash-row-info">
@@ -165,11 +161,12 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
           ) : favoriteCourses.length === 0 ? (
             <div className="dash-list-empty">لا توجد دورات مفضلة محفوظة حالياً في لوحتك.</div>
           ) : (
-            favoriteCourses.map((item) => (
+            favoriteCourses.map((item, idx) => (
               <div
                 key={item.id}
                 onClick={() => onSelectCourse?.(item.id)}
-                className="dash-row gap-4 cursor-pointer group"
+                className="dash-row gap-4 cursor-pointer group animate-pop-in"
+                style={{ animationDelay: `${idx * 60}ms` }}
               >
                 {/* Right in RTL: info */}
                 <div className="dash-row-info">

@@ -1,0 +1,50 @@
+@layer components {
+  /* ==========================================================================
+     Home — Quick Access Rail
+     Fast shortcuts into the dashboard and every catalog pillar. Feature-owned
+     concept classes (imported once by styles/globals.css).
+     ========================================================================== */
+  .quick-rail {
+    @apply self-stretch grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4;
+  }
+
+  .quick-link {
+    @apply relative flex items-center gap-3 p-3.5 md:p-4 rounded-2xl bg-navy-900/70 backdrop-blur-md border border-navy-600/50 overflow-hidden transition-all duration-300 cursor-pointer hover:-translate-y-1 select-none;
+  }
+
+  .quick-link-blue {
+    @apply hover:border-blue-400/50 hover:shadow-[0_10px_30px_rgba(0,0,0,0.45),0_0_18px_rgba(41,169,255,0.18)];
+  }
+
+  .quick-link-gold {
+    @apply hover:border-gold-400/50 hover:shadow-[0_10px_30px_rgba(0,0,0,0.45),0_0_18px_rgba(229,182,92,0.18)];
+  }
+
+  .quick-link-icon {
+    @apply size-11 md:size-12 rounded-xl bg-navy-950 border border-navy-600/60 flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6;
+  }
+
+  .quick-link-icon-blue {
+    @apply text-blue-400 shadow-[inset_0_0_12px_rgba(41,169,255,0.15)];
+  }
+
+  .quick-link-icon-gold {
+    @apply text-gold-400 shadow-[inset_0_0_12px_rgba(229,182,92,0.15)];
+  }
+
+  .quick-link-text {
+    @apply flex flex-col justify-start items-start text-right min-w-0;
+  }
+
+  .quick-link-title {
+    @apply text-slate-100 text-sm md:text-base font-bold font-['IBM_Plex_Sans_Arabic'] group-hover:text-white transition-colors truncate w-full;
+  }
+
+  .quick-link-sub {
+    @apply text-slate-400 text-[11px] md:text-xs font-['Tajawal'] truncate w-full;
+  }
+
+  .quick-link-arrow {
+    @apply mr-auto text-slate-400 transition-transform duration-300 group-hover:-translate-x-1;
+  }
+}

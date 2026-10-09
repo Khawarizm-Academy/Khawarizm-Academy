@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from '../../../app/routerContext';
 import { CATALOG_COURSES_ROUTE, CATALOG_SCHOLARSHIPS_ROUTE } from '../../../shared/lib/navigation';
 import { HeroSection } from '../components/HeroSection';
+import { QuickAccessRail } from '../components/QuickAccessRail';
 import { CompetitionBanner } from '../../../shared/components/Banners/CompetitionBanner';
 import { TwinPillarRails } from '../components/TwinPillarRails';
 import { EventSection } from '../../../shared/components/Events/EventSection';
@@ -9,6 +10,7 @@ import { useCachedData } from '../../../shared/hooks/useCachedData';
 import {
   mockCourses,
   mockScholarships,
+  quickLinks,
   mockCompetitionDesktop,
   mockCompetitionMobile,
   mockEventDesktopFeatured,
@@ -50,8 +52,13 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Competition Announcement Banner */}
+      {/* 2. Fast-access shortcuts into the dashboard and catalog pillars */}
       <div className="w-full animate-fade-in-up animation-delay-100">
+        <QuickAccessRail links={quickLinks} onNavigate={navigate} />
+      </div>
+
+      {/* 3. Competition Announcement Banner */}
+      <div className="w-full animate-fade-in-up animation-delay-200">
         <div className="hidden md:block w-full">
           <CompetitionBanner
             variant="desktop"
@@ -68,8 +75,8 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Twin Pillar Rails: Featured Courses & Scholarships (Cached) */}
-      <div className="w-full animate-fade-in-up animation-delay-200">
+      {/* 4. Twin Pillar Rails: Featured Courses & Scholarships (Cached) */}
+      <div className="w-full animate-fade-in-up animation-delay-300">
         <div className="hidden lg:block w-full">
           <TwinPillarRails
             variant="desktop"
@@ -90,8 +97,8 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Events & Seminars Section */}
-      <div className="w-full animate-fade-in-up animation-delay-300">
+      {/* 5. Events & Seminars Section */}
+      <div className="w-full animate-fade-in-up animation-delay-400">
         <div className="hidden lg:block w-full">
           <EventSection
             variant="desktop"

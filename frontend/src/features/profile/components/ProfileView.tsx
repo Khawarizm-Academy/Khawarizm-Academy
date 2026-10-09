@@ -249,7 +249,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                         key={interest}
                         type="button"
                         onClick={() => toggleInterest(interest)}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium font-['Tajawal'] transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium font-['Tajawal'] transition-all flex items-center gap-1.5 cursor-pointer select-none active:scale-95 ${
                           isSelected
                             ? 'bg-[#E5B65C]/15 outline outline-1 outline-[#E5B65C] text-[#E5B65C] shadow-sm'
                             : 'bg-slate-950/80 outline outline-1 outline-blue-900/80 text-slate-400 hover:text-slate-200 hover:outline-sky-400/50'

@@ -4,6 +4,7 @@ import { useNavigate } from '../../../app/routerContext';
 import { CATALOG_COURSES_ROUTE } from '../../../shared/lib/navigation';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSectionSkeleton';
+import { SlidingSegmentedControl } from '../../../shared/components/Controls/SlidingSegmentedControl';
 import { fetchEnrolledCourses } from '../data/dashboardFetchers';
 import type { EnrolledCourse } from '../types';
 import { DashboardSubNavigation } from './DashboardSubNavigation';
@@ -109,19 +110,17 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
       {totalCount > 0 && (
         <div className="self-stretch flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
           {/* Right in RTL: filters */}
-          <div className="inline-flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-            {FILTERS.map((filter) => (
-              <button
-                key={filter.id}
-                type="button"
-                onClick={() => setActiveFilter(filter.id)}
-                className={`dash-filter-pill ${
-                  activeFilter === filter.id ? 'dash-pill-active' : 'dash-filter-pill-idle'
-                }`}
-              >
-                {filter.label} ({filterCounts[filter.id]})
-              </button>
-            ))}
+          <div className="overflow-x-auto no-scrollbar py-0.5">
+            <SlidingSegmentedControl
+              options={FILTERS.map((filter) => ({
+                id: filter.id,
+                label: `${filter.label} (${filterCounts[filter.id]})`,
+              }))}
+              value={activeFilter}
+              onChange={setActiveFilter}
+              tone="blue"
+              aria-label="تصفية الدورات"
+            />
           </div>
 
           {/* Left in RTL: sort selector */}
@@ -223,9 +222,10 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
         ) : (
           /* Enrolled courses cards list */
           <div className="dash-section">
-            {sortedCourses.map((course) => (
+            {sortedCourses.map((course, idx) => (
               <EnrolledCourseCard
                 key={course.id}
+                index={idx}
                 course={course}
                 onResume={onResumeCourse}
                 onViewCertificate={onViewCertificate}

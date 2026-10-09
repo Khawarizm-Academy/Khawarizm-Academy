@@ -16,7 +16,7 @@ export const LiveSessionPriorityCard: React.FC<LiveSessionPriorityCardProps> = (
   const { formattedTime } = useLiveCountdown(totalSeconds);
 
   return (
-    <div dir="rtl" className="dash-hero dash-hero-red">
+    <div dir="rtl" className="dash-hero dash-hero-red group animate-pop-in">
       {/* Red ambient beacon atmosphere */}
       <div className="dash-hero-glow w-72 h-72 bg-red-500/10" />
 
@@ -33,9 +33,9 @@ export const LiveSessionPriorityCard: React.FC<LiveSessionPriorityCardProps> = (
             <Radio
               size={36}
               strokeWidth={1.8}
-              className="text-red-400 drop-shadow-[0_0_8px_rgba(255,77,77,0.8)]"
+              className="text-red-400 drop-shadow-[0_0_8px_rgba(255,77,77,0.8)] group-hover:animate-wiggle"
             />
-            <span className="dash-hero-dot" />
+            <span className="dash-hero-dot animate-star-twinkle" />
           </div>
         </div>
 

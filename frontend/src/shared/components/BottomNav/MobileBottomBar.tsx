@@ -104,7 +104,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
               className="relative z-10 w-full h-[52px] flex-col-center gap-1 cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
             >
               <div
-                className={`transition-all duration-300 ${
+                className={`transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                   isActive
                     ? 'text-[#E5B65C] scale-110 drop-shadow-[0_0_8px_rgba(229,182,92,0.7)]'
                     : 'text-[#8299B5] hover:text-slate-100'

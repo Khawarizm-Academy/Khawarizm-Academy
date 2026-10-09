@@ -70,7 +70,7 @@
   }
 
   .auth-mode-option {
-    @apply px-2.5 py-0.5 lg:px-3 lg:py-1 rounded-full transition-all cursor-pointer text-slate-400 hover:text-slate-100;
+    @apply px-2.5 py-0.5 lg:px-3 lg:py-1 rounded-full transition-all cursor-pointer text-slate-400 hover:text-slate-100 active:scale-95;
   }
 
   .auth-mode-option-login {
@@ -314,6 +314,8 @@
 
   .auth-orbit-stage {
     @apply relative z-10 w-full py-8 flex flex-col items-center justify-center;
+    /* The astrolabe gently hovers — the heart of the observatory hero */
+    animation: float-y 7s ease-in-out infinite;
   }
 
   .auth-orbit-canvas {
