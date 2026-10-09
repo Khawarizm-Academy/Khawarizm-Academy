@@ -97,6 +97,8 @@ export const DashboardPage: React.FC = () => {
   const currentView = getDashboardNavItem(viewParam)?.id ?? viewParam;
   const isLive = stateParam === 'live' || viewParam === 'live';
   const isEmpty = stateParam === 'empty' || viewParam === 'empty';
+  // Saved is icon-only (no nav item); the chrome bookmark lights up on its view.
+  const isSavedView = currentView === 'saved';
 
   // In-dashboard self-contained modal chambers.
   const [activeWorkspaceCourse, setActiveWorkspaceCourse] = useState<string | null>(null);
@@ -176,7 +178,7 @@ export const DashboardPage: React.FC = () => {
                 onNotificationsClick={() => handleSelectView('notifications')}
                 onAvatarClick={() => handleSelectView('profile')}
                 onSavedClick={() => handleSelectView('saved')}
-                isSavedActive={currentView === 'saved'}
+                isSavedActive={isSavedView}
               />
             </div>
           )}
@@ -193,7 +195,7 @@ export const DashboardPage: React.FC = () => {
                 }
                 onNotificationsClick={() => handleSelectView('notifications')}
                 onSavedClick={() => handleSelectView('saved')}
-                isSavedActive={currentView === 'saved'}
+                isSavedActive={isSavedView}
               />
               <div className="w-full py-2 md:py-6 animate-fade-in-up animation-delay-100">
                 <EmptyDashboardState userName="سارة" />
@@ -225,7 +227,7 @@ export const DashboardPage: React.FC = () => {
                 }
                 onNotificationsClick={() => handleSelectView('notifications')}
                 onSavedClick={() => handleSelectView('saved')}
-                isSavedActive={currentView === 'saved'}
+                isSavedActive={isSavedView}
               />
               <div className="w-full flex flex-col gap-6 py-1 md:py-2 animate-fade-in-up animation-delay-100">
                 <DashboardSubNavigation activeView="profile" onSelectView={handleSelectView} />
@@ -246,7 +248,7 @@ export const DashboardPage: React.FC = () => {
                 }
                 onNotificationsClick={() => handleSelectView('notifications')}
                 onSavedClick={() => handleSelectView('saved')}
-                isSavedActive={currentView === 'saved'}
+                isSavedActive={isSavedView}
               />
               <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
                 <EnrolledCoursesView
