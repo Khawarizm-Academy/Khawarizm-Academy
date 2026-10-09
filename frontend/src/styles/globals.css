@@ -172,17 +172,17 @@
   @apply pt-2 border-t border-[#1B3F80]/40 flex items-center justify-between text-xs text-[#8299B5] font-['Tajawal'];
 }
 
-/* Self-contained workspace surfaces (dashboard / profile idiom) */
+/* Self-contained workspace surfaces (dashboard / profile idiom) — glass over the void */
 .workspace-card {
-  @apply bg-slate-900 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900 flex flex-col gap-5;
+  @apply bg-slate-900/70 backdrop-blur-md rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900/80 flex flex-col gap-5;
 }
 
 .workspace-card-interactive {
-  @apply bg-slate-900 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900 hover:outline-sky-400/60 hover:-translate-y-0.5 hover:shadow-[0px_12px_32px_0px_rgba(41,169,255,0.16)] transition-all duration-200 cursor-pointer;
+  @apply bg-slate-900/70 backdrop-blur-md rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900/80 hover:outline-sky-400/60 hover:-translate-y-0.5 hover:shadow-[0px_12px_32px_0px_rgba(41,169,255,0.16)] transition-all duration-200 cursor-pointer;
 }
 
 .workspace-row {
-  @apply bg-slate-900 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900;
+  @apply bg-slate-900/70 backdrop-blur-md rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-blue-900/80;
 }
 
 .workspace-header {

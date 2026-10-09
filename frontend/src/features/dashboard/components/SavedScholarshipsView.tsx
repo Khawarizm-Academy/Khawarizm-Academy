@@ -90,10 +90,12 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
 
       {/* Header & filter matching Figma desktop & mobile */}
       <div className="dash-view-head">
-        <h2 className="dash-view-title">
-          <span className="hidden md:inline">إدارة المحفوظات</span>
-          <span className="md:hidden inline">منحي المحفوظة</span>
-        </h2>
+        <div className="section-accent-title-gold">
+          <h2 className="dash-view-title">
+            <span className="hidden md:inline">إدارة المحفوظات</span>
+            <span className="md:hidden inline">منحي المحفوظة</span>
+          </h2>
+        </div>
 
         {/* Toggle filter on left in RTL */}
         <div className="dash-toggle">

@@ -214,10 +214,17 @@ Learning workspace (`/dashboard`). Same pattern as auth/catalog: the feature own
 `dashboard.css` orders variant classes after their base (hero → hero-cyan/hero-red,
 nav-item → nav-item-active/idle, modal-icon → -red/-sky/-gold, …).
 
+**Canvas & elevation (aligned with every other page):**
+- `.dash-page` paints **no background** — the dashboard sits on the navy-950 page-wrapper and the global celestial washes glow through it. Never add a page-level background to a feature page; the shell owns the canvas.
+- **Cards are lighter than the canvas:** floating surfaces are translucent glass (`bg-navy-900/70–80 + backdrop-blur-md + border-navy-600/50`), wells inside them go darker (`bg-navy-950/50`). Never flip this (dark cards on a dark page read as holes).
+- Chrome is `.glass-navbar`-grade: `.dash-sidebar` / `.dash-topbar` use `bg-navy-950/90 + backdrop-blur-md`, and the topbar is `sticky top-0`.
+- Modals, drawer, dropdowns and search panels stay **solid navy-900** for readability over the scrim (same idiom as `.auth-terms-panel`).
+- Accent pills are translucent, never solid fills: active nav = `bg-gold-400/10 outline-gold-400/50 text-gold-400`, subnav/filter pills = `bg-blue-400/15`, toggles & sort = `bg-gold-400/15 text-gold-400` (mirrors `.catalog-pill-gold`).
+
 - **Page shell:** `.dash-page` (`selection:` variant), `.dash-grid` (RTL 2-col; pair with inline `animate-fade-in-up animation-delay-100` — plain globals helpers stay in JSX), `.dash-grid-main`, `.dash-grid-aside`.
 - **View scaffold:** `.dash-view-title`, `.dash-section-head`, `.dash-row-title`, `.dash-mobile-top-row` (+ `-title` / `-back`), `.dash-chip`, `.dash-chip-mobile` / `.dash-chip-desktop`, `.dash-chip-row` (+ `.no-scrollbar`).
 - **Desktop sidebar (Right / Child #1):** `.dash-sidebar`, `.dash-side-section`, `.dash-side-row` (add `group` in JSX), `.dash-nav-item` (+ `-active` / `-idle`), `.dash-avatar`, `.dash-brand-mark`, `.dash-brand-name`, `.dash-user-name` (hover via `group-hover:*`), `.dash-notif-bell`.
-- **Top bar & search:** `.dash-topbar`, `.dash-topbar-search` (add `group` in JSX), `.dash-search-overlay`, `.dash-search-panel`, `.dash-chamber-card`, `.dash-view-tab` (+ `-idle` / `-active`), `.dash-subnav`, `.dash-tab` / `.dash-pill-active`.
+- **Top bar & search:** `.dash-topbar` (sticky glass, matches `.glass-navbar`), `.dash-topbar-search`, `.dash-search-overlay`, `.dash-search-panel`, `.dash-subnav`, `.dash-tab` / `.dash-pill-active`.
 - **Stats header & sidebar:** `.dash-greet-*`, `.dash-bell-*` (+ `-active` / `-idle`), `.dash-stat-chip-row`, `.dash-widget`, `.dash-widget-icon`, `.dash-widget-head`, `.dash-widget-title`, `.dash-stat/stat-value/stat-label-row`, `.dash-upcoming-row`, `.dash-course-live-dot`.
 - **Hero priority cards:** `.dash-hero`, `.dash-hero-cyan`, `.dash-hero-red`, `.dash-hero-tag` (+ `-cyan` / `-red`), `.dash-hero-tag-label` (+ `-live`), `.dash-hero-thumb` (+ `-cyan` / `-red`), `.dash-progress` / `.dash-progress-bar` / `.dash-progress-fill`, `.dash-course-title`, `.dash-countdown-*` (uses `var(--color-danger)`), `.dash-cta*`.
 - **Rows & cards:** `.dash-row` (+ `-meta`, `-label`, `-value`, `-icon`), `.dash-deadline-tag`, `.dash-course-icon` (+ tone records `COURSE_ICON`), `.dash-card`, `.dash-card-head`, `.dash-card-body`, `.dash-course-card-details`, `.dash-course-score`.

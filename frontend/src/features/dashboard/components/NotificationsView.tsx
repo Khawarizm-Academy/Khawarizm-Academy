@@ -43,7 +43,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
     <div dir="rtl" className="w-full flex flex-col gap-6 select-none">
       {/* Mobile top bar: title + mark-read + back */}
       <div className="dash-mtop">
-        <h2 className="text-slate-200 text-xl font-bold font-display text-right">الإشعارات</h2>
+        <h2 className="text-white text-xl font-bold font-display text-right">الإشعارات</h2>
 
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
@@ -77,7 +77,9 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         </div>
 
         <div className="flex flex-col justify-start items-start text-right gap-1">
-          <h2 className="text-slate-200 text-2xl font-bold font-display">مركز الإشعارات</h2>
+          <div className="section-accent-title-blue">
+            <h2 className="text-white text-2xl font-bold font-display">مركز الإشعارات</h2>
+          </div>
           <span className="text-slate-400 text-sm font-normal">
             {unreadCount > 0
               ? `لديك ${unreadCount} تنبيهات جديدة غير مقروءة`

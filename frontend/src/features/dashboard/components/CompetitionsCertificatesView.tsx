@@ -54,7 +54,9 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
     <div dir="rtl" className="w-full flex flex-col gap-8 select-none">
       {/* Header with the filter toggle */}
       <div className="dash-view-head">
-        <h2 className="dash-view-title text-xl">مسابقاتي وتحدياتي</h2>
+        <div className="section-accent-title-gold">
+          <h2 className="dash-view-title text-xl">مسابقاتي وتحدياتي</h2>
+        </div>
 
         <div className="dash-toggle">
           {COMP_FILTERS.map((filter) => (
@@ -109,7 +111,9 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
 
       {/* Certificates grid */}
       <div className="flex flex-col gap-4 pt-2">
-        <h2 className="dash-view-title text-xl text-right">شهاداتي المكتملة</h2>
+        <div className="section-accent-title-gold">
+          <h2 className="dash-view-title text-xl text-right">شهاداتي المكتملة</h2>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {isLoadingCertificates ? (

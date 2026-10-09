@@ -8,7 +8,9 @@
 @layer components {
   /* --- Page shell & layout --- */
   .dash-page {
-    @apply w-full min-h-screen bg-navy-900 flex justify-start items-start text-slate-100 selection:bg-blue-500/20 selection:text-sky-300 relative overflow-x-hidden;
+    /* No background paint: sits on the navy-950 page-wrapper so the global
+       celestial washes glow through — same canvas as every other page. */
+    @apply w-full min-h-screen flex justify-start items-start text-slate-100 relative overflow-x-hidden;
   }
 
   .dash-main {
@@ -44,7 +46,7 @@
   }
 
   .dash-list {
-    @apply self-stretch flex flex-col justify-start items-start gap-3 w-full;
+    @apply self-stretch flex flex-col justify-start items-stretch gap-3 w-full;
   }
 
   /* --- View scaffold: shared titles, section heads & mobile top rows --- */
@@ -53,7 +55,7 @@
   }
 
   .dash-view-title {
-    @apply text-slate-200 text-lg md:text-xl font-bold font-display leading-6;
+    @apply text-white text-lg md:text-xl font-bold font-display leading-6;
   }
 
   .dash-view-heading {
@@ -77,7 +79,7 @@
   }
 
   .dash-mtop-label {
-    @apply text-slate-200 text-lg font-bold font-display;
+    @apply text-white text-lg font-bold font-display;
   }
 
   .dash-avatar {
@@ -86,7 +88,7 @@
 
   /* --- Desktop sidebar --- */
   .dash-sidebar {
-    @apply w-60 self-stretch shrink-0 px-4 py-6 bg-navy-900 border-l border-navy-600/80 sticky top-0 h-screen hidden lg:flex flex-col justify-between items-start z-30 select-none;
+    @apply w-60 self-stretch shrink-0 px-4 py-6 bg-navy-950/90 backdrop-blur-md border-l border-navy-600/80 sticky top-0 h-screen hidden lg:flex flex-col justify-between items-start z-30 select-none;
   }
 
   .dash-side-top {
@@ -122,7 +124,7 @@
   }
 
   .dash-nav-item-active {
-    @apply bg-navy-900 outline outline-1 outline-offset-[-1px] outline-gold-400 text-gold-400 font-bold shadow-[0_0_10px_rgba(229,182,92,0.15)];
+    @apply bg-gold-400/10 outline outline-1 outline-offset-[-1px] outline-gold-400/50 text-gold-400 font-bold shadow-[0_0_10px_rgba(229,182,92,0.2)];
   }
 
   .dash-nav-item-idle {
@@ -171,11 +173,11 @@
 
   /* --- Top bar & search overlay --- */
   .dash-topbar {
-    @apply self-stretch h-12 px-6 bg-navy-900/90 border-b border-navy-600/80 backdrop-blur-md hidden md:flex justify-between items-center z-20 shrink-0 select-none;
+    @apply self-stretch h-12 px-6 bg-navy-950/90 backdrop-blur-md border-b border-navy-600/80 hidden md:flex justify-between items-center z-20 shrink-0 sticky top-0 select-none;
   }
 
   .dash-topbar-search {
-    @apply size-8 bg-navy-950 hover:bg-navy-600/80 rounded-full outline outline-1 outline-offset-[-1px] outline-navy-600 hover:outline-blue-400 flex flex-col justify-center items-center cursor-pointer transition-all shadow-sm;
+    @apply size-8 bg-navy-900 hover:bg-navy-800 rounded-full outline outline-1 outline-offset-[-1px] outline-navy-600 hover:outline-blue-400 flex flex-col justify-center items-center cursor-pointer transition-all shadow-sm;
   }
 
   .dash-topbar-link {
@@ -206,7 +208,7 @@
   }
 
   .dash-pill-active {
-    @apply bg-navy-950 outline outline-1 outline-offset-[-1px] outline-blue-400 text-white font-bold shadow-[0_0_12px_rgba(41,169,255,0.25)];
+    @apply bg-blue-400/15 outline outline-1 outline-offset-[-1px] outline-blue-400/50 text-blue-400 font-bold shadow-[0_0_12px_rgba(41,169,255,0.25)];
   }
 
   /* --- Stats header: mobile bell row, chips & desktop welcome row --- */
@@ -227,11 +229,11 @@
   }
 
   .dash-chip-mobile {
-    @apply shrink-0 px-3.5 py-2 bg-navy-950/90 flex items-center gap-2;
+    @apply shrink-0 px-3.5 py-2 bg-navy-900/80 flex items-center gap-2;
   }
 
   .dash-chip-desktop {
-    @apply px-5 py-2.5 bg-navy-950 flex justify-start items-center gap-3 shadow-sm;
+    @apply px-5 py-2.5 bg-navy-900/80 flex justify-start items-center gap-3 shadow-sm;
   }
 
   .dash-chip-click {
@@ -251,7 +253,7 @@
   }
 
   .dash-greet-title {
-    @apply text-slate-200 text-2xl md:text-[26px] font-bold font-display leading-8;
+    @apply text-white text-2xl md:text-[26px] font-bold font-display leading-8;
   }
 
   .dash-greet-sub {
@@ -272,7 +274,7 @@
   }
 
   .dash-stat-row {
-    @apply self-stretch p-3 bg-navy-900/90 rounded-xl outline outline-1 outline-offset-[-1px] outline-navy-600 flex justify-between items-center;
+    @apply self-stretch p-3 bg-navy-950/50 rounded-xl border border-navy-600/40 flex justify-between items-center;
   }
 
   .dash-stat-label {
@@ -288,7 +290,7 @@
   }
 
   .dash-event-row {
-    @apply self-stretch p-3 bg-navy-900/90 rounded-xl border border-navy-600/50 flex justify-between items-center gap-3;
+    @apply self-stretch p-3 bg-navy-950/50 rounded-xl border border-navy-600/40 flex justify-between items-center gap-3;
   }
 
   .dash-event-text {
@@ -313,7 +315,7 @@
 
   /* --- Hero priority cards (cyan continue / red live) --- */
   .dash-hero {
-    @apply self-stretch p-6 md:p-7 bg-navy-900 rounded-3xl flex flex-col justify-start items-start gap-5 md:gap-6 relative overflow-hidden select-none;
+    @apply self-stretch p-6 md:p-7 bg-navy-900/70 backdrop-blur-md rounded-2xl flex flex-col justify-start items-start gap-5 md:gap-6 relative overflow-hidden select-none;
   }
 
   .dash-hero-cyan {
@@ -377,7 +379,7 @@
   }
 
   .dash-hero-title {
-    @apply text-slate-200 text-lg md:text-xl font-bold font-display leading-6 md:leading-7;
+    @apply text-white text-lg md:text-xl font-bold font-display leading-6 md:leading-7;
   }
 
   .dash-hero-sub {
@@ -426,7 +428,7 @@
 
   /* --- Course / competition rows, deadline tags & saved-list rows --- */
   .dash-row {
-    @apply self-stretch p-3.5 md:p-4 bg-navy-950 rounded-2xl shadow-[0px_8px_24px_0px_rgba(41,169,255,0.07)] outline outline-1 outline-offset-[-1px] outline-navy-600 flex justify-between items-center gap-3 hover:border-sky-400/40 transition-all;
+    @apply self-stretch p-3.5 md:p-4 bg-navy-900/70 backdrop-blur-md rounded-2xl border border-navy-600/50 flex justify-between items-center gap-3 hover:border-sky-400/40 transition-all;
   }
 
   .dash-row-thumb {
@@ -438,7 +440,7 @@
   }
 
   .dash-row-title {
-    @apply text-slate-200 text-sm md:text-base font-bold leading-6 truncate w-full;
+    @apply text-white text-sm md:text-base font-bold leading-6 truncate w-full;
   }
 
   .dash-row-side {
@@ -476,7 +478,7 @@
   }
 
   .dash-toggle-active {
-    @apply bg-gold-400/10 text-gold-400 font-bold;
+    @apply bg-gold-400/15 text-gold-400 font-bold shadow-[0_0_10px_rgba(229,182,92,0.25)];
   }
 
   .dash-toggle-idle {
@@ -509,7 +511,7 @@
   }
 
   .dash-sort-option-active {
-    @apply bg-navy-950/80 text-sky-300 font-bold;
+    @apply bg-gold-400/15 text-gold-400 font-bold;
   }
 
   .dash-sort-option-idle {
@@ -517,7 +519,7 @@
   }
 
   .dash-empty {
-    @apply w-full py-8 md:py-16 px-6 bg-navy-900/90 rounded-3xl border border-navy-600/80 flex flex-col items-center justify-center text-center gap-6 shadow-[0px_16px_32px_rgba(41,169,255,0.06)];
+    @apply w-full py-8 md:py-16 px-6 bg-navy-900/70 backdrop-blur-md rounded-2xl border border-navy-600/80 flex flex-col items-center justify-center text-center gap-6 shadow-[0px_16px_32px_rgba(41,169,255,0.06)];
   }
 
   .dash-empty-icon {
@@ -533,7 +535,7 @@
   }
 
   .dash-empty-sm {
-    @apply w-full py-12 px-6 bg-navy-900/60 rounded-2xl border border-navy-600/60 flex flex-col items-center justify-center text-center gap-4;
+    @apply w-full py-12 px-6 bg-navy-900/60 backdrop-blur-md rounded-2xl border border-navy-600/60 flex flex-col items-center justify-center text-center gap-4;
   }
 
   .dash-empty-sm-icon {
@@ -541,7 +543,7 @@
   }
 
   .dash-empty-sm-title {
-    @apply text-lg font-bold text-slate-200 font-display;
+    @apply text-lg font-bold text-white font-display;
   }
 
   .dash-empty-sm-text {
@@ -550,7 +552,7 @@
 
   /* --- Enrolled course card (desktop row + mobile stack share details) --- */
   .dash-course-card {
-    @apply self-stretch bg-navy-900 rounded-2xl transition-all duration-300 overflow-hidden select-none;
+    @apply self-stretch bg-navy-900/80 backdrop-blur-md rounded-2xl transition-all duration-300 overflow-hidden select-none;
   }
 
   .dash-course-card-done {
@@ -570,7 +572,7 @@
   }
 
   .dash-course-action-active {
-    @apply bg-blue-400 hover:bg-sky-300 text-navy-900 shadow-[0_0_14px_rgba(41,169,255,0.35)];
+    @apply bg-gradient-to-l from-blue-400 to-blue-500 hover:brightness-110 text-white shadow-[0_0_14px_rgba(41,169,255,0.35)];
   }
 
   .dash-course-details {
@@ -607,7 +609,7 @@
 
   /* --- Dashboard empty hero (brand-new account) --- */
   .dash-empty-hero {
-    @apply w-full max-w-[900px] mx-auto p-6 md:p-16 bg-navy-900 rounded-2xl md:rounded-3xl shadow-[0px_16px_32px_0px_rgba(41,169,255,0.06)] outline outline-1 md:outline-[1.50px] outline-offset-[-1.50px] outline-navy-600 flex flex-col justify-center items-center gap-6 md:gap-10 text-center relative overflow-hidden;
+    @apply w-full max-w-[900px] mx-auto p-6 md:p-16 bg-navy-900/70 backdrop-blur-md rounded-2xl md:rounded-3xl shadow-[0px_16px_32px_0px_rgba(41,169,255,0.06)] outline outline-1 md:outline-[1.50px] outline-offset-[-1.50px] outline-navy-600 flex flex-col justify-center items-center gap-6 md:gap-10 text-center relative overflow-hidden;
   }
 
   .dash-empty-compass {
@@ -627,16 +629,16 @@
   }
 
   .dash-empty-btn-primary {
-    @apply bg-blue-400 hover:bg-sky-300 text-navy-900 shadow-[0_4px_16px_rgba(41,169,255,0.25)] hover:shadow-[0_4px_24px_rgba(41,169,255,0.4)];
+    @apply bg-gradient-to-l from-blue-400 to-blue-500 hover:brightness-110 text-white shadow-[0_4px_16px_rgba(41,169,255,0.25)] hover:shadow-[0_4px_24px_rgba(41,169,255,0.4)];
   }
 
   .dash-empty-btn-ghost {
-    @apply bg-transparent outline outline-2 outline-offset-[-2px] outline-gold-400 hover:bg-gold-400/10 text-gold-400;
+    @apply bg-transparent outline outline-2 outline-offset-[-2px] outline-gold-400 hover:bg-gold-400/10 active:scale-95 text-gold-400;
   }
 
   /* --- Competitions & certificates --- */
   .dash-cert-card {
-    @apply p-5 bg-navy-950 rounded-2xl outline outline-1 outline-offset-[-1px] outline-navy-600 flex flex-col justify-between gap-4 relative overflow-hidden hover:border-gold-400/40 transition-colors;
+    @apply p-5 bg-navy-900/70 backdrop-blur-md rounded-2xl border border-navy-600/50 flex flex-col justify-between gap-4 relative overflow-hidden hover:border-gold-400/50 transition-colors;
   }
 
   .dash-cert-badge {
@@ -644,7 +646,7 @@
   }
 
   .dash-cert-cta {
-    @apply self-stretch py-2.5 bg-navy-900 hover:bg-navy-800 rounded-xl outline outline-1 outline-navy-600 hover:outline-blue-400 text-blue-400 text-xs font-bold flex justify-center items-center gap-2 cursor-pointer transition-all shadow-sm;
+    @apply self-stretch py-2.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-xl border border-blue-400/50 hover:border-blue-400 text-blue-400 text-xs font-bold flex justify-center items-center gap-2 cursor-pointer transition-all;
   }
 
   .dash-cta-blue {
@@ -661,11 +663,11 @@
   }
 
   .dash-notif-unread {
-    @apply bg-navy-900 outline outline-1 outline-blue-400/40 shadow-[0_4px_20px_rgba(41,169,255,0.06)];
+    @apply bg-navy-900/90 backdrop-blur-md outline outline-1 outline-offset-[-1px] outline-blue-400/40 shadow-[0_4px_20px_rgba(41,169,255,0.06)];
   }
 
   .dash-notif-read {
-    @apply bg-navy-950/60 border border-navy-600/50 opacity-90 hover:opacity-100;
+    @apply bg-navy-900/40 border border-navy-600/40 opacity-90 hover:opacity-100;
   }
 
   .dash-notif-dot {
@@ -698,7 +700,7 @@
 
   /* --- Notifications drawer --- */
   .dash-drawer {
-    @apply relative z-10 w-full max-w-lg max-h-[85vh] flex flex-col bg-navy-900/95 border border-blue-500/50 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden;
+    @apply relative z-10 w-full max-w-lg max-h-[85vh] flex flex-col bg-navy-900/95 border border-navy-600 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden;
   }
 
   .dash-drawer-head {

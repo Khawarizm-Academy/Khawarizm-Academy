@@ -124,7 +124,7 @@ Always follow this exact mapping when creating or moving files:
 - **Priority cards:** `<PriorityContinueCard />` (cyan) and `<LiveSessionPriorityCard />` (red live countdown) share the `.dash-hero*` family and `<RadialProgressRing />` (its `RING_COLORS` live in `features/dashboard/data/radialRingColors.ts` — hex is required for the `$(color)80` glow alpha).
 - **Views:** `<EnrolledCoursesView />` (filters + sort dropdown + empty state), `<CompetitionsCertificatesView />` (toggle pills + rows + cert cards), `<SavedScholarshipsView />` (rows, deadline tags, undo toast), `<NotificationsView />` + `<NotificationsDrawer />`, `<EmptyDashboardState />` — every view is data-driven from `src/shared/json/dashboardViews.json` / `dashboardChambers.json`.
 - **In-dashboard chambers (§6.2):** `<CourseWorkspaceModal />`, `<LiveClassroomModal />`, `<CompetitionArenaModal />`, `<ScholarshipApplicationModal />`, `<CertificatePreviewModal />` — all share the `.dash-modal-*` chrome.
-- **Styling:** every dashboard element sits on a `.dash-*` concept class (`.dash-hero*`, `.dash-side-row`, `.dash-nav-item`, `.dash-tab`, `.dash-stat*`, `.dash-row`, `.dash-modal*`, `.dash-toast`, `.dash-notif*`, `.dash-cert-*`, …) declared in **`src/features/dashboard/dashboard.css`** and imported by `globals.css` — the same feature-CSS pattern as `auth.css` / `catalog.css`.
+- **Styling:** every dashboard element sits on a `.dash-*` concept class (`.dash-hero*`, `.dash-side-row`, `.dash-nav-item`, `.dash-tab`, `.dash-stat*`, `.dash-row`, `.dash-modal*`, `.dash-toast`, `.dash-notif*`, `.dash-cert-*`, …) declared in **`src/features/dashboard/dashboard.css`** and imported by `globals.css` — the same feature-CSS pattern as `auth.css` / `catalog.css`. The canvas, elevation, and accent rules live in §6.7.
 
 ---
 
@@ -204,6 +204,16 @@ Whenever asked to create any new page:
 - **Prohibited:** Never inject dashboard-wide ad-hoc view tabs (e.g. `DashboardTabFilter` with `overview / saved / achievements` and emoji state buttons).
 - Primary dashboard navigation is strictly governed by the **Right Sidebar** (Desktop) and **Mobile Bottom Bar** / URL queries.
 - The ONLY valid tabs inside the dashboard are section-level pill toggle filters:
-  - **Saved Scholarships:** `ToggleFilter` (`المنح المحفوظة` vs `الدورات المفضلة`) using `.dash-toggle-active` (`bg-gold-400/10 text-gold-400 font-bold`) vs `.dash-toggle-idle`.
+  - **Saved Scholarships:** `ToggleFilter` (`المنح المحفوظة` vs `الدورات المفضلة`) using `.dash-toggle-active` (`bg-gold-400/15 text-gold-400 font-bold`) vs `.dash-toggle-idle`.
   - **Competitions & Certificates:** `ToggleFilter` (`أكمل المسابقة` vs `لم يحل المسابقة`) using the same `.dash-toggle-*` classes — one concept pair, two surfaces.
+
+### 6.7 Dashboard Canvas & Elevation = The App Design System
+The dashboard is an `immersive` page (own sidebar + topbar) but it must still look like the same product:
+- **Never paint a page-level background.** `.dash-page` is transparent; every page sits on the navy-950 `.page-wrapper` with the global celestial washes glowing through. A solid `bg-navy-900` page is what made the dashboard feel like a different app — do not reintroduce it.
+- **Elevation direction:** cards are *lighter* than the canvas — translucent glass (`bg-navy-900/70–80 backdrop-blur-md border-navy-600/50`) for hero, rows, widgets, chips and cards; darker inset wells (`bg-navy-950/50`) only *inside* a raised surface. Dark cards on the void read as holes.
+- **Chrome matches `.glass-navbar`:** `.dash-sidebar` / `.dash-topbar` are `bg-navy-950/90 backdrop-blur-md` with navy-600 borders; the topbar is sticky.
+- **Panels over scrims stay solid** (`bg-navy-900`): modals, drawer, sort menus, search panels — readability beats ambience there (same as `.auth-terms-panel`).
+- **Active accents are translucent, never solid fills:** gold for the sidebar (`bg-gold-400/10 outline-gold-400/50 text-gold-400`), blue for subnav/filter pills (`bg-blue-400/15`), gold for toggles/sort (`bg-gold-400/15`).
+- **Titles are white** (`text-white`), section titles carry the app's accent bar (`section-accent-title-blue|gold`), and hovers must use real `border` utilities (an `outline`-based card has a dead `hover:border-*`).
+- **CTAs follow the app button idioms:** gold `btn-gold` for the one primary action, cyan gradient (`from-blue-400 to-blue-500 text-white`) for course-domain actions, `btn-outline-blue` styling for secondary blue CTAs.
 

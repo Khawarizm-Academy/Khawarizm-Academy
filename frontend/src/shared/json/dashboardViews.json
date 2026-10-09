@@ -55,7 +55,7 @@
       ]
     }
   },
-  "fullPageViews": ["profile", "enrolled"],
+  "fullPageViews": ["profile", "enrolled", "notifications"],
   "singleColumnViews": ["notifications", "profile", "enrolled"],
   "savedTabs": [
     { "id": "scholarships", "label": "المنح المحفوظة" },

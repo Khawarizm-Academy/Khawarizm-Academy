@@ -150,12 +150,6 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div dir="rtl" className="dash-page">
-      {/* Ambient Figma glows, trapped in an overflow-hidden layer */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
-        <div className="size-[600px] -left-[200px] top-[400px] absolute bg-radial from-blue-400/5 to-transparent" />
-        <div className="size-[600px] left-[800px] top-[800px] absolute bg-radial from-gold-400/5 to-transparent" />
-      </div>
-
       {/* Sidebar first, so RTL puts it on the far right */}
       <DesktopDashboardSidebar
         currentView={currentView}
@@ -295,9 +289,11 @@ export const DashboardPage: React.FC = () => {
                     {/* Courses section */}
                     <div className="dash-section">
                       <div className="dash-section-head">
-                        <h2 className="dash-view-title">
-                          {isLive ? 'بقية دوراتك لليوم' : 'دوراتي الحالية'}
-                        </h2>
+                        <div className="section-accent-title-blue">
+                          <h2 className="dash-view-title">
+                            {isLive ? 'بقية دوراتك لليوم' : 'دوراتي الحالية'}
+                          </h2>
+                        </div>
                         <button
                           type="button"
                           onClick={() => handleSelectView('enrolled')}

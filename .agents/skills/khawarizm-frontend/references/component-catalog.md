@@ -327,10 +327,11 @@ see the Dashboard index in `design-tokens-and-classes.md`. Static content lives 
 - **Layout rules (§6.1):** RTL grid `.dash-grid` — `<DesktopDashboardSidebar />` is Child #1 (renders far right), main column second.
 
 ### 10.2 Shell & Stats
-- `<DesktopDashboardSidebar />` — `.dash-side-row` rows (add `group` in JSX for `group-hover:*`), `.dash-nav-item-active/idle` from `dashboardNav.json`.
-- `<DashboardTopBar />` — search overlay (`.dash-search-overlay` + `.dash-search-panel`, `animate-fade-in` mirrored in CSS), `NAV_TARGETS[tab.key]` route links.
+- `<DesktopDashboardSidebar />` — glass sidebar (`.dash-sidebar`, navy-950/90 + blur); `.dash-side-row` rows (add `group` in JSX for `group-hover:*`), `.dash-nav-item-active` (translucent gold) / `-idle` from `dashboardNav.json`.
+- `<DashboardTopBar />` — sticky glass topbar (`.dash-topbar`, mirrors `.glass-navbar`); search overlay (`.dash-search-overlay` + `.dash-search-panel`), `NAV_TARGETS[tab.key]` route links.
 - `<MobileDashboardTopBar />` — mobile-only top row; same `tab`s, no desktop/mobile duplication.
-- `<DashboardStatsHeader />` — desktop greet row + mobile bell row; `<DashboardStatsSidebar />` — widgets, stat rows, upcoming events.
+- `<DashboardStatsHeader />` — desktop greet row (white `.dash-greet-title`) + mobile bell row; `<DashboardStatsSidebar />` — glass `workspace-card` widgets, inset stat rows, upcoming events.
+- `notifications` is a `fullPageViews` entry: the page-level stats header is hidden and `<NotificationsView />` renders its own single header + `btn-pill-subtle` mark-all-read action.
 
 ### 10.3 Priority Hero Cards
 - `<PriorityContinueCard />` (cyan) / `<LiveSessionPriorityCard />` (red live countdown) — share `.dash-hero*`, `.dash-progress*`, `<RadialProgressRing />`; records `STAT_ROWS` / `EVENT_TAG_TONE` replace per-card branches; the countdown uses `var(--color-danger)`.

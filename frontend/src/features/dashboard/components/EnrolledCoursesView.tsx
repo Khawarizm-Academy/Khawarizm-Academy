@@ -159,7 +159,7 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
                   >
                     <span>{option.label}</span>
                     {activeSort === option.id && (
-                      <CheckCircle2 size={13} className="text-blue-400" />
+                      <CheckCircle2 size={13} className="text-gold-400" />
                     )}
                   </button>
                 ))}
