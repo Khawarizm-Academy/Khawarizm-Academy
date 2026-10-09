@@ -90,6 +90,42 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
   const currentLevelLabel = LEARNING_LEVELS.find((lvl) => lvl.id === profile.learningLevel)?.label;
   const activeReminders = Object.values(profile.notifications).filter(Boolean).length;
 
+  /**
+   * Save / reset row. Rendered twice on purpose: on desktop it anchors to the
+   * bottom of the primary column, and on mobile it is the form footer — so the
+   * taller secondary column ("ملخص الحساب") never pushes the buttons down.
+   */
+  const renderSaveActions = (visibilityClass: string) => (
+    <div className={`profile-actions ${visibilityClass}`}>
+      <button
+        type="submit"
+        disabled={isSaving}
+        className="btn-gold btn-attention w-full sm:w-auto px-8 py-3.5 text-sm sm:text-base disabled:opacity-70"
+      >
+        {isSaving ? (
+          <>
+            <Loader2 size={18} className="animate-spin" />
+            <span>جاري الحفظ...</span>
+          </>
+        ) : (
+          <>
+            <Save size={18} />
+            <span>حفظ التغييرات</span>
+          </>
+        )}
+      </button>
+
+      <button
+        type="button"
+        onClick={handleReset}
+        className="btn-pill-subtle w-full sm:w-auto text-xs sm:text-sm"
+      >
+        <RotateCcw size={15} />
+        <span>استعادة الافتراضي</span>
+      </button>
+    </div>
+  );
+
   return (
     <div dir="rtl" className="profile-root">
       {/* Identity hero */}
@@ -246,6 +282,10 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                 </div>
               </div>
             </SettingsCard>
+
+            {/* Desktop save row anchors to the primary column so the summary
+                card in the secondary column never pushes the buttons down */}
+            {renderSaveActions('hidden lg:flex')}
           </div>
 
           {/* Secondary column */}
@@ -317,35 +357,8 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
           </div>
         </div>
 
-        {/* Save row */}
-        <div className="profile-actions">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="btn-gold btn-attention w-full sm:w-auto px-8 py-3.5 text-sm sm:text-base disabled:opacity-70"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                <span>جاري الحفظ...</span>
-              </>
-            ) : (
-              <>
-                <Save size={18} />
-                <span>حفظ التغييرات</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleReset}
-            className="btn-pill-subtle w-full sm:w-auto text-xs sm:text-sm"
-          >
-            <RotateCcw size={15} />
-            <span>استعادة الافتراضي</span>
-          </button>
-        </div>
+        {/* Mobile-only save row: full-width form footer on small screens */}
+        {renderSaveActions('lg:hidden')}
       </form>
 
       {/* Success toast */}
