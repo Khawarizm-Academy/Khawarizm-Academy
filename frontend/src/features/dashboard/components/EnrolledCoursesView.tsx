@@ -7,12 +7,10 @@ import { DataSectionSkeleton } from '../../../shared/components/Loading/DataSect
 import { SlidingSegmentedControl } from '../../../shared/components/Controls/SlidingSegmentedControl';
 import { fetchEnrolledCourses } from '../data/dashboardFetchers';
 import type { EnrolledCourse } from '../types';
-import { DashboardSubNavigation } from './DashboardSubNavigation';
 import { EnrolledCourseCard } from './EnrolledCourseCard';
 import dashboardViewsJson from '../../../shared/json/dashboardViews.json';
 
 interface EnrolledCoursesViewProps {
-  onSelectView: (viewId: string) => void;
   onResumeCourse: (course: EnrolledCourse) => void;
   onViewCertificate: (course: EnrolledCourse) => void;
   onJoinLive?: (course: EnrolledCourse) => void;
@@ -26,7 +24,6 @@ const FILTERS = dashboardViewsJson.enrolledFilters as { id: FilterStatus; label:
 const SORT_OPTIONS = dashboardViewsJson.enrolledSortOptions as { id: SortOption; label: string }[];
 
 export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
-  onSelectView,
   onResumeCourse,
   onViewCertificate,
   onJoinLive,
@@ -93,9 +90,6 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
       dir="rtl"
       className="w-full flex flex-col justify-start items-start gap-6 select-none animate-fade-in"
     >
-      {/* Dashboard sub-navigation capsule */}
-      <DashboardSubNavigation activeView="enrolled" onSelectView={onSelectView} />
-
       {/* Title block */}
       <div className="dash-view-heading">
         <h1 className="dash-view-h1">دوراتي المسجّلة</h1>

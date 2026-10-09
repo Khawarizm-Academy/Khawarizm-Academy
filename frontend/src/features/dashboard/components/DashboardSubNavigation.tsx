@@ -24,7 +24,7 @@ export const DashboardSubNavigation: React.FC<DashboardSubNavigationProps> = ({
       onChange={onSelectView}
       tone="blue"
       aria-label="التنقل الداخلي للوحة التحكم"
-      className={`w-full lg:hidden ${className}`}
+      className={`w-full ${className}`}
     />
   );
 };

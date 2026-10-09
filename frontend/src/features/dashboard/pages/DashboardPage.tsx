@@ -9,7 +9,7 @@ import { DesktopDashboardSidebar } from '../components/DesktopDashboardSidebar';
 import { DashboardTopBar } from '../components/DashboardTopBar';
 import { MobileDashboardTopBar } from '../components/MobileDashboardTopBar';
 import { CertificatePreviewModal } from '../components/CertificatePreviewModal';
-import { DashboardStatsHeader, type StatChipItem } from '../components/DashboardStatsHeader';
+import { DashboardStatsHeader, DashboardMobileChips, type StatChipItem } from '../components/DashboardStatsHeader';
 import { PriorityContinueCard } from '../components/PriorityContinueCard';
 import { ChallengeSpotlightCard } from '../components/ChallengeSpotlightCard';
 import { LiveSessionPriorityCard } from '../components/LiveSessionPriorityCard';
@@ -35,6 +35,9 @@ const FULL_PAGE_VIEWS = dashboardViewsJson.fullPageViews;
 const SINGLE_COLUMN_VIEWS = dashboardViewsJson.singleColumnViews;
 const SPOTLIGHT = dashboardViewsJson.spotlight;
 const CHALLENGE_ITEM = dashboardViewsJson.challengeItem as CompetitionItem;
+
+/** Views whose active tab lives in the mobile sub-nav strip. */
+const SUB_NAV_VIEWS = ['main', 'enrolled', 'profile'];
 
 /** Mock unread badge shared by every bell in the dashboard chrome. */
 const UNREAD_COUNT = 5;
@@ -169,7 +172,7 @@ export const DashboardPage: React.FC = () => {
 
         {/* Inner padding container */}
         <div className="dash-container">
-          {/* Stats & greeting header */}
+          {/* Stats & greeting header for the grid views */}
           {!isEmpty && !FULL_PAGE_VIEWS.includes(currentView) && (
             <div className="animate-fade-in-up">
               <DashboardStatsHeader
@@ -186,27 +189,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           )}
 
-          {/* Empty state view */}
-          {isEmpty && (
-            <>
-              <MobileDashboardTopBar
-                title={
-                  <MobileTitle
-                    label="مرحبًا، سارة"
-                    avatar={<User size={18} className="text-blue-400" />}
-                  />
-                }
-                onNotificationsClick={() => handleSelectView('notifications')}
-                onSavedClick={() => handleSelectView('saved')}
-                isSavedActive={isSavedView}
-              />
-              <div className="w-full py-2 md:py-6 animate-fade-in-up animation-delay-100">
-                <EmptyDashboardState userName="سارة" />
-              </div>
-            </>
-          )}
-
-          {/* Notifications view */}
+          {/* Notifications view owns its back-button header */}
           {currentView === 'notifications' && (
             <div className="w-full max-w-4xl mx-auto py-2 animate-fade-in-up">
               <NotificationsView
@@ -216,60 +199,94 @@ export const DashboardPage: React.FC = () => {
             </div>
           )}
 
+          {/* Mobile top bars for the dedicated views */}
+          {isEmpty && (
+            <MobileDashboardTopBar
+              title={
+                <MobileTitle
+                  label="مرحبًا، سارة"
+                  avatar={<User size={18} className="text-blue-400" />}
+                />
+              }
+              onNotificationsClick={() => handleSelectView('notifications')}
+              onSavedClick={() => handleSelectView('saved')}
+              isSavedActive={isSavedView}
+            />
+          )}
+
+          {currentView === 'profile' && (
+            <MobileDashboardTopBar
+              title={
+                <MobileTitle
+                  label="الملف الشخصي"
+                  avatar={<span className="text-gold-400 text-xs font-bold font-display">أق</span>}
+                  avatarClassName="size-8.5 border-gold-400"
+                  labelClassName="text-white text-base"
+                />
+              }
+              onNotificationsClick={() => handleSelectView('notifications')}
+              onSavedClick={() => handleSelectView('saved')}
+              isSavedActive={isSavedView}
+            />
+          )}
+
+          {currentView === 'enrolled' && !isEmpty && (
+            <MobileDashboardTopBar
+              title={
+                <MobileTitle
+                  label="الدورات المسجّلة"
+                  avatar={<BookOpen size={18} className="text-blue-400" />}
+                />
+              }
+              onNotificationsClick={() => handleSelectView('notifications')}
+              onSavedClick={() => handleSelectView('saved')}
+              isSavedActive={isSavedView}
+            />
+          )}
+
+          {/* Single mobile sub-nav, pinned so the active tab never shifts between views */}
+          {!isEmpty && SUB_NAV_VIEWS.includes(currentView) && (
+            <div className="dash-subnav-bar">
+              <DashboardSubNavigation activeView={currentView} onSelectView={handleSelectView} />
+            </div>
+          )}
+
+          {/* Mobile reminder chips sit under the tab strip, so the strip keeps its place */}
+          {!isEmpty && !FULL_PAGE_VIEWS.includes(currentView) && (
+            <DashboardMobileChips chips={statChips} />
+          )}
+
+          {/* Empty state view */}
+          {isEmpty && (
+            <div className="w-full py-2 md:py-6 animate-fade-in-up animation-delay-100">
+              <EmptyDashboardState userName="سارة" />
+            </div>
+          )}
+
           {/* Profile view (حسابي) */}
           {currentView === 'profile' && (
-            <>
-              <MobileDashboardTopBar
-                title={
-                  <MobileTitle
-                    label="الملف الشخصي"
-                    avatar={<span className="text-gold-400 text-xs font-bold font-display">أق</span>}
-                    avatarClassName="size-8.5 border-gold-400"
-                    labelClassName="text-white text-base"
-                  />
-                }
-                onNotificationsClick={() => handleSelectView('notifications')}
-                onSavedClick={() => handleSelectView('saved')}
-                isSavedActive={isSavedView}
-              />
-              <div className="w-full flex flex-col gap-6 py-1 md:py-2 animate-fade-in-up animation-delay-100">
-                <DashboardSubNavigation activeView="profile" onSelectView={handleSelectView} />
-                <ProfileView />
-              </div>
-            </>
+            <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
+              <ProfileView />
+            </div>
           )}
 
           {/* Enrolled courses dedicated view (الدورات المسجّلة) */}
           {currentView === 'enrolled' && !isEmpty && (
-            <>
-              <MobileDashboardTopBar
-                title={
-                  <MobileTitle
-                    label="الدورات المسجّلة"
-                    avatar={<BookOpen size={18} className="text-blue-400" />}
-                  />
+            <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
+              <EnrolledCoursesView
+                onResumeCourse={(course) => setActiveWorkspaceCourse(course.title)}
+                onViewCertificate={(course) =>
+                  setPreviewCertificate({
+                    id: `cert-${course.id}`,
+                    title: `شهادة إتمام: ${course.title}`,
+                    issueDate: course.completionDate || '14 سبتمبر 2026',
+                    credentialId: `KHW-${course.id.toUpperCase()}-2026`,
+                    isOfficial: true,
+                  })
                 }
-                onNotificationsClick={() => handleSelectView('notifications')}
-                onSavedClick={() => handleSelectView('saved')}
-                isSavedActive={isSavedView}
+                onJoinLive={() => setIsLiveClassroomOpen(true)}
               />
-              <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
-                <EnrolledCoursesView
-                  onSelectView={handleSelectView}
-                  onResumeCourse={(course) => setActiveWorkspaceCourse(course.title)}
-                  onViewCertificate={(course) =>
-                    setPreviewCertificate({
-                      id: `cert-${course.id}`,
-                      title: `شهادة إتمام: ${course.title}`,
-                      issueDate: course.completionDate || '14 سبتمبر 2026',
-                      credentialId: `KHW-${course.id.toUpperCase()}-2026`,
-                      isOfficial: true,
-                    })
-                  }
-                  onJoinLive={() => setIsLiveClassroomOpen(true)}
-                />
-              </div>
-            </>
+            </div>
           )}
 
           {/* Two-column grid for main, live, saved, achievements views */}
@@ -280,12 +297,6 @@ export const DashboardPage: React.FC = () => {
                 {/* Main / live view */}
                 {currentView === 'main' && (
                   <>
-                    {/* Sub-navigation strip */}
-                    <DashboardSubNavigation
-                      activeView={currentView}
-                      onSelectView={handleSelectView}
-                    />
-
                     {/* Hero cards: live session dominates, otherwise the
                         challenge spotlight and the continue-learning card */}
                     {isLive ? (

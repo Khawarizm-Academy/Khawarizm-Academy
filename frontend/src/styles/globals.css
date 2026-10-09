@@ -4,6 +4,7 @@
 @import "../features/catalog/catalog.css";
 @import "../features/dashboard/dashboard.css";
 @import "../features/home/home.css";
+@import "../features/profile/profile.css";
 
 @layer base {
   * {

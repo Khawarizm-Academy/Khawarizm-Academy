@@ -1,0 +1,97 @@
+/* ==========================================================================
+   Profile Feature — identity hero, settings cards & form chrome.
+   Feature-owned concept classes. Imported by styles/globals.css, which keeps
+   only classes shared by 2+ features. Declared in @layer components so JSX
+   utilities can still override them.
+   ========================================================================== */
+@layer components {
+  .profile-root {
+    @apply w-full max-w-[1100px] mx-auto flex flex-col gap-6 md:gap-8 pb-12;
+  }
+
+  /* --- Identity hero: celestial banner with an orbiting avatar ring --- */
+  .profile-hero {
+    @apply relative overflow-hidden rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 md:gap-6 bg-gradient-to-l from-navy-800/80 via-navy-900/90 to-navy-950/90 backdrop-blur-md outline outline-1 outline-offset-[-1px] outline-navy-600/70 shadow-[0_8px_24px_rgba(41,169,255,0.08)];
+  }
+
+  .profile-wash-blue {
+    @apply absolute -top-12 -right-12 size-48 rounded-full bg-blue-400/10 blur-3xl pointer-events-none;
+  }
+
+  .profile-wash-gold {
+    @apply absolute -bottom-12 -left-12 size-48 rounded-full bg-gold-400/10 blur-3xl pointer-events-none;
+  }
+
+  .profile-avatar-ring {
+    @apply relative size-20 sm:size-24 shrink-0 grid place-items-center;
+  }
+
+  /* Mirrors the global .animate-orbit-slow helper (keyframes live in globals.css). */
+  .profile-avatar-orbit {
+    @apply absolute inset-0 rounded-full border border-dashed border-gold-400/40;
+    animation: orbit-slow 60s linear infinite;
+  }
+
+  .profile-avatar {
+    @apply relative size-16 sm:size-20 rounded-full bg-navy-950 outline outline-2 outline-offset-[-2px] outline-gold-400 grid place-items-center overflow-hidden shadow-[0_0_16px_rgba(229,182,92,0.25)] transition-transform duration-300 group-hover:scale-105;
+  }
+
+  .profile-avatar-edit {
+    @apply absolute -bottom-1 -left-1 size-7 rounded-full bg-navy-800 hover:bg-blue-400 border border-navy-600 text-slate-300 hover:text-white grid place-items-center cursor-pointer transition-all shadow-sm hover:scale-105 active:scale-95;
+  }
+
+  .profile-name {
+    @apply text-white text-xl sm:text-2xl font-bold font-display leading-tight;
+  }
+
+  .profile-badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-400 text-xs font-bold;
+  }
+
+  .profile-meta {
+    @apply text-slate-400 text-xs sm:text-sm font-normal;
+  }
+
+  /* --- Settings card --- */
+  .profile-card {
+    @apply bg-navy-900/70 backdrop-blur-md rounded-2xl p-5 sm:p-6 flex flex-col gap-5 shadow-[0_8px_24px_rgba(41,169,255,0.08)] outline outline-1 outline-offset-[-1px] outline-navy-600/60 transition-[outline-color,box-shadow] duration-300 hover:outline-blue-400/40 hover:shadow-[0_12px_32px_rgba(41,169,255,0.16)];
+  }
+
+  .profile-card-head {
+    @apply flex items-center gap-2.5 pb-2.5 border-b border-navy-600/50;
+  }
+
+  .profile-card-icon {
+    @apply size-8 rounded-lg bg-navy-950/80 border border-navy-600/70 grid place-items-center shrink-0 transition-transform duration-300 group-hover:scale-110;
+  }
+
+  .profile-card-title {
+    @apply text-white text-base sm:text-lg font-bold font-display;
+  }
+
+  .profile-label {
+    @apply text-slate-300 text-xs font-medium;
+  }
+
+  /* --- Interest chips --- */
+  .profile-interest {
+    @apply px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer select-none active:scale-95;
+  }
+
+  .profile-interest-on {
+    @apply bg-gold-400/15 outline outline-1 outline-gold-400 text-gold-400 shadow-[0_0_8px_rgba(229,182,92,0.2)];
+  }
+
+  .profile-interest-off {
+    @apply bg-navy-950/80 outline outline-1 outline-navy-600/80 text-slate-400 hover:text-slate-200 hover:outline-blue-400/50;
+  }
+
+  /* --- Save row & success toast --- */
+  .profile-actions {
+    @apply flex flex-col sm:flex-row items-center gap-4 pt-2;
+  }
+
+  .profile-toast {
+    @apply fixed bottom-20 sm:bottom-8 right-1/2 translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3.5 bg-navy-900/95 border border-emerald-500/60 rounded-full shadow-[0_8px_32px_rgba(16,185,129,0.25)] text-emerald-300 backdrop-blur-md select-none;
+  }
+}

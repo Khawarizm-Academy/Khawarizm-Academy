@@ -5,21 +5,24 @@ interface SettingsCardProps {
   icon: LucideIcon;
   title: string;
   iconClassName?: string;
+  /** Stagger position for the card cascade. */
+  index?: number;
   children: React.ReactNode;
 }
 
 export const SettingsCard: React.FC<SettingsCardProps> = ({
   icon: Icon,
   title,
-  iconClassName = 'text-sky-400',
+  iconClassName = 'text-blue-400',
+  index = 0,
   children,
 }) => (
-  <section className="workspace-card p-5 sm:p-6">
-    <header className="workspace-header">
-      <Icon size={18} className={`${iconClassName} shrink-0`} />
-      <h2 className="text-white text-base sm:text-lg font-bold font-['IBM_Plex_Sans_Arabic']">
-        {title}
-      </h2>
+  <section className="profile-card group animate-pop-in" style={{ animationDelay: `${index * 90}ms` }}>
+    <header className="profile-card-head">
+      <span className={`profile-card-icon ${iconClassName}`}>
+        <Icon size={17} strokeWidth={2} />
+      </span>
+      <h2 className="profile-card-title">{title}</h2>
     </header>
     {children}
   </section>
