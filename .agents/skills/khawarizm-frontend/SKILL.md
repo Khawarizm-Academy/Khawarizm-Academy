@@ -148,6 +148,8 @@ Whenever asked to create any new page:
 - **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — routes.json, redirects, nav tabs, query params, URL debugging.
 - **Loading, caching & transitions:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md) — dual-tier skeletons, SWR, scroll memory.
 - **Page & feature creation:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md) — the full 10-step flow.
+- **Motion & animations:** [`khawarizm-motion`](../khawarizm-motion/SKILL.md) — the Celestial Motion System: primitives, cascades, sliding-puck switches, shine/halo, countdowns.
+- **Editing & fixing pages:** [`khawarizm-layout-edit`](../khawarizm-layout-edit/SKILL.md) — alignment/centering fixes, two-column grids, desktop-vs-mobile action rows, sticky offsets, CTA hierarchy.
 
 **References:**
 - **Directory Placement & Anti-Duplication:** [`references/code-reuse-and-directory-rules.md`](references/code-reuse-and-directory-rules.md)
