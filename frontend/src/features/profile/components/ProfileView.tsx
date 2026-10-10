@@ -133,7 +133,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
         <div className="profile-wash-blue" />
         <div className="profile-wash-gold" />
 
-        <div className="flex items-center gap-4 sm:gap-5 z-10">
+        <div className="profile-hero-row">
           <div className="profile-avatar-ring">
             <span className="profile-avatar-orbit" aria-hidden="true" />
             <div className="profile-avatar">
@@ -144,7 +144,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-gold-400 text-xl sm:text-2xl font-bold font-display">
+                <span className="profile-avatar-initials">
                   {profile.avatarInitials}
                 </span>
               )}
@@ -160,8 +160,8 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             </button>
           </div>
 
-          <div className="flex flex-col gap-1.5 text-right">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="profile-hero-id">
+            <div className="profile-name-row">
               <h1 className="profile-name">{profile.fullName}</h1>
               <span className="profile-badge">
                 <Award size={12} />
@@ -173,7 +173,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
           </div>
         </div>
 
-        <div className="self-end sm:self-center z-10">
+        <div className="profile-hero-action">
           <input
             type="file"
             ref={fileInputRef}
@@ -193,12 +193,12 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
       </section>
 
       {/* Settings form */}
-      <form onSubmit={handleSaveChanges} className="w-full flex flex-col gap-6 md:gap-8">
-        <div className="w-full flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+      <form onSubmit={handleSaveChanges} className="profile-form">
+        <div className="profile-columns">
           {/* Primary column */}
-          <div className="flex-1 w-full flex flex-col gap-6 md:gap-8">
+          <div className="profile-column-primary">
             <SettingsCard icon={User} title="المعلومات الشخصية" index={0}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="profile-fields-grid">
                 <FieldText
                   id="fullName"
                   label="الاسم الكامل"
@@ -211,9 +211,9 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                 <FieldText
                   id="email"
                   label={
-                    <span className="flex items-center justify-between w-full">
+                    <span className="profile-field-label-row">
                       <span>البريد الإلكتروني</span>
-                      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                      <span className="profile-verified">
                         <CheckCircle2 size={12} />
                         مؤكد
                       </span>
@@ -244,7 +244,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             </SettingsCard>
 
             <SettingsCard icon={Sparkles} title="تفضيلات التعلّم" iconClassName="text-gold-400" index={1}>
-              <div className="flex flex-col gap-2.5">
+              <div className="profile-block">
                 <label className="profile-label">المستوى الأكاديمي والمهاري</label>
                 <SlidingSegmentedControl
                   options={LEARNING_LEVELS.map((lvl) => ({ id: lvl.id, label: lvl.label }))}
@@ -256,13 +256,13 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-2.5">
-                <div className="flex justify-between items-center">
+              <div className="profile-block">
+                <div className="profile-interests-head">
                   <label className="profile-label">الاهتمامات والمسارات التقنية</label>
-                  <span className="text-[11px] text-slate-500">اختر ما يناسب شغفك</span>
+                  <span className="profile-hint">اختر ما يناسب شغفك</span>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-1.5">
+                <div className="profile-interests">
                   {AVAILABLE_INTERESTS.map((interest) => {
                     const isSelected = profile.interests.includes(interest);
                     return (
@@ -289,9 +289,9 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
           </div>
 
           {/* Secondary column */}
-          <div className="w-full lg:w-80 flex flex-col gap-6 md:gap-8 shrink-0">
+          <div className="profile-column-secondary">
             <SettingsCard icon={Bell} title="الإشعارات والتذكيرات" index={2}>
-              <div className="flex flex-col gap-4">
+              <div className="profile-stack">
                 <ToggleSwitch
                   label="تذكير قبل الجلسات المباشرة"
                   checked={profile.notifications.liveSessionReminders}
@@ -339,7 +339,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
             </SettingsCard>
 
             <SettingsCard icon={Award} title="ملخص الحساب" iconClassName="text-gold-400" index={4}>
-              <div className="flex flex-col gap-3">
+              <div className="profile-stack gap-3">
                 <div className="profile-stat">
                   <span className="profile-stat-label">المستوى الأكاديمي</span>
                   <span className="profile-stat-value">{currentLevelLabel}</span>
@@ -364,10 +364,10 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
       {/* Success toast */}
       {showToast && (
         <div className="profile-toast animate-pop-in">
-          <div className="size-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+          <div className="profile-toast-icon">
             <Check size={14} className="text-emerald-400" />
           </div>
-          <span className="text-sm font-bold font-display">تم حفظ تغييرات الملف الشخصي بنجاح!</span>
+          <span className="profile-toast-text">تم حفظ تغييرات الملف الشخصي بنجاح!</span>
         </div>
       )}
     </div>

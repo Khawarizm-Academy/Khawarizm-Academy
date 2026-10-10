@@ -28,7 +28,7 @@ export const FieldText: React.FC<FieldTextProps> = ({
   iconPosition = 'left',
   required,
 }) => (
-  <div className="flex flex-col gap-2">
+  <div className="profile-field">
     <label htmlFor={id} className="profile-label">
       {label}
     </label>
@@ -45,7 +45,7 @@ export const FieldText: React.FC<FieldTextProps> = ({
       />
       <Icon
         size={16}
-        className={`absolute ${iconPosition === 'left' ? 'left-3.5' : 'right-3.5'} top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-400 transition-colors pointer-events-none`}
+        className={`profile-field-icon ${iconPosition === 'left' ? 'left-3.5' : 'right-3.5'}`}
       />
     </div>
   </div>
