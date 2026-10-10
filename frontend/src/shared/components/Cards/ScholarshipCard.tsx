@@ -19,7 +19,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
 
   if (isMobile) {
     return (
-      <div className="group card-interactive-gold w-64 sm:w-72 shrink-0 min-h-[295px]">
+      <div className="group card-interactive-gold rail-card-size">
         <div>
           {/* Mobile Media Thumbnail */}
           <div className="card-media-box">
@@ -39,22 +39,20 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
 
           {/* Content Body */}
           <div className="p-4">
-            <h4 className="card-title">
-              {scholarship.title}
-            </h4>
+            <h4 className="card-title">{scholarship.title}</h4>
           </div>
         </div>
 
         <div className="px-4 pb-4">
           <div className="card-meta-row mb-3">
             {/* Location with Pin */}
-            <div className="flex items-center gap-1 text-[#8299B5]">
+            <div className="flex items-center gap-1 text-slate-400">
               <MapPin size={14} />
               <span>{scholarship.location}</span>
             </div>
 
             {/* Coverage Tag */}
-            <span className="text-[#E5B65C] font-semibold text-xs drop-shadow-[0_0_8px_rgba(229,182,92,0.25)]">
+            <span className="card-coverage">
               {convertKeyToAr(scholarship.coverage, 'coverage')}
             </span>
           </div>
@@ -86,7 +84,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
           {/* Top Row: Icon + Urgency Badge */}
           <div className="flex-between mb-4">
             {/* Institution / Globe Icon in Rounded Box */}
-            <div className="card-icon-box text-[#E5B65C]">
+            <div className="card-icon-box text-gold-400">
               {scholarship.iconType === 'globe' ? (
                 <Globe size={22} />
               ) : (
@@ -102,14 +100,10 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
           </div>
 
           {/* Title */}
-          <h4 className="card-title-lg">
-            {scholarship.title}
-          </h4>
+          <h4 className="card-title-lg">{scholarship.title}</h4>
 
           {/* Provider */}
-          <p className="card-subtitle">
-            {scholarship.provider}
-          </p>
+          <p className="card-subtitle">{scholarship.provider}</p>
         </div>
 
         <div>
@@ -120,7 +114,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
                 {convertKeyToAr(scholarship.degreeLevel, 'degreeLevels')}
               </span>
             )}
-            <span className="tag-box text-[#E5B65C] font-medium">
+            <span className="tag-box text-gold-400 font-medium">
               {convertKeyToAr(scholarship.coverage, 'coverage')}
             </span>
           </div>
@@ -134,7 +128,7 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
             className="w-full btn-gold text-[13px] sm:text-sm"
           >
             <span>{toArabic('actions', 'apply_now')}</span>
-            <ArrowLeft size={14} className="transition-transform duration-200 group-hover:-translate-x-1" />
+            <ArrowLeft size={14} className="arrow-shift" />
           </button>
         </div>
       </div>

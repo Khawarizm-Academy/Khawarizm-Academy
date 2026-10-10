@@ -37,11 +37,11 @@
   }
 
   .quick-link-title {
-    @apply text-slate-100 text-sm md:text-base font-bold font-['IBM_Plex_Sans_Arabic'] group-hover:text-white transition-colors truncate w-full;
+    @apply text-slate-100 text-sm md:text-base font-bold font-display group-hover:text-white transition-colors truncate w-full;
   }
 
   .quick-link-sub {
-    @apply text-slate-400 text-[11px] md:text-xs font-['Tajawal'] truncate w-full;
+    @apply text-slate-400 text-[11px] md:text-xs font-body truncate w-full;
   }
 
   .quick-link-arrow {

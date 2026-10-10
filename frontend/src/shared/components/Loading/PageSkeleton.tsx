@@ -14,7 +14,7 @@ interface PageSkeletonProps {
 export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' }) => {
   if (variant === 'catalog') {
     return (
-      <div className="w-full flex-1 flex flex-col items-center animate-pulse" aria-busy="true">
+      <div className="skeleton-page" aria-busy="true">
         <main className="content-container">
           {/* 1. Hero Section Placeholder */}
           <section className="w-full flex flex-col items-center text-center gap-3 pt-6 pb-2">
@@ -33,7 +33,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
             {/* Main Results Pane */}
             <div className="flex-1 w-full flex flex-col gap-6">
               {/* Toolbar Placeholder */}
-              <div className="w-full h-14 rounded-xl skeleton-box flex items-center justify-between px-4">
+              <div className="w-full h-14 rounded-xl skeleton-box flex-between px-4">
                 <SkeletonBox className="w-32 h-5" />
                 <SkeletonBox className="w-44 h-8 rounded-lg" />
               </div>
@@ -43,8 +43,8 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
             </div>
 
             {/* Desktop Filter Sidebar Placeholder */}
-            <aside className="hidden lg:block w-72 shrink-0 p-5 glass-panel rounded-2xl border border-[#1B3F80]/50 flex flex-col gap-6">
-              <div className="flex items-center justify-between pb-4 border-b border-[#1B3F80]/40">
+            <aside className="skeleton-sidebar">
+              <div className="flex-between pb-4 border-b border-navy-600/40">
                 <SkeletonBox className="w-24 h-5" />
                 <SkeletonBox className="w-16 h-4" />
               </div>
@@ -63,7 +63,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
               </div>
 
               {/* Filter Group 2 */}
-              <div className="flex flex-col gap-3 pt-4 border-t border-[#1B3F80]/30">
+              <div className="flex flex-col gap-3 pt-4 border-t border-navy-600/30">
                 <SkeletonBox className="w-24 h-4" />
                 <div className="flex flex-col gap-2">
                   {Array.from({ length: 3 }).map((_, i) => (
@@ -83,7 +83,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
 
   if (variant === 'home') {
     return (
-      <div className="w-full flex-1 flex flex-col items-center animate-pulse" aria-busy="true">
+      <div className="skeleton-page" aria-busy="true">
         <main className="content-container">
           {/* 1. Hero Section Skeleton */}
           <section className="w-full flex flex-col items-center text-center gap-4 py-8">
@@ -99,7 +99,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
           {/* 3. Twin Rails Skeleton */}
           <section className="w-full flex flex-col gap-8 mt-4">
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
+              <div className="flex-between">
                 <SkeletonBox className="w-44 h-7" />
                 <SkeletonBox className="w-24 h-5" />
               </div>
@@ -107,7 +107,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
             </div>
 
             <div className="flex flex-col gap-4 mt-4">
-              <div className="flex items-center justify-between">
+              <div className="flex-between">
                 <SkeletonBox className="w-48 h-7" />
                 <SkeletonBox className="w-24 h-5" />
               </div>
@@ -121,7 +121,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
 
   if (variant === 'dashboard') {
     return (
-      <div className="w-full flex-1 flex flex-col items-center animate-pulse" aria-busy="true">
+      <div className="skeleton-page" aria-busy="true">
         <div className="w-full min-h-screen flex justify-start items-start">
           {/* 1. Sidebar Placeholder (desktop only) */}
           <aside className="hidden lg:flex w-60 shrink-0 self-stretch flex-col gap-6 p-5 bg-slate-900/80 border-b-0">
@@ -181,7 +181,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
 
   if (variant === 'detail') {
     return (
-      <div className="w-full flex-1 flex flex-col items-center animate-pulse" aria-busy="true">
+      <div className="skeleton-page" aria-busy="true">
         <main className="content-container">
           {/* Back Button Placeholder */}
           <SkeletonBox className="w-32 h-4 mb-6 mt-4" />
@@ -205,7 +205,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
               {/* Meta Chips Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {Array.from({ length: 6 }).map((_, idx) => (
-                  <div key={idx} className="glass-panel rounded-xl p-3.5 border border-[#1B3F80]/50 flex flex-col gap-2">
+                  <div key={idx} className="detail-chip gap-2">
                     <SkeletonBox className="w-16 h-3" />
                     <SkeletonBox className="w-24 h-4" />
                   </div>
@@ -213,7 +213,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
               </div>
 
               {/* Body Section */}
-              <div className="glass-panel rounded-2xl p-6 border border-[#1B3F80]/50 flex flex-col gap-3">
+              <div className="detail-panel">
                 <SkeletonBox className="w-48 h-6" />
                 <SkeletonBox className="w-full h-4" />
                 <SkeletonBox className="w-5/6 h-4" />
@@ -228,7 +228,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ variant = 'default' 
 
   // Default Page Skeleton
   return (
-    <div className="w-full flex-1 flex flex-col items-center animate-pulse" aria-busy="true">
+    <div className="skeleton-page" aria-busy="true">
       <main className="content-container">
         <div className="w-full flex flex-col gap-4 py-6">
           <SkeletonBox className="w-48 h-8 rounded-lg" />

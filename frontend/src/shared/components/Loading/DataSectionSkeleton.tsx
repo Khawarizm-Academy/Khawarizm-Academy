@@ -19,22 +19,22 @@ export const DataSectionSkeleton: React.FC<DataSectionSkeletonProps> = ({
 }) => {
   if (variant === 'rail') {
     return (
-      <div className={`w-full flex items-stretch gap-4 overflow-hidden py-2 ${className}`}>
+      <div className={`skeleton-rail ${className}`}>
         {Array.from({ length: count }).map((_, idx) => (
           <div
             key={idx}
             className="w-[280px] sm:w-[320px] shrink-0 skeleton-card min-h-[360px] select-none"
           >
-            <div className="w-full h-36 bg-[#040F24]/80 relative flex items-center justify-center">
+            <div className="skeleton-media-well">
               <SkeletonBox className="absolute inset-0 w-full h-full opacity-60" />
               <SkeletonCircle size={36} />
             </div>
-            <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+            <div className="skeleton-card-body gap-3">
               <div className="flex flex-col gap-2">
                 <SkeletonBadge width="75px" />
                 <SkeletonText lines={2} lastLineWidth="65%" />
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-[#1B3F80]/40">
+              <div className="skeleton-meta">
                 <SkeletonBox className="w-16 h-4" />
                 <SkeletonBox className="w-20 h-7 rounded-md" />
               </div>
@@ -77,18 +77,15 @@ export const DataSectionSkeleton: React.FC<DataSectionSkeletonProps> = ({
       aria-busy="true"
     >
       {Array.from({ length: count }).map((_, idx) => (
-        <div
-          key={idx}
-          className="skeleton-card min-h-[380px] select-none"
-        >
-          <div className="w-full h-36 bg-[#040F24]/80 relative flex items-center justify-center">
+        <div key={idx} className="skeleton-card min-h-[380px] select-none">
+          <div className="skeleton-media-well">
             <SkeletonBox className="absolute inset-0 w-full h-full opacity-60" />
             <SkeletonCircle size={36} />
             <div className="absolute top-2.5 right-2.5">
               <SkeletonBadge width="65px" />
             </div>
           </div>
-          <div className="p-4 flex-1 flex flex-col justify-between gap-4">
+          <div className="skeleton-card-body">
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
                 <SkeletonBadge width="80px" />
@@ -100,7 +97,7 @@ export const DataSectionSkeleton: React.FC<DataSectionSkeletonProps> = ({
                 <SkeletonBox className="w-28 h-3.5" />
               </div>
             </div>
-            <div className="pt-3 border-t border-[#1B3F80]/40 flex items-center justify-between">
+            <div className="skeleton-meta">
               <SkeletonBox className="w-20 h-4" />
               <SkeletonBox className="w-24 h-8 rounded-lg" />
             </div>

@@ -10,18 +10,23 @@ interface CourseCardProps {
   onDetails?: (course: Course) => void;
 }
 
+/** Course status code to its capsule tone. Unknown codes fall back to closed. */
+const COURSE_STATUS_TONE: Record<string, string> = {
+  available: 'card-status card-status-open',
+  'متاح': 'card-status card-status-open',
+};
+
 export const CourseCard: React.FC<CourseCardProps> = ({
   course,
   layout = 'desktop',
   onDetails,
 }) => {
   const isMobile = layout === 'mobile';
+  const statusTone = COURSE_STATUS_TONE[course.status ?? ''] ?? 'card-status card-status-closed';
 
   return (
     <div
-      className={`group relative card-interactive-blue ${
-        isMobile ? 'w-64 sm:w-72 shrink-0 min-h-[295px]' : 'w-full h-full'
-      }`}
+      className={`group relative card-interactive-blue ${isMobile ? 'rail-card-size' : 'w-full h-full'}`}
     >
       <div>
         {/* Media Thumbnail Container with Smooth Scale on Card Hover */}
@@ -39,9 +44,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
         {/* Content Body */}
         <div className="p-4">
-          <h4 className="card-title">
-            {course.title}
-          </h4>
+          <h4 className="card-title">{course.title}</h4>
         </div>
       </div>
 
@@ -49,24 +52,18 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         <div className="card-meta-row mb-3">
           {/* Duration with Clock Icon */}
           <div className="flex items-center gap-1.5">
-            <Clock size={14} className="text-[#8299B5]" />
+            <Clock size={14} className="text-slate-400" />
             <span>{course.duration}</span>
           </div>
 
           {/* Students Count or Status */}
           {course.studentsCount ? (
-            <span className="text-[#8299B5] flex items-center gap-1">
+            <span className="text-slate-400 flex items-center gap-1">
               <Users size={13} />
               {course.studentsCount}
             </span>
           ) : (
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                course.status === 'available' || course.status === 'متاح'
-                  ? 'bg-[#29A9FF]/15 text-[#29A9FF] border-[#29A9FF]/30 shadow-[0_0_8px_rgba(41,169,255,0.2)]'
-                  : 'bg-[#092557]/50 text-[#8299B5] border-[#1B3F80]/40'
-              }`}
-            >
+            <span className={statusTone}>
               {convertKeyToAr(course.status || 'available', 'courseStatus')}
             </span>
           )}
@@ -81,7 +78,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           className="w-full btn-outline-blue text-[13px] sm:text-sm"
         >
           <span>{toArabic('actions', 'course_details')}</span>
-          <ArrowLeft size={14} className="transition-transform duration-200 group-hover:-translate-x-1" />
+          <ArrowLeft size={14} className="arrow-shift" />
         </button>
       </div>
     </div>

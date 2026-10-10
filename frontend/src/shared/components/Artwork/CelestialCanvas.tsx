@@ -35,8 +35,13 @@ export const CelestialCanvas: React.FC<{ className?: string }> = ({
 
     window.addEventListener('resize', handleResize);
 
-    // Star color palette: cool white, soft gold (#E5B65C), electric cyan (#29A9FF)
-    const starColors = ['#FFFFFF', '#E5B65C', '#29A9FF', '#DCE5EE'];
+    // Star palette resolved from design tokens so the canvas stays in sync with the theme.
+    const tokenColor = (name: string) =>
+      getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    const starColors = ['--color-white', '--color-gold-400', '--color-blue-400', '--color-white-100']
+      .map(tokenColor)
+      .filter(Boolean);
 
     const starCount = Math.floor((width * height) / 14000);
     const stars: Star[] = [];
