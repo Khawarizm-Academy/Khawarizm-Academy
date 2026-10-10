@@ -18,25 +18,17 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   return (
     <header className="glass-mobile-header flex-between px-4">
       {/* Brand Title and Astrolabe Crest on the Right in RTL */}
-      <div className="flex items-center gap-2.5">
-        <BrandLogo size={36} textClass="text-lg font-bold text-[#E5B65C]" onClick={onLogoClick} />
+      <div className="mh-group">
+        <BrandLogo size={36} textClass="text-lg font-bold text-gold-400" onClick={onLogoClick} />
       </div>
 
       {/* Header Actions (Left in RTL): Notifications Bell & Login CTA */}
-      <div className="flex items-center gap-2.5">
+      <div className="mh-group">
         {/* Notification Bell Button */}
         {onNotificationsClick && (
-          <button
-            onClick={onNotificationsClick}
-            aria-label="الإشعارات"
-            className="group relative p-2 rounded-full bg-[#061A3A]/80 border border-[#167BDB]/40 text-[#8299B5] hover:text-slate-100 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-          >
+          <button onClick={onNotificationsClick} aria-label="الإشعارات" className="mh-bell group">
             <Bell size={18} className="group-hover:animate-bell-ring" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-[#040F24]">
-                {unreadCount}
-              </span>
-            )}
+            {unreadCount > 0 && <span className="mh-badge">{unreadCount}</span>}
           </button>
         )}
 
@@ -53,4 +45,3 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
     </header>
   );
 };
-

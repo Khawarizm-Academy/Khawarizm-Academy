@@ -18,6 +18,19 @@ interface DropdownProps {
   className?: string;
 }
 
+/** Option capsule classes for its three visual states. */
+const OPTION_TONE = {
+  selected: 'dropdown-option dropdown-option-selected',
+  active: 'dropdown-option dropdown-option-active',
+  idle: 'dropdown-option dropdown-option-idle',
+} as const;
+
+/** Trigger value tone: a chosen option or the muted placeholder. */
+const VALUE_TONE = {
+  selected: 'dropdown-value dropdown-value-selected',
+  placeholder: 'dropdown-value dropdown-value-placeholder',
+} as const;
+
 export const Dropdown: React.FC<DropdownProps> = ({
   label,
   icon: Icon,
@@ -103,10 +116,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
   };
 
   return (
-    <div ref={rootRef} className={`relative flex flex-col gap-2 ${className}`}>
-      {label && (
-        <span className="text-slate-300 text-xs font-medium font-['Tajawal']">{label}</span>
-      )}
+    <div ref={rootRef} className={`dropdown-root ${className}`}>
+      {label && <span className="dropdown-label">{label}</span>}
 
       <button
         type="button"
@@ -118,21 +129,15 @@ export const Dropdown: React.FC<DropdownProps> = ({
         onClick={() => (open ? closeDropdown() : openDropdown())}
         onKeyDown={handleKeyDown}
         aria-label={typeof label === 'string' ? label : undefined}
-        className="input-field flex items-center gap-2.5 cursor-pointer text-right"
+        className="input-field dropdown-trigger"
       >
-        {Icon && <Icon size={16} className="shrink-0 text-slate-500" />}
-        <span
-          className={`flex-1 truncate ${
-            selected ? 'text-slate-100' : 'text-slate-500'
-          }`}
-        >
+        {Icon && <Icon size={16} className="dropdown-leading" />}
+        <span className={selected ? VALUE_TONE.selected : VALUE_TONE.placeholder}>
           {selected?.label ?? placeholder}
         </span>
         <ChevronDown
           size={16}
-          className={`shrink-0 text-slate-500 transition-transform duration-300 ${
-            open ? 'rotate-180' : 'rotate-0'
-          }`}
+          className={`dropdown-chevron ${open ? 'dropdown-chevron-on' : ''}`}
         />
       </button>
 
@@ -141,13 +146,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
           id={`${id ?? 'dropdown'}-listbox`}
           role="listbox"
           tabIndex={-1}
-          className={`absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-60 overflow-y-auto p-1.5 bg-slate-950 border border-blue-900/70 rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.6),0_0_24px_rgba(41,169,255,0.08)] ${
-            open ? 'animate-dropdown-in' : 'animate-dropdown-out'
-          }`}
+          className={`dropdown-panel ${open ? 'animate-dropdown-in' : 'animate-dropdown-out'}`}
         >
           {options.map((opt, idx) => {
             const isSelected = opt.value === value;
             const isActive = idx === activeIndex && open;
+            const stateKey = isSelected ? 'selected' : isActive ? 'active' : 'idle';
             return (
               <button
                 key={opt.value}
@@ -159,16 +163,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
                   onChange(opt.value);
                   closeDropdown();
                 }}
-                className={`w-full px-3.5 py-2.5 rounded-xl flex items-center justify-between gap-2 text-sm font-['Tajawal'] transition-colors cursor-pointer text-right ${
-                  isSelected
-                    ? 'bg-slate-900 outline outline-1 outline-sky-400/60 text-white font-bold'
-                    : isActive
-                      ? 'bg-slate-800/80 text-slate-100'
-                      : 'text-slate-300 hover:bg-slate-900/80 hover:text-white'
-                }`}
+                className={OPTION_TONE[stateKey]}
               >
                 <span className="truncate">{opt.label}</span>
-                {isSelected && <Check size={16} className="shrink-0 text-sky-400" />}
+                {isSelected && <Check size={16} className="dropdown-check" />}
               </button>
             );
           })}

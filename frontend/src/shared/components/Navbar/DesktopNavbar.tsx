@@ -51,15 +51,14 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
 
   return (
     <header className="glass-navbar">
-      <div className="max-w-[1280px] h-full mx-auto px-6 sm:px-10 flex-between">
-        
+      <div className="nav-shell flex-between">
         {/* Right (Start in RTL): Brand Logo */}
         <div className="flex items-center">
-          <BrandLogo size={42} textClass="text-xl font-bold text-[#E5B65C]" onClick={() => onSelectTab?.('home')} />
+          <BrandLogo size={42} textClass="text-xl font-bold text-gold-400" onClick={() => onSelectTab?.('home')} />
         </div>
 
         {/* Center: Navigation Links with Physical Sliding Golden Beam Indicator */}
-        <nav ref={navRef} className="relative flex items-center gap-8 text-sm font-['Tajawal'] font-medium h-full">
+        <nav ref={navRef} className="nav-center">
           {navLinks.map((link) => {
             const isActive = normalizedActiveTab === link.key;
             return (
@@ -69,11 +68,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
                   tabRefs.current[link.key] = el;
                 }}
                 onClick={() => onSelectTab?.(link.key)}
-                className={`relative py-5 px-1 transition-colors duration-300 cursor-pointer ${
-                  isActive
-                    ? 'text-[#E5B65C] font-bold drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]'
-                    : 'text-[#8299B5] hover:text-slate-100'
-                }`}
+                className={`nav-link ${isActive ? 'nav-link-active' : 'nav-link-idle'}`}
               >
                 <span>{toArabicNav(link.key)}</span>
               </button>
@@ -82,26 +77,26 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
 
           {/* Smooth Sliding Underline Indicator */}
           <div
-            className="absolute bottom-0 h-[2.5px] bg-[#E5B65C] rounded-full pointer-events-none transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            className="nav-indicator"
             style={{
               left: `${indicatorStyle.left}px`,
               width: `${indicatorStyle.width}px`,
               opacity: indicatorStyle.opacity,
-              boxShadow: '0 0 10px #E5B65C, 0 0 20px rgba(229, 182, 92, 0.6)',
+              boxShadow: '0 0 10px var(--color-gold-400), 0 0 20px rgba(229, 182, 92, 0.6)',
             }}
           />
         </nav>
 
         {/* Left (End in RTL): Actions & Profile */}
-        <div className="flex items-center gap-3">
+        <div className="nav-actions">
           {/* Fast lane into the learning dashboard */}
           <button
             onClick={() => onSelectTab?.('dashboard' as NavTabKey)}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#061A3A]/80 hover:bg-[#092557] border border-[#1B3F80] hover:border-[#29A9FF]/50 text-slate-100 hover:text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer group"
+            className="nav-dash-chip group"
           >
             <LayoutDashboard
               size={15}
-              className="text-[#29A9FF] transition-transform duration-300 group-hover:-translate-y-0.5"
+              className="text-blue-400 transition-transform duration-300 group-hover:-translate-y-0.5"
             />
             <span>لوحتي</span>
           </button>
@@ -115,10 +110,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
           </button>
 
           {/* Search Button */}
-          <button
-            aria-label="بحث في المنصة"
-            className="btn-icon-box group"
-          >
+          <button aria-label="بحث في المنصة" className="btn-icon-box group">
             <Search size={18} className="transition-transform duration-300 group-hover:rotate-12" />
           </button>
 
@@ -130,10 +122,10 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
           >
             <Bell size={18} className="group-hover:animate-bell-ring" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 flex w-2 h-2">
+              <span className="nav-bell-dot">
                 {/* Ping halo behind the solid unread dot */}
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-60" />
-                <span className="relative inline-flex w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#040F24]" />
+                <span className="nav-bell-ping" />
+                <span className="nav-bell-core" />
               </span>
             )}
           </button>
@@ -147,7 +139,6 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
             <User size={20} />
           </button>
         </div>
-
       </div>
     </header>
   );

@@ -19,7 +19,7 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({
 }) => {
   return (
     <main className="content-container">
-      <div className="w-full py-20 px-6 flex-col-center text-center gap-5 relative overflow-hidden">
+      <div className="placeholder-stage">
         {/* Starfield behind the coming-soon chamber */}
         <OrbitalStageStars />
 
@@ -27,15 +27,11 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({
           <OrbitalEmblem tone="gold" icon={icon ?? <Hourglass size={36} />} />
         </div>
 
-        <h1 className="relative z-10 text-3xl sm:text-4xl font-extrabold text-white font-['IBM_Plex_Sans_Arabic'] tracking-tight animate-pop-in animation-delay-100">
-          {title}
-        </h1>
-        <p className="relative z-10 max-w-xl text-slate-400 text-sm sm:text-base font-['Tajawal'] leading-relaxed animate-pop-in animation-delay-200">
-          {description}
-        </p>
+        <h1 className="placeholder-title animate-pop-in animation-delay-100">{title}</h1>
+        <p className="placeholder-desc animate-pop-in animation-delay-200">{description}</p>
         <button
           type="button"
-          className="relative z-10 mt-4 px-4 py-1.5 rounded-full bg-[#061A3A] border border-[#E5B65C]/50 text-[#E5B65C] text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold cursor-default animate-pop-in animation-delay-300 hover:animate-wiggle"
+          className="placeholder-coming animate-pop-in animation-delay-300 hover:animate-wiggle"
         >
           قيد الإعداد — قريبًا
         </button>

@@ -7,16 +7,16 @@ interface OrbitalEmblemProps {
 }
 
 /** Per-pillar accent: ring, icon and star colors follow the emblem's tone. */
-const TONE_STYLES = {
+const TONE_CLASSES = {
   blue: {
-    tile: 'border-[#1B3F80] text-[#29A9FF] shadow-[0_0_24px_rgba(41,169,255,0.25)]',
-    ring: 'border-[#29A9FF]/40',
-    innerRing: 'border-[#E5B65C]/50',
+    tile: 'emblem-tile emblem-tile-blue',
+    ring: 'emblem-ring emblem-ring-blue',
+    innerRing: 'emblem-ring-inner emblem-ring-inner-blue',
   },
   gold: {
-    tile: 'border-[#1B3F80] text-[#E5B65C] shadow-[0_0_24px_rgba(229,182,92,0.25)]',
-    ring: 'border-[#E5B65C]/40',
-    innerRing: 'border-[#29A9FF]/50',
+    tile: 'emblem-tile emblem-tile-gold',
+    ring: 'emblem-ring emblem-ring-gold',
+    innerRing: 'emblem-ring-inner emblem-ring-inner-gold',
   },
 } as const;
 
@@ -42,20 +42,20 @@ const STARS: TwinkleStar[] = [
  * rings with twinkling stars — the playful centerpiece of empty & 404 pages.
  */
 export const OrbitalEmblem: React.FC<OrbitalEmblemProps> = ({ icon, tone = 'gold' }) => {
-  const styles = TONE_STYLES[tone];
+  const styles = TONE_CLASSES[tone];
 
   return (
-    <div className="relative w-36 h-36 flex-center animate-float" aria-hidden={!icon}>
+    <div className="emblem-shell flex-center animate-float" aria-hidden={!icon}>
       {/* Outer dashed orbit ring */}
-      <div className={`absolute inset-0 rounded-full border border-dashed ${styles.ring} animate-orbit-slow`} />
+      <div className={`${styles.ring} animate-orbit-slow`} />
       {/* Inner counter-rotating ring */}
-      <div className={`absolute inset-4 rounded-full border ${styles.innerRing} animate-counter-orbit-slow`} />
+      <div className={`${styles.innerRing} animate-counter-orbit-slow`} />
 
       {/* Twinkling star dots pinned around the emblem */}
       {STARS.map((star) => (
         <span
           key={star.delay}
-          className="absolute rounded-full bg-[#E5B65C] animate-star-twinkle"
+          className="emblem-star animate-star-twinkle"
           style={{
             top: star.top,
             right: star.right,
@@ -69,9 +69,7 @@ export const OrbitalEmblem: React.FC<OrbitalEmblemProps> = ({ icon, tone = 'gold
       ))}
 
       {/* Floating icon tile at the center */}
-      <div className={`relative z-10 w-20 h-20 rounded-2xl bg-[#092557] border flex-center shadow-lg ${styles.tile}`}>
-        {icon}
-      </div>
+      <div className={styles.tile}>{icon}</div>
     </div>
   );
 };

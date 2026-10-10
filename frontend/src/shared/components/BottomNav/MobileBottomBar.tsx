@@ -71,15 +71,9 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   }, [safeIndex]);
 
   return (
-    <nav
-      aria-label="شريط التنقل السفلي"
-      className="glass-mobile-bottom-bar"
-    >
+    <nav aria-label="شريط التنقل السفلي" className="glass-mobile-bottom-bar">
       {/* Container with px-4 sm:px-6 ensures tab items NEVER touch the screen edges */}
-      <div
-        ref={containerRef}
-        className="max-w-md mx-auto px-4 sm:px-6 grid grid-cols-5 relative items-center justify-items-center"
-      >
+      <div ref={containerRef} className="bb-row">
         {/* Physical Sliding Golden Chamber Indicator — Thick, Deep, Substantial 2px Border & Measured Centering */}
         <div
           className="sliding-chamber-indicator"
@@ -101,24 +95,12 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
                 tabRefs.current[idx] = el;
               }}
               onClick={() => onSelectTab?.(tab.key)}
-              className="relative z-10 w-full h-[52px] flex-col-center gap-1 cursor-pointer focus:outline-none select-none transition-transform active:scale-95"
+              className="bb-tab"
             >
-              <div
-                className={`transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-                  isActive
-                    ? 'text-[#E5B65C] scale-110 drop-shadow-[0_0_8px_rgba(229,182,92,0.7)]'
-                    : 'text-[#8299B5] hover:text-slate-100'
-                }`}
-              >
+              <div className={`bb-icon ${isActive ? 'bb-icon-on' : 'bb-icon-idle'}`}>
                 <Icon size={20} />
               </div>
-              <span
-                className={`text-[11px] font-['Tajawal'] transition-all duration-300 leading-none ${
-                  isActive
-                    ? 'font-bold text-[#E5B65C] drop-shadow-[0_0_6px_rgba(229,182,92,0.6)]'
-                    : 'text-[#8299B5] hover:text-slate-100'
-                }`}
-              >
+              <span className={`bb-label ${isActive ? 'bb-label-on' : 'bb-label-idle'}`}>
                 {toArabicNav(tab.key, true)}
               </span>
             </button>

@@ -5,32 +5,33 @@ import brandIcon from '../../../assets/brand/generated/icon-192.png';
 export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?: string; onClick?: () => void }> = ({
   size = 42,
   showText = true,
-  textClass = 'text-xl font-bold text-[#E5B65C]',
+  textClass = 'text-xl font-bold text-gold-400',
   onClick,
 }) => {
   const [imgError, setImgError] = React.useState(false);
 
   return (
-    <div onClick={onClick} className="inline-flex items-center gap-3 select-none group cursor-pointer">
+    <div onClick={onClick} className="art-logo-row group">
       <div
-        className="relative flex-center rounded-full p-0.5 transition-transform duration-300 group-hover:scale-105"
+        className="art-seal flex-center"
         style={{
           width: size,
           height: size,
-          background: 'linear-gradient(135deg, #E5B65C 0%, #092557 50%, #C88A32 100%)',
+          background:
+            'linear-gradient(135deg, var(--color-gold-400) 0%, var(--color-navy-800) 50%, var(--color-gold-600) 100%)',
           boxShadow: '0 0 14px rgba(229, 182, 92, 0.35)',
         }}
       >
-        <div className="w-full h-full rounded-full bg-[#061A3A] flex-center relative overflow-hidden border border-[#E5B65C]/40">
+        <div className="art-seal-inner">
           {!imgError ? (
             <img
               src={brandIcon}
               alt="شعار أكاديمية خوارزم"
-              className="w-full h-full object-cover rounded-full"
+              className="art-seal-img"
               onError={() => setImgError(true)}
             />
           ) : (
-            <svg viewBox="0 0 100 100" className="w-[85%] h-[85%]" fill="none">
+            <svg viewBox="0 0 100 100" className="art-seal-glyph" fill="none">
               {/* Outer Astrolabe Ring with Degree Ticks */}
               <circle cx="50" cy="50" r="44" stroke="#E5B65C" strokeWidth="2" strokeDasharray="3 3" opacity="0.75" className="transition-transform duration-700 group-hover:rotate-45" />
               <circle cx="50" cy="50" r="38" stroke="#29A9FF" strokeWidth="1" opacity="0.5" />
@@ -47,7 +48,7 @@ export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?
         </div>
       </div>
       {showText && (
-        <span className={`${textClass} font-['IBM_Plex_Sans_Arabic'] tracking-tight transition-colors duration-300 group-hover:text-white`}>
+        <span className={`${textClass} art-brand-text`}>
           أكاديمية خوارزم
         </span>
       )}
@@ -59,9 +60,9 @@ export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?
 export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
   if (type === 'ai_generative' || type === 'ai_ml') {
     return (
-      <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#061A3A] to-[#040F24] flex-center group-hover:scale-105 transition-transform duration-500 ease-out">
+      <div className="art-shell art-shell-deep">
         {/* Glowing Neural Network Graphic */}
-        <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#29A9FF_1px,transparent_1px)] [background-size:16px_16px]" />
+        <div className="art-dotgrid" />
         <svg viewBox="0 0 300 160" className="w-full h-full opacity-90">
           <defs>
             <linearGradient id="neuralGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -93,7 +94,7 @@ export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
           <circle cx="250" cy="80" r="4" fill="#FFFFFF" />
         </svg>
         <div className="absolute bottom-2 text-center w-full">
-          <span className="text-[10px] text-[#8299B5] font-mono tracking-widest uppercase bg-[#061A3A]/85 px-2 py-0.5 rounded border border-[#1B3F80]">
+          <span className="art-tag">
             System Health: Optimal | Active Nodes: 1,024
           </span>
         </div>
@@ -103,23 +104,23 @@ export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
 
   if (type === 'web_frontend') {
     return (
-      <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#092557] to-[#040F24] flex-center p-3 group-hover:scale-105 transition-transform duration-500 ease-out">
+      <div className="art-shell art-shell-tech p-3">
         {/* Code & UI Wireframe Graphics */}
-        <div className="w-full h-full rounded border border-[#1B3F80] bg-[#061A3A]/85 p-2 font-mono text-left flex flex-col justify-between">
-          <div className="flex items-center gap-1 mb-1 border-b border-[#1B3F80]/60 pb-1">
-            <div className="w-2 h-2 rounded-full bg-[#D9534F]" />
-            <div className="w-2 h-2 rounded-full bg-[#E0A23B]" />
-            <div className="w-2 h-2 rounded-full bg-[#3FAE6B]" />
-            <span className="text-[9px] text-[#8299B5] ml-2">App.tsx — React 19</span>
+        <div className="art-code">
+          <div className="art-code-head">
+            <div className="art-dot art-dot-red" />
+            <div className="art-dot art-dot-amber" />
+            <div className="art-dot art-dot-green" />
+            <span className="art-code-file">App.tsx — React 19</span>
           </div>
-          <div className="space-y-1 text-[10px] opacity-90">
-            <div className="text-[#29A9FF]">const [course, setCourse] = useState(AI);</div>
-            <div className="text-[#8299B5] pl-2">&lt;<span className="text-[#E5B65C]">FrontendUI</span> layout=&quot;modern&quot;&gt;</div>
-            <div className="text-slate-100 pl-4">&lt;<span className="text-[#29A9FF]">Components</span> glassmorphism /&gt;</div>
-            <div className="text-[#8299B5] pl-2">&lt;/<span className="text-[#E5B65C]">FrontendUI</span>&gt;</div>
+          <div className="art-code-body">
+            <div className="text-blue-400">const [course, setCourse] = useState(AI);</div>
+            <div className="text-slate-400 pl-2">&lt;<span className="text-gold-400">FrontendUI</span> layout=&quot;modern&quot;&gt;</div>
+            <div className="text-slate-100 pl-4">&lt;<span className="text-blue-400">Components</span> glassmorphism /&gt;</div>
+            <div className="text-slate-400 pl-2">&lt;/<span className="text-gold-400">FrontendUI</span>&gt;</div>
           </div>
-          <div className="flex justify-end gap-1 mt-1">
-            <span className="text-[9px] bg-[#167BDB]/20 text-[#29A9FF] px-1.5 py-0.5 rounded border border-[#167BDB]/40">
+          <div className="art-code-foot">
+            <span className="art-tech-chip">
               Vite + Tailwind v4
             </span>
           </div>
@@ -130,7 +131,7 @@ export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
 
   // python_data
   return (
-    <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#061A3A] to-[#040F24] flex-center p-3 group-hover:scale-105 transition-transform duration-500 ease-out">
+    <div className="art-shell art-shell-deep p-3">
       <svg viewBox="0 0 240 120" className="w-full h-full">
         {/* Grid lines */}
         <line x1="20" y1="20" x2="220" y2="20" stroke="#1B3F80" strokeWidth="0.8" opacity="0.5" />
@@ -147,7 +148,7 @@ export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
         <path d="M 43 55 L 73 35 L 103 70 L 133 25 L 163 45 L 193 30" fill="none" stroke="#FFFFFF" strokeWidth="2" opacity="0.9" />
       </svg>
       <div className="absolute top-2 right-2">
-        <span className="text-[10px] text-[#E5B65C] bg-[#040F24]/85 px-2 py-0.5 rounded border border-[#E5B65C]/30 font-mono">
+        <span className="art-tag-gold">
           Pandas • NumPy • PyTorch
         </span>
       </div>
@@ -159,9 +160,9 @@ export const CourseThumbnail: React.FC<{ type: string }> = ({ type }) => {
 export const ScholarshipThumbnail: React.FC<{ type: string }> = ({ type }) => {
   if (type === 'astrolabe_scholarship') {
     return (
-      <div className="w-full h-full relative overflow-hidden bg-gradient-to-tr from-[#061A3A] via-[#092557] to-[#123168] flex-center group-hover:scale-105 transition-transform duration-500 ease-out">
+      <div className="art-shell art-shell-scholar">
         {/* Warm ancient knowledge mood: Candlelight & Brass Astrolabe */}
-        <div className="absolute -left-4 -bottom-4 w-32 h-32 rounded-full bg-[#E5B65C]/20 blur-xl pointer-events-none animate-pulse" />
+        <div className="art-candle-glow" />
         <svg viewBox="0 0 280 140" className="w-full h-full">
           {/* Candle Flame on left */}
           <g transform="translate(45, 60)">
@@ -192,7 +193,7 @@ export const ScholarshipThumbnail: React.FC<{ type: string }> = ({ type }) => {
 
   if (type === 'campus_night') {
     return (
-      <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#040F24] to-[#092557] flex-center group-hover:scale-105 transition-transform duration-500 ease-out">
+      <div className="art-shell art-shell-campus">
         {/* Starry Night University Tower */}
         <div className="absolute inset-0 space-stars-bg opacity-75" />
         <svg viewBox="0 0 280 140" className="w-full h-full">
@@ -219,7 +220,7 @@ export const ScholarshipThumbnail: React.FC<{ type: string }> = ({ type }) => {
 
   // leadership_dubai / cultural scholarship
   return (
-    <div className="w-full h-full relative overflow-hidden bg-gradient-to-tr from-[#061A3A] to-[#123168] flex-center group-hover:scale-105 transition-transform duration-500 ease-out">
+    <div className="art-shell art-shell-dubai">
       <svg viewBox="0 0 280 140" className="w-full h-full">
         {/* Modern Architecture Skyline */}
         <polygon points="40,140 60,40 80,140" fill="#092557" stroke="#29A9FF" strokeWidth="1" opacity="0.8" />
@@ -237,9 +238,9 @@ export const ScholarshipThumbnail: React.FC<{ type: string }> = ({ type }) => {
 export const EventArtwork: React.FC<{ type: string }> = ({ type }) => {
   if (type === 'data_science_stage') {
     return (
-      <div className="w-full h-full relative overflow-hidden bg-[#040F24]">
+      <div className="art-event-bg">
         {/* High-tech amphitheater stage with blue laser curves */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#040F24] via-transparent to-transparent z-10" />
+        <div className="art-event-shade" />
         <svg viewBox="0 0 600 240" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
           <defs>
             <linearGradient id="laserGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -267,7 +268,7 @@ export const EventArtwork: React.FC<{ type: string }> = ({ type }) => {
 
   // space_astrolabe
   return (
-    <div className="w-full h-full relative overflow-hidden bg-gradient-to-r from-[#040F24] via-[#061A3A] to-[#092557]">
+    <div className="art-shell-space">
       <div className="absolute inset-0 space-stars-bg opacity-85" />
       <svg viewBox="0 0 600 300" className="w-full h-full opacity-95" preserveAspectRatio="xMidYMid slice">
         {/* Orbital Space Astrolabe with Rings rotating slowly */}

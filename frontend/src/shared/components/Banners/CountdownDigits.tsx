@@ -15,6 +15,28 @@ const UNITS: Array<{ key: keyof CountdownParts; label: string }> = [
   { key: 'seconds', label: 'ثانية' },
 ];
 
+/** Display variant to its cell / text / label / separator classes. */
+const VARIANT = {
+  mobile: {
+    cell: 'digit-box-mobile',
+    cellActive: 'digit-box-mobile-active',
+    text: 'digit-text digit-text-mobile',
+    textActive: 'digit-text digit-text-mobile-active',
+    label: 'digit-label digit-label-mobile',
+    separator: 'digit-sep digit-sep-mobile',
+    gaps: 'count-gap-mobile',
+  },
+  desktop: {
+    cell: 'digit-box digit-cell',
+    cellActive: 'digit-box-active digit-cell',
+    text: 'digit-text text-xl',
+    textActive: 'digit-text text-xl digit-text-desktop-active',
+    label: 'digit-label digit-label-desktop',
+    separator: 'digit-sep digit-sep-desktop',
+    gaps: 'count-gap-desktop',
+  },
+} as const;
+
 const pad = (num: number) => String(num).padStart(2, '0');
 
 /**
@@ -26,38 +48,22 @@ export const CountdownDigits: React.FC<CountdownDigitsProps> = ({
   variant = 'desktop',
   className = '',
 }) => {
-  const isMobile = variant === 'mobile';
-
-  const cell = isMobile ? 'digit-box-mobile' : 'digit-box min-w-[54px] h-[48px] px-2.5';
-  const cellActive = isMobile
-    ? 'digit-box-mobile-active'
-    : 'digit-box-active min-w-[54px] h-[48px] px-2.5';
-  const text = isMobile
-    ? 'digit-text text-2xl sm:text-3xl drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]'
-    : 'digit-text text-xl';
-  const textActive = isMobile
-    ? 'digit-text text-2xl sm:text-3xl drop-shadow-[0_0_10px_rgba(229,182,92,0.7)]'
-    : 'digit-text text-xl drop-shadow-[0_0_6px_rgba(229,182,92,0.6)]';
-  const label = isMobile ? 'digit-label text-xs mt-1.5' : 'digit-label text-[11px] mt-1';
-  const separator = isMobile
-    ? 'text-2xl font-bold text-[#E5B65C] -mt-6 animate-pulse'
-    : 'text-xl font-bold text-[#E5B65C] -mt-5 animate-pulse';
-  const gaps = isMobile ? 'gap-2 sm:gap-3 my-1' : 'gap-2 sm:gap-2.5';
+  const styles = VARIANT[variant];
 
   return (
-    <div
-      className={`flex items-center font-['IBM_Plex_Sans_Arabic'] ${gaps} ${className}`}
-    >
+    <div className={`count-row ${styles.gaps} ${className}`}>
       {UNITS.map((unit, idx) => {
         const isSeconds = unit.key === 'seconds';
         return (
           <React.Fragment key={unit.key}>
-            {idx > 0 && <span className={separator}>:</span>}
+            {idx > 0 && <span className={styles.separator}>:</span>}
             <div className="flex-col-center">
-              <div className={isSeconds ? cellActive : cell}>
-                <span className={isSeconds ? textActive : text}>{pad(value[unit.key])}</span>
+              <div className={isSeconds ? styles.cellActive : styles.cell}>
+                <span className={isSeconds ? styles.textActive : styles.text}>
+                  {pad(value[unit.key])}
+                </span>
               </div>
-              <span className={label}>{unit.label}</span>
+              <span className={styles.label}>{unit.label}</span>
             </div>
           </React.Fragment>
         );

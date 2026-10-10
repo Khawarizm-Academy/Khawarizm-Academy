@@ -12,6 +12,43 @@ export interface SmartSearchBoxProps {
   className?: string;
 }
 
+type SearchType = 'course' | 'scholarship' | 'all';
+
+/** Sliding puck and type-button classes per variant + type. */
+const PUCK_TONE: Record<'mobile' | 'desktop', Record<SearchType, string>> = {
+  mobile: {
+    all: 'search-puck search-puck-mobile-all',
+    course: 'search-puck search-puck-mobile-course',
+    scholarship: 'search-puck search-puck-mobile-scholarship',
+  },
+  desktop: {
+    all: 'search-puck search-puck-desktop-all',
+    course: 'search-puck search-puck-desktop-course',
+    scholarship: 'search-puck search-puck-desktop-scholarship',
+  },
+};
+
+/** Type-button classes: active and idle for each variant + type. */
+const TYPE_TONE: Record<'mobile' | 'desktop', Record<SearchType, { active: string; idle: string }>> = {
+  mobile: {
+    all: { active: 'search-type-mobile search-type-mobile-on-dark', idle: 'search-type-mobile search-type-idle' },
+    course: { active: 'search-type-mobile search-type-mobile-on-light', idle: 'search-type-mobile search-type-idle' },
+    scholarship: { active: 'search-type-mobile search-type-mobile-on-dark', idle: 'search-type-mobile search-type-idle' },
+  },
+  desktop: {
+    all: { active: 'search-type-desktop search-type-desktop-on-gold', idle: 'search-type-desktop search-type-desktop-idle' },
+    course: { active: 'search-type-desktop search-type-desktop-on-blue', idle: 'search-type-desktop search-type-desktop-idle' },
+    scholarship: { active: 'search-type-desktop search-type-desktop-on-gold', idle: 'search-type-desktop search-type-desktop-idle' },
+  },
+};
+
+/** Puck offsets, RTL first-to-last: all (right) → course (center) → scholarship (left). */
+const PUCK_OFFSET: Record<SearchType, { right: string; width: string }> = {
+  all: { right: '4px', width: 'calc(33.333% - 2.67px)' },
+  course: { right: 'calc(33.333% + 1.33px)', width: 'calc(33.333% - 2.67px)' },
+  scholarship: { right: 'calc(66.666% - 1.33px)', width: 'calc(33.333% - 2.67px)' },
+};
+
 export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
   variant = 'desktop',
   initialType = 'all',
@@ -22,9 +59,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
   className = '',
 }) => {
   const isControlled = controlledType !== undefined;
-  const [internalSelectedType, setInternalSelectedType] = useState<'course' | 'scholarship' | 'all'>(
-    initialType || 'all'
-  );
+  const [internalSelectedType, setInternalSelectedType] = useState<SearchType>(initialType || 'all');
 
   const [prevInitialType, setPrevInitialType] = useState(initialType);
   if (!isControlled && initialType !== prevInitialType) {
@@ -34,7 +69,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
 
   const currentType = isControlled ? controlledType : internalSelectedType;
 
-  const handleTypeSelect = (type: 'course' | 'scholarship' | 'all') => {
+  const handleTypeSelect = (type: SearchType) => {
     if (!isControlled) {
       setInternalSelectedType(type);
     }
@@ -58,95 +93,45 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
     <Compass size={20} className="w-5 h-5 transition-transform duration-500 group-hover:rotate-45" />
   );
 
-  // Mobile Puck Position Calculation (3 Options in RTL: all (right) -> course (center) -> scholarship (left))
-  const getMobilePuckStyle = (type: 'all' | 'course' | 'scholarship') => {
-    switch (type) {
-      case 'all':
-        return { right: '4px', width: 'calc(33.333% - 2.67px)' };
-      case 'course':
-        return { right: 'calc(33.333% + 1.33px)', width: 'calc(33.333% - 2.67px)' };
-      case 'scholarship':
-        return { right: 'calc(66.666% - 1.33px)', width: 'calc(33.333% - 2.67px)' };
-    }
-  };
-
-  // Desktop Puck Position Calculation (3 Options in RTL: all (right) -> course (center) -> scholarship (left))
-  const getDesktopPuckStyle = (type: 'all' | 'course' | 'scholarship') => {
-    switch (type) {
-      case 'all':
-        return { right: '4px', width: 'calc(33.333% - 2.67px)' };
-      case 'course':
-        return { right: 'calc(33.333% + 1.33px)', width: 'calc(33.333% - 2.67px)' };
-      case 'scholarship':
-        return { right: 'calc(66.666% - 1.33px)', width: 'calc(33.333% - 2.67px)' };
-    }
-  };
-
-  // Mobile Variant: 3-Way Switcher on TOP + Clean Spacious Search Input Below (Old cramped buttons removed)
+  // Mobile Variant: 3-Way Switcher on TOP + Clean Spacious Search Input Below
   if (variant === 'mobile') {
     return (
-      <div className={`w-full max-w-sm mx-auto flex flex-col items-center gap-3.5 ${className}`}>
+      <div className={`search-swell ${className}`}>
         {/* Top 3-Way Switcher: Same style, shape, and look matching the celestial design system */}
-        <div className="w-full p-1 bg-[#061A3A]/90 backdrop-blur-md rounded-full border border-[#1B3F80] shadow-[0_4px_20px_rgba(4,15,36,0.6)] flex items-center relative select-none">
+        <div className="search-switcher-mobile">
           {/* Physical Sliding Highlight Puck */}
           <div
-            className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-              currentType === 'all'
-                ? 'bg-gradient-to-r from-[#E5B65C] to-[#29A9FF] shadow-[0_0_14px_rgba(41,169,255,0.4)]'
-                : currentType === 'course'
-                ? 'bg-[#29A9FF] shadow-[0_0_14px_rgba(41,169,255,0.5)]'
-                : 'bg-[#E5B65C] shadow-[0_0_14px_rgba(229,182,92,0.5)]'
-            }`}
-            style={getMobilePuckStyle(currentType)}
+            className={PUCK_TONE.mobile[currentType]}
+            style={PUCK_OFFSET[currentType]}
           />
 
-          <button
-            type="button"
-            onClick={() => handleTypeSelect('all')}
-            className={`relative z-10 flex-1 py-1.5 text-center rounded-full text-xs font-['Tajawal'] font-bold transition-colors duration-300 cursor-pointer ${
-              currentType === 'all' ? 'text-[#040F24] font-extrabold' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            الكل
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTypeSelect('course')}
-            className={`relative z-10 flex-1 py-1.5 text-center rounded-full text-xs font-['Tajawal'] font-bold transition-colors duration-300 cursor-pointer ${
-              currentType === 'course' ? 'text-white font-extrabold' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            الدورات
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTypeSelect('scholarship')}
-            className={`relative z-10 flex-1 py-1.5 text-center rounded-full text-xs font-['Tajawal'] font-bold transition-colors duration-300 cursor-pointer ${
-              currentType === 'scholarship' ? 'text-[#040F24] font-extrabold' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            المنح
-          </button>
+          {(Object.keys(TYPE_TONE.mobile) as SearchType[]).map((type) => {
+            const tone = TYPE_TONE.mobile[type];
+            const isActive = currentType === type;
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => handleTypeSelect(type)}
+                className={isActive ? tone.active : tone.idle}
+              >
+                {toArabic('search', type)}
+              </button>
+            );
+          })}
         </div>
 
         {/* Clean Mobile Search Form (no internal buttons) */}
-        <form
-          onSubmit={handleSubmit}
-          className="search-form-mobile"
-        >
+        <form onSubmit={handleSubmit} className="search-form-mobile">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ماذا تبحث عنه؟"
-            className="flex-1 px-4 text-sm sm:text-base font-['Tajawal'] text-slate-100 placeholder-[#8299B5]/80 bg-transparent border-none outline-none text-right"
+            className="search-input-mobile"
           />
 
-          <button
-            type="submit"
-            aria-label="بحث"
-            className="group btn-search-submit w-10 h-10 shrink-0"
-          >
+          <button type="submit" aria-label="بحث" className="group btn-search-submit w-10 h-10 shrink-0">
             {CompassIcon}
           </button>
         </form>
@@ -156,57 +141,29 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
 
   // Desktop Variant: Unified Single Bar with 3 Inline Options (الكل / دورة / منحة)
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={`search-form-desktop ${className}`}
-    >
+    <form onSubmit={handleSubmit} className={`search-form-desktop ${className}`}>
       {/* Right (Start in RTL): 3-Segment Toggle with Physical Sliding Highlight */}
-      <div className="search-pills-container w-[270px] h-12 relative p-1 bg-[#040F24] rounded-full border border-[#1B3F80]/60 flex items-center select-none shrink-0">
+      <div className="search-pills-container search-pills-desktop">
         {/* Physical Sliding Highlight Puck */}
         <div
-          className={`absolute top-1 bottom-1 rounded-full pointer-events-none transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-            currentType === 'all'
-              ? 'bg-gradient-to-r from-[#E5B65C]/25 to-[#29A9FF]/25 border border-[#E5B65C]/50 shadow-[0_0_12px_rgba(229,182,92,0.35)]'
-              : currentType === 'course'
-              ? 'bg-[#29A9FF]/20 border border-[#29A9FF]/50 shadow-[0_0_14px_rgba(41,169,255,0.4)]'
-              : 'bg-[#E5B65C]/20 border border-[#E5B65C]/50 shadow-[0_0_14px_rgba(229,182,92,0.4)]'
-          }`}
-          style={getDesktopPuckStyle(currentType)}
+          className={PUCK_TONE.desktop[currentType]}
+          style={PUCK_OFFSET[currentType]}
         />
 
-        <button
-          type="button"
-          onClick={() => handleTypeSelect('all')}
-          className={`relative z-10 flex-1 py-2 text-center rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-colors duration-300 cursor-pointer ${
-            currentType === 'all'
-              ? 'text-[#E5B65C] font-bold drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]'
-              : 'text-[#8299B5] hover:text-slate-100'
-          }`}
-        >
-          {toArabic('search', 'all')}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleTypeSelect('course')}
-          className={`relative z-10 flex-1 py-2 text-center rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-colors duration-300 cursor-pointer ${
-            currentType === 'course'
-              ? 'text-[#29A9FF] font-bold drop-shadow-[0_0_8px_rgba(41,169,255,0.4)]'
-              : 'text-[#8299B5] hover:text-slate-100'
-          }`}
-        >
-          {toArabic('search', 'course')}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleTypeSelect('scholarship')}
-          className={`relative z-10 flex-1 py-2 text-center rounded-full text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold transition-colors duration-300 cursor-pointer ${
-            currentType === 'scholarship'
-              ? 'text-[#E5B65C] font-bold drop-shadow-[0_0_8px_rgba(229,182,92,0.4)]'
-              : 'text-[#8299B5] hover:text-slate-100'
-          }`}
-        >
-          {toArabic('search', 'scholarship')}
-        </button>
+        {(Object.keys(TYPE_TONE.desktop) as SearchType[]).map((type) => {
+          const tone = TYPE_TONE.desktop[type];
+          const isActive = currentType === type;
+          return (
+            <button
+              key={type}
+              type="button"
+              onClick={() => handleTypeSelect(type)}
+              className={isActive ? tone.active : tone.idle}
+            >
+              {toArabic('search', type)}
+            </button>
+          );
+        })}
       </div>
 
       {/* Center: Search Input */}
@@ -215,7 +172,7 @@ export const SmartSearchBox: React.FC<SmartSearchBoxProps> = ({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="ماذا تبحث عنه؟"
-        className="flex-1 px-6 text-lg font-['Tajawal'] text-slate-100 placeholder-[#8299B5]/80 bg-transparent border-none outline-none text-right"
+        className="search-input-desktop"
       />
 
       {/* Left (End in RTL): Blue Circular Submit Button */}

@@ -28,29 +28,24 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
     return (
       <section className="banner-mobile-card">
         {/* Subtle decorative background shimmer */}
-        <div className="absolute top-0 right-0 w-36 h-36 bg-[#E5B65C]/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="comp-glow" />
 
         {/* Top Badge (مسابقة برمجية) */}
-        <div className="mb-2.5 px-3 py-0.5 rounded-full bg-[#E5B65C]/15 border border-[#E5B65C]/30 text-[#E5B65C] text-xs font-['IBM_Plex_Sans_Arabic'] font-semibold backdrop-blur-xs flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#E5B65C] animate-ping" />
+        <div className="comp-band">
+          <span className="comp-band-dot" />
           <span>{competition.badge}</span>
         </div>
 
         {/* Title */}
-        <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4 font-['IBM_Plex_Sans_Arabic'] tracking-tight">
-          {competition.title}
-        </h3>
+        <h3 className="comp-title-mobile">{competition.title}</h3>
 
         {/* Action & Timer Unit — Placed right above & tightly coupled with registration button */}
-        <div className="w-full flex-col-center gap-4">
+        <div className="comp-unit">
           {/* Live Countdown Digits — Thick, Solid 3D Digit Boxes matching Figma */}
           <CountdownDigits value={timeLeft} variant="mobile" />
 
           {/* Primary CTA Button (سجل الآن) */}
-          <button
-            onClick={onRegister}
-            className="btn-gold w-full py-3.5 text-base rounded-xl"
-          >
+          <button onClick={onRegister} className="btn-gold w-full py-3.5 text-base rounded-xl">
             {competition.actionText}
           </button>
         </div>
@@ -62,31 +57,26 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
   return (
     <section className="banner-frame-gold">
       {/* Decorative animated shimmer beam sweeping across */}
-      <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden rounded-xl">
-        <div className="w-1/3 h-full bg-gradient-to-r from-transparent via-white/8 to-transparent animate-shimmer" />
+      <div className="comp-shimmer">
+        <div className="comp-shimmer-beam animate-shimmer" />
       </div>
 
       <div className="banner-inner-glass">
-        
         {/* Right (Start in RTL): Trophy Badge + Title & Description */}
-        <div className="flex items-center gap-4.5">
+        <div className="comp-intro">
           {/* Trophy Golden Icon Badge */}
-          <div className="w-12 h-12 rounded-full bg-[#E5B65C]/15 border border-[#E5B65C]/30 shadow-[0_0_12px_rgba(229,182,92,0.25)] flex items-center justify-center text-[#E5B65C] shrink-0 transition-transform duration-300 group-hover:scale-105">
+          <div className="comp-trophy">
             <Trophy size={24} />
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-[#E5B65C] font-['IBM_Plex_Sans_Arabic'] leading-7 mb-1">
-              {competition.title}
-            </h3>
-            <p className="text-sm sm:text-base text-[#8299B5] font-['Tajawal'] leading-relaxed">
-              {competition.description}
-            </p>
+            <h3 className="comp-title">{competition.title}</h3>
+            <p className="comp-desc">{competition.description}</p>
           </div>
         </div>
 
         {/* Left (End in RTL): Integrated Action Cluster — Timer Placed Directly Beside the "سجل الآن" Button */}
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="comp-actions">
           {/* Live Countdown Timer Unit — Thick Substantial Digit Cards */}
           <CountdownDigits value={timeLeft} variant="desktop" />
 
@@ -98,7 +88,6 @@ export const CompetitionBanner: React.FC<CompetitionBannerProps> = ({
             {competition.actionText}
           </button>
         </div>
-
       </div>
     </section>
   );
