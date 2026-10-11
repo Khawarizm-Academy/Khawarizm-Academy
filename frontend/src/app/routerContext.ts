@@ -1,5 +1,5 @@
 import { createContext, useContext, useCallback, useMemo } from 'react';
-import type { RouteDefinition } from './routes';
+import type { RouteDefinition } from '@/app/routes';
 
 export interface RouterContextType {
   pathname: string;

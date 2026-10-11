@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from '../../../app/routerContext';
-import catalogJson from '../../json/catalog.json';
-import type { CatalogItem } from '../../../mocks/catalog';
+import { useNavigate } from '@/app/routerContext';
+import catalogJson from '@/shared/json/catalog.json';
+import type { CatalogItem } from '@/shared/mocks/catalog';
 
 /** Scholarship status code to its Arabic label. */
 const STATUS_LABELS = catalogJson.statusLabels as Record<string, string>;

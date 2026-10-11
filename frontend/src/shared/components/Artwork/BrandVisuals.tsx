@@ -1,5 +1,5 @@
 import React from 'react';
-import brandIcon from '../../../assets/brand/generated/icon-192.png';
+import brandIcon from '@/assets/brand/generated/icon-192.png';
 
 // Khawarizm Academy Brand Seal / Logo
 export const BrandLogo: React.FC<{ size?: number; showText?: boolean; textClass?: string; onClick?: () => void }> = ({

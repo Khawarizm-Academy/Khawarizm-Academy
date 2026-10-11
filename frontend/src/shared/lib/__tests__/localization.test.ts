@@ -4,7 +4,7 @@ import {
   toEnglishNav,
   convertKeyToAr,
   convertArToKey,
-} from '../localization';
+} from '@/shared/lib/localization';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {

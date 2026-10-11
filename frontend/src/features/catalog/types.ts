@@ -1,5 +1,8 @@
 export type CatalogTab = 'all' | 'courses' | 'scholarships';
 
+/** The search box speaks this; the URL speaks CatalogTab. */
+export type SearchType = 'all' | 'course' | 'scholarship';
+
 export type SortOption = 'newest' | 'rating' | 'popular' | 'deadline';
 
 export interface CatalogFiltersState {

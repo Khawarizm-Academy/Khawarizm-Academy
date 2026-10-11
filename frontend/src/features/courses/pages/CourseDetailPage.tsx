@@ -1,10 +1,10 @@
 import React, { useCallback } from 'react';
-import { useParams } from '../../../app/routerContext';
-import { useCachedData } from '../../../shared/hooks/useCachedData';
-import { PageSkeleton } from '../../../shared/components/Loading/PageSkeleton';
-import { ItemDetailView } from '../../../shared/components/Detail/ItemDetailView';
-import { StatePanel } from '../../../shared/components/State/StatePanel';
-import { mockCatalogAll, type CatalogItem } from '../../../mocks/catalog';
+import { useParams } from '@/app/routerContext';
+import { useCachedData } from '@/shared/hooks/useCachedData';
+import { PageSkeleton } from '@/shared/components/Loading/PageSkeleton';
+import { ItemDetailView } from '@/shared/components/Detail/ItemDetailView';
+import { StatePanel } from '@/shared/components/State/StatePanel';
+import { mockCatalogAll, type CatalogItem } from '@/shared/mocks/catalog';
 
 export const CourseDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();

@@ -1,16 +1,16 @@
 import React, { Suspense, useCallback, useState } from 'react';
-import { Outlet } from '../router';
-import { useRouter } from '../routerContext';
-import { resolveActiveTab } from '../routes';
-import { RouteErrorBoundary } from '../RouteErrorBoundary';
-import { DesktopNavbar } from '../../shared/components/Navbar/DesktopNavbar';
-import { MobileHeader } from '../../shared/components/Navbar/MobileHeader';
-import { MobileBottomBar } from '../../shared/components/BottomNav/MobileBottomBar';
-import { Footer } from '../../shared/components/Footer/Footer';
-import { PageSkeleton } from '../../shared/components/Loading/PageSkeleton';
-import { NotificationsDrawer } from '../../features/dashboard/components/NotificationsDrawer';
-import { NAV_TARGETS } from '../../shared/lib/navigation';
-import type { NavTabKey } from '../../shared/lib/localization';
+import { Outlet } from '@/app/router';
+import { useRouter } from '@/app/routerContext';
+import { resolveActiveTab } from '@/app/routes';
+import { RouteErrorBoundary } from '@/app/RouteErrorBoundary';
+import { DesktopNavbar } from '@/shared/components/Navbar/DesktopNavbar';
+import { MobileHeader } from '@/shared/components/Navbar/MobileHeader';
+import { MobileBottomBar } from '@/shared/components/BottomNav/MobileBottomBar';
+import { Footer } from '@/shared/components/Footer/Footer';
+import { PageSkeleton } from '@/shared/components/Loading/PageSkeleton';
+import { NotificationsDrawer } from '@/features/dashboard/components/overlays/NotificationsDrawer';
+import { NAV_TARGETS } from '@/shared/lib/navigation';
+import type { NavTabKey } from '@/shared/lib/localization';
 
 /** Celestial atmosphere washes: geometry, tone and drift delay of each glow. */
 const ATMOSPHERE_WASHES = [

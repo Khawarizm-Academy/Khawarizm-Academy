@@ -106,7 +106,7 @@ frontend/src/features/<feature>/
 ### Step 4: Types & RTL Localization Architecture
 1. **Enforce TypeScript strict mode & verbatim imports:**
    ```ts
-   import type { MyFeatureState, MyFilterType } from '../types';
+   import type { MyFeatureState, MyFilterType } from '@/features/my-feature/types';
    ```
 2. **Never store Arabic strings in internal state:**
    ```ts
@@ -176,7 +176,7 @@ Declare the shell mode in the route entry. `RootLayout` reads it — never check
 Derive them dynamically during render:
 
 ```tsx
-import { useSearchParams, useNavigate } from '../../../app/routerContext';
+import { useSearchParams, useNavigate } from '@/app/routerContext';
 
 export const MyFeaturePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -206,9 +206,9 @@ Khawarizm uses a strict dual-tier skeleton strategy:
 2. **Tier 2 (Dynamic Data Section Loading):** Use `useCachedData` in isolated subcomponents with `keepPreviousData: true`:
 
 ```tsx
-import { useCachedData } from '../../../shared/hooks/useCachedData';
-import { CatalogGridSkeleton } from '../../../shared/components/Loading/CatalogGridSkeleton';
-import { CourseCard } from '../../../shared/components/Cards/CourseCard';
+import { useCachedData } from '@/shared/hooks/useCachedData';
+import { CatalogGridSkeleton } from '@/features/catalog/components/states/CatalogGridSkeleton';
+import { CourseCard } from '@/shared/components/Cards/CourseCard';
 
 export const MyDataGrid: React.FC<{ category: string }> = ({ category }) => {
   const { data, isLoading, isError, refetch } = useCachedData(
@@ -312,7 +312,7 @@ Use this starter blueprint when assembling any standard content page:
 
 ```tsx
 import React from 'react';
-import { useSearchParams } from '../../../app/routerContext';
+import { useSearchParams } from '@/app/routerContext';
 
 export const MyFeaturePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();

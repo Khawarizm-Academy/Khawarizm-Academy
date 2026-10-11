@@ -1,6 +1,6 @@
 import React from 'react';
 import { CircleAlert } from 'lucide-react';
-import { StatePanel } from '../shared/components/State/StatePanel';
+import { StatePanel } from '@/shared/components/State/StatePanel';
 
 interface RouteErrorBoundaryProps {
   children: React.ReactNode;

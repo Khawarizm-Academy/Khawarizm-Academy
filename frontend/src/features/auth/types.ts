@@ -1,4 +1,4 @@
-import authJson from '../../shared/json/auth.json';
+import authJson from '@/shared/json/auth.json';
 
 export type AuthMode = 'login' | 'welcome-back';
 

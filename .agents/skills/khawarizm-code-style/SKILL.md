@@ -187,7 +187,7 @@ Two variants of the same UI render **one component**. What differs is data or CS
 <CatalogFilterGroups surface="mobile"  tab={type} filters={filters} />
 ```
 
-**When a whole page genuinely needs different markup per surface**, extract the desktop JSX and mobile JSX into two view components inside **one folder named after the component** (e.g. `components/LoginView/DesktopLoginView.tsx` + `components/LoginView/MobileLoginView.tsx`) and share state via a context provider + hook — the exact pattern is [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md).
+**When a whole page genuinely needs different markup per surface**, extract the desktop JSX and mobile JSX into two view components inside **one folder named after the component, under `views/`** (e.g. `components/views/LoginView/DesktopLoginView.tsx` + `components/views/LoginView/MobileLoginView.tsx`) and share state via a context provider + hook — the exact pattern is [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md), with the `@/` import alias of [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md).
 
 **How to express the difference:**
 - **Layout only** → let CSS handle it (`hidden md:flex`, `md:hidden`). Never `if (isMobile)`.
@@ -274,9 +274,37 @@ Run through this before finishing any change:
 
 ---
 
-## 12. Related Skills
+## 12. Component Folders & Import Hygiene
+
+**Feature components** group by purpose in lowercase plural folders under `features/<feature>/components/`:
+
+- `layout/` — page shells and composition roots (`DashboardShell`, `HomeContent`, `CatalogResults`)
+- `views/` — full page surfaces; a Desktop/Mobile pair lives in `views/<Component>/`
+- `chrome/` — bars, sidebars, sub-nav, rails, legal (`AuthTopBar`, `DesktopDashboardSidebar`)
+- `cards/` — cards, rows, list items (`CatalogCard`, `EnrolledCourseRow`, `NotificationListItem`)
+- `hero/` — hero banners & artwork (`CatalogHero`, `BrandSeal`)
+- `overlays/` — modals, drawers, toasts
+- `controls/` — inputs, buttons, switches
+- `states/` — skeletons, empty/error states
+- `filters/` — filter panels · `toolbar/` — toolbar & pagination strips
+
+**Every import is absolute through the `@/` alias** (`@/` → `src/`, configured in `vite.config.ts` + `tsconfig.app.json`). Relative `../../../` chains are banned — they are depth noise and break the instant a file moves.
+
+```ts
+// BAD — depth noise
+import { DashboardTopBar } from '../../../shared/components/...';
+
+// GOOD — self-locating from any file
+import { DashboardTopBar } from '@/features/dashboard/components/chrome/DashboardTopBar';
+import { toArabic } from '@/shared/lib/localization';
+```
+
+Rules: **direct file paths, no component barrels** (one exception: `@/shared/mocks` index); `.ts`/`.tsx` extensionless, `.json`/`.css` keep the extension; **types use `import type`** (`verbatimModuleSyntax`). Full taxonomy & placement: [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md).
+
+## 13. Related Skills
 
 - **Routing and URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — the route table, `NAV_TARGETS`, query params, shell flags.
 - **Data boundaries and loading:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md) — skeletons, SWR caching, page transitions.
 - **Design and component reuse:** [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md) — tokens, class catalog, directory rules.
+- **Component folders & imports:** [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md) — the category taxonomy and the `@/` alias rules.
 - **Adding a page:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md) — the full 10-step flow.

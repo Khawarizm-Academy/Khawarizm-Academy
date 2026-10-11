@@ -1,8 +1,8 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
-import type { Competition } from '../../types/entities';
-import { useCountdown } from '../../hooks/useCountdown';
-import { CountdownDigits } from './CountdownDigits';
+import type { Competition } from '@/shared/types/entities';
+import { useCountdown } from '@/shared/hooks/useCountdown';
+import { CountdownDigits } from '@/shared/components/Banners/CountdownDigits';
 
 interface CompetitionBannerProps {
   competition: Competition;

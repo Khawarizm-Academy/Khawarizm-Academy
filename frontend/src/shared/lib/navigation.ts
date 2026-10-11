@@ -15,9 +15,9 @@ import {
   User,
   type LucideIcon,
 } from 'lucide-react';
-import dashboardNavJson from '../json/dashboardNav.json';
-import shellNavJson from '../json/shellNav.json';
-import type { NavTabKey } from './localization';
+import dashboardNavJson from '@/shared/json/dashboardNav.json';
+import shellNavJson from '@/shared/json/shellNav.json';
+import type { NavTabKey } from '@/shared/lib/localization';
 
 /** Every icon a JSON config may reference. */
 const ICONS = {

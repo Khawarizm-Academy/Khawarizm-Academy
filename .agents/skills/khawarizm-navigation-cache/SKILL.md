@@ -111,7 +111,7 @@ Add nothing that ignores `prefers-reduced-motion` — transitions and shimmer ar
 
 ### Usage in a Data Section (canonical pattern)
 ```tsx
-import { useCachedData } from '../../../shared/hooks/useCachedData';
+import { useCachedData } from '@/shared/hooks/useCachedData';
 
 export const MyDataSection: React.FC<{ filters: MyFilters }> = ({ filters }) => {
   const { data, isLoading, isFetching, isError, error, refetch } = useCachedData(

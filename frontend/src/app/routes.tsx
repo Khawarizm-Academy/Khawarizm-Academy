@@ -9,10 +9,10 @@ import {
   LoginPage,
   ProfilePage,
   ScholarshipDetailPage,
-} from './pageLoads';
-import { NotFoundPage } from './pages/NotFoundPage';
-import routesJson from '../shared/json/routes.json';
-import type { NavTabKey } from '../shared/lib/localization';
+} from '@/app/pageLoads';
+import { NotFoundPage } from '@/app/pages/NotFoundPage';
+import routesJson from '@/shared/json/routes.json';
+import type { NavTabKey } from '@/shared/lib/localization';
 
 export type SkeletonVariant = 'home' | 'catalog' | 'detail' | 'dashboard' | 'default';
 

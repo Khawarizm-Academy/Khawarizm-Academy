@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from '../../../app/routerContext';
-import { NAV_TARGETS } from '../../../shared/lib/navigation';
-import { DEFAULT_RETURNING_USER, type AuthMode } from '../types';
-import { AuthLoginContext } from './authLoginContext';
-import type { AuthLoginContextValue } from './authLoginContext';
+import { useNavigate, useSearchParams } from '@/app/routerContext';
+import { NAV_TARGETS } from '@/shared/lib/navigation';
+import { DEFAULT_RETURNING_USER, type AuthMode } from '@/features/auth/types';
+import { AuthLoginContext } from '@/features/auth/context/authLoginContext';
+import type { AuthLoginContextValue } from '@/features/auth/context/authLoginContext';
 
 /** Owns every piece of login page state so both surfaces read one source. */
 export const AuthLoginProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

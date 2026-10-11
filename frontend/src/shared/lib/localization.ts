@@ -3,7 +3,7 @@
  * levels, coverages, search types, and action buttons.
  */
 
-import enToArJson from '../json/localization.json';
+import enToArJson from '@/shared/json/localization.json';
 
 export type NavTabKey =
   | 'home'

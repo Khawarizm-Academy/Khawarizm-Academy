@@ -1,5 +1,5 @@
 import { useSyncExternalStore, useEffect, useCallback, useState } from 'react';
-import { dataCacheManager, serializeKey, type CacheEntry, type CacheOptions } from '../lib/cacheManager';
+import { dataCacheManager, serializeKey, type CacheEntry, type CacheOptions } from '@/shared/lib/cacheManager';
 
 export interface UseCachedDataOptions<T> extends CacheOptions {
   enabled?: boolean;

@@ -11,7 +11,7 @@ Use this decision table whenever you create, move, or import any file:
 | File Type | Exact Directory | Naming Convention | Placement Rule & Logic |
 | :--- | :--- | :--- | :--- |
 | **Shared UI Component** | `src/shared/components/<Category>/` | `PascalCase.tsx` (e.g. `DesktopNavbar.tsx`, `CourseCard.tsx`) | Used across **2+ features** (e.g. Home, Catalog, Dashboard). |
-| **Feature UI Component** | `src/features/<feature>/components/` | `PascalCase.tsx` (e.g. `CatalogFilterSidebar.tsx`) | Used **only within this single feature**. |
+| **Feature UI Component** | `src/features/<feature>/components/<category>/` | `PascalCase.tsx` inside a purpose folder — `layout/`, `views/`, `chrome/`, `cards/`, `hero/`, `overlays/`, `controls/`, `states/`, `filters/`, `toolbar/` (e.g. `CatalogFilterSidebar.tsx` → `filters/CatalogFilterSidebar.tsx`) | Used **only within this single feature**. See [`khawarizm-organization-and-imports`](../../khawarizm-organization-and-imports/SKILL.md). |
 | **Page View** | `src/features/<feature>/pages/` | `<Feature>Page.tsx` (e.g. `HomePage.tsx`, `CatalogPage.tsx`) | The top-level screen assembled with navbar, content, and footer. |
 | **Domain Entity Types** | `src/shared/types/` | `entities.ts` or `<entity>.ts` | Represents shared data contracts (e.g. `Course`, `Scholarship`, `User`). |
 | **Feature View Types** | `src/features/<feature>/` | `types.ts` | State and props specific to this feature (e.g. `CatalogFiltersState`). |
@@ -20,6 +20,7 @@ Use this decision table whenever you create, move, or import any file:
 | **Feature Styles** | `src/features/<feature>/` | `<feature>.css` (e.g. `auth.css`) | Concept classes used by **one feature only**. Imported by `src/styles/globals.css` — never from a `.tsx`. |
 | **Shared Utility / Lib** | `src/shared/lib/` | `camelCase.ts` (e.g. `localization.ts`, `apiClient.ts`) | Global helpers, API wrappers, translation helpers. |
 | **Static Data (ANY kind)** | `src/shared/json/` | `<camelCase>.json` (e.g. `routes.json`, `catalog.json`, `mockDashboard.json`) | Every list, label, record, and config map. A `.ts` next to it may only add types or hydrate icon names. |
+| **Hydrated mock modules** | `src/shared/mocks/` | `<name>.ts` (e.g. `catalog.ts`, `dashboard.ts`, `homepage.ts`) + `index.ts` barrel | Mock assemblies: raw JSON casts + the types JSON cannot carry. Used by 3+ features (catalog, dashboard, home, courses, scholarships). |
 | **Design Tokens & Shared Styles** | `src/styles/` | `tokens.css`, `globals.css` | Global CSS variables and concept classes shared by **2+ features**; imports every feature `*.css`. |
 | **Master Brand Assets** | `src/assets/brand/source/` | `KhawarizmLogo.jpg` | Single source of truth for branding. Output generated to `src/assets/brand/generated/` and `public/`. |
 | **App Routing & Shell** | `src/app/` | `router.tsx`, `App.tsx` | Root providers, route tree, and layout frames. |

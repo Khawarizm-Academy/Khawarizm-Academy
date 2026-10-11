@@ -1,6 +1,6 @@
 import React from 'react';
 import { Hourglass } from 'lucide-react';
-import { OrbitalEmblem, OrbitalStageStars } from './OrbitalEmblem';
+import { OrbitalEmblem, OrbitalStageStars } from '@/shared/components/Placeholder/OrbitalEmblem';
 
 interface FeaturePlaceholderProps {
   title: string;

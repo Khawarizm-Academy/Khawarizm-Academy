@@ -1,5 +1,5 @@
 import React from 'react';
-import { CelestialCanvas } from '../Artwork/CelestialCanvas';
+import { CelestialCanvas } from '@/shared/components/Artwork/CelestialCanvas';
 
 interface OrbitalEmblemProps {
   icon?: React.ReactNode;

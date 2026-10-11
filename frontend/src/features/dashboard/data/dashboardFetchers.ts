@@ -9,7 +9,7 @@ import type {
   CompetitionItem,
   CertificateItem,
   NotificationItemData,
-} from '../types';
+} from '@/features/dashboard/types';
 import {
   mockEnrolledCourses,
   mockPriorityContinueCourse,
@@ -22,7 +22,7 @@ import {
   mockFavoriteCourses,
   mockCompetitions,
   mockCertificates,
-} from '../../../mocks/dashboard';
+} from '@/shared/mocks/dashboard';
 
 const COLD_LATENCY_MS = 400;
 
