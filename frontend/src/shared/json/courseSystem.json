@@ -93,7 +93,10 @@
     "errorNote": "تأكد من اتصالك بالإنترنت ثم أعد المحاولة.",
     "retryLabel": "إعادة المحاولة",
     "unsupportedTitle": "مصدر الفيديو غير مدعوم",
-    "unsupportedNote": "هذا المصدر لا يدعم التشغيل حاليًا."
+    "unsupportedNote": "هذا المصدر لا يدعم التشغيل حاليًا.",
+    "settingsLabel": "إعدادات التشغيل",
+    "seekLabel": "شريط التقدّم",
+    "sourceLabel": "مصدر الفيديو"
   },
   "certificate": {
     "backLabel": "عودة إلى لوحتي",

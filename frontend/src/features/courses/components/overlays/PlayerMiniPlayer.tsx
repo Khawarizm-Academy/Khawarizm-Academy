@@ -3,6 +3,7 @@ import { ArrowLeft, Pause, Play } from 'lucide-react';
 import { useCoursePlayer } from '@/features/courses/context/coursePlayerContext';
 import { courseCopy } from '@/features/courses/data/courseCopy';
 import { useVideoPlayerState, videoPlayerActions } from '@/features/courses/context/videoPlayerStore';
+import { formatClock } from '@/features/courses/data/playerTime';
 
 /** Persistent mobile mini-player shown when the video stage is not the focus. */
 export const PlayerMiniPlayer: React.FC = () => {
@@ -11,7 +12,7 @@ export const PlayerMiniPlayer: React.FC = () => {
   if (!activeLesson) return null;
 
   const isPlaying = video.playState === 'playing' || video.playState === 'buffering';
-  const progress = video.durationMs > 0 ? (video.currentMs / video.durationMs) * 100 : 0;
+  const progress = video.durationMs > 0 ? Math.min((video.currentMs / video.durationMs) * 100, 100) : 0;
 
   return (
     <div className="player-mini lg:hidden animate-fade-in-up">
@@ -24,11 +25,18 @@ export const PlayerMiniPlayer: React.FC = () => {
         {isPlaying ? <Pause size={18} /> : <Play size={18} className="fill-white translate-x-[-1px]" />}
       </button>
 
-      <div className="flex flex-col flex-1 min-w-0 gap-0.5">
-        <span className="text-[10px] text-slate-400 font-body">{courseCopy.player.tabLabel}</span>
-        <span className="text-sm text-slate-100 font-body truncate">{activeLesson.title}</span>
-        <div className="w-full h-0.5 rounded-full bg-navy-800 overflow-hidden mt-0.5">
-          <div className="h-full bg-blue-400 rounded-full" style={{ width: `${progress}%` }} />
+      <div className="player-mini-info">
+        <span className="player-mini-eyebrow">
+          {courseCopy.player.tabLabel}
+          <span className="player-mini-time" dir="ltr">
+            {formatClock(video.currentMs)}
+          </span>
+        </span>
+        <span className="player-mini-title" key={video.sourceKey}>
+          {activeLesson.title}
+        </span>
+        <div className="player-mini-track">
+          <div className="player-mini-fill" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
