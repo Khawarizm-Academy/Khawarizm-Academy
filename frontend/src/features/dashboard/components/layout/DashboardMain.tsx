@@ -1,6 +1,12 @@
 import React from 'react';
 import { BookOpen, User } from 'lucide-react';
+import { useNavigate } from '@/app/routerContext';
+import {
+  COURSE_CERTIFICATE_ROUTE,
+  COURSE_PLAYER_ROUTE,
+} from '@/shared/lib/navigation';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
+import type { EnrolledCourse } from '@/features/dashboard/types';
 import {
   CHALLENGE_ITEM,
   FULL_PAGE_VIEWS,
@@ -46,6 +52,7 @@ const MobileTitle = ({
 
 /** The single responsive dash-main body: headers, mobile chrome, and view sections. */
 export const DashboardMain: React.FC = () => {
+  const navigate = useNavigate();
   const {
     currentView,
     isLive,
@@ -63,6 +70,25 @@ export const DashboardMain: React.FC = () => {
     previewCertificate,
     handleNotificationAction,
   } = useDashboard();
+
+  /** Resume jumps straight into the real Course Player; mock-only rows keep the workspace chamber. */
+  const resumeCourse = (course: EnrolledCourse) => {
+    if (course.slug) navigate(COURSE_PLAYER_ROUTE(course.slug));
+    else openWorkspace(course.title);
+  };
+
+  /** Completed courses open the real certificate page; mock-only ones use the preview chamber. */
+  const viewCourseCertificate = (course: EnrolledCourse) => {
+    if (course.slug) navigate(COURSE_CERTIFICATE_ROUTE(course.slug));
+    else
+      previewCertificate({
+        id: `cert-${course.id}`,
+        title: `شهادة إتمام: ${course.title}`,
+        issueDate: course.completionDate || '14 سبتمبر 2026',
+        credentialId: `KHW-${course.id.toUpperCase()}-2026`,
+        isOfficial: true,
+      });
+  };
 
   return (
     // Main body, second child in RTL so it fills the left
@@ -172,16 +198,8 @@ export const DashboardMain: React.FC = () => {
         {currentView === 'enrolled' && !isEmpty && (
           <div className="w-full py-1 md:py-2 animate-fade-in-up animation-delay-100">
             <EnrolledCoursesView
-              onResumeCourse={(course) => openWorkspace(course.title)}
-              onViewCertificate={(course) =>
-                previewCertificate({
-                  id: `cert-${course.id}`,
-                  title: `شهادة إتمام: ${course.title}`,
-                  issueDate: course.completionDate || '14 سبتمبر 2026',
-                  credentialId: `KHW-${course.id.toUpperCase()}-2026`,
-                  isOfficial: true,
-                })
-              }
+              onResumeCourse={resumeCourse}
+              onViewCertificate={viewCourseCertificate}
               onJoinLive={openLiveClassroom}
             />
           </div>
@@ -205,9 +223,7 @@ export const DashboardMain: React.FC = () => {
                         <ChallengeSpotlightCard onEnter={() => selectCompetition(CHALLENGE_ITEM)} />
                       )}
                       {SPOTLIGHT.hasCourse && (
-                        <PriorityContinueCard
-                          onContinue={() => openWorkspace('أساسيات الذكاء الاصطناعي وتعلم الآلة')}
-                        />
+                        <PriorityContinueCard onContinue={() => navigate(COURSE_PLAYER_ROUTE('course-1'))} />
                       )}
                     </>
                   )}
@@ -237,7 +253,7 @@ export const DashboardMain: React.FC = () => {
                             key={course.id}
                             index={idx}
                             course={course}
-                            onContinue={() => openWorkspace(course.title)}
+                            onContinue={() => resumeCourse(course)}
                           />
                         ))
                       )}

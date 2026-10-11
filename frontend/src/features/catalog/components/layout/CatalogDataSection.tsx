@@ -3,6 +3,7 @@ import { CircleAlert, SearchX } from 'lucide-react';
 import { CatalogCard } from '@/features/catalog/components/cards/CatalogCard';
 import { CatalogPagination } from '@/features/catalog/components/toolbar/CatalogPagination';
 import { CatalogGridSkeleton } from '@/features/catalog/components/states/CatalogGridSkeleton';
+import { fetchCourseDetail } from '@/features/courses/data/courseFetchers';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import { dataCacheManager } from '@/shared/lib/cacheManager';
 import { mockCatalogAll, type CatalogItem } from '@/shared/mocks/catalog';
@@ -24,6 +25,12 @@ interface FilterResult {
 }
 
 const ITEMS_PER_PAGE = 6;
+
+/** Detail cache key per catalog family: courses merge seed data, scholarships reuse the base. */
+const DETAIL_KEY: Record<'course' | 'scholarship', string> = {
+  course: 'course-detail',
+  scholarship: 'catalog-detail',
+};
 
 /** Pure filter + sort + pagination engine; the caller caches its result. */
 function computeFilteredCatalog(filters: CatalogFiltersState, activeTab: CatalogTab): FilterResult {
@@ -126,7 +133,9 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
 
   // Warm the detail-page cache on card hover -> instant detail navigation.
   const handlePrefetchDetail = (item: CatalogItem) => {
-    dataCacheManager.prefetch(['catalog-detail', item.id], async () => {
+    const key = DETAIL_KEY[item.type];
+    dataCacheManager.prefetch([key, item.id], async () => {
+      if (item.type === 'course') return fetchCourseDetail(item.id);
       await new Promise((res) => setTimeout(res, 1));
       return item;
     });

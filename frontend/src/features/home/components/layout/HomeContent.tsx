@@ -1,5 +1,5 @@
 import React from 'react';
-import { CATALOG_COURSES_ROUTE, CATALOG_SCHOLARSHIPS_ROUTE } from '@/shared/lib/navigation';
+import { CATALOG_COURSES_ROUTE, CATALOG_SCHOLARSHIPS_ROUTE, COURSE_LANDING_ROUTE } from '@/shared/lib/navigation';
 import { CompetitionBanner } from '@/shared/components/Banners/CompetitionBanner';
 import { EventSection } from '@/shared/components/Events/EventSection';
 import {
@@ -68,6 +68,7 @@ export const HomeContent: React.FC = () => {
               scholarships={scholarshipsData}
               onViewAllCourses={() => navigateTo(CATALOG_COURSES_ROUTE)}
               onViewAllScholarships={() => navigateTo(CATALOG_SCHOLARSHIPS_ROUTE)}
+              onCourseDetails={(course) => navigateTo(COURSE_LANDING_ROUTE(course.id))}
             />
           }
           mobile={
@@ -77,6 +78,7 @@ export const HomeContent: React.FC = () => {
               scholarships={scholarshipsData}
               onViewAllCourses={() => navigateTo(CATALOG_COURSES_ROUTE)}
               onViewAllScholarships={() => navigateTo(CATALOG_SCHOLARSHIPS_ROUTE)}
+              onCourseDetails={(course) => navigateTo(COURSE_LANDING_ROUTE(course.id))}
             />
           }
         />

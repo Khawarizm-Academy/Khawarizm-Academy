@@ -12,6 +12,7 @@ interface TwinPillarRailsProps {
   scholarships: Scholarship[];
   onViewAllCourses?: () => void;
   onViewAllScholarships?: () => void;
+  onCourseDetails?: (course: Course) => void;
 }
 
 export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
@@ -20,6 +21,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
   scholarships,
   onViewAllCourses,
   onViewAllScholarships,
+  onCourseDetails,
 }) => {
   const coursesRowRef = useHorizontalScroll<HTMLDivElement>();
   const scholarshipsRowRef = useHorizontalScroll<HTMLDivElement>();
@@ -50,7 +52,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
           <div ref={coursesRowRef} className="horizontal-scroll-row no-scrollbar">
             {courses.map((course, idx) => (
               <div key={course.id} className="shrink-0 animate-pop-in" style={{ animationDelay: `${idx * 80}ms` }}>
-                <CourseCard course={course} layout="mobile" />
+                <CourseCard course={course} layout="mobile" onDetails={onCourseDetails} />
               </div>
             ))}
           </div>
@@ -116,7 +118,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-stretch">
           {courses.slice(0, 2).map((course, idx) => (
             <div key={course.id} className="animate-pop-in" style={{ animationDelay: `${idx * 100}ms` }}>
-              <CourseCard course={course} layout="desktop" />
+              <CourseCard course={course} layout="desktop" onDetails={onCourseDetails} />
             </div>
           ))}
         </div>

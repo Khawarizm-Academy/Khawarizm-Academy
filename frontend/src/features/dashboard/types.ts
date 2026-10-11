@@ -80,6 +80,8 @@ export interface CertificateItem {
   issueDate: string;
   credentialId: string;
   isOfficial: boolean;
+  /** When set, the certificate deep-links to the real course certificate page. */
+  courseSlug?: string;
 }
 
 export interface NotificationItemData {

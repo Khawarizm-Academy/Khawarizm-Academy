@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Trophy, Award, Download } from 'lucide-react';
+import { useNavigate } from '@/app/routerContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
+import { COURSE_CERTIFICATE_ROUTE } from '@/shared/lib/navigation';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
 import { fetchCompetitions, fetchCertificates } from '@/features/dashboard/data/dashboardFetchers';
@@ -28,6 +30,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
   onOpenArena,
   onPreviewCertificate,
 }) => {
+  const navigate = useNavigate();
   const [filterMode, setFilterMode] = useState<CompFilter>('completed');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
@@ -47,6 +50,10 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
     setDownloadingId(cert.id);
     setTimeout(() => {
       setDownloadingId(null);
+      if (cert.courseSlug) {
+        navigate(COURSE_CERTIFICATE_ROUTE(cert.courseSlug));
+        return;
+      }
       onPreviewCertificate?.(cert);
     }, 1000);
   };

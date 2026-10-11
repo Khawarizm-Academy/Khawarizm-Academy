@@ -1,0 +1,728 @@
+/* ==========================================================================
+   Courses Feature — Landing, Player & Certificate  (features/courses/courses.css)
+   Feature-owned concept classes. Imported by styles/globals.css, which keeps
+   only classes shared by 2+ features. Declared in @layer components so JSX
+   utilities can still override them.
+   ========================================================================== */
+@layer components {
+  /* ======================================================================
+     Surface wrappers — a desktop + mobile view pair are siblings; each
+     hides the other with CSS so the two layers never double-render.
+     ====================================================================== */
+  .course-surface-desktop {
+    @apply hidden lg:flex flex-col gap-14 w-full;
+  }
+
+  .course-surface-mobile {
+    @apply flex lg:hidden flex-col gap-8 w-full;
+  }
+
+  .player-surface-desktop {
+    @apply hidden lg:flex flex-col gap-4 w-full;
+  }
+
+  .player-surface-mobile {
+    @apply flex lg:hidden flex-col gap-4 w-full;
+  }
+
+  /* ======================================================================
+     Course landing page
+     ====================================================================== */
+  .course-back {
+    @apply inline-flex items-center gap-2 text-blue-400 text-sm font-body hover:text-white transition-colors mb-6;
+  }
+
+  .course-breadcrumb {
+    @apply flex flex-wrap items-center gap-2 text-xs text-slate-400 font-body mb-5;
+  }
+
+  .course-breadcrumb-link {
+    @apply text-blue-400 hover:text-white transition-colors cursor-pointer;
+  }
+
+  .course-hero-grid {
+    @apply w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-start;
+  }
+
+  .course-hero-main {
+    @apply lg:col-span-2 flex flex-col gap-6;
+  }
+
+  .course-hero-aside {
+    @apply lg:col-span-1 lg:sticky lg:top-24 flex flex-col gap-5;
+  }
+
+  .course-cover {
+    @apply relative w-full aspect-video rounded-2xl overflow-hidden border border-navy-600 bg-navy-950;
+  }
+
+  .course-cover-img {
+    @apply absolute inset-0 w-full h-full object-cover opacity-45 transition-all duration-500 group-hover:scale-105 group-hover:opacity-55;
+  }
+
+  .course-cover-shade {
+    @apply absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/40 to-transparent;
+  }
+
+  .course-cover-badge {
+    @apply absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[11px] font-semibold font-display shadow-xs flex items-center justify-center gap-1 bg-navy-950/85 backdrop-blur-xs border border-blue-400/30 text-blue-400;
+  }
+
+  .course-title {
+    @apply text-3xl sm:text-4xl font-extrabold text-white font-display leading-tight tracking-tight;
+  }
+
+  .course-tagline {
+    @apply text-slate-300 text-sm sm:text-base font-body leading-relaxed max-w-2xl;
+  }
+
+  .course-meta-row {
+    @apply flex flex-wrap items-center gap-4 pb-5 border-b border-navy-600/40;
+  }
+
+  .course-avatar {
+    @apply w-11 h-11 rounded-full bg-navy-800 border border-navy-600 flex items-center justify-center text-gold-400 font-display font-bold shrink-0;
+  }
+
+  .course-instructor-name {
+    @apply text-sm font-bold text-white font-display;
+  }
+
+  .course-instructor-cred {
+    @apply text-[11px] text-slate-400 font-body;
+  }
+
+  .course-stat-row {
+    @apply grid grid-cols-2 sm:grid-cols-4 gap-3;
+  }
+
+  .course-stat {
+    @apply bg-navy-900/40 backdrop-blur-md border border-navy-600/40 rounded-xl p-3.5 flex flex-col gap-1;
+  }
+
+  .course-stat-value {
+    @apply text-base font-bold text-white font-display tabular-nums;
+  }
+
+  .course-stat-label {
+    @apply text-[11px] text-slate-400 font-body;
+  }
+
+  .course-badge-row {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .course-section {
+    @apply w-full flex flex-col gap-4;
+  }
+
+  .course-section-title {
+    @apply text-xl font-bold text-white font-display;
+  }
+
+  .course-action-card {
+    @apply bg-navy-900/70 backdrop-blur-md rounded-2xl border border-blue-900/80 p-5 flex flex-col gap-4 shadow-[0px_8px_24px_0px_rgba(41,169,255,0.08)];
+  }
+
+  .course-action-price {
+    @apply text-2xl font-extrabold text-white font-display;
+  }
+
+  .course-action-price-free {
+    @apply text-2xl font-extrabold text-success-500 font-display;
+  }
+
+  .course-progress-track {
+    @apply w-full h-2 rounded-full bg-navy-950/80 border border-navy-600/50 overflow-hidden;
+  }
+
+  .course-progress-fill {
+    @apply h-full rounded-full bg-gradient-to-l from-blue-400 to-blue-500 transition-all duration-500;
+  }
+
+  .course-action-note {
+    @apply text-[11px] text-slate-400 font-body leading-relaxed;
+  }
+
+  /* Outcomes list */
+  .course-outcome-list {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-3;
+  }
+
+  .course-outcome-item {
+    @apply flex items-start gap-3 bg-navy-900/30 border border-navy-600/30 rounded-xl p-3.5;
+  }
+
+  .course-outcome-icon {
+    @apply w-6 h-6 rounded-full bg-blue-400/15 border border-blue-400/40 text-blue-400 flex items-center justify-center shrink-0;
+  }
+
+  .course-outcome-text {
+    @apply text-sm text-slate-300 font-body leading-relaxed;
+  }
+
+  /* Curriculum accordion */
+  .course-accordion {
+    @apply w-full flex flex-col gap-3;
+  }
+
+  .course-accordion-item {
+    @apply bg-navy-900/40 backdrop-blur-md border border-navy-600/40 rounded-2xl overflow-hidden;
+  }
+
+  .course-accordion-head {
+    @apply w-full flex items-center justify-between gap-3 p-4 cursor-pointer text-right transition-colors hover:bg-navy-800/30;
+  }
+
+  .course-accordion-index {
+    @apply w-8 h-8 rounded-lg bg-navy-950/70 border border-navy-600/60 text-blue-400 font-display font-bold text-sm flex items-center justify-center shrink-0;
+  }
+
+  .course-accordion-title {
+    @apply flex-1 text-sm font-bold text-white font-display;
+  }
+
+  .course-accordion-chevron {
+    @apply text-slate-400 transition-transform duration-300 shrink-0;
+  }
+
+  .course-accordion-chevron-open {
+    @apply rotate-180;
+  }
+
+  .course-accordion-body {
+    @apply border-t border-navy-600/40 p-2 flex flex-col;
+  }
+
+  .course-lesson-row {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-navy-800/30;
+  }
+
+  .course-lesson-mark {
+    @apply w-6 h-6 rounded-full flex items-center justify-center shrink-0 border;
+  }
+
+  .course-lesson-mark-completed {
+    @apply bg-success-500/15 border-success-500/50 text-success-500;
+  }
+
+  .course-lesson-mark-active {
+    @apply bg-blue-400/15 border-blue-400/60 text-blue-400;
+  }
+
+  .course-lesson-mark-available {
+    @apply bg-navy-800/60 border-navy-600 text-slate-400;
+  }
+
+  .course-lesson-mark-locked {
+    @apply bg-navy-950/60 border-navy-600/50 text-slate-500;
+  }
+
+  .course-lesson-title {
+    @apply flex-1 text-[13px] text-slate-200 font-body truncate;
+  }
+
+  .course-lesson-title-locked {
+    @apply text-slate-500;
+  }
+
+  .course-lesson-duration {
+    @apply text-[11px] text-slate-400 font-mono tabular-nums shrink-0;
+  }
+
+  /* Info cards: live session, exam callout, instructor */
+  .course-info-card {
+    @apply bg-navy-900/40 backdrop-blur-md border border-navy-600/40 rounded-2xl p-5 flex flex-col gap-3;
+  }
+
+  .course-info-head {
+    @apply flex items-center gap-3;
+  }
+
+  .course-info-icon {
+    @apply w-10 h-10 rounded-xl bg-navy-800/70 border border-navy-600 flex items-center justify-center shrink-0;
+  }
+
+  .course-info-title {
+    @apply text-base font-bold text-white font-display;
+  }
+
+  .course-info-text {
+    @apply text-sm text-slate-400 font-body leading-relaxed;
+  }
+
+  .course-live-row {
+    @apply flex items-center justify-between gap-3 bg-navy-950/50 border border-navy-600/40 rounded-xl px-3.5 py-2.5;
+  }
+
+  .course-live-state {
+    @apply text-[11px] font-display font-semibold;
+  }
+
+  .course-live-state-live {
+    @apply text-danger-500;
+  }
+
+  .course-live-state-upcoming {
+    @apply text-blue-400;
+  }
+
+  .course-live-state-past {
+    @apply text-slate-500;
+  }
+
+  .course-live-dot {
+    @apply w-2 h-2 rounded-full bg-danger-500 animate-ping;
+  }
+
+  .course-instructor-bio {
+    @apply text-sm text-slate-400 font-body leading-relaxed;
+  }
+
+  /* Landing sticky mobile CTA */
+  .course-sticky-cta {
+    @apply fixed bottom-[calc(env(safe-area-inset-bottom,0px)+64px)] left-0 right-0 z-40 px-4 pb-3 pt-3 bg-navy-950/95 backdrop-blur-md border-t border-navy-600/60;
+  }
+
+  .course-info-grid {
+    @apply w-full grid grid-cols-1 lg:grid-cols-2 gap-6;
+  }
+
+  .course-related-card {
+    @apply w-[280px] sm:w-[320px] shrink-0;
+  }
+
+  /* ======================================================================
+     Course player
+     ====================================================================== */
+  .player-bar {
+    @apply w-full flex items-center gap-3 pb-4 mb-6 border-b border-navy-600/40;
+  }
+
+  .player-back {
+    @apply inline-flex items-center gap-2 text-blue-400 text-sm font-body hover:text-white transition-colors cursor-pointer;
+  }
+
+  .player-bar-title {
+    @apply flex-1 text-sm sm:text-base font-bold text-white font-display truncate hidden sm:block;
+  }
+
+  .player-progress-chip {
+    @apply ml-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-navy-900/80 border border-blue-400/40 text-blue-400 text-xs font-display font-bold tabular-nums shrink-0;
+  }
+
+  .player-grid {
+    @apply w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start;
+  }
+
+  .player-main {
+    @apply flex flex-col gap-5 min-w-0;
+  }
+
+  .player-stage {
+    @apply relative w-full aspect-video rounded-2xl overflow-hidden border border-navy-600 bg-navy-950;
+  }
+
+  .player-video {
+    @apply absolute inset-0 w-full h-full object-cover opacity-40;
+  }
+
+  .player-video-shade {
+    @apply absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-navy-950/50;
+  }
+
+  .player-play {
+    @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-blue-500/90 hover:bg-blue-400 border border-blue-400/60 text-white flex items-center justify-center shadow-[0_0_28px_rgba(41,169,255,0.5)] transition-all hover:scale-105 active:scale-95 cursor-pointer;
+  }
+
+  .player-video-tools {
+    @apply absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-2.5 bg-gradient-to-t from-navy-950 to-transparent;
+  }
+
+  .player-tool {
+    @apply w-9 h-9 rounded-lg bg-navy-900/80 hover:bg-navy-800 border border-navy-600/60 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0;
+  }
+
+  .player-tool-label {
+    @apply text-[11px] text-slate-300 font-body;
+  }
+
+  .player-video-seek {
+    @apply flex-1 h-1.5 rounded-full bg-navy-800 relative overflow-hidden;
+  }
+
+  .player-video-seek-fill {
+    @apply absolute inset-y-0 right-0 rounded-full bg-blue-400;
+  }
+
+  .player-speed-menu {
+    @apply absolute bottom-14 left-2 z-20 w-28 bg-navy-900 border border-navy-600 rounded-xl shadow-2xl py-1.5;
+  }
+
+  .player-speed-option {
+    @apply w-full text-right px-3.5 py-2 text-xs transition-colors cursor-pointer text-slate-300 hover:bg-navy-800 hover:text-white;
+  }
+
+  .player-speed-option-active {
+    @apply text-blue-400 font-bold;
+  }
+
+  .player-tabs {
+    @apply w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-navy-600/40 pb-px;
+  }
+
+  .player-tab-body {
+    @apply w-full flex flex-col gap-5 min-w-0;
+  }
+
+  .player-path-button {
+    @apply w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-navy-900/70 backdrop-blur-md border border-blue-400/40 text-blue-400 text-sm font-display font-semibold hover:border-blue-400 transition-colors cursor-pointer mb-4;
+  }
+
+  .player-tab {
+    @apply flex items-center gap-2 px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-display font-semibold whitespace-nowrap transition-all cursor-pointer border-b-2 -mb-px;
+  }
+
+  .player-tab-active {
+    @apply text-blue-400 border-blue-400 bg-blue-400/5;
+  }
+
+  .player-tab-idle {
+    @apply text-slate-400 border-transparent hover:text-white;
+  }
+
+  .player-panel {
+    @apply w-full bg-navy-900/40 backdrop-blur-md border border-navy-600/40 rounded-2xl p-5 flex flex-col gap-4;
+  }
+
+  .player-panel-head {
+    @apply flex items-center gap-3 pb-3 border-b border-navy-600/40;
+  }
+
+  .player-panel-title {
+    @apply text-base font-bold text-white font-display;
+  }
+
+  .player-summary {
+    @apply flex flex-col gap-2.5;
+  }
+
+  .player-summary-item {
+    @apply flex items-start gap-2.5 text-sm text-slate-300 font-body leading-relaxed;
+  }
+
+  .player-summary-text {
+    @apply text-sm sm:text-base text-slate-300 font-body leading-relaxed;
+  }
+
+  /* Mobile lesson tab: the stage stays pinned under the navbar while its
+     recap scrolls beneath it (the mini-player replaces it on other tabs). */
+  .player-stage-sticky {
+    @apply sticky top-16 z-20;
+  }
+
+  .player-sidebar {
+    @apply hidden lg:flex lg:col-span-1 flex-col bg-navy-900/40 backdrop-blur-md border border-navy-600/40 rounded-2xl p-4 gap-3 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto;
+  }
+
+  .player-sidebar-head {
+    @apply flex items-center justify-between gap-2 pb-3 border-b border-navy-600/40;
+  }
+
+  .player-path-module {
+    @apply flex flex-col gap-2;
+  }
+
+  .player-path-module-title {
+    @apply text-xs font-bold text-slate-300 font-display px-1;
+  }
+
+  .player-lesson {
+    @apply w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-right transition-all cursor-pointer border;
+  }
+
+  .player-lesson-active {
+    @apply border-blue-400/60 bg-blue-400/10 shadow-[0_0_14px_rgba(41,169,255,0.2)];
+  }
+
+  .player-lesson-completed {
+    @apply border-navy-600/40 bg-navy-950/40 hover:border-success-500/40;
+  }
+
+  .player-lesson-available {
+    @apply border-navy-600/40 bg-navy-950/30 hover:border-blue-400/40;
+  }
+
+  .player-lesson-locked {
+    @apply border-navy-600/20 bg-navy-950/20 opacity-60 cursor-not-allowed;
+  }
+
+  .player-lesson-index {
+    @apply w-7 h-7 rounded-full flex items-center justify-center shrink-0 border text-[11px] font-display font-bold;
+  }
+
+  .player-lesson-body {
+    @apply flex-1 min-w-0;
+  }
+
+  .player-lesson-name {
+    @apply text-[13px] text-slate-100 font-body truncate;
+  }
+
+  .player-lesson-meta {
+    @apply text-[10px] text-slate-400 font-mono tabular-nums;
+  }
+
+  /* Problem set */
+  .player-problem-prompt {
+    @apply text-sm sm:text-base text-slate-100 font-body leading-relaxed;
+  }
+
+  .player-code {
+    @apply w-full rounded-xl bg-navy-950/80 border border-navy-600/50 p-4 font-mono text-[12px] text-sky-300 text-left whitespace-pre overflow-x-auto;
+    direction: ltr;
+  }
+
+  .player-option {
+    @apply w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-right transition-all cursor-pointer text-sm font-body;
+  }
+
+  .player-option-idle {
+    @apply border-navy-600/50 bg-navy-950/40 text-slate-200 hover:border-blue-400/50;
+  }
+
+  .player-option-selected {
+    @apply border-blue-400 bg-blue-400/10 text-white;
+  }
+
+  .player-option-correct {
+    @apply border-success-500 bg-success-500/10 text-white;
+  }
+
+  .player-option-wrong {
+    @apply border-danger-500 bg-danger-500/10 text-white;
+  }
+
+  .player-option-mark {
+    @apply w-6 h-6 rounded-full border flex items-center justify-center shrink-0 text-[11px] font-bold font-display;
+  }
+
+  .player-feedback {
+    @apply w-full rounded-xl border p-4 flex items-start gap-3 text-sm font-body leading-relaxed;
+  }
+
+  .player-feedback-ok {
+    @apply border-success-500/50 bg-success-500/10 text-slate-100;
+  }
+
+  .player-feedback-bad {
+    @apply border-danger-500/50 bg-danger-500/10 text-slate-100;
+  }
+
+  .player-pager {
+    @apply flex items-center justify-between gap-3 pt-2;
+  }
+
+  /* Live session */
+  .player-live-card {
+    @apply w-full rounded-2xl border p-5 flex flex-col gap-3;
+  }
+
+  .player-live-card-live {
+    @apply border-danger-500/50 bg-danger-500/[0.06];
+  }
+
+  .player-live-card-upcoming {
+    @apply border-blue-400/40 bg-blue-400/[0.05];
+  }
+
+  .player-live-card-past {
+    @apply border-navy-600/40 bg-navy-950/40;
+  }
+
+  .player-live-head {
+    @apply flex items-center justify-between gap-3;
+  }
+
+  .player-live-title {
+    @apply text-base font-bold text-white font-display;
+  }
+
+  .player-live-meta {
+    @apply flex flex-wrap items-center gap-3 text-xs text-slate-400 font-body;
+  }
+
+  .player-live-now {
+    @apply flex items-center gap-2 text-danger-500 text-xs font-display font-bold;
+  }
+
+  .player-join {
+    @apply w-full mt-1;
+  }
+
+  .player-join-disabled {
+    @apply w-full mt-1 rounded-full py-2.5 px-4 bg-navy-800/60 border border-navy-600/60 text-slate-500 text-sm font-display font-semibold cursor-not-allowed text-center;
+  }
+
+  /* Comprehensive exam */
+  .player-exam-card {
+    @apply w-full rounded-2xl border p-6 flex flex-col items-center text-center gap-4;
+  }
+
+  .player-exam-locked {
+    @apply border-navy-600/50 bg-navy-950/40;
+  }
+
+  .player-exam-open {
+    @apply border-gold-400/50 bg-gold-400/[0.06] shadow-[0_0_24px_rgba(229,182,92,0.15)];
+  }
+
+  .player-exam-icon {
+    @apply w-14 h-14 rounded-full flex items-center justify-center border;
+  }
+
+  .player-exam-icon-locked {
+    @apply bg-navy-800/60 border-navy-600 text-slate-500;
+  }
+
+  .player-exam-icon-open {
+    @apply bg-gold-400/15 border-gold-400/50 text-gold-400;
+  }
+
+  .player-exam-stats {
+    @apply w-full grid grid-cols-2 sm:grid-cols-4 gap-3;
+  }
+
+  .player-exam-stat {
+    @apply bg-navy-950/50 border border-navy-600/40 rounded-xl p-3 flex flex-col gap-1 items-center;
+  }
+
+  .player-exam-stat-value {
+    @apply text-base font-bold text-white font-display tabular-nums;
+  }
+
+  .player-exam-stat-label {
+    @apply text-[10px] text-slate-400 font-body;
+  }
+
+  /* Mobile syllabus drawer + mini player */
+  .player-drawer {
+    @apply fixed inset-0 z-[130] flex items-end justify-center;
+  }
+
+  .player-drawer-scrim {
+    @apply absolute inset-0 bg-navy-950/80 backdrop-blur-sm;
+  }
+
+  .player-drawer-panel {
+    @apply relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto bg-navy-900 border-t-2 border-navy-600 rounded-t-2xl p-5 flex flex-col gap-4 shadow-2xl;
+  }
+
+  .player-drawer-handle {
+    @apply w-12 h-1.5 bg-navy-600 rounded-full mx-auto -mt-2;
+  }
+
+  .player-mini {
+    @apply fixed bottom-[calc(env(safe-area-inset-bottom,0px)+64px)] left-0 right-0 z-40 px-4 pb-2 pt-2 bg-navy-950/95 backdrop-blur-md border-t border-navy-600/60 flex items-center gap-3;
+  }
+
+  .player-mini-play {
+    @apply w-10 h-10 rounded-full bg-blue-500/90 border border-blue-400/60 text-white flex items-center justify-center shrink-0 cursor-pointer;
+  }
+
+  /* ======================================================================
+     Certificate completion
+     ====================================================================== */
+  .cert-stage {
+    @apply w-full flex flex-col items-center gap-8 pt-6;
+  }
+
+  .cert-burst {
+    @apply relative w-20 h-20 rounded-full flex items-center justify-center;
+  }
+
+  .cert-burst-ring {
+    @apply absolute inset-0 rounded-full border border-dashed border-gold-400/50;
+    /* orbit-slow is a plain global class, so mirror it here instead of @apply */
+    animation: orbit-slow 60s linear infinite;
+  }
+
+  .cert-burst-core {
+    @apply relative z-10 w-14 h-14 rounded-full bg-gradient-to-tr from-gold-600 to-gold-400 text-navy-950 flex items-center justify-center shadow-[0_0_28px_rgba(229,182,92,0.6)];
+  }
+
+  .cert-heading {
+    @apply text-3xl sm:text-4xl font-extrabold text-white font-display text-center tracking-tight;
+  }
+
+  .cert-subtitle {
+    @apply max-w-xl text-center text-slate-400 text-sm sm:text-base font-body leading-relaxed;
+  }
+
+  .cert-frame {
+    @apply w-full relative rounded-3xl p-px bg-gradient-to-br from-gold-400/80 via-gold-600/40 to-blue-400/40 shadow-[0_0_40px_rgba(229,182,92,0.2)];
+  }
+
+  .cert-frame-inner {
+    @apply relative w-full rounded-3xl bg-navy-900/95 backdrop-blur-md p-8 sm:p-12 flex flex-col items-center text-center gap-5 overflow-hidden;
+  }
+
+  .cert-watermark {
+    @apply absolute inset-0 opacity-[0.06] bg-[radial-gradient(#E5B65C_1.5px,transparent_1.5px)] [background-size:20px_20px] pointer-events-none;
+  }
+
+  .cert-seal {
+    @apply w-16 h-16 rounded-full bg-navy-800 border-2 border-gold-400/60 flex items-center justify-center text-gold-400;
+  }
+
+  .cert-certifies {
+    @apply text-xs sm:text-sm text-slate-400 font-body tracking-widest;
+  }
+
+  .cert-name {
+    @apply text-2xl sm:text-3xl font-bold text-gold-400 font-display;
+  }
+
+  .cert-completed {
+    @apply text-sm text-slate-400 font-body;
+  }
+
+  .cert-course {
+    @apply text-xl sm:text-2xl font-bold text-white font-display;
+  }
+
+  .cert-score {
+    @apply inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-success-500/15 border border-success-500/40 text-success-500 text-sm font-display font-bold tabular-nums;
+  }
+
+  .cert-meta {
+    @apply w-full flex flex-wrap items-center justify-between gap-4 pt-5 mt-2 border-t border-navy-600/40 text-[11px] text-slate-400 font-body;
+  }
+
+  .cert-actions {
+    @apply w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3;
+  }
+
+  .cert-stats {
+    @apply w-full grid grid-cols-3 gap-3;
+  }
+
+  .cert-stat {
+    @apply bg-navy-900/40 backdrop-blur-md border border-navy-600/40 rounded-2xl p-4 flex flex-col items-center gap-1;
+  }
+
+  .cert-stat-value {
+    @apply text-xl font-extrabold text-gold-400 font-display tabular-nums;
+  }
+
+  .cert-stat-label {
+    @apply text-[11px] text-slate-400 font-body text-center;
+  }
+
+  /* ======================================================================
+     Shared course toast
+     ====================================================================== */
+  .course-toast {
+    @apply fixed bottom-24 left-1/2 -translate-x-1/2 z-[140] px-5 py-3 rounded-xl bg-navy-900 border border-blue-400/50 text-sm text-white font-body shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center gap-2;
+  }
+}
