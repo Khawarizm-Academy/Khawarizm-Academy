@@ -1,6 +1,6 @@
 import React from 'react';
 import { CalendarDays } from 'lucide-react';
-import { FeaturePlaceholder } from '../../../shared/components/Placeholder/FeaturePlaceholder';
+import { FeaturePlaceholder } from '@/shared/components/Placeholder/FeaturePlaceholder';
 
 export const EventsPage: React.FC = () => {
   return (

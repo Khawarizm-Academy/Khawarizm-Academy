@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
-import catalogJson from '../../../shared/json/catalog.json';
-import type { CatalogItem } from '../../../mocks/catalog';
-import type { CatalogFiltersState, CatalogTab, SearchType } from '../types';
+import catalogJson from '@/shared/json/catalog.json';
+import type { CatalogItem } from '@/shared/mocks/catalog';
+import type { CatalogFiltersState, CatalogTab, SearchType } from '@/features/catalog/types';
 
 // Non-pillar filters live in local state; `type` and `q` are URL-derived.
 export type PersistentFilters = Omit<CatalogFiltersState, 'type' | 'searchQuery'>;

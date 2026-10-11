@@ -1,10 +1,10 @@
 import React from 'react';
-import { useNavigate } from '../../../app/routerContext';
-import { useCachedData } from '../../../shared/hooks/useCachedData';
-import { mockCourses, mockScholarships } from '../../../mocks/homepage';
-import { HomeContext } from './homeContext';
-import type { CatalogSearchType, HomeContextValue } from './homeContext';
-import type { Course, Scholarship } from '../../../shared/types/entities';
+import { useNavigate } from '@/app/routerContext';
+import { useCachedData } from '@/shared/hooks/useCachedData';
+import { mockCourses, mockScholarships } from '@/shared/mocks/homepage';
+import { HomeContext } from '@/features/home/context/homeContext';
+import type { CatalogSearchType, HomeContextValue } from '@/features/home/context/homeContext';
+import type { Course, Scholarship } from '@/shared/types/entities';
 
 /** The search type (course|scholarship|all) maps to the catalog's type query. */
 const TAB_BY_SEARCH_TYPE: Record<CatalogSearchType, string> = {

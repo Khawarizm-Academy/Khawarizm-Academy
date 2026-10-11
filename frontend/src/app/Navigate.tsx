@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from './routerContext';
+import { useNavigate } from '@/app/routerContext';
 
 interface NavigateProps {
   to: string;

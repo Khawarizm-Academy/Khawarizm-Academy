@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowLeft, Clock, Users } from 'lucide-react';
-import type { Course } from '../../types/entities';
-import { CourseThumbnail } from '../Artwork/BrandVisuals';
-import { convertKeyToAr, toArabic } from '../../lib/localization';
+import type { Course } from '@/shared/types/entities';
+import { CourseThumbnail } from '@/shared/components/Artwork/BrandVisuals';
+import { convertKeyToAr, toArabic } from '@/shared/lib/localization';
 
 interface CourseCardProps {
   course: Course;

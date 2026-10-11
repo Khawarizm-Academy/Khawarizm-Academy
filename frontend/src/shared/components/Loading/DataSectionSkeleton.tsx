@@ -1,5 +1,5 @@
 import React from 'react';
-import { SkeletonBox, SkeletonText, SkeletonCircle, SkeletonBadge } from './SkeletonPrimitives';
+import { SkeletonBox, SkeletonText, SkeletonCircle, SkeletonBadge } from '@/shared/components/Loading/SkeletonPrimitives';
 
 interface DataSectionSkeletonProps {
   variant?: 'grid' | 'rail' | 'list';

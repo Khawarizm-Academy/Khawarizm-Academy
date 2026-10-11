@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Bell, LayoutDashboard, Search, User } from 'lucide-react';
-import { BrandLogo } from '../Artwork/BrandVisuals';
-import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
-import { NAV_TABS } from '../../lib/navigation';
+import { BrandLogo } from '@/shared/components/Artwork/BrandVisuals';
+import { type NavTabKey, toArabicNav, toEnglishNav } from '@/shared/lib/localization';
+import { NAV_TABS } from '@/shared/lib/navigation';
 
 interface DesktopNavbarProps {
   activeTab?: NavTabKey | string;

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { INITIAL_USER_PROFILE } from '../types';
-import type { UserProfileData } from '../types';
-import { ProfileContext } from './profileContext';
-import type { ProfileContextValue } from './profileContext';
+import { INITIAL_USER_PROFILE } from '@/features/profile/types';
+import type { UserProfileData } from '@/features/profile/types';
+import { ProfileContext } from '@/features/profile/context/profileContext';
+import type { ProfileContextValue } from '@/features/profile/context/profileContext';
 
 /** Owns the editable profile state so every section reads one source. */
 export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

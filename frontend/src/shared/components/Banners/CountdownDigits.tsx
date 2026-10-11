@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CountdownParts } from '../../hooks/useCountdown';
+import type { CountdownParts } from '@/shared/hooks/useCountdown';
 
 interface CountdownDigitsProps {
   value: CountdownParts;

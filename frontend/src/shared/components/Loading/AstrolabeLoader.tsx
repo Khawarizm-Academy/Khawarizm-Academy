@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import loadingLogo from '../../../assets/brand/generated/loading-logo.png';
+import loadingLogo from '@/assets/brand/generated/loading-logo.png';
 
 interface AstrolabeLoaderProps {
   fullScreen?: boolean;

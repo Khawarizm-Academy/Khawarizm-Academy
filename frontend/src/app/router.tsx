@@ -7,9 +7,9 @@ import React, {
   useState,
   useTransition,
 } from 'react';
-import { findRoute } from './routes';
-import { RouterContext } from './routerContext';
-import { Navigate } from './Navigate';
+import { findRoute } from '@/app/routes';
+import { RouterContext } from '@/app/routerContext';
+import { Navigate } from '@/app/Navigate';
 
 interface BrowserLocation {
   pathname: string;

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { AuthMode, ReturningUserData } from '../types';
+import type { AuthMode, ReturningUserData } from '@/features/auth/types';
 
 export interface AuthLoginContextValue {
   authMode: AuthMode;

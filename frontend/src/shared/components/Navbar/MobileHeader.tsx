@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bell } from 'lucide-react';
-import { BrandLogo } from '../Artwork/BrandVisuals';
+import { BrandLogo } from '@/shared/components/Artwork/BrandVisuals';
 
 export interface MobileHeaderProps {
   onLogoClick?: () => void;

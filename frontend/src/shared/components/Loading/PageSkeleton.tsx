@@ -1,7 +1,7 @@
 import React from 'react';
-import { SkeletonBox, SkeletonBadge } from './SkeletonPrimitives';
-import { CatalogGridSkeleton } from '../../../features/catalog/components/CatalogGridSkeleton';
-import { DataSectionSkeleton } from './DataSectionSkeleton';
+import { SkeletonBox, SkeletonBadge } from '@/shared/components/Loading/SkeletonPrimitives';
+import { CatalogGridSkeleton } from '@/features/catalog/components/states/CatalogGridSkeleton';
+import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
 
 interface PageSkeletonProps {
   variant?: 'catalog' | 'home' | 'detail' | 'dashboard' | 'default';

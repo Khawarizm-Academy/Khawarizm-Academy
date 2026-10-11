@@ -1,12 +1,12 @@
 import { createContext, useContext } from 'react';
 import { type LucideIcon } from 'lucide-react';
-import { resolveIcon } from '../../../shared/lib/navigation';
-import dashboardViewsJson from '../../../shared/json/dashboardViews.json';
-import type { EnrolledCourse } from '../types';
-import type { StatChipItem } from '../components/DashboardStatsHeader';
-import type { SavedScholarshipItem } from '../components/SavedScholarshipsView';
-import type { CompetitionItem, CertificateItem } from '../components/CompetitionsCertificatesView';
-import type { NotificationItemData } from '../components/NotificationsView';
+import { resolveIcon } from '@/shared/lib/navigation';
+import dashboardViewsJson from '@/shared/json/dashboardViews.json';
+import type { EnrolledCourse } from '@/features/dashboard/types';
+import type { StatChipItem } from '@/features/dashboard/components/chrome/DashboardStatsHeader';
+import type { SavedScholarshipItem } from '@/features/dashboard/components/views/SavedScholarshipsView';
+import type { CompetitionItem, CertificateItem } from '@/features/dashboard/components/views/CompetitionsCertificatesView';
+import type { NotificationItemData } from '@/features/dashboard/components/views/NotificationsView';
 
 export const LIVE_COURSE = dashboardViewsJson.liveCard.courseTitle;
 export const FULL_PAGE_VIEWS = dashboardViewsJson.fullPageViews;

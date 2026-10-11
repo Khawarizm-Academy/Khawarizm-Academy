@@ -4,7 +4,7 @@ import type {
   ScholarshipCoverageKey,
   DegreeLevelKey,
   EventFormatKey,
-} from '../lib/localization';
+} from '@/shared/lib/localization';
 
 export interface Course {
   id: string;

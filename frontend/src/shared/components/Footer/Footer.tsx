@@ -1,6 +1,6 @@
 import React from 'react';
-import { BrandLogo } from '../Artwork/BrandVisuals';
-import footerJson from '../../json/footer.json';
+import { BrandLogo } from '@/shared/components/Artwork/BrandVisuals';
+import footerJson from '@/shared/json/footer.json';
 
 export const Footer: React.FC = () => {
   return (

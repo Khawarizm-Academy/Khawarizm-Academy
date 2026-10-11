@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Course, Scholarship } from '../../../shared/types/entities';
+import type { Course, Scholarship } from '@/shared/types/entities';
 
 export type CatalogSearchType = 'course' | 'scholarship' | 'all';
 

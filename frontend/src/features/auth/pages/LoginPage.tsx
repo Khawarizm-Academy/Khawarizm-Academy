@@ -1,9 +1,9 @@
 import React from 'react';
-import { AuthLoginProvider } from '../context/AuthLoginProvider';
-import { AuthToast } from '../components/AuthToast';
-import { AuthTermsModal } from '../components/AuthTermsModal';
-import { DesktopLoginView } from '../components/LoginView/DesktopLoginView';
-import { MobileLoginView } from '../components/LoginView/MobileLoginView';
+import { AuthLoginProvider } from '@/features/auth/context/AuthLoginProvider';
+import { AuthToast } from '@/features/auth/components/overlays/AuthToast';
+import { AuthTermsModal } from '@/features/auth/components/overlays/AuthTermsModal';
+import { DesktopLoginView } from '@/features/auth/components/views/LoginView/DesktopLoginView';
+import { MobileLoginView } from '@/features/auth/components/views/LoginView/MobileLoginView';
 
 /** Owns the shared auth state; each surface renders its own view on top of it. */
 export const LoginPage: React.FC = () => (

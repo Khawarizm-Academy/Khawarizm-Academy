@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from '../../../app/routerContext';
-import { CatalogContext, DEFAULT_FILTERS, SEARCH_TYPE_BY_TAB, TAB_BY_SEARCH_TYPE } from './catalogContext';
-import type { CatalogItem } from '../../../mocks/catalog';
-import type { CatalogContextValue, PersistentFilters, SearchBoxProps } from './catalogContext';
-import type { CatalogFiltersState, CatalogTab, SearchType } from '../types';
+import { useNavigate, useSearchParams } from '@/app/routerContext';
+import { CatalogContext, DEFAULT_FILTERS, SEARCH_TYPE_BY_TAB, TAB_BY_SEARCH_TYPE } from '@/features/catalog/context/catalogContext';
+import type { CatalogItem } from '@/shared/mocks/catalog';
+import type { CatalogContextValue, PersistentFilters, SearchBoxProps } from '@/features/catalog/context/catalogContext';
+import type { CatalogFiltersState, CatalogTab, SearchType } from '@/features/catalog/types';
 
 /** Owns every piece of catalog page state so all sections read one source. */
 export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -1,5 +1,5 @@
-import catalogJson from '../../../shared/json/catalog.json';
-import type { CatalogFiltersState, CatalogTab } from '../types';
+import catalogJson from '@/shared/json/catalog.json';
+import type { CatalogFiltersState, CatalogTab } from '@/features/catalog/types';
 
 /** Which accent a filter group paints itself in. */
 export type Tone = 'gold' | 'sky';

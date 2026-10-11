@@ -1,16 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from '../../../app/routerContext';
-import { useCachedData } from '../../../shared/hooks/useCachedData';
-import { getDashboardNavItem } from '../../../shared/lib/navigation';
-import { fetchEnrolledCourses } from '../data/dashboardFetchers';
-import notificationJson from '../../../shared/json/dashboardNotifications.json';
-import { DashboardContext, LIVE_COURSE, VIEW_HEADERS } from './dashboardContext';
-import type { DashboardContextValue, ViewChip } from './dashboardContext';
-import type { EnrolledCourse } from '../types';
-import type { StatChipItem } from '../components/DashboardStatsHeader';
-import type { SavedScholarshipItem } from '../components/SavedScholarshipsView';
-import type { CompetitionItem, CertificateItem } from '../components/CompetitionsCertificatesView';
-import type { NotificationItemData } from '../components/NotificationsView';
+import { useLocation, useNavigate } from '@/app/routerContext';
+import { useCachedData } from '@/shared/hooks/useCachedData';
+import { getDashboardNavItem } from '@/shared/lib/navigation';
+import { fetchEnrolledCourses } from '@/features/dashboard/data/dashboardFetchers';
+import notificationJson from '@/shared/json/dashboardNotifications.json';
+import { DashboardContext, LIVE_COURSE, VIEW_HEADERS } from '@/features/dashboard/context/dashboardContext';
+import type { DashboardContextValue, ViewChip } from '@/features/dashboard/context/dashboardContext';
+import type { EnrolledCourse } from '@/features/dashboard/types';
+import type { StatChipItem } from '@/features/dashboard/components/chrome/DashboardStatsHeader';
+import type { SavedScholarshipItem } from '@/features/dashboard/components/views/SavedScholarshipsView';
+import type { CompetitionItem, CertificateItem } from '@/features/dashboard/components/views/CompetitionsCertificatesView';
+import type { NotificationItemData } from '@/features/dashboard/components/views/NotificationsView';
 
 /** Owns every piece of dashboard state so all chrome reads one source. */
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

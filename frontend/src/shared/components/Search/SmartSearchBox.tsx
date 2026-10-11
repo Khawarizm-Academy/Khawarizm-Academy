@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Compass } from 'lucide-react';
-import { toArabic } from '../../lib/localization';
+import { toArabic } from '@/shared/lib/localization';
 
 export interface SmartSearchBoxProps {
   variant?: 'desktop' | 'mobile';

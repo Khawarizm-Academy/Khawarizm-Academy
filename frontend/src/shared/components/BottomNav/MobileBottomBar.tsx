@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { type NavTabKey, toArabicNav, toEnglishNav } from '../../lib/localization';
-import { NAV_TABS } from '../../lib/navigation';
+import { type NavTabKey, toArabicNav, toEnglishNav } from '@/shared/lib/localization';
+import { NAV_TABS } from '@/shared/lib/navigation';
 
 interface MobileBottomBarProps {
   activeTab?: NavTabKey | string;

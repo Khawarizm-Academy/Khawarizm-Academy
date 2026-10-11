@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowLeft, Calendar, Lightbulb, Radio } from 'lucide-react';
-import type { EventItem } from '../../types/entities';
-import { EventArtwork } from '../Artwork/BrandVisuals';
-import { toArabic } from '../../lib/localization';
+import type { EventItem } from '@/shared/types/entities';
+import { EventArtwork } from '@/shared/components/Artwork/BrandVisuals';
+import { toArabic } from '@/shared/lib/localization';
 
 interface EventSectionProps {
   variant?: 'desktop' | 'mobile';

@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowLeft, BellRing, Clock, Globe, Landmark, MapPin } from 'lucide-react';
-import type { Scholarship } from '../../types/entities';
-import { ScholarshipThumbnail } from '../Artwork/BrandVisuals';
-import { convertKeyToAr, toArabic } from '../../lib/localization';
+import type { Scholarship } from '@/shared/types/entities';
+import { ScholarshipThumbnail } from '@/shared/components/Artwork/BrandVisuals';
+import { convertKeyToAr, toArabic } from '@/shared/lib/localization';
 
 interface ScholarshipCardProps {
   scholarship: Scholarship;

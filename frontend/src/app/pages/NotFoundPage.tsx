@@ -1,8 +1,8 @@
 import React from 'react';
 import { Globe } from 'lucide-react';
-import { useNavigate } from '../routerContext';
-import { NAV_TARGETS } from '../../shared/lib/navigation';
-import { OrbitalEmblem, OrbitalStageStars } from '../../shared/components/Placeholder/OrbitalEmblem';
+import { useNavigate } from '@/app/routerContext';
+import { NAV_TARGETS } from '@/shared/lib/navigation';
+import { OrbitalEmblem, OrbitalStageStars } from '@/shared/components/Placeholder/OrbitalEmblem';
 
 export const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();

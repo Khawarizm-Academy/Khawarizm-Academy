@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
-import { FeaturePlaceholder } from '../../../shared/components/Placeholder/FeaturePlaceholder';
+import { FeaturePlaceholder } from '@/shared/components/Placeholder/FeaturePlaceholder';
 
 export const CompetitionsPage: React.FC = () => {
   return (

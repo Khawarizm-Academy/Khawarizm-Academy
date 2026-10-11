@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { FormEvent } from 'react';
-import type { UserProfileData } from '../types';
+import type { UserProfileData } from '@/features/profile/types';
 
 export interface ProfileContextValue {
   profile: UserProfileData;
