@@ -2,32 +2,32 @@
   "courses": [
     {
       "id": "course-1",
-      "title": "هندسة الذكاء الاصطناعي التوليدي",
-      "category": "برمجة",
-      "level": "متقدم",
-      "duration": "4 أسابيع",
+      "title": "أساسيات الذكاء الاصطناعي وتعلم الآلة",
+      "category": "ذكاء اصطناعي",
+      "level": "مبتدئ",
+      "duration": "6 أسابيع",
       "studentsCount": "1.2k طالب",
       "status": "متاح",
       "thumbnailType": "ai_generative"
     },
     {
       "id": "course-2",
-      "title": "تصميم واجهات المستخدم المتقدمة (UI/UX)",
-      "category": "تصميم",
-      "level": "مبتدئ",
-      "duration": "5 أسابيع",
+      "title": "تطوير تطبيقات الويب المتكاملة بـ React & Node.js",
+      "category": "برمجة الويب",
+      "level": "متوسط",
+      "duration": "10 أسابيع",
       "studentsCount": "850 طالب",
-      "status": "قريباً",
+      "status": "متاح",
       "thumbnailType": "web_frontend"
     },
     {
       "id": "course-3",
-      "title": "تحليل البيانات باستخدام بايثون",
-      "category": "علوم البيانات",
-      "level": "متوسط",
+      "title": "خوارزميات وهياكل البيانات المتقدمة",
+      "category": "علوم الحاسوب",
+      "level": "متقدم",
       "duration": "8 أسابيع",
       "studentsCount": "920 طالب",
-      "status": "قريباً",
+      "status": "متاح",
       "thumbnailType": "python_data"
     }
   ],

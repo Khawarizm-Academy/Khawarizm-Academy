@@ -35,6 +35,18 @@
     "skeletonVariant": "detail"
   },
   {
+    "path": "/courses/:slug/learn",
+    "title": "مشغّل الدورة — أكاديمية خوارزم",
+    "activeTab": "courses",
+    "skeletonVariant": "detail"
+  },
+  {
+    "path": "/courses/:slug/certificate",
+    "title": "شهادة إتمام الدورة — أكاديمية خوارزم",
+    "activeTab": "courses",
+    "skeletonVariant": "detail"
+  },
+  {
     "path": "/scholarships/:slug",
     "title": "تفاصيل المنحة — أكاديمية خوارزم",
     "activeTab": "scholarships",

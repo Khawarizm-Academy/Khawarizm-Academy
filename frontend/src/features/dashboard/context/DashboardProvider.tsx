@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from '@/app/routerContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
-import { getDashboardNavItem } from '@/shared/lib/navigation';
+import { getDashboardNavItem, COURSE_CERTIFICATE_ROUTE, COURSE_PLAYER_ROUTE } from '@/shared/lib/navigation';
 import { fetchEnrolledCourses } from '@/features/dashboard/data/dashboardFetchers';
 import notificationJson from '@/shared/json/dashboardNotifications.json';
 import { DashboardContext, LIVE_COURSE, VIEW_HEADERS } from '@/features/dashboard/context/dashboardContext';
@@ -66,13 +66,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     { initialData: [] }
   );
 
-  // Every notification opens the chamber its type points to.
+  // Every notification opens the chamber its type points to; course ones deep-link to the player.
   const notificationActions: Record<NotificationItemData['type'], () => void> = {
     live: () => setIsLiveClassroomOpen(true),
     scholarship: () => setSelectedScholarship(notificationJson.scholarship as SavedScholarshipItem),
     competition: () => setSelectedCompetition(notificationJson.competition as CompetitionItem),
-    lesson: () => setActiveWorkspaceCourse(notificationJson.lesson.title),
-    exam: () => setActiveWorkspaceCourse(notificationJson.exam.title),
+    lesson: () => navigate(COURSE_PLAYER_ROUTE('course-1')),
+    exam: () => navigate(COURSE_CERTIFICATE_ROUTE('course-1')),
   };
 
   const handleNotificationAction = (notif: NotificationItemData) => notificationActions[notif.type]();

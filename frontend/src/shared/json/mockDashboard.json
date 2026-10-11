@@ -1,48 +1,48 @@
 {
   "enrolledCourses": [
     {
-      "id": "course-python",
-      "title": "أساسيات البرمجة بلغة بايثون",
-      "instructor": "د. سارة العتيبي",
-      "totalLessons": 24,
-      "track": "مسار تطوير البرمجيات",
-      "progress": 68,
-      "lastLesson": "الوحدة 4 · الدرس 3: الدوال والمعاملات",
-      "exactUnitLesson": "الوحدة 4 · الدرس 3: الدوال والمعاملات",
+      "id": "course-1",
+      "title": "أساسيات الذكاء الاصطناعي وتعلم الآلة",
+      "instructor": "أ. د. أحمد خوارزم",
+      "totalLessons": 9,
+      "track": "مسار الذكاء الاصطناعي التوليدي",
+      "progress": 40,
+      "lastLesson": "الوحدة 2 · الدرس 1: البيانات: جمعها وتنظيفها",
+      "exactUnitLesson": "الوحدة 2 · الدرس 1: البيانات: جمعها وتنظيفها",
       "thumbnail": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
       "nextLiveTime": "الثلاثاء، 7:30 م",
-      "iconType": "python",
+      "iconType": "ai",
       "isCompleted": false,
-      "slug": "python-fundamentals"
+      "slug": "course-1"
     },
     {
-      "id": "course-data",
-      "title": "تحليل البيانات واتخاذ القرار",
-      "instructor": "م. عمر الحربي",
-      "totalLessons": 18,
+      "id": "course-5",
+      "title": "علم البيانات والتحليل الإحصائي المتقدم بـ Python",
+      "instructor": "د. ريان القحطاني",
+      "totalLessons": 6,
       "track": "مسار علم وتحليل البيانات",
-      "progress": 42,
-      "lastLesson": "الوحدة 2 · الدرس 6: تنظيف البيانات",
-      "exactUnitLesson": "الوحدة 2 · الدرس 6: تنظيف البيانات",
+      "progress": 68,
+      "lastLesson": "الوحدة 2 · الدرس 2: لوحات المعلومات التفاعلية",
+      "exactUnitLesson": "الوحدة 2 · الدرس 2: لوحات المعلومات التفاعلية",
       "thumbnail": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80",
       "iconType": "data",
       "isCompleted": false,
-      "slug": "data-analysis-decision"
+      "slug": "course-5"
     },
     {
-      "id": "course-ai",
-      "title": "مقدمة في الذكاء الاصطناعي",
-      "instructor": "د. ليان منصور",
-      "totalLessons": 20,
-      "track": "مسار الذكاء الاصطناعي التوليدي",
+      "id": "course-3",
+      "title": "خوارزميات وهياكل البيانات المتقدمة",
+      "instructor": "أ. خالد النجار",
+      "totalLessons": 6,
+      "track": "مسار علوم الحاسوب",
       "progress": 100,
-      "lastLesson": "المشروع الختامي وتطبيقات الذكاء الاصطناعي",
+      "lastLesson": "المشروع الختامي وتطبيقات الخوارزميات",
       "exactUnitLesson": "أكملت المسار في 14 سبتمبر 2026",
-      "thumbnail": "https://images.unsplash.com/photo-1677442136019-21780efad99a?w=600&auto=format&fit=crop&q=80",
+      "thumbnail": "https://images.unsplash.com/photo-1516116211227-bbc13c7d6e6a?w=600&auto=format&fit=crop&q=80",
       "completionDate": "14 سبتمبر 2026",
       "isCompleted": true,
-      "iconType": "ai",
-      "slug": "intro-to-ai"
+      "iconType": "code",
+      "slug": "course-3"
     }
   ],
   "priorityContinueCourse": {
@@ -252,10 +252,11 @@
   "certificates": [
     {
       "id": "cert-1",
-      "title": "شهادة إتمام دورة مقدمة في الذكاء الاصطناعي",
+      "title": "شهادة إتمام دورة أساسيات الذكاء الاصطناعي وتعلم الآلة",
       "issueDate": "14 سبتمبر 2026",
       "credentialId": "KHM-2026-AI-0142",
-      "isOfficial": true
+      "isOfficial": true,
+      "courseSlug": "course-1"
     },
     {
       "id": "cert-2",

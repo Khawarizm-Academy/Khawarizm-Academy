@@ -1,8 +1,10 @@
 import type { ComponentType } from 'react';
 import {
-  CompetitionsPage,
-  CourseDetailPage,
   CatalogPage,
+  CompetitionsPage,
+  CourseCertificatePage,
+  CourseLandingPage,
+  CoursePlayerPage,
   DashboardPage,
   EventsPage,
   HomePage,
@@ -58,7 +60,9 @@ export type RouteDefinition =
 const PAGE_BY_PATH: Record<string, ComponentType> = {
   '/': HomePage,
   '/catalog': CatalogPage,
-  '/courses/:slug': CourseDetailPage,
+  '/courses/:slug': CourseLandingPage,
+  '/courses/:slug/learn': CoursePlayerPage,
+  '/courses/:slug/certificate': CourseCertificatePage,
   '/scholarships/:slug': ScholarshipDetailPage,
   '/events': EventsPage,
   '/competitions': CompetitionsPage,

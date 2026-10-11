@@ -56,6 +56,11 @@ export const NAV_TARGETS = shellNavJson.targets as Record<NavTabKey | 'login', s
 export const CATALOG_COURSES_ROUTE = NAV_TARGETS.courses;
 export const CATALOG_SCHOLARSHIPS_ROUTE = NAV_TARGETS.scholarships;
 
+/** Canonical course feature routes: landing, player, and certificate. */
+export const COURSE_LANDING_ROUTE = (slug: string): string => `/courses/${slug}`;
+export const COURSE_PLAYER_ROUTE = (slug: string): string => `/courses/${slug}/learn`;
+export const COURSE_CERTIFICATE_ROUTE = (slug: string): string => `/courses/${slug}/certificate`;
+
 export interface ShellNavTab {
   key: NavTabKey;
   icon: LucideIcon;
