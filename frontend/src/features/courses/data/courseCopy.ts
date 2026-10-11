@@ -77,6 +77,22 @@ export interface PlayerCopy {
   markComplete: string;
   completedLabel: string;
   backToLesson: string;
+  playLabel: string;
+  pauseLabel: string;
+  skipForwardLabel: string;
+  skipBackwardLabel: string;
+  muteLabel: string;
+  unmuteLabel: string;
+  pipLabel: string;
+  fullscreenLabel: string;
+  exitFullscreenLabel: string;
+  loadingLabel: string;
+  bufferingLabel: string;
+  errorTitle: string;
+  errorNote: string;
+  retryLabel: string;
+  unsupportedTitle: string;
+  unsupportedNote: string;
 }
 
 /** Certificate copy, keyed exactly like courseSystem.json's certificate block. */

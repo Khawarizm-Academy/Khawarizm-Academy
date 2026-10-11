@@ -42,6 +42,7 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
   const { data: problems } = useCachedData<CourseProblem[]>(['course-problems'], problemsFetcher, {
     staleTime: 30 * 60 * 1000,
   });
+  const problemList = useMemo(() => problems ?? [], [problems]);
 
   const startedLessonId = getStartedLessonId(slug);
   const ordered = useMemo(() => (course ? flattenLessons(course.modules) : []), [course]);
@@ -55,49 +56,68 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
     setActiveLessonId(startedLessonId || ordered[0]?.id || '');
   }
 
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     setToastMessage(message);
     toastTimer.current = window.setTimeout(() => setToastMessage(null), 3800);
-  };
+  }, []);
 
-  const selectLesson = (lessonId: string) => {
+  const selectLesson = useCallback((lessonId: string) => {
     setActiveLessonId(lessonId);
     setActiveTab('lesson');
     setIsSyllabusOpen(false);
-  };
+  }, []);
 
-  const completeLesson = () => {
+  const completeLesson = useCallback(() => {
     if (!activeLessonId) return;
     setCompletedIds((prev) => (prev.includes(activeLessonId) ? prev : [...prev, activeLessonId]));
     // Auto-advance prompt: finishing a lesson points at its practice set.
     setActiveTab('problems');
     showToast(courseCopy.player.lessonDoneToast);
-  };
+  }, [activeLessonId, showToast]);
+
+  const openSyllabus = useCallback(() => setIsSyllabusOpen(true), []);
+  const closeSyllabus = useCallback(() => setIsSyllabusOpen(false), []);
 
   const activeLesson = ordered.find((lesson) => lesson.id === activeLessonId) ?? null;
   const progress = courseProgress(ordered, completedIds);
   const examUnlocked = isExamUnlocked(ordered, completedIds);
 
-  const value: CoursePlayerContextValue = {
-    course,
-    isLoading,
-    activeLesson,
-    activeLessonId,
-    completedIds,
-    activeTab,
-    isSyllabusOpen,
-    problems: problems ?? [],
-    progress,
-    isExamUnlocked: examUnlocked,
-    toastMessage,
-    selectLesson,
-    selectTab: setActiveTab,
-    completeLesson,
-    openSyllabus: () => setIsSyllabusOpen(true),
-    closeSyllabus: () => setIsSyllabusOpen(false),
-    hideToast: () => setToastMessage(null),
-  };
+  const value = useMemo<CoursePlayerContextValue>(
+    () => ({
+      course,
+      isLoading,
+      activeLesson,
+      activeLessonId,
+      completedIds,
+      activeTab,
+      isSyllabusOpen,
+      problems: problemList,
+      progress,
+      isExamUnlocked: examUnlocked,
+      selectLesson,
+      selectTab: setActiveTab,
+      completeLesson,
+      openSyllabus,
+      closeSyllabus,
+    }),
+    [
+      course,
+      isLoading,
+      activeLesson,
+      activeLessonId,
+      completedIds,
+      activeTab,
+      isSyllabusOpen,
+      problemList,
+      progress,
+      examUnlocked,
+      selectLesson,
+      completeLesson,
+      openSyllabus,
+      closeSyllabus,
+    ]
+  );
 
   return (
     <CoursePlayerContext.Provider value={value}>

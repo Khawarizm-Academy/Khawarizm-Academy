@@ -46,24 +46,24 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
 
   return (
     <div className="cert-stage">
-      <button type="button" onClick={() => navigate(NAV_TARGETS.dashboard)} className="course-back">
+      <button type="button" onClick={() => navigate(NAV_TARGETS.dashboard)} className="course-back animate-fade-in-up">
         <ArrowLeft size={16} />
         {courseCopy.certificate.backLabel}
       </button>
 
-      <div className="cert-burst">
+      <div className="cert-burst animate-pop-in">
         <div className="cert-burst-ring" />
         <div className="cert-burst-core">
           <PartyPopper size={26} />
         </div>
       </div>
 
-      <h1 className="cert-heading">{courseCopy.certificate.title}</h1>
-      <p className="cert-subtitle">{courseCopy.certificate.subtitle}</p>
+      <h1 className="cert-heading animate-fade-in-up" style={{ animationDelay: '80ms' }}>{courseCopy.certificate.title}</h1>
+      <p className="cert-subtitle animate-fade-in-up" style={{ animationDelay: '140ms' }}>{courseCopy.certificate.subtitle}</p>
 
       <div className="cert-stats">
-        {stats.map((stat) => (
-          <div key={stat.label} className="cert-stat">
+        {stats.map((stat, idx) => (
+          <div key={stat.label} className="cert-stat animate-pop-in" style={{ animationDelay: `${200 + idx * 80}ms` }}>
             <span className="cert-stat-value">{stat.value}</span>
             <span className="cert-stat-label">{stat.label}</span>
           </div>
@@ -78,7 +78,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
         dateLabel={dateLabel}
       />
 
-      <div className="cert-actions">
+      <div className="cert-actions animate-fade-in-up" style={{ animationDelay: '420ms' }}>
         <button type="button" onClick={() => flashAction(setDownload)} className="btn-gold">
           <Download size={15} />
           {download.kind === 'done' ? courseCopy.certificate.downloadDone : courseCopy.certificate.download}

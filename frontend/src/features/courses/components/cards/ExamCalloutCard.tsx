@@ -11,7 +11,7 @@ export const ExamCalloutCard: React.FC = () => {
   const { questionCount, minutes, passThreshold } = course.exam;
 
   return (
-    <section className="course-info-card">
+    <section className="course-info-card animate-fade-in-up">
       <div className="course-info-head">
         <span className="course-info-icon">
           <Award size={18} className="text-gold-400" />

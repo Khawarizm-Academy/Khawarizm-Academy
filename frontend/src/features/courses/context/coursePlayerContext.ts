@@ -14,13 +14,11 @@ export interface CoursePlayerContextValue {
   /** Single unified course percentage: completed lessons over total lessons. */
   progress: number;
   isExamUnlocked: boolean;
-  toastMessage: string | null;
   selectLesson: (lessonId: string) => void;
   selectTab: (tab: CourseTab) => void;
   completeLesson: () => void;
   openSyllabus: () => void;
   closeSyllabus: () => void;
-  hideToast: () => void;
 }
 
 export const CoursePlayerContext = createContext<CoursePlayerContextValue | null>(null);

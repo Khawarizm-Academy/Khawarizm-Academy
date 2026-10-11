@@ -28,8 +28,8 @@ export const ExamPanel: React.FC = () => {
 
   const statRow = (
     <div className="player-exam-stats">
-      {stats.map((stat) => (
-        <div key={stat.label} className="player-exam-stat">
+      {stats.map((stat, idx) => (
+        <div key={stat.label} className="player-exam-stat animate-pop-in" style={{ animationDelay: `${idx * 70}ms` }}>
           <span className="player-exam-stat-value">{stat.value}</span>
           <span className="player-exam-stat-label">{stat.label}</span>
         </div>
@@ -38,7 +38,7 @@ export const ExamPanel: React.FC = () => {
   );
 
   return (
-    <div className={isExamUnlocked ? 'player-exam-card player-exam-open' : 'player-exam-card player-exam-locked'}>
+    <div className={`${isExamUnlocked ? 'player-exam-card player-exam-open' : 'player-exam-card player-exam-locked'} animate-pop-in`}>
       <div className={isExamUnlocked ? 'player-exam-icon player-exam-icon-open' : 'player-exam-icon player-exam-icon-locked'}>
         {isExamUnlocked ? <Award size={24} /> : <Lock size={22} />}
       </div>

@@ -20,7 +20,7 @@ export const CourseHeaderBlock: React.FC<CourseHeaderBlockProps> = ({ course }) 
   ];
 
   return (
-    <div className="w-full flex flex-col gap-5">
+    <div className="w-full flex flex-col gap-5 animate-fade-in-up">
       <div className="course-cover group">
         <img src={course.thumbnailUrl} alt={course.title} className="course-cover-img" loading="lazy" />
         <div className="course-cover-shade" />

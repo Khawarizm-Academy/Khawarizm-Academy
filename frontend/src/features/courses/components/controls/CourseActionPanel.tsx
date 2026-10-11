@@ -30,7 +30,7 @@ export const CourseActionPanel: React.FC<CourseActionPanelProps> = ({ surface })
   const priceClass = course.priceType === 'free' ? 'course-action-price-free' : 'course-action-price';
 
   return (
-    <div className={PANEL_CLASS[surface]}>
+    <div className={`${PANEL_CLASS[surface]} animate-fade-in-up`}>
       <div className="flex-between gap-3">
         <span className={priceClass}>{course.priceLabel}</span>
         {isEnrolled && <span className="badge-pill bg-blue-400/10 border border-blue-400/40 text-blue-400">{courseCopy.landing.enrolledLabel}</span>}

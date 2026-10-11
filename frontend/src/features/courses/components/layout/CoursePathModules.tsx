@@ -16,12 +16,13 @@ export const CoursePathModules: React.FC = () => {
         <div key={module.id} className="player-path-module">
           <span className="player-path-module-title">{module.title}</span>
           <div className="flex flex-col gap-1">
-            {module.lessons.map((lesson) => (
+            {module.lessons.map((lesson, lessonIndex) => (
               <PathLessonRow
                 key={lesson.id}
                 lesson={lesson}
                 status={lessonStatus(lesson, ordered, completedIds, activeLessonId)}
                 onSelect={selectLesson}
+                index={lessonIndex}
               />
             ))}
           </div>

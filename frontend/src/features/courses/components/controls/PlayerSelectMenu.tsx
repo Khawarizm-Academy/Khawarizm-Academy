@@ -27,7 +27,7 @@ export const PlayerSelectMenu: React.FC<PlayerSelectMenuProps> = ({
       </button>
 
       {isOpen && (
-        <div className="player-speed-menu">
+        <div className="player-speed-menu animate-dropdown-in">
           {options.map((option) => (
             <button
               key={option}
