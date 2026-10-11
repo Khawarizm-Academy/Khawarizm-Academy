@@ -30,7 +30,7 @@ export const CurriculumModuleCard: React.FC<CurriculumModuleCardProps> = ({
   onSelectLesson,
 }) => {
   return (
-    <div className="course-accordion-item">
+    <div className="course-accordion-item animate-pop-in" style={{ animationDelay: `${index * 90}ms` }}>
       <button type="button" onClick={onToggle} className="course-accordion-head" aria-expanded={isOpen}>
         <span className="course-accordion-index">{index}</span>
         <span className="course-accordion-title">{module.title}</span>
@@ -39,7 +39,7 @@ export const CurriculumModuleCard: React.FC<CurriculumModuleCardProps> = ({
       </button>
 
       {isOpen && (
-        <div className="course-accordion-body">
+        <div className="course-accordion-body animate-fade-in-up">
           {module.lessons.map((lesson: CourseLesson) => {
             const status = getStatus(lesson.id);
             const mark = STATUS_MARK[status];

@@ -10,7 +10,7 @@ export const CourseAbout: React.FC = () => {
   return (
     <section className="course-section">
       <h2 className="course-section-title">{courseCopy.landing.aboutTitle}</h2>
-      <div className="course-info-card">
+      <div className="course-info-card animate-fade-in-up">
         <p className="course-instructor-bio">{course.about}</p>
       </div>
     </section>

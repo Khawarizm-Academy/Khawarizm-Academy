@@ -31,7 +31,7 @@ export const RelatedCoursesRail: React.FC<RelatedCoursesRailProps> = ({ relatedI
       <h2 className="course-section-title">{courseCopy.landing.relatedTitle}</h2>
       <div className="horizontal-scroll-row">
         {items.map((item, idx) => (
-          <div key={item.id} className="course-related-card">
+          <div key={item.id} className="course-related-card animate-pop-in" style={{ animationDelay: `${idx * 80}ms` }}>
             <CatalogCard
               item={item}
               index={idx}

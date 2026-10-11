@@ -29,14 +29,22 @@ interface PathLessonRowProps {
   lesson: CourseLesson;
   status: CourseLessonStatus;
   onSelect: (lessonId: string) => void;
+  /** Position within its module, used to stagger the entrance. */
+  index?: number;
 }
 
 /** One lesson row in the path sidebar or mobile syllabus drawer. */
-export const PathLessonRow: React.FC<PathLessonRowProps> = ({ lesson, status, onSelect }) => {
+export const PathLessonRow: React.FC<PathLessonRowProps> = ({ lesson, status, onSelect, index = 0 }) => {
   const mark = STATUS_MARK[status];
 
   return (
-    <button type="button" onClick={() => onSelect(lesson.id)} disabled={status === 'locked'} className={ROW_CLASS[status]}>
+    <button
+      type="button"
+      onClick={() => onSelect(lesson.id)}
+      disabled={status === 'locked'}
+      className={`${ROW_CLASS[status]} animate-pop-in`}
+      style={{ animationDelay: `${index * 50}ms` }}
+    >
       <span className={mark.className}>
         <mark.icon size={12} />
       </span>

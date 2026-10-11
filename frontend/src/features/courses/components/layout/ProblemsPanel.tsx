@@ -76,7 +76,8 @@ export const ProblemsPanel: React.FC = () => {
               type="button"
               onClick={() => setSelectedId(option.id)}
               disabled={selectedId !== null}
-              className={OPTION_CLASS[tone]}
+              className={`${OPTION_CLASS[tone]} animate-pop-in`}
+              style={{ animationDelay: `${index * 55}ms` }}
             >
               <span className="player-option-mark border-navy-600/60">
                 {mark.icon ? (
@@ -92,7 +93,7 @@ export const ProblemsPanel: React.FC = () => {
       </div>
 
       {selectedId && (
-        <div className={isCorrect ? 'player-feedback player-feedback-ok' : 'player-feedback player-feedback-bad'}>
+        <div className={`${isCorrect ? 'player-feedback player-feedback-ok' : 'player-feedback player-feedback-bad'} animate-fade-in-up`}>
           {isCorrect ? (
             <CheckCircle2 size={17} className="text-success-500 shrink-0" />
           ) : (
@@ -115,7 +116,7 @@ export const ProblemsPanel: React.FC = () => {
       </button>
 
       {showHint && (
-        <p className="text-sm text-slate-400 font-body bg-navy-950/60 border border-navy-600/40 rounded-xl px-4 py-3">
+        <p className="text-sm text-slate-400 font-body bg-navy-950/60 border border-navy-600/40 rounded-xl px-4 py-3 animate-fade-in-up">
           {problem.hint}
         </p>
       )}

@@ -17,7 +17,7 @@ export const LiveSessionCard: React.FC = () => {
   if (!course) return null;
 
   return (
-    <section className="course-info-card">
+    <section className="course-info-card animate-fade-in-up">
       <div className="course-info-head">
         <span className="course-info-icon">
           <Video size={18} className="text-blue-400" />

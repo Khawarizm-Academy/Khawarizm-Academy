@@ -331,28 +331,92 @@
     @apply absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-navy-950/50;
   }
 
-  .player-play {
-    @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-blue-500/90 hover:bg-blue-400 border border-blue-400/60 text-white flex items-center justify-center shadow-[0_0_28px_rgba(41,169,255,0.5)] transition-all hover:scale-105 active:scale-95 cursor-pointer;
+  .player-video-live {
+    @apply opacity-25;
   }
 
-  .player-video-tools {
-    @apply absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-2.5 bg-gradient-to-t from-navy-950 to-transparent;
+  .player-center {
+    @apply absolute inset-0 z-10 flex items-center justify-center;
+  }
+
+  .player-play {
+    @apply w-16 h-16 rounded-full bg-blue-500/90 hover:bg-blue-400 border border-blue-400/60 text-white flex items-center justify-center shadow-[0_0_28px_rgba(41,169,255,0.5)] transition-all hover:scale-105 active:scale-95 cursor-pointer;
+  }
+
+  .player-transport {
+    @apply flex items-center gap-4;
+  }
+
+  .player-skip {
+    @apply w-11 h-11 rounded-full bg-navy-950/70 backdrop-blur border border-white/15 text-white flex items-center justify-center transition-all hover:border-blue-400/60 hover:bg-navy-900 active:scale-90 cursor-pointer;
+  }
+
+  .player-bar-bottom {
+    @apply absolute bottom-0 left-0 right-0 z-20 flex flex-col gap-2 pl-3 pr-3 pb-2.5 pt-12 bg-gradient-to-t from-navy-950/95 via-navy-950/60 to-transparent;
+  }
+
+  .player-seek {
+    @apply relative flex items-center h-5 cursor-pointer touch-none select-none;
+  }
+
+  .player-seek-track {
+    @apply relative w-full h-1.5 rounded-full bg-navy-800;
+  }
+
+  .player-seek-buffered {
+    @apply absolute top-0 bottom-0 left-0 rounded-full bg-navy-600;
+  }
+
+  .player-seek-fill {
+    @apply absolute top-0 bottom-0 left-0 rounded-full bg-gradient-to-r from-blue-400 to-gold-400;
+  }
+
+  .player-seek-thumb {
+    @apply absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(41,169,255,0.8)];
+  }
+
+  .player-captions {
+    @apply absolute bottom-20 left-0 right-0 z-10 flex justify-center px-6 pointer-events-none;
+  }
+
+  .player-caption-line {
+    @apply max-w-[85%] text-center text-white/95 text-sm font-body bg-navy-950/80 border border-navy-600/60 rounded-lg px-3 py-1;
+  }
+
+  .player-state-card {
+    @apply flex flex-col items-center gap-2.5 text-center px-6 text-sm;
+  }
+
+  .player-state-title {
+    @apply text-base font-display font-bold text-white;
+  }
+
+  .player-state-note {
+    @apply text-xs text-slate-400 font-body max-w-xs leading-relaxed;
+  }
+
+  .player-state-hint {
+    @apply mt-2 text-xs text-slate-300 font-body;
+  }
+
+  .player-controls {
+    @apply w-full flex items-center justify-between gap-2;
+  }
+
+  .player-time {
+    @apply text-[10px] font-mono tabular-nums text-slate-300 shrink-0;
+  }
+
+  .player-tools {
+    @apply flex items-center gap-1.5;
   }
 
   .player-tool {
-    @apply w-9 h-9 rounded-lg bg-navy-900/80 hover:bg-navy-800 border border-navy-600/60 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0;
+    @apply w-9 h-9 rounded-lg bg-navy-900/80 hover:bg-navy-800 border border-navy-600/60 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed;
   }
 
   .player-tool-label {
     @apply text-[11px] text-slate-300 font-body;
-  }
-
-  .player-video-seek {
-    @apply flex-1 h-1.5 rounded-full bg-navy-800 relative overflow-hidden;
-  }
-
-  .player-video-seek-fill {
-    @apply absolute inset-y-0 right-0 rounded-full bg-blue-400;
   }
 
   .player-speed-menu {
@@ -376,11 +440,11 @@
   }
 
   .player-path-button {
-    @apply w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-navy-900/70 backdrop-blur-md border border-blue-400/40 text-blue-400 text-sm font-display font-semibold hover:border-blue-400 transition-colors cursor-pointer mb-4;
+    @apply w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-navy-900/70 backdrop-blur-md border border-blue-400/40 text-blue-400 text-sm font-display font-semibold hover:border-blue-400 transition-all active:scale-95 cursor-pointer mb-4;
   }
 
   .player-tab {
-    @apply flex items-center gap-2 px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-display font-semibold whitespace-nowrap transition-all cursor-pointer border-b-2 -mb-px;
+    @apply flex items-center gap-2 px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-display font-semibold whitespace-nowrap transition-all cursor-pointer border-b-2 -mb-px active:scale-95;
   }
 
   .player-tab-active {
@@ -627,7 +691,7 @@
   }
 
   .player-mini-play {
-    @apply w-10 h-10 rounded-full bg-blue-500/90 border border-blue-400/60 text-white flex items-center justify-center shrink-0 cursor-pointer;
+    @apply w-10 h-10 rounded-full bg-blue-500/90 border border-blue-400/60 text-white flex items-center justify-center shrink-0 cursor-pointer transition-transform active:scale-90;
   }
 
   /* ======================================================================

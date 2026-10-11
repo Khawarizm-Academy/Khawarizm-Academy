@@ -17,8 +17,10 @@ export const LiveSessionPanel: React.FC = () => {
       </div>
 
       <div className="flex flex-col gap-3">
-        {course.liveSessions.map((session) => (
-          <LiveSessionPlayerCard key={session.id} session={session} />
+        {course.liveSessions.map((session, idx) => (
+          <div key={session.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 70}ms` }}>
+            <LiveSessionPlayerCard session={session} />
+          </div>
         ))}
       </div>
     </div>
