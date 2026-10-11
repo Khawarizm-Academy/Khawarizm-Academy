@@ -13,10 +13,10 @@ This skill is the standard for **splitting one page into a Desktop View and a Mo
 
 ## 1. When a component gets a folder
 
-**Rule: if one component (or page area) has both a Desktop View and a Mobile View, it lives in a folder named after that component, and the two surfaces are two files inside it.**
+**Rule: if one component (or page area) has both a Desktop View and a Mobile View, it lives in a folder named after that component, inside the `views/` category, and the two surfaces are two files inside it.**
 
 ```
-src/features/<feature>/components/<ComponentName>/
+src/features/<feature>/components/views/<ComponentName>/
 ├── Desktop<ComponentName>View.tsx
 └── Mobile<ComponentName>View.tsx
 ```
@@ -40,12 +40,17 @@ src/features/<feature>/components/<ComponentName>.tsx
 Real example (auth):
 
 ```
-features/auth/components/LoginView/
+features/auth/components/views/LoginView/
 ├── DesktopLoginView.tsx
 └── MobileLoginView.tsx
 ```
 
-Both files export one default-style named component (`export const DesktopLoginView: React.FC`). No `index.ts` barrel — this codebase does not use barrels; import the file directly.
+Both files export one default-style named component (`export const DesktopLoginView: React.FC`). No `index.ts` barrel — import the file directly with the `@/` alias (see [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md)):
+
+```ts
+import { DesktopLoginView } from '@/features/auth/components/views/LoginView/DesktopLoginView';
+import { MobileLoginView } from '@/features/auth/components/views/LoginView/MobileLoginView';
+```
 
 ## 3. What goes where inside a split
 
@@ -113,7 +118,7 @@ const TOP_BAR: Record<AuthSurface, { className: string; backLabel: string }> = {
 1. **Find the shared state** (mode, toggles, modal open, toast, URL sync) and the shared handlers.
 2. **Create the context** (`.ts`) + provider (`.tsx`) under `features/<feature>/context/` and move the state + handlers into the provider.
 3. **Extract shared chrome** into flat components beside the views folder: top bar, legal notice, footer, active-card selector. Use a `Surface` record for surface-varying labels/classes.
-4. **Create the folder** `components/<ComponentName>/` and move the existing desktop JSX → `Desktop<ComponentName>View.tsx`, mobile JSX → `Mobile<ComponentName>View.tsx`. Each reads context; each passes `surface` to shared chrome.
+4. **Create the folder** `components/views/<ComponentName>/` and move the existing desktop JSX → `Desktop<ComponentName>View.tsx`, mobile JSX → `Mobile<ComponentName>View.tsx`. Each reads context; each passes `surface` to shared chrome.
 5. **Slim the page** to: provider → shell div → toast → both views → modal.
 6. **Verify** (§8).
 
@@ -127,16 +132,20 @@ features/auth/
 │   ├── authLoginContext.ts          # AuthLoginContext + useAuthLogin() hook
 │   └── AuthLoginProvider.tsx        # owns mode, toast, terms modal, navigation
 ├── components/
-│   ├── ActiveAuthCard.tsx           # card-by-mode lookup, rendered by both views
-│   ├── AuthHeroPanel.tsx            # desktop-only, stays flat (single surface)
-│   ├── AuthLegalNotice.tsx          # one component, LOGIN_NOTICE per surface
-│   ├── AuthTermsModal.tsx           # shared overlay, null when closed
-│   ├── AuthToast.tsx                # shared overlay, null when hidden
-│   ├── AuthTopBar.tsx               # one top bar, TOP_BAR record per surface
-│   ├── BrandSeal.tsx                # shared by hero header + mobile brand
-│   ├── DefaultLoginCard.tsx         # single surface API via variant prop
-│   ├── WelcomeBackCard.tsx
-│   └── LoginView/
+│   ├── cards/
+│   │   ├── ActiveAuthCard.tsx       # card-by-mode lookup, rendered by both views
+│   │   ├── DefaultLoginCard.tsx     # single surface API via variant prop
+│   │   └── WelcomeBackCard.tsx
+│   ├── hero/
+│   │   ├── AuthHeroPanel.tsx        # desktop-only, stays flat (single surface)
+│   │   └── BrandSeal.tsx            # shared by hero header + mobile brand
+│   ├── chrome/
+│   │   ├── AuthLegalNotice.tsx      # one component, LOGIN_NOTICE per surface
+│   │   └── AuthTopBar.tsx           # one top bar, TOP_BAR record per surface
+│   ├── overlays/
+│   │   ├── AuthTermsModal.tsx       # shared overlay, null when closed
+│   │   └── AuthToast.tsx            # shared overlay, null when hidden
+│   └── views/LoginView/
 │       ├── DesktopLoginView.tsx     # split-screen chamber
 │       └── MobileLoginView.tsx      # one-column brand + body
 └── pages/

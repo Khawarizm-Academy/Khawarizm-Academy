@@ -191,7 +191,7 @@ export const DASHBOARD_TOP_BAR_TABS = NAV_TABS.filter((tab) => tab.desktop);
 ## 7. Reading the URL in a Component
 
 ```tsx
-import { useRouter, useNavigate, useParams, useSearchParams, useLocation, useActiveRoute } from '../../../app/routerContext';
+import { useRouter, useNavigate, useParams, useSearchParams, useLocation, useActiveRoute } from '@/app/routerContext';
 
 const { pathname, search, params, activeRoute, navigate } = useRouter();
 const navigate = useNavigate();

@@ -36,8 +36,8 @@ Always follow this exact mapping when creating or moving files:
 | What are you adding? | Target Directory | File Pattern |
 | :--- | :--- | :--- |
 | **Shared Component (2+ features)** | `src/shared/components/<Category>/` | `<Component>.tsx` (e.g. `Navbar/DesktopNavbar.tsx`, `Cards/CourseCard.tsx`) |
-| **Feature Component (1 feature only)**| `src/features/<feature>/components/` | `<Component>.tsx` (e.g. `CatalogFilterSidebar.tsx`) |
-| **Component with Desktop + Mobile views** | `src/features/<feature>/components/<Component>/` | `Desktop<Component>View.tsx` + `Mobile<Component>View.tsx` (e.g. `LoginView/DesktopLoginView.tsx`) — one folder per component that renders differently per surface |
+| **Feature Component (1 feature only)**| `src/features/<feature>/components/<category>/` | `<Component>.tsx` inside a purpose folder — `layout/`, `views/`, `chrome/`, `cards/`, `hero/`, `overlays/`, `controls/`, `states/`, `filters/`, `toolbar/` (e.g. `CatalogFilterSidebar.tsx` → `filters/CatalogFilterSidebar.tsx`). Taxonomy: [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md) |
+| **Component with Desktop + Mobile views** | `src/features/<feature>/components/views/<Component>/` | `Desktop<Component>View.tsx` + `Mobile<Component>View.tsx` (e.g. `views/LoginView/DesktopLoginView.tsx`) — one folder per component that renders differently per surface |
 | **Feature page state shared per surface** | `src/features/<feature>/context/` | `<Area>Context.ts` (context + hook) + `<Area>Provider.tsx` (state owner) — keeps hook and component in separate files for fast refresh |
 | **Page View** | `src/features/<feature>/pages/` | `<Feature>Page.tsx` (e.g. `CatalogPage.tsx`, `HomePage.tsx`) |
 | **Shared Domain Entity Types** | `src/shared/types/` | `entities.ts` (e.g. `Course`, `Scholarship`, `Event`) |
@@ -92,7 +92,7 @@ Always follow this exact mapping when creating or moving files:
 
 ### 3.6 Authentication (Login & Welcome-Back)
 - **Page:** `<LoginPage />` (`features/auth/pages/LoginPage.tsx`, `hideShell: true`) — a thin orchestrator: mounts `AuthLoginProvider`, both surfaces, the toast, and the terms modal.
-- **Surfaces:** `<DesktopLoginView />` + `<MobileLoginView />` in `features/auth/components/LoginView/`; shared page state (`authMode`, toast, terms modal, navigation) comes from `useAuthLogin()` (`features/auth/context/authLoginContext.ts`), owned by `AuthLoginProvider.tsx`. Surface-varying chrome is one component with a data record: `<AuthTopBar surface />`, `<AuthLegalNotice surface />`, and `<ActiveAuthCard surface />` picks the card by a `Record<AuthMode, …>`.
+- **Surfaces:** `<DesktopLoginView />` + `<MobileLoginView />` in `features/auth/components/views/LoginView/`; shared page state (`authMode`, toast, terms modal, navigation) comes from `useAuthLogin()` (`features/auth/context/authLoginContext.ts`), owned by `AuthLoginProvider.tsx`. Surface-varying chrome is one component with a data record: `<AuthTopBar surface />`, `<AuthLegalNotice surface />`, and `<ActiveAuthCard surface />` picks the card by a `Record<AuthMode, …>`.
 - **Mode pill (demo switcher):** `<AuthModeSwitch mode={mode} onChange={setMode} />` — one component for desktop and mobile; `lg:` breakpoints and short/long labels pick the size. Never render two copies.
 - **Social providers:** `<AuthSocialButton provider="google" | "facebook" label={…} />` — one `PROVIDERS` record holds surface class + brand mark, so there is no provider if-chain.
 - **Cards & hero:** `<DefaultLoginCard />`, `<WelcomeBackCard />`, `<AuthHeroPanel />`, `<BrandSeal />`.
@@ -151,6 +151,7 @@ Whenever asked to create any new page:
 **Skills:**
 - **Code style & quality:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) — one-line comments, no if-chains, static data in JSON, no desktop/mobile duplication.
 - **Desktop & mobile view split:** [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md) — folder-per-component organization, `Desktop…View` / `Mobile…View` files, context or props for shared surface state.
+- **Component folders & imports:** [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md) — the category taxonomy under feature `components/` and the `@/` alias import rules.
 - **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — routes.json, redirects, nav tabs, query params, URL debugging.
 - **Loading, caching & transitions:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md) — dual-tier skeletons, SWR, scroll memory.
 - **Page & feature creation:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md) — the full 10-step flow.

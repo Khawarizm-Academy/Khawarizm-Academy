@@ -121,10 +121,10 @@ import { Footer } from '@/shared/components/Footer/Footer';
 import { SmartSearchBox } from '@/shared/components/Search/SmartSearchBox';
 import { CourseCard } from '@/shared/components/Cards/CourseCard';
 import { ScholarshipCard } from '@/shared/components/Cards/ScholarshipCard';
-import { CatalogFilterSidebar } from '../components/CatalogFilterSidebar';
-import { mockCourses, mockScholarships } from '@/mocks/homepage';
+import { CatalogFilterSidebar } from '@/features/catalog/components/filters/CatalogFilterSidebar';
+import { mockCourses, mockScholarships } from '@/shared/mocks/homepage';
 import type { NavTabKey } from '@/shared/lib/localization';
-import type { FilterDomain } from '../types';
+import type { FilterDomain } from '@/features/catalog/types';
 
 export const CatalogPage: React.FC = () => {
   const [activeNavTab, setActiveNavTab] = useState<NavTabKey>('catalog');
