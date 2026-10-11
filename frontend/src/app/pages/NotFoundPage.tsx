@@ -9,7 +9,7 @@ export const NotFoundPage: React.FC = () => {
 
   return (
     <main className="content-container">
-      <div className="w-full py-20 px-6 flex-col-center text-center gap-5 relative overflow-hidden">
+      <div className="placeholder-stage">
         {/* Starfield behind the lost-in-space chamber */}
         <OrbitalStageStars />
 
@@ -17,13 +17,13 @@ export const NotFoundPage: React.FC = () => {
           <OrbitalEmblem tone="blue" icon={<Globe size={36} />} />
         </div>
 
-        <h1 className="relative z-10 text-4xl sm:text-5xl font-extrabold text-white font-['IBM_Plex_Sans_Arabic'] tracking-tight animate-pop-in animation-delay-100 drop-shadow-[0_0_20px_rgba(41,169,255,0.35)]">
+        <h1 className="placeholder-code animate-pop-in animation-delay-100 drop-shadow-[0_0_20px_rgba(41,169,255,0.35)]">
           404
         </h1>
-        <h2 className="relative z-10 text-2xl font-bold text-white font-['IBM_Plex_Sans_Arabic'] animate-pop-in animation-delay-150">
+        <h2 className="placeholder-subtitle animate-pop-in animation-delay-150">
           الصفحة المطلوبة غير موجودة
         </h2>
-        <p className="relative z-10 max-w-md text-slate-400 text-sm font-['Tajawal'] leading-relaxed animate-pop-in animation-delay-200">
+        <p className="placeholder-desc animate-pop-in animation-delay-200">
           عذرًا، الرابط الذي تحاول الوصول إليه غير صحيح أو لم يعد متاحًا. يمكنك العودة إلى الصفحة الرئيسية للاستكشاف.
         </p>
         <button

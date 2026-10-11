@@ -149,11 +149,11 @@
 }
 
 .card-accent-blue {
-  @apply absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-l from-blue-400 via-blue-500 to-transparent transition-all duration-300 group-hover:shadow-[0_0_10px_#29A9FF];
+  @apply absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-l from-blue-400 via-blue-500 to-transparent transition-all duration-300 group-hover:shadow-[0_0_10px_var(--color-blue-400)];
 }
 
 .card-accent-gold {
-  @apply absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-l from-gold-400 via-gold-600 to-transparent transition-all duration-300 group-hover:shadow-[0_0_10px_#E5B65C];
+  @apply absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-l from-gold-400 via-gold-600 to-transparent transition-all duration-300 group-hover:shadow-[0_0_10px_var(--color-gold-400)];
 }
 
 .card-top-bar-gold {
@@ -400,28 +400,28 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #040F24;
+  background: var(--color-navy-950);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1B3F80;
+  background: var(--color-navy-600);
   border-radius: 9999px;
-  border: 1.5px solid #040F24;
+  border: 1.5px solid var(--color-navy-950);
   transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #29A9FF;
+  background: var(--color-blue-400);
 }
 
 ::-webkit-scrollbar-corner {
-  background: #040F24;
+  background: var(--color-navy-950);
 }
 
 /* Firefox standard */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1B3F80 #040F24;
+  scrollbar-color: var(--color-navy-600) var(--color-navy-950);
 }
 
 /* ==========================================================================
@@ -839,7 +839,7 @@
 }
 
 .page-transition-wrapper {
-  @apply w-full flex-1 flex flex-col items-center;
+  @apply relative z-10 w-full flex-1 flex flex-col items-center;
 }
 
 /* ==========================================================================
@@ -906,6 +906,46 @@ html[data-vt-enabled='true'] .animate-page-enter {
    @layer components so per-instance JSX utilities can still override.
    ========================================================================== */
 @layer components {
+  /* --- App shell: atmosphere washes, sticky chrome & state panels --- */
+  .app-atmosphere {
+    @apply fixed inset-0 pointer-events-none z-0 overflow-hidden;
+  }
+
+  .app-wash {
+    @apply absolute rounded-full;
+  }
+
+  /* Sticky navbar/header slot — the wrapper is sticky, not the navbar, so it
+     travels inside the tall page-wrapper. */
+  .shell-chrome {
+    @apply w-full sticky top-0 z-30;
+  }
+
+  .shell-footer {
+    @apply w-full relative z-10 mt-auto;
+  }
+
+  .shell-bottom-bar {
+    @apply w-full relative z-40;
+  }
+
+  /* Shared empty / error / not-found chamber: icon circle, title, message. */
+  .state-panel {
+    @apply w-full py-20 px-6 rounded-2xl flex flex-col items-center justify-center text-center gap-4 bg-navy-900/40 backdrop-blur-md border border-navy-600;
+  }
+
+  .state-panel-icon {
+    @apply w-16 h-16 rounded-full bg-navy-800 border border-navy-600 flex items-center justify-center;
+  }
+
+  .state-panel-title {
+    @apply text-xl font-bold text-white font-display;
+  }
+
+  .state-panel-text {
+    @apply text-slate-400 text-sm font-body max-w-md;
+  }
+
   /* --- Brand seal & artwork --- */
   .art-logo-row {
     @apply inline-flex items-center gap-3 select-none cursor-pointer;
@@ -1623,6 +1663,14 @@ html[data-vt-enabled='true'] .animate-page-enter {
 
   .placeholder-title {
     @apply relative z-10 text-3xl sm:text-4xl font-extrabold text-white font-display tracking-tight;
+  }
+
+  .placeholder-code {
+    @apply relative z-10 text-4xl sm:text-5xl font-extrabold text-white font-display tracking-tight;
+  }
+
+  .placeholder-subtitle {
+    @apply relative z-10 text-2xl font-bold text-white font-display;
   }
 
   .placeholder-desc {

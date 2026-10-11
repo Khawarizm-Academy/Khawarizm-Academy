@@ -187,6 +187,8 @@ Two variants of the same UI render **one component**. What differs is data or CS
 <CatalogFilterGroups surface="mobile"  tab={type} filters={filters} />
 ```
 
+**When a whole page genuinely needs different markup per surface**, extract the desktop JSX and mobile JSX into two view components inside **one folder named after the component** (e.g. `components/LoginView/DesktopLoginView.tsx` + `components/LoginView/MobileLoginView.tsx`) and share state via a context provider + hook — the exact pattern is [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md).
+
 **How to express the difference:**
 - **Layout only** → let CSS handle it (`hidden md:flex`, `md:hidden`). Never `if (isMobile)`.
 - **Which items show** → a `surfaces: ["desktop", "mobile"]` field, or `desktop: true` / `mobile: false` flags.

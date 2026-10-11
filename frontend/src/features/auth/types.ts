@@ -2,6 +2,9 @@ import authJson from '../../shared/json/auth.json';
 
 export type AuthMode = 'login' | 'welcome-back';
 
+/** The two rendering surfaces an auth view knows about. */
+export type AuthSurface = 'desktop' | 'mobile';
+
 export interface ReturningUserData {
   id: string;
   name: string;

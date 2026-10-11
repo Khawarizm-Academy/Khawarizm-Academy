@@ -37,6 +37,8 @@ Always follow this exact mapping when creating or moving files:
 | :--- | :--- | :--- |
 | **Shared Component (2+ features)** | `src/shared/components/<Category>/` | `<Component>.tsx` (e.g. `Navbar/DesktopNavbar.tsx`, `Cards/CourseCard.tsx`) |
 | **Feature Component (1 feature only)**| `src/features/<feature>/components/` | `<Component>.tsx` (e.g. `CatalogFilterSidebar.tsx`) |
+| **Component with Desktop + Mobile views** | `src/features/<feature>/components/<Component>/` | `Desktop<Component>View.tsx` + `Mobile<Component>View.tsx` (e.g. `LoginView/DesktopLoginView.tsx`) — one folder per component that renders differently per surface |
+| **Feature page state shared per surface** | `src/features/<feature>/context/` | `<Area>Context.ts` (context + hook) + `<Area>Provider.tsx` (state owner) — keeps hook and component in separate files for fast refresh |
 | **Page View** | `src/features/<feature>/pages/` | `<Feature>Page.tsx` (e.g. `CatalogPage.tsx`, `HomePage.tsx`) |
 | **Shared Domain Entity Types** | `src/shared/types/` | `entities.ts` (e.g. `Course`, `Scholarship`, `Event`) |
 | **Feature View Types** | `src/features/<feature>/` | `types.ts` (e.g. `CatalogTab`, `FilterDomain`) |
@@ -89,11 +91,14 @@ Always follow this exact mapping when creating or moving files:
 - Global footer: `<Footer />`.
 
 ### 3.6 Authentication (Login & Welcome-Back)
-- **Page:** `<LoginPage />` (`features/auth/pages/LoginPage.tsx`, `hideShell: true`).
+- **Page:** `<LoginPage />` (`features/auth/pages/LoginPage.tsx`, `hideShell: true`) — a thin orchestrator: mounts `AuthLoginProvider`, both surfaces, the toast, and the terms modal.
+- **Surfaces:** `<DesktopLoginView />` + `<MobileLoginView />` in `features/auth/components/LoginView/`; shared page state (`authMode`, toast, terms modal, navigation) comes from `useAuthLogin()` (`features/auth/context/authLoginContext.ts`), owned by `AuthLoginProvider.tsx`. Surface-varying chrome is one component with a data record: `<AuthTopBar surface />`, `<AuthLegalNotice surface />`, and `<ActiveAuthCard surface />` picks the card by a `Record<AuthMode, …>`.
 - **Mode pill (demo switcher):** `<AuthModeSwitch mode={mode} onChange={setMode} />` — one component for desktop and mobile; `lg:` breakpoints and short/long labels pick the size. Never render two copies.
 - **Social providers:** `<AuthSocialButton provider="google" | "facebook" label={…} />` — one `PROVIDERS` record holds surface class + brand mark, so there is no provider if-chain.
-- **Cards & hero:** `<DefaultLoginCard />`, `<WelcomeBackCard />`, `<AuthHeroPanel />`.
+- **Cards & hero:** `<DefaultLoginCard />`, `<WelcomeBackCard />`, `<AuthHeroPanel />`, `<BrandSeal />`.
+- **Overlays:** `<AuthToast />` and `<AuthTermsModal />` are flat shared components that return `null` when hidden.
 - **Styling:** every auth element sits on an `.auth-*` concept class (`.auth-shell`, `.auth-split-screen`, `.auth-chamber`, `.auth-card`, `.auth-field`, `.auth-hero`, `.auth-mode-switch`, `.auth-terms-scrim`, …), all declared in **`src/features/auth/auth.css`** and imported by `globals.css`. JSX only layers one-off utilities on top — never a 10-class string.
+- **Full layout pattern:** [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md).
 
 ### 3.7 Repeated Class Strings → Concept Class
 **The same run of utilities twice for the same kind of element is a missing concept class, not styling.** Extract it and use the short name in JSX.
@@ -145,6 +150,7 @@ Whenever asked to create any new page:
 
 **Skills:**
 - **Code style & quality:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) — one-line comments, no if-chains, static data in JSON, no desktop/mobile duplication.
+- **Desktop & mobile view split:** [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md) — folder-per-component organization, `Desktop…View` / `Mobile…View` files, context or props for shared surface state.
 - **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — routes.json, redirects, nav tabs, query params, URL debugging.
 - **Loading, caching & transitions:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md) — dual-tier skeletons, SWR, scroll memory.
 - **Page & feature creation:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md) — the full 10-step flow.

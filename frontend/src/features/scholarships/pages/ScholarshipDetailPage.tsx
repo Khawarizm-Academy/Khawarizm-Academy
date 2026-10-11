@@ -3,6 +3,7 @@ import { useParams } from '../../../app/routerContext';
 import { useCachedData } from '../../../shared/hooks/useCachedData';
 import { PageSkeleton } from '../../../shared/components/Loading/PageSkeleton';
 import { ItemDetailView } from '../../../shared/components/Detail/ItemDetailView';
+import { StatePanel } from '../../../shared/components/State/StatePanel';
 import { mockCatalogAll, type CatalogItem } from '../../../mocks/catalog';
 
 export const ScholarshipDetailPage: React.FC = () => {
@@ -26,10 +27,10 @@ export const ScholarshipDetailPage: React.FC = () => {
   if (!item) {
     return (
       <main className="content-container">
-        <div className="w-full py-20 px-6 glass-panel rounded-2xl flex-col-center text-center gap-4 border border-[#1B3F80]">
-          <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">المنحة غير متوفرة</h3>
-          <p className="text-slate-400 text-sm font-['Tajawal'] max-w-md">لم يتم العثور على هذه المنحة. قد يكون التقديم قد أغلق أو لم تُنشر بعد.</p>
-        </div>
+        <StatePanel
+          title="المنحة غير متوفرة"
+          text="لم يتم العثور على هذه المنحة. قد يكون التقديم قد أغلق أو لم تُنشر بعد."
+        />
       </main>
     );
   }

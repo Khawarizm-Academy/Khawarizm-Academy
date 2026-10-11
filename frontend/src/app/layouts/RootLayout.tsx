@@ -12,6 +12,14 @@ import { NotificationsDrawer } from '../../features/dashboard/components/Notific
 import { NAV_TARGETS } from '../../shared/lib/navigation';
 import type { NavTabKey } from '../../shared/lib/localization';
 
+/** Celestial atmosphere washes: geometry, tone and drift delay of each glow. */
+const ATMOSPHERE_WASHES = [
+  { geometry: 'top-[4%] right-[5%] w-[650px] h-[650px] blur-[140px]', tone: 'bg-blue-400/[0.045]', delay: '0s' },
+  { geometry: 'top-[20%] left-[5%] w-[550px] h-[550px] blur-[130px]', tone: 'bg-gold-400/[0.035]', delay: '2s' },
+  { geometry: 'top-[50%] right-[10%] w-[600px] h-[600px] blur-[150px]', tone: 'bg-blue-500/[0.035]', delay: '4s' },
+  { geometry: 'bottom-[10%] left-[15%] w-[700px] h-[500px] blur-[160px]', tone: 'bg-gold-400/[0.03]', delay: '6s' },
+];
+
 export const RootLayout: React.FC = () => {
   const { pathname, search, activeRoute, navigate } = useRouter();
   const [isGlobalNotificationsOpen, setIsGlobalNotificationsOpen] = useState(false);
@@ -28,35 +36,27 @@ export const RootLayout: React.FC = () => {
   return (
     <div className="page-wrapper">
       {/* Celestial ambient washes — slowly drifting so every page breathes */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute top-[4%] right-[5%] w-[650px] h-[650px] rounded-full bg-[#29A9FF]/[0.045] blur-[140px] animate-float-slow" />
-        <div
-          className="absolute top-[20%] left-[5%] w-[550px] h-[550px] rounded-full bg-[#E5B65C]/[0.035] blur-[130px] animate-float-slow"
-          style={{ animationDelay: '2s' }}
-        />
-        <div
-          className="absolute top-[50%] right-[10%] w-[600px] h-[600px] rounded-full bg-[#167BDB]/[0.035] blur-[150px] animate-float-slow"
-          style={{ animationDelay: '4s' }}
-        />
-        <div
-          className="absolute bottom-[10%] left-[15%] w-[700px] h-[500px] rounded-full bg-[#E5B65C]/[0.03] blur-[160px] animate-float-slow"
-          style={{ animationDelay: '6s' }}
-        />
+      <div className="app-atmosphere" aria-hidden="true">
+        {ATMOSPHERE_WASHES.map((wash) => (
+          <div
+            key={wash.delay}
+            className={`app-wash animate-float-slow ${wash.geometry} ${wash.tone}`}
+            style={{ animationDelay: wash.delay }}
+          />
+        ))}
       </div>
 
-      {/* Sticky header, desktop and mobile handled by CSS.
-          The wrapper is sticky (not the navbar) — a sticky element can only
-          travel inside its parent, so the parent must be the tall page-wrapper. */}
+      {/* Sticky header, desktop and mobile handled by CSS */}
       {showHeaderAndFooter && (
         <>
-          <div className="w-full hidden md:block sticky top-0 z-30">
+          <div className="shell-chrome hidden md:block">
             <DesktopNavbar
               activeTab={activeTab}
               onSelectTab={selectTab}
               onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
             />
           </div>
-          <div className="w-full block md:hidden sticky top-0 z-30">
+          <div className="shell-chrome block md:hidden">
             <MobileHeader
               onLogoClick={() => navigate(NAV_TARGETS.home)}
               onLoginClick={() => navigate(NAV_TARGETS.login)}
@@ -67,7 +67,7 @@ export const RootLayout: React.FC = () => {
       )}
 
       {/* Page area: full-page skeleton while the route chunk loads */}
-      <div key={pathname} className="page-transition-wrapper animate-page-enter relative z-10 w-full flex-1">
+      <div key={pathname} className="page-transition-wrapper animate-page-enter">
         <RouteErrorBoundary>
           <Suspense fallback={<PageSkeleton variant={activeRoute?.skeletonVariant ?? 'default'} />}>
             <Outlet />
@@ -77,14 +77,14 @@ export const RootLayout: React.FC = () => {
 
       {/* Footer, desktop and tablet only */}
       {showHeaderAndFooter && (
-        <div className="w-full hidden md:block relative z-10 mt-auto">
+        <div className="shell-footer hidden md:block">
           <Footer />
         </div>
       )}
 
       {/* Mobile bottom bar */}
       {!hideShell && (
-        <div className="block md:hidden relative z-40">
+        <div className="shell-bottom-bar block md:hidden">
           <MobileBottomBar
             activeTab={activeTab}
             onSelectTab={selectTab}
