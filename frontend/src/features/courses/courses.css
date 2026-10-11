@@ -323,36 +323,44 @@
     @apply relative w-full aspect-video rounded-2xl overflow-hidden border border-navy-600 bg-navy-950;
   }
 
+  .player-stage:fullscreen {
+    @apply w-screen h-screen rounded-none border-0;
+    aspect-ratio: auto;
+  }
+
+  /* The clip stays fully visible: no full-stage scrim, controls float in pills. */
   .player-video {
-    @apply absolute inset-0 w-full h-full object-cover opacity-40;
+    @apply absolute inset-0 w-full h-full object-cover;
   }
 
-  .player-video-shade {
-    @apply absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-navy-950/50;
+  .player-source-chip {
+    @apply absolute top-3 right-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-navy-950/70 backdrop-blur-md border border-navy-600/50 text-[11px] text-slate-200 font-body pointer-events-none;
   }
 
-  .player-video-live {
-    @apply opacity-25;
+  .player-source-dot {
+    @apply w-1.5 h-1.5 rounded-full bg-slate-500;
+  }
+
+  .player-source-dot-live {
+    @apply bg-danger-500 animate-pulse;
   }
 
   .player-center {
     @apply absolute inset-0 z-10 flex items-center justify-center;
   }
 
-  .player-play {
-    @apply w-16 h-16 rounded-full bg-blue-500/90 hover:bg-blue-400 border border-blue-400/60 text-white flex items-center justify-center shadow-[0_0_28px_rgba(41,169,255,0.5)] transition-all hover:scale-105 active:scale-95 cursor-pointer;
+  /* Single hero affordance, shown only while paused so playback stays unobstructed. */
+  .player-hero {
+    @apply absolute inset-0 z-10 flex items-center justify-center cursor-pointer;
   }
 
-  .player-transport {
-    @apply flex items-center gap-4;
+  .player-hero-toggle {
+    @apply w-[68px] h-[68px] rounded-full bg-navy-950/55 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all duration-200 group-hover:scale-105 hover:bg-blue-500/90 hover:border-blue-400 active:scale-95;
   }
 
-  .player-skip {
-    @apply w-11 h-11 rounded-full bg-navy-950/70 backdrop-blur border border-white/15 text-white flex items-center justify-center transition-all hover:border-blue-400/60 hover:bg-navy-900 active:scale-90 cursor-pointer;
-  }
-
-  .player-bar-bottom {
-    @apply absolute bottom-0 left-0 right-0 z-20 flex flex-col gap-2 pl-3 pr-3 pb-2.5 pt-12 bg-gradient-to-t from-navy-950/95 via-navy-950/60 to-transparent;
+  /* Slim bar: seek above, everyday controls below. */
+  .player-controls-bar {
+    @apply absolute bottom-0 left-0 right-0 z-20 flex flex-col gap-1.5 px-3 pb-2.5 pt-10 bg-gradient-to-t from-navy-950/95 via-navy-950/55 to-transparent;
   }
 
   .player-seek {
@@ -375,8 +383,12 @@
     @apply absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(41,169,255,0.8)];
   }
 
+  .player-seek-tip {
+    @apply absolute bottom-6 -translate-x-1/2 px-1.5 py-0.5 rounded-md bg-navy-950/95 border border-navy-600 text-[10px] text-white font-mono tabular-nums pointer-events-none whitespace-nowrap;
+  }
+
   .player-captions {
-    @apply absolute bottom-20 left-0 right-0 z-10 flex justify-center px-6 pointer-events-none;
+    @apply absolute bottom-[84px] left-0 right-0 z-10 flex justify-center px-6 pointer-events-none;
   }
 
   .player-caption-line {
@@ -399,36 +411,101 @@
     @apply mt-2 text-xs text-slate-300 font-body;
   }
 
-  .player-controls {
-    @apply w-full flex items-center justify-between gap-2;
+  .player-actions {
+    @apply w-full flex items-center gap-2 sm:gap-3;
+  }
+
+  .player-actions-main {
+    @apply flex items-center gap-1 sm:gap-1.5;
+  }
+
+  .player-actions-side {
+    @apply flex items-center gap-1 sm:gap-1.5 ms-auto;
+  }
+
+  .player-action-btn {
+    @apply w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-200 hover:text-white hover:bg-white/10 transition-all active:scale-90 cursor-pointer shrink-0;
+  }
+
+  .player-action-primary {
+    @apply w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-blue-500/90 hover:bg-blue-400 text-white border border-blue-400/60 shadow-[0_0_16px_rgba(41,169,255,0.45)] hover:shadow-[0_0_22px_rgba(41,169,255,0.6)] transition-all active:scale-95 cursor-pointer shrink-0;
+  }
+
+  .player-skip-glyph {
+    @apply relative inline-flex items-center justify-center;
+  }
+
+  .player-skip-badge {
+    @apply absolute inset-0 flex items-center justify-center pt-0.5 text-[8px] font-bold tabular-nums pointer-events-none;
   }
 
   .player-time {
-    @apply text-[10px] font-mono tabular-nums text-slate-300 shrink-0;
+    @apply text-[11px] font-mono tabular-nums text-slate-300 shrink-0;
   }
 
-  .player-tools {
-    @apply flex items-center gap-1.5;
+  .player-time-total {
+    @apply hidden sm:inline text-slate-500;
   }
 
-  .player-tool {
-    @apply w-9 h-9 rounded-lg bg-navy-900/80 hover:bg-navy-800 border border-navy-600/60 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed;
+  /* Settings panel: a bottom sheet on phones, an anchored popover on wider screens. */
+  .player-menu {
+    @apply z-[200] rounded-2xl border border-navy-600 bg-navy-900/95 backdrop-blur-xl shadow-[0_16px_44px_rgba(0,0,0,0.6)] p-3 flex flex-col gap-3;
   }
 
-  .player-tool-label {
-    @apply text-[11px] text-slate-300 font-body;
+  .player-menu-sheet {
+    @apply fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+84px)];
   }
 
-  .player-speed-menu {
-    @apply absolute bottom-14 left-2 z-20 w-28 bg-navy-900 border border-navy-600 rounded-xl shadow-2xl py-1.5;
+  .player-menu-anchored {
+    @apply fixed w-64;
   }
 
-  .player-speed-option {
-    @apply w-full text-right px-3.5 py-2 text-xs transition-colors cursor-pointer text-slate-300 hover:bg-navy-800 hover:text-white;
+  .player-menu-head {
+    @apply flex items-center gap-2 pb-2.5 border-b border-navy-600/50 text-sm font-display font-bold text-white;
   }
 
-  .player-speed-option-active {
-    @apply text-blue-400 font-bold;
+  .player-menu-section {
+    @apply flex flex-col gap-2;
+  }
+
+  .player-menu-label {
+    @apply flex items-center gap-1.5 text-[11px] text-slate-400 font-body;
+  }
+
+  .player-menu-chips {
+    @apply flex flex-wrap gap-1.5;
+  }
+
+  .player-menu-chip {
+    @apply px-2.5 py-1 rounded-lg text-[11px] font-display font-semibold border transition-all cursor-pointer tabular-nums;
+  }
+
+  .player-menu-chip-active {
+    @apply bg-blue-400/20 border-blue-400/60 text-blue-400;
+  }
+
+  .player-menu-chip-idle {
+    @apply bg-navy-950/50 border-navy-600/60 text-slate-300 hover:border-blue-400/40 hover:text-white;
+  }
+
+  .player-menu-row {
+    @apply w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-sm font-body text-slate-200 hover:bg-navy-800 transition-colors cursor-pointer;
+  }
+
+  .player-menu-row-label {
+    @apply flex-1 text-right;
+  }
+
+  .player-menu-toggle {
+    @apply w-6 h-6 rounded-lg flex items-center justify-center border;
+  }
+
+  .player-menu-toggle-on {
+    @apply bg-blue-400/20 border-blue-400/60 text-blue-400;
+  }
+
+  .player-menu-toggle-off {
+    @apply border-navy-600/60 text-transparent;
   }
 
   .player-tabs {
@@ -692,6 +769,30 @@
 
   .player-mini-play {
     @apply w-10 h-10 rounded-full bg-blue-500/90 border border-blue-400/60 text-white flex items-center justify-center shrink-0 cursor-pointer transition-transform active:scale-90;
+  }
+
+  .player-mini-info {
+    @apply flex flex-col flex-1 min-w-0 gap-0.5;
+  }
+
+  .player-mini-eyebrow {
+    @apply flex items-center gap-2 text-[10px] text-slate-400 font-body;
+  }
+
+  .player-mini-time {
+    @apply font-mono tabular-nums text-slate-300;
+  }
+
+  .player-mini-title {
+    @apply text-sm text-slate-100 font-body truncate;
+  }
+
+  .player-mini-track {
+    @apply w-full h-0.5 rounded-full bg-navy-800 overflow-hidden mt-0.5;
+  }
+
+  .player-mini-fill {
+    @apply h-full bg-blue-400 rounded-full transition-[width] duration-300;
   }
 
   /* ======================================================================

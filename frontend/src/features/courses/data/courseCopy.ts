@@ -93,6 +93,9 @@ export interface PlayerCopy {
   retryLabel: string;
   unsupportedTitle: string;
   unsupportedNote: string;
+  settingsLabel: string;
+  seekLabel: string;
+  sourceLabel: string;
 }
 
 /** Certificate copy, keyed exactly like courseSystem.json's certificate block. */
