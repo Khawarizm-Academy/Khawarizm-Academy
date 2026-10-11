@@ -33,7 +33,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
           {/* Header Row with Sky-Blue 4px Right Border Accent */}
           <div className="flex-between mb-3.5">
             <div className="section-accent-title-blue">
-              <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
+              <h3 className="text-xl font-bold text-white font-display">
                 الدورات المميزة
               </h3>
             </div>
@@ -61,7 +61,7 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
           {/* Header Row with Warm-Gold 4px Right Border Accent */}
           <div className="flex-between mb-3.5">
             <div className="section-accent-title-gold">
-              <h3 className="text-xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
+              <h3 className="text-xl font-bold text-white font-display">
                 المنح والفرص المتاحة
               </h3>
             </div>
@@ -97,8 +97,8 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         {/* Section Header with Soft Blended Horizontal Line */}
         <div className="section-header-row">
           <div className="flex items-center gap-2.5">
-            <GraduationCap size={22} className="text-[#29A9FF]" />
-            <h3 className="text-2xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
+            <GraduationCap size={22} className="text-blue-400" />
+            <h3 className="text-2xl font-bold text-white font-display">
               دورات مميزة
             </h3>
           </div>
@@ -127,8 +127,8 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         {/* Section Header with Soft Blended Horizontal Line */}
         <div className="section-header-row">
           <div className="flex items-center gap-2.5">
-            <Sparkles size={22} className="text-[#E5B65C]" />
-            <h3 className="text-2xl font-bold text-white font-['IBM_Plex_Sans_Arabic']">
+            <Sparkles size={22} className="text-gold-400" />
+            <h3 className="text-2xl font-bold text-white font-display">
               منح متاحة
             </h3>
           </div>

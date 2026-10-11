@@ -22,11 +22,28 @@ const readLocation = (): BrowserLocation => ({
   search: window.location.search || '',
 });
 
+/** The slice of the View Transition API we depend on. */
+interface ViewTransitionLike {
+  ready: Promise<void>;
+  finished: Promise<void>;
+}
+
+/** Document augmented with the optional View Transition API. */
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (callback: () => void) => ViewTransitionLike;
+};
+
 /** Runs a state update inside the native View Transition when the browser has it. */
 function withViewTransition(update: () => void) {
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
-  if (doc.startViewTransition) doc.startViewTransition(update);
-  else update();
+  const doc = document as ViewTransitionDocument;
+  if (!doc.startViewTransition) {
+    update();
+    return;
+  }
+  const transition = doc.startViewTransition(update);
+  // A newer navigation can abort an in-flight transition; that rejection is expected.
+  transition.ready.catch(() => {});
+  transition.finished.catch(() => {});
 }
 
 export const Router: React.FC<{ children: React.ReactNode }> = ({ children }) => {
