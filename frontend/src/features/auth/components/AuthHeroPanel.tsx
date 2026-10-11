@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import type { AuthMode, ReturningUserData } from '../types';
-import brandIcon from '../../../assets/brand/generated/icon-192.png';
+import { BrandSeal } from './BrandSeal';
 
 interface AuthHeroPanelProps {
   mode: AuthMode;
@@ -33,11 +33,7 @@ export const AuthHeroPanel: React.FC<AuthHeroPanelProps> = ({
           <span className="auth-brand-tag">KHAWARIZM ACADEMY</span>
         </div>
 
-        <div className="brand-seal">
-          <div className="brand-seal-inner">
-            <img src={brandIcon} alt="أكاديمية خوارزم" />
-          </div>
-        </div>
+        <BrandSeal />
       </div>
 
       {/* Dynamic astrolabe orbit artwork */}

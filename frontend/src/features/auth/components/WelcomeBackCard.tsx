@@ -1,10 +1,10 @@
 import React from 'react';
-import type { ReturningUserData } from '../types';
+import type { AuthSurface, ReturningUserData } from '../types';
 import { AuthSocialButton } from './AuthSocialButton';
 
 interface WelcomeBackCardProps {
   user: ReturningUserData;
-  variant?: 'desktop' | 'mobile';
+  variant?: AuthSurface;
   onQuickLogin?: (provider: 'google' | 'facebook') => void;
   onSwitchToEmail?: () => void;
 }

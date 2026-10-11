@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Mail } from 'lucide-react';
 import { AuthSocialButton } from './AuthSocialButton';
+import type { AuthSurface } from '../types';
 
 interface DefaultLoginCardProps {
-  variant?: 'desktop' | 'mobile';
+  variant?: AuthSurface;
   onSubmitEmail?: (email: string) => void;
   onSwitchToReturningUser?: () => void;
 }
