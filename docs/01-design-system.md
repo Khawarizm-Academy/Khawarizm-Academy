@@ -1,261 +1,259 @@
-# Khawarizm Academy — Design System
+# 01 · Design System
 
-> Read this before any other file. Every screen spec and every Stitch prompt in this project references these tokens by name. If you change a value here, it should ripple everywhere — treat this like a CSS variables file in prose form.
+The Khawarizm Academy design system is called **Observatory & Cyber-Intelligence** (المرصد الفلكي الذكي). It is a dark, glassy, space-themed system with a strict two-accent grammar. This document is the reference for the palette, typography, elevation, tokens, layout primitives, and the concept-class vocabulary.
 
----
-
-## 1. Design principles (the "why" behind every rule below)
-
-1. **Observatory, not dashboard.** The mood is a quiet study session under a night sky — deep navy space, gold light like candlelight on old manuscripts, subtle star/circuit texture. Not a flat corporate SaaS dashboard.
-2. **One accent, used with intent.** Gold is precious — it marks the *one* primary action on a screen, key numbers (deadlines, scores, prices), and moments of achievement. If everything is gold, nothing is.
-3. **Confidence through restraint.** Codecademy and Scrimba don't over-decorate their UI chrome — the content (code, courses, progress) is the hero. Khawarizm's ornamental elements (geometric line-art, star motifs) live in *backgrounds and empty states*, never inside dense functional UI like tables or forms.
-4. **Arabic typography is a first-class citizen**, not a translated afterthought. Line-height, letter tracking, and font choice are tuned for Arabic script quality, not inherited from a Latin default.
-5. **Two pillars, one grammar.** Courses and Scholarships use the exact same component grammar (cards, badges, detail-page anatomy) so switching between them feels like the same product, not two bolted-together apps.
+> **Where the system lives:** tokens are in `frontend/src/styles/tokens.css`; shared concept classes and keyframes are in `frontend/src/styles/globals.css`; feature-scoped classes live in `frontend/src/features/<feature>/<feature>.css`. There is exactly **one stylesheet entry point** — `src/index.css` → `globals.css` → every feature CSS.
 
 ---
 
-## 2. Color system
+## 1. Color
 
-### 2.1 Source palette (from brand sheet — kept as-is, these are locked brand colors)
+All colors are Tailwind v4 `@theme` tokens, so each one registers real utilities (`bg-*`, `text-*`, `border-*`, `outline-*`, `ring-*`, `fill-*`, `stroke-*`).
+
+### 1.1 Brand palette
 
 | Token | Hex | Role |
-|---|---|---|
-| `navy-900` (Primary Navy) | `#061A3A` | Deepest background |
-| `navy-800` (Deep Blue) | `#092557` | Secondary background / cards |
-| `blue-500` (Tech Blue) | `#167BDB` | Interactive/tech accent |
-| `blue-400` (Electric Blue) | `#29A9FF` | Highlights, links, focus glow |
-| `gold-600` (Primary Gold) | `#C88A32` | Primary accent (deep) |
-| `gold-400` (Light Gold) | `#E5B65C` | Primary accent (light) |
-| `slate-400` (Muted Blue) | `#8299B5` | Secondary text on dark |
-| `white-100` (Off White) | `#DCE5EE` | Primary text on dark |
+| :--- | :--- | :--- |
+| `navy-950` | `#040F24` | **Canvas.** The deep-space void behind every page. |
+| `navy-900` | `#061A3A` | Raised surface / glass base. |
+| `navy-800` | `#092557` | Elevated panel / inset well. |
+| `navy-700` | `#123168` | Border-strong / hover surface. |
+| `navy-600` | `#1B3F80` | Hairline borders and dividers. |
+| `blue-500` | `#167BDB` | Courses pillar — deep cyan. |
+| `blue-400` | `#29A9FF` | Courses pillar — bright cyan (the primary interactive accent). |
+| `gold-600` | `#C88A32` | Scholarships pillar — deep brass. |
+| `gold-400` | `#E5B65C` | Scholarships pillar — bright brass (achievement accent). |
+| `gold-200` | `#F3CE7A` | Highlight / hover brass. |
+| `white-000` | `#F5F8FC` | Primary text and bright elements. |
+| `white-100` | `#DCE5EE` | Default body text. |
+| `success-500` | `#3FAE6B` | Success states. |
+| `warning-500` | `#E0A23B` | Warnings / deadlines soon. |
+| `danger-500` | `#D9534F` | Errors / destructive / live. |
 
-### 2.2 Extended functional tokens (derived — new, for UI completeness)
+### 1.2 Locked Tailwind overrides
 
-The brand sheet gives us mood colors, not a full UI system. These are added, staying inside the same family:
+Several Tailwind default color families are **deliberately overridden** so that every class string in the codebase resolves to a brand color — there is no Tailwind-default leakage anywhere in the app.
 
-| Token | Hex | Role |
-|---|---|---|
-| `navy-950` | `#040F24` | True page background (below navy-900), used behind modals/overlays |
-| `navy-700` | `#123168` | Elevated card surface (one step up from navy-800) — hover/active card states |
-| `navy-600` | `#1B3F80` | Borders/dividers on dark surfaces |
-| `white-000` | `#F5F8FC` | Rare pure-light surface (e.g. inside a light-mode exam paper view, printable certificate) |
-| `slate-600` | `#5C7291` | Disabled text / placeholder text |
-| `success-500` | `#3FAE6B` | Correct answers, "open now," passed status — chosen to sit near tech-blue in saturation so it doesn't clash |
-| `warning-500` | `#E0A23B` | Deadlines approaching, "closes soon" — deliberately close to gold-600 but desaturated so it doesn't compete with primary gold CTAs |
-| `danger-500` | `#D9534F` | Errors, wrong answers, "closed," destructive actions |
-| `overlay-scrim` | `rgba(4,15,36,0.72)` | Modal/drawer backdrop, built from navy-950 |
+| Family | Locked meaning | Source |
+| :--- | :--- | :--- |
+| `slate-*` | Muted navy-neutral text scale | `#8299B5` |
+| `sky-*` | Brand cyan accent | `blue-400/500` |
+| `blue-900` / `blue-950` | Navy border / deep surface | `navy-600` / `navy-950` |
+| `amber-*` | Brand gold (badges) | `gold-400/600` |
+| `orange-*` | Brand gold (CTA) | `gold-400/200` |
+| `emerald-*` | Brand success | `success-500` |
+| `red-*` | Brand danger | `danger-500` |
 
-**Rule:** never introduce a new hue family (no purple, no teal-as-accent, no pink). If a new semantic color is ever needed, derive it by adjusting saturation/lightness of an existing token, the way `warning-500` was derived near `gold-600`.
+**Rule:** never use a raw hex or an arbitrary Tailwind color. Use a token utility; if a token is missing, add it to `tokens.css` (and mirror it in the design sheet) rather than inlining hex.
 
-### 2.3 Gradients (from brand sheet, plus one derived)
+### 1.3 Non-utility variables (`:root`)
 
-| Name | Stops | Use |
-|---|---|---|
-| `gradient-navy` | `#061A3A → #092557` | Page hero backgrounds, section dividers |
-| `gradient-tech` | `#167BDB → #29A9FF` | "Courses" pillar accent backgrounds, tech/course-related badges |
-| `gradient-gold` | `#C88A32 → #E5B65C` | Primary CTA buttons, "Scholarships" pillar accent backgrounds, achievement/certificate moments |
-| `gradient-radial-glow` *(new)* | radial `#29A9FF` at 15% opacity → transparent | Subtle "star glow" behind icons, used sparingly in empty states and the smart-search box focus state |
+Some values are consumed only from CSS (never as a utility class):
 
-**Pillar color-coding (important, used throughout):**
-- **Courses pillar** → tech gradient (blue family) as its identifying accent.
-- **Scholarships pillar** → gold gradient as its identifying accent.
-- This lets users build a spatial/color memory ("blue = learn, gold = opportunity") without needing icons or labels once they're used to the platform — while both still use identical card geometry (pillar parity is about *layout weight*, not about forbidding a distinguishing accent).
+```css
+--shadow-elev-1: 0 2px 8px rgba(0,0,0,.35);      /* resting card */
+--shadow-elev-2: 0 8px 24px rgba(0,0,0,.45);     /* raised panel / modal */
+--shadow-glow-gold: 0 0 24px rgba(229,182,92,.25);
+--shadow-glow-blue: 0 0 24px rgba(41,169,255,.25);
+--radius-sm: 8px;  --radius-md: 12px;  --radius-lg: 20px;  --radius-full: 9999px;
+--color-overlay-scrim: rgba(4,15,36,.75);        /* modal & drawer backdrops */
+--skeleton-base: #061A3A;  --skeleton-surface: #092557;  --skeleton-border: #1B3F80;
+--skeleton-highlight-cyan: rgba(41,169,255,.12);
+--skeleton-highlight-gold: rgba(229,182,92,.10);
+--transition-page-duration: 220ms;
+--transition-page-ease: cubic-bezier(0.16, 1, 0.3, 1);
+```
 
-### 2.4 Usage matrix
-
-| Context | Background | Text | Accent |
-|---|---|---|---|
-| Page background | `navy-950` | — | — |
-| Primary surface (nav, hero) | `navy-900` | `white-100` | `gold-400` |
-| Card / secondary surface | `navy-800` | `white-100` headline, `slate-400` body | pillar-dependent |
-| Elevated / hovered card | `navy-700` | `white-100` | brighter accent |
-| Primary button | `gradient-gold` | `navy-950` (dark text ON gold, for contrast) | — |
-| Secondary button | transparent, `1px` `blue-400` border | `blue-400` | — |
-| Tertiary / ghost button | transparent | `white-100` | underline on hover |
-| Disabled state | `navy-800` at 50% opacity | `slate-600` | none |
-| Success badge | `success-500` at 15% bg tint | `success-500` | — |
-| Warning badge (deadline) | `warning-500` at 15% bg tint | `warning-500` | — |
-| Danger / wrong answer | `danger-500` at 15% bg tint | `danger-500` | — |
-
-**Contrast check:** `white-100` (#DCE5EE) on `navy-900` (#061A3A) ≈ 13.9:1 — passes AAA. `slate-400` (#8299B5) on `navy-800` (#092557) ≈ 4.6:1 — passes AA for normal text. Navy text on `gold-400` buttons ≈ 8.2:1 — passes AAA. Always verify new combinations against these two backgrounds before shipping.
+Use these via `var(--…)`; a raw `shadow-[0_8px_24px_rgba(0,0,0,0.35)]` is a token waiting to happen.
 
 ---
 
-## 3. Typography
+## 2. Typography
 
-### 3.1 Typefaces
+| Token | Family | Use |
+| :--- | :--- | :--- |
+| `font-display` | **IBM Plex Sans Arabic** | Headings, titles, brand. |
+| `font-body` | **Tajawal** | Body copy, labels, UI text (the `body` default). |
+| `font-mono` | **IBM Plex Mono** → Inter | Numbers, timers, code, serials. |
 
-| Role | Arabic typeface | Latin/numeral fallback | Notes |
-|---|---|---|---|
-| Display / headlines | **IBM Plex Sans Arabic** (Bold/SemiBold) | IBM Plex Sans | Geometric, modern, reads as "tech" not "government form" — matches the Codecademy/Scrimba confidence. Canonical display face; `Cairo` was removed from the app |
-| Body text | **IBM Plex Sans Arabic** (Regular/Medium) or **Tajawal** | IBM Plex Sans | Optimized for long reading (lesson descriptions, scholarship criteria) |
-| Numerals / stats / countdowns | **Latin numerals (0-9)**, not Eastern Arabic-Indic, set in a monospaced or tabular-figure style (e.g. IBM Plex Mono for countdowns) | — | Deadlines, scores, and prices need to be scannable at a glance; tabular figures prevent countdown timers from "jumping" in width |
-| Code snippets (coding competitions) | — | **IBM Plex Mono** or **JetBrains Mono** | Ligatures off, tabular figures on |
+Fonts are loaded in `frontend/index.html` and bound to Tailwind's `font-display` / `font-body` / `font-mono`. **Never** write `font-['IBM_Plex_Sans_Arabic']` — use the semantic utility.
 
-*(IBM Plex Sans Arabic and Tajawal are open-source Google Fonts — safe defaults to name directly in prompts.)*
-
-### 3.2 Type scale (mobile base → desktop)
-
-| Token | Mobile | Desktop | Weight | Use |
-|---|---|---|---|---|
-| `display-xl` | 32px / 1.3 | 56px / 1.2 | Bold (700) | Homepage hero headline only |
-| `display-lg` | 26px / 1.3 | 40px / 1.25 | Bold (700) | Page titles (Course landing, Scholarship detail) |
-| `heading-lg` | 22px / 1.35 | 28px / 1.3 | SemiBold (600) | Section titles ("الدورات المميزة") |
-| `heading-md` | 18px / 1.4 | 22px / 1.35 | SemiBold (600) | Card titles, modal titles |
-| `body-lg` | 16px / 1.6 | 18px / 1.6 | Regular (400) | Lesson descriptions, scholarship body text |
-| `body-md` | 14px / 1.6 | 15px / 1.6 | Regular (400) | Default UI text, form labels |
-| `body-sm` | 13px / 1.5 | 13px / 1.5 | Regular (400) | Metadata, timestamps, helper text |
-| `caption` | 11px / 1.4 | 12px / 1.4 | Medium (500) | Badges, tags, eyebrow labels |
-
-**Arabic-specific rules:**
-- Minimum body text size is **14px** — never go smaller for Arabic than you would for Latin at 13px; Arabic script needs slightly more room to stay legible, especially with diacritless everyday text.
-- Line-height is deliberately generous (1.5–1.6 for body) because Arabic ligatures and ascenders/descenders need more vertical breathing room than Latin.
-- Avoid full justification (`text-align: justify`) on Arabic paragraphs — it creates uneven word-spacing (kashida issues). Use left-ragged-in-RTL (i.e., ragged on the left edge) alignment.
-- Never letter-spread (`letter-spacing`) Arabic text — it breaks letter connections. Reserve tracking adjustments for Latin numerals/codes only.
+Guidelines:
+- Headings are `font-display` and `text-white`; body is `font-body` and `text-slate-400` (or `white-100`).
+- Numeric displays (countdowns, stats, certificates) use `font-mono tabular-nums`.
+- Arabic text never gets a `letter-spacing` utility.
 
 ---
 
-## 4. Spacing, grid & radius
+## 3. Elevation & surfaces
 
-### 4.1 Spacing scale (4px base unit)
+Elevation moves **lighter** as a surface rises, not darker. Dark cards on the void read as holes.
 
-`4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 · 96` (px) — named `space-1` through `space-9` in that order.
+| Layer | Recipe | Class |
+| :--- | :--- | :--- |
+| Canvas | `navy-950` + celestial washes | `.page-wrapper` |
+| Glass panel | `navy-900/40` + `backdrop-blur-md` + `navy-600/40` border | `.glass-panel`, `.glass-panel-deep` |
+| Chrome (nav/footer) | `navy-950/90` + blur + navy borders | `.glass-navbar`, `.glass-mobile-header`, `.glass-mobile-bottom-bar` |
+| Interactive card | glass shell + accent border + hover lift | `.card-interactive-blue`, `.card-interactive-gold`, `.card-interactive` |
+| Inset well | `navy-950/50` — only *inside* a raised surface | utility |
+| Over a scrim | **solid** `navy-900` (readability beats ambience) | modals, drawers, menus |
 
-- Card internal padding: `space-4` (16px) mobile, `space-5`→24px desktop.
-- Section vertical rhythm: `space-7` (48px) mobile, `space-8` (64px) desktop between major homepage sections.
+Active accents are **translucent, never solid fills**: gold for achievements (`bg-gold-400/10 outline-gold-400/50 text-gold-400`), cyan for the courses domain (`bg-blue-400/15`).
 
-### 4.2 Grid
-
-- Mobile: 4-column grid, 16px gutter, 16px margin.
-- Tablet: 8-column grid, 20px gutter, 24px margin.
-- Desktop: 12-column grid, 24px gutter, max content width **1280px**, centered.
-- Course/Scholarship card grids: 1 col (mobile) → 2 col (tablet) → 3 col (desktop) → 4 col (large desktop ≥1440px).
-
-### 4.3 Radius
-
-| Token | Value | Use |
-|---|---|---|
-| `radius-sm` | 8px | Badges, tags, small buttons |
-| `radius-md` | 12px | Cards, inputs |
-| `radius-lg` | 20px | Modals, the smart search box, hero panels |
-| `radius-full` | 999px | Avatar, pill buttons, progress rings |
-
-Avoid fully-square corners anywhere — it's the one small signature that keeps the UI feeling warm rather than institutional, echoing the arch shape in the Khawarizm logo.
-
-### 4.4 Elevation (on dark UI, shadows behave differently than on white)
-
-Standard drop-shadows barely read on a `navy-950` background. Use **glow elevation** instead:
-
-| Token | Definition | Use |
-|---|---|---|
-| `elev-0` | none | Flat inline elements |
-| `elev-1` | `0 2px 8px rgba(0,0,0,0.35)` + `1px` border `navy-600` | Resting cards |
-| `elev-2` | `0 8px 24px rgba(0,0,0,0.45)`, border brightens to `blue-500` at 30% | Hovered/focused cards |
-| `elev-glow-gold` | `0 0 24px rgba(229,182,92,0.25)` | Primary CTA hover, achievement moments, "featured" badge |
-| `elev-glow-blue` | `0 0 24px rgba(41,169,255,0.25)` | Active/selected states, focused inputs, live session "on air" indicator |
+The four `box-shadow` variables are applied through concept classes, not littered in JSX.
 
 ---
 
-## 5. Core components
+## 4. Layout primitives
 
-*(Written as specs, not code — translate to your framework/Stitch as needed.)*
+| Class | Purpose |
+| :--- | :--- |
+| `.page-wrapper` | The only legitimate page background — navy-950 with the global celestial washes. Never paint a page-level background. |
+| `.content-container` | Centered, max-width, horizontal padding for page content. Used as `<main>` on every standard page. |
+| `.horizontal-scroll-row` | Touch-friendly horizontal swipe row (`.no-scrollbar`, momentum scrolling). |
+| `.no-scrollbar` | Hides the native scrollbar on chip rails and card carousels. |
 
-### 5.1 Buttons
-- **Primary:** `gradient-gold` fill, `navy-950` text, `radius-md`, `elev-glow-gold` on hover, subtle scale (1.02) on press. One per screen/section — this is the "the one thing we want you to do" button.
-- **Secondary:** transparent fill, `blue-400` 1px border + text, fills to `blue-500`/10% tint on hover.
-- **Ghost/tertiary:** text-only, `white-100`, gains underline + `blue-400` color on hover.
-- **Icon buttons** (bookmark/save, share): `navy-700` circular background, `radius-full`, 40x40px minimum tap target.
-
-### 5.2 Cards (the single most important component — used for both pillars)
-Anatomy, top to bottom (mirrored for RTL):
-1. **Media/thumbnail** (16:9), top corners rounded to `radius-md`, with a small pillar-accent gradient bar (2px) along the bottom edge of the image — blue for courses, gold for scholarships.
-2. **Eyebrow tag row**: category badge (e.g., "برمجة" / "منحة دراسية") + level/country badge, `caption` size.
-3. **Title**: `heading-md`, max 2 lines, ellipsis overflow.
-4. **Meta row**: for courses → instructor + duration + lesson count; for scholarships → provider + deadline countdown (uses `warning-500` if <7 days remain).
-5. **Footer row**: primary micro-CTA (e.g., "استمر" / "التفاصيل") right-aligned (which is the *start* edge in RTL... see §8), price or "مجاني" badge left-aligned.
-
-Card states: resting (`elev-1`) → hover (`elev-2`, thumbnail scales 1.03 inside its clip) → pressed (scale 0.98).
-
-### 5.3 Smart search / AI-style input bar
-- Pill-shaped, `radius-full`, height 56px mobile / 64px desktop, `navy-800` fill with `1px` `blue-500` border that gains `elev-glow-blue` on focus.
-- Left-side (start-side in RTL = visually right) icon: a stylized compass/astrolabe glyph (nod to Al-Khwarizmi/astronomy) instead of a generic magnifying glass — small but important brand differentiator.
-- Contains, inline, a **2-segment toggle chip** ("دورة" / "منحة") the user sets before or after typing — this is what makes it "smart" without needing real AI: it's really a guided/structured search. Full logic in `02-homepage-ux.md`.
-- Placeholder text rotates every 4s through examples: "أبحث عن دورة برمجة للمبتدئين…", "أبحث عن منحة للسعوديين في هندسة الحاسب…".
-
-### 5.4 Badges/Tags
-`caption` text, `radius-sm`, 4px/10px padding, tinted background at 15% of the semantic color, full-opacity text of that color. Used for: subject category, level (مبتدئ/متوسط/متقدم), country/nationality eligibility, price (مجاني/مدفوع), status (مفتوح الآن/يغلق قريبًا/مغلق).
-
-### 5.5 Progress indicators
-- **Course progress ring**: circular, `radius-full`, gold-to-blue gradient stroke representing % complete, used on course cards for enrolled users and on the dashboard.
-- **Linear progress bar**: used inside the course player for "lesson X of Y," track color `navy-700`, fill `gradient-tech`.
-- **Countdown chip**: for scholarship deadlines and live "closes in" competition timers — tabular numerals, `warning-500` once under 7 days, `danger-500` once under 24 hours.
-
-### 5.6 Modals & drawers
-- Backdrop: `overlay-scrim`.
-- Panel: `navy-800`, `radius-lg`, slides up from bottom on mobile (bottom-sheet pattern), centers with fade+scale on desktop.
-- Used for: quiz question review, "confirm registration," live session join confirmation, Instagram download preview.
-
-### 5.7 Navigation
-- **Top nav (desktop):** `navy-950` background, `1px` bottom border `navy-600`, logo start-aligned (right, in RTL), links centered/end-clustered, search + account end-aligned (left, in RTL).
-- **Bottom nav (mobile):** `navy-900`, floating slightly with `elev-1`, active tab shown via filled icon + `gold-400` label + a small dot indicator above the icon (not a full pill background — keeps it light).
+**The custom scrollbar** (in `globals.css`) is part of the design: 7px width, `navy-950` track, `navy-600` pill thumb, `blue-400` hover, with Firefox `scrollbar-color` support. Unstyled OS scrollbars are never allowed on desktop.
 
 ---
 
-## 6. Iconography
+## 5. Concept classes — the vocabulary
 
-- Style: **line icons, 1.5–2px stroke**, rounded caps — matching the linework style already used in the brand sheet's "usage guide" icons (book, star, laptop, planet, column).
-- Two icon "moods" to draw from, matching the two pillars: **technology/geometry** (circuit lines, compass, code brackets) for courses, and **classical/scholarly** (open book, column, scroll, star/astrolabe) for scholarships and the brand's "ancient knowledge" identity.
-- Never use filled/glyph-style icons from a generic set (e.g., Font Awesome solid) — they read as "template." Prefer a consistent outline set (Phosphor, Lucide, or a custom set matching the brand sheet's style) at consistent stroke width throughout.
-- Achievement/gamification icons (badges, certificates, competition trophies) may use gold fill as a deliberate exception — this is the "precious moment" the whole gold-restraint principle is protecting.
+A **concept class** is a short, semantic name for a styling decision. If the same run of utilities appears twice for the same kind of element, that is a missing concept class, not styling. Extract it into the owning CSS file and use the short name in JSX.
+
+**Where it goes — same rule as components:**
+- Used by **one feature** → `frontend/src/features/<feature>/<feature>.css`.
+- Used by **2+ features** → `frontend/src/styles/globals.css`.
+
+Feature CSS files are imported once at the top of `globals.css`; a `.tsx` never imports a `.css`.
+
+### 5.1 Buttons & actions (shared)
+
+| Class | Meaning |
+| :--- | :--- |
+| `.btn-gold` | Primary action (one per screen/section). Brass fill, shine sweep on hover. |
+| `.btn-outline-blue` | Secondary cyan outline action. |
+| `.btn-pill-subtle` | Idle filter chip / selector pill. |
+| `.btn-icon-box` | 36×36 squircle icon action (save, bookmark). |
+| `.btn-icon-circle` | 40×40 circular icon action (share, profile). |
+| `.btn-search-submit` | Search field submit button. |
+| `.link-action` / `.link-action-blue` / `.link-action-gold` | Text action links (`عرض الكل ←`). |
+| `.btn-attention` | Golden attention halo — **at most one per screen**. |
+
+### 5.2 Cards (shared)
+
+| Class | Meaning |
+| :--- | :--- |
+| `.card-interactive` | Neutral interactive card shell. |
+| `.card-interactive-blue` | Courses-domain card shell. |
+| `.card-interactive-gold` | Scholarships-domain card shell. |
+| `.card-media-box` | Media/thumbnail frame inside a card. |
+| `.card-icon-box` | Icon plate inside a card. |
+| `.card-title` / `.card-title-lg` / `.card-subtitle` | Card text roles. |
+| `.card-meta-row` | Footer meta row (duration, students, deadline). |
+| `.card-accent-blue` / `.card-accent-gold` / `.card-top-bar-gold` | Accent edges. |
+| `.card-status-*` / `.card-coverage` | Status capsules and coverage badges. |
+| `.rail-card-size` | Fixed width for horizontal rail cards. |
+
+### 5.3 Sections, badges & glow
+
+| Class | Meaning |
+| :--- | :--- |
+| `.section-header-row`, `.section-header-title` | Section header composition. |
+| `.section-accent-title-blue` / `-gold` | Accent bar + title. |
+| `.badge-pill`, `.badge-blue`, `.badge-gold`, `.badge-gold-subtle`, `.tag-box` | Pills, badges, tags. |
+| `.elev-glow-gold` / `.elev-glow-blue` | Element-level accent glow. |
+| `.space-stars-bg` | Static starfield texture. |
+| `.gradient-gold` / `.gradient-tech` / `.gradient-navy` | Brand gradients. |
+
+### 5.4 Search, segmented switch & countdown (shared)
+
+| Class | Meaning |
+| :--- | :--- |
+| `.search-form-desktop` / `.search-form-mobile` / `.search-pills-container` | Search shells per surface. |
+| `.search-swell`, `.search-switcher-mobile`, `.search-puck*`, `.search-type-*`, `.search-input-*` | Smart search type switcher. |
+| `.seg-control`, `.seg-track`, `.seg-puck(-blue/-gold)`, `.seg-option(-idle)/(on-blue/on-gold)` | The sliding segmented control styling. |
+| `.digit-box`, `.digit-box-active`, `.digit-box-mobile*`, `.digit-text`, `.digit-label`, `.count-*` | Countdown chambers and digits. |
+| `.sliding-chamber-indicator` | The sliding indicator used by the search switcher. |
+
+### 5.5 Chrome & states (shared)
+
+`app-shell`: `.app-atmosphere`, `.app-wash`, `.shell-chrome`, `.shell-footer`, `.shell-bottom-bar`.
+`navigation`: `.nav-*`, `.mh-*` (mobile header), `.bb-*` (bottom bar).
+`footer`: `.app-footer`, `.footer-*`.
+`states`: `.state-panel*` (empty/error panels).
+`artwork`: `.art-logo-row`, `.art-seal*`, `.art-brand-text`, `.art-shell*`, `.art-event-*`, `.art-dotgrid`, `.art-tag*`, `.art-code*`, `.art-tech-chip`, `.art-candle-glow`.
+`forms`: `.input-field`, `.dropdown-*`.
+`placeholders/404`: `.placeholder-*`, `.emblem-*`.
+`loading`: `.loader-*`, `.skeleton-*`, `.skeleton-page/rail/media-well/card-body/meta/sidebar`.
+
+### 5.6 Feature-scoped class families
+
+Each feature owns its prefix; the full list lives in the feature README.
+
+| Feature CSS | Prefixes |
+| :--- | :--- |
+| `features/auth/auth.css` | `auth-*`, `brand-seal*`, `toggle-*` |
+| `features/catalog/catalog.css` | `catalog-*` |
+| `features/courses/courses.css` | `course-*`, `player-*` |
+| `features/dashboard/dashboard.css` | `dash-*` |
+| `features/home/home.css` | `quick-*` |
+| `features/profile/profile.css` | `profile-*`, `toggle-*` |
+
+### 5.7 Authoring rules for concept classes
+
+1. Declare them in `@layer components` so a utility in JSX can still override them. Only the legacy shared classes (`.btn-gold`, `.link-action-blue`) are intentionally unlayered.
+2. Use token variables (`var(--shadow-elev-2)`) inside the class — never literals.
+3. `@apply` accepts **real Tailwind utilities only**. It fails on plain custom classes (`.flex-center`), marker classes (`group`), and plain global helpers (`animate-fade-in`, `animate-fade-in-up`, `animation-delay-100`). Keep `group` in the JSX, and mirror an animation with a raw `animation:` property when the class itself must animate.
+4. **Check that the class exists.** A typo renders nothing — a dead `animate-spin-very-slow` shipped once; the correct class is `animate-orbit-slow`.
 
 ---
 
-## 7. Motion
+## 6. Motion
 
-Motion should feel like **quiet, precise mechanism** — think of an astrolabe's gears, not a bouncy consumer app.
+The full motion system is documented in [04 · Loading, Caching & Motion](04-loading-caching-and-motion.md). Summary of the primitives that live in `globals.css`:
 
-| Interaction | Duration | Easing | Notes |
-|---|---|---|---|
-| Card hover elevate | 180ms | ease-out | scale 1.0→1.03 on thumbnail only |
-| Button press | 100ms | ease-in-out | scale 1.0→0.98 |
-| Page/section transitions | 240ms | ease-in-out | slide + fade, direction-aware for RTL (new content enters from the *start*/right edge) |
-| Modal/drawer open | 220ms | ease-out | scale 0.96→1.0 + fade, or slide-up on mobile bottom sheets |
-| Countdown digit tick | instant | — | no easing on numeral changes, keeps urgency honest |
-| Success/correct-answer feedback | 300ms | spring (subtle overshoot) | this is one of the few places a slightly playful bounce is allowed — echoes Scrimba's encouraging feedback moments |
-| Star/glow ambient background | 6–10s loop | linear | very subtle parallax/twinkle in hero backgrounds only, must not distract from foreground content or affect performance |
+| Keyframe | Utility | Purpose |
+| :--- | :--- | :--- |
+| `pop-in` | `.animate-pop-in` | Springy entrance (scale 0.6 → 1.06 → 1 + rise). |
+| `fadeIn` / `fadeInUp` / `fadeInDown` | `.animate-fade-in`, `.animate-fade-in-up`, `.animate-fade-in-down` | Fade drifts for sections and modals. |
+| `float-y` | `.animate-float`, `.animate-float-slow` | Ambient bobbing (emblems). |
+| `wiggle` / `bell-ring` / `star-twinkle` | `.animate-wiggle`, `.animate-bell-ring`, `.animate-star-twinkle` | Playful icon micro-interactions. |
+| `orbit-slow` / `counter-orbit-slow` | `.animate-orbit-slow`, `.animate-counter-orbit-slow` | 60s / 45s orbiting rings. |
+| `shimmer-sweep`, `celestial-pulse`, `radar-ping`, `shine-sweep`, `cta-halo`, `skeleton-celestial-shimmer`, `pageEnter` | various | Shimmer, pulse, ping, shine/halo, skeleton, page entrance. |
 
-Respect `prefers-reduced-motion` — disable ambient star animation and reduce all transitions to opacity-only fades.
-
----
-
-## 8. RTL & Arabic-specific rules
-
-1. **Full mirroring**, not just text direction: nav order, icon directions (back arrows point right, forward/next arrows point left), progress bars fill right-to-left, card carousels scroll right-to-left, breadcrumbs reverse.
-2. **Numerals stay LTR** even inside RTL sentences (dates, prices, percentages, countdown timers) — this is standard and expected in Arabic UI, don't force Eastern Arabic-Indic numerals unless a client specifically requests them.
-3. **Icons that depict directionality** (arrows, play buttons pointing into a mirrored timeline) must flip. Icons that are direction-neutral (search, bookmark, star, bell) do not.
-4. **Mixed content lines** (an Arabic sentence containing a course title in English, e.g. "دورة React للمبتدئين") need correct bidi isolation — wrap embedded Latin terms so they don't visually reverse.
-5. **Form fields**: labels sit above inputs (not inline-start) to avoid RTL/LTR label-alignment ambiguity; input text aligns right, but email/URL/number fields align their content LTR within a right-aligned field.
-6. Any Stitch prompt must **explicitly state "right-to-left, Arabic-first layout, mirror all directional UI"** — Stitch defaults to LTR and will not infer this from font choice alone.
+All motion is **transform/opacity only** (GPU-cheap), and the global `prefers-reduced-motion: reduce` block flattens everything — you never write your own reduced-motion handling.
 
 ---
 
-## 9. Voice & tone (Arabic copy)
+## 7. RTL rules
 
-- **Register:** modern standard Arabic (فصحى), but approachable and warm — closer to how a good teacher or older sibling talks, not bureaucratic/formal government-document Arabic. Avoid overly archaic vocabulary despite the "ancient knowledge" visual theme; the *visuals* carry the heritage feel, the *copy* should feel current.
-- **Confidence, not hype:** Scrimba-style encouragement ("أنت قادر على هذا 💪") is fine in micro-copy (quiz feedback, course completion) but the homepage/marketing copy should stay closer to Codecademy's clear, benefit-first statements rather than exclamation-heavy hype.
-- **Scholarship copy is neutral and factual**, with a clear, repeated disclaimer pattern (see `05-scholarships-events-ux.md`) that Khawarizm curates/announces but does not administer these opportunities — this is a trust and liability point, not just a UX nicety.
-- **Numbers and deadlines are always precise** ("يغلق التقديم خلال 3 أيام" not "قريبًا") — vagueness undermines trust in the opportunities pillar specifically.
+The document is `dir="rtl"`, so:
+
+- **Start edge = right, end edge = left.** Use logical properties/utilities (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`), never `left`/`right` for layout.
+- **In a horizontal flex container, child #1 renders on the far right.** A right-hand sidebar must be the first child in the DOM.
+- **Form inputs:** the leading icon is the first child (renders right), the input second, and the input uses `text-right` + `dir="auto"` so Arabic and Latin text both behave.
+- **Directional arrows** point with the reading flow: `←` for "next / proceed", `→` for "back / return".
 
 ---
 
-## 10. Do / Don't summary
+## 8. Icons
 
-| Do | Don't |
-|---|---|
-| Use gold for exactly one primary action per screen | Use gold as a general "nice color" fill everywhere |
-| Give courses and scholarships identical card geometry | Make one pillar's cards bigger/higher/first by default |
-| Use glow-based elevation on dark surfaces | Use default black drop-shadows (invisible on navy) |
-| Keep Arabic body text ≥14px with generous line-height | Reuse a Latin type scale's tight line-heights |
-| Mirror all directional chrome for RTL | Just flip `text-align` and call it RTL-ready |
-| Use tabular Latin numerals for countdowns/prices | Let numeral widths jitter or use Eastern Arabic-Indic inconsistently |
-| Keep ornamental star/geometric motifs in backgrounds/empty states | Put decorative line-art inside dense tables or forms |
+- Icons come from **`lucide-react`** only — no emojis, no ad-hoc SVGs, no Unicode symbols for UI.
+- Consistent stroke width (`1.8`–`2.2`) and size.
+- Semantic mapping: `Home`/`LayoutDashboard` (dashboard), `BookOpen` (courses), `GraduationCap`/`Award` (scholarships), `Bookmark` (saved), `Trophy` (competitions), `Bell` (notifications), `Search`, `Radio`/`Play`/`Pause`, `CheckCircle2`/`X`.
+- JSON configs store an icon **name** (a string); `resolveIcon()` in `@/shared/lib/navigation` hydrates it to the component and throws on an unknown name.
+
+---
+
+## 9. Design checklist
+
+- [ ] Every color, font, radius, shadow, and scrim comes from a token.
+- [ ] No page paints its own background — the canvas is `.page-wrapper`.
+- [ ] Cards are lighter than the canvas; inset wells only sit inside raised surfaces.
+- [ ] Active accents are translucent, not solid fills.
+- [ ] Any utility run typed twice became a concept class in the owning CSS file.
+- [ ] New classes are declared in `@layer components`; `@apply` uses real utilities only.
+- [ ] Both pillars keep their accent (cyan = courses, gold = scholarships) without swapping.
+- [ ] One `btn-gold` primary action and at most one `.btn-attention` halo per screen.
+- [ ] Layout is logical-property based and correct in RTL.
