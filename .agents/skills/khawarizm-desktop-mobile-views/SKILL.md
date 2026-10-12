@@ -5,7 +5,7 @@ description: How to structure pages and components that have distinct Desktop an
 
 # Khawarizm Academy — Desktop & Mobile View Organization
 
-This skill is the standard for **splitting one page into a Desktop View and a Mobile View** and for **organizing components that render differently per surface**. Every page that shows different markup on `lg+` and below-`lg` should be split this way instead of growing one giant file.
+The standard for **splitting one page into a Desktop View and a Mobile View** and for **organizing components that render differently per surface**. Every page that shows different markup on `lg+` and below-`lg` is split this way instead of growing one giant file.
 
 > Applies with [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) §6 (no desktop/mobile duplication) and [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md) §3.7 (repeated class strings → concept classes). This skill is the folder layout that makes those rules easy to read and enforce.
 
@@ -26,8 +26,12 @@ Never keep both surfaces as two devices inside one file, and never prefix two si
 **A component with only one surface stays a flat single file:**
 
 ```
-src/features/<feature>/components/<ComponentName>.tsx
+src/features/<feature>/components/<category>/<ComponentName>.tsx
 ```
+
+> Note the two different `views/` shapes: a **surface-pair folder** (`views/LoginView/`) holds two files, while a **single re-usable view** is one flat file (`views/EnrolledCoursesView.tsx`, `views/NotificationsView.tsx`). Only the pair gets the component-name folder.
+
+---
 
 ## 2. Exact naming
 
@@ -37,20 +41,30 @@ src/features/<feature>/components/<ComponentName>.tsx
 | Desktop file | `Desktop<ComponentName>View.tsx` |
 | Mobile file | `Mobile<ComponentName>View.tsx` |
 
-Real example (auth):
+Real examples (auth + courses):
 
 ```
 features/auth/components/views/LoginView/
 ├── DesktopLoginView.tsx
 └── MobileLoginView.tsx
+
+features/courses/components/views/CourseLandingView/
+├── DesktopCourseLandingView.tsx
+└── MobileCourseLandingView.tsx
+
+features/courses/components/views/CoursePlayerView/
+├── DesktopCoursePlayerView.tsx
+└── MobileCoursePlayerView.tsx
 ```
 
-Both files export one default-style named component (`export const DesktopLoginView: React.FC`). No `index.ts` barrel — import the file directly with the `@/` alias (see [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md)):
+Both files export one named component (`export const DesktopLoginView: React.FC`). No `index.ts` barrel — import the file directly with the `@/` alias (see [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md)):
 
 ```ts
 import { DesktopLoginView } from '@/features/auth/components/views/LoginView/DesktopLoginView';
 import { MobileLoginView } from '@/features/auth/components/views/LoginView/MobileLoginView';
 ```
+
+---
 
 ## 3. What goes where inside a split
 
@@ -59,9 +73,11 @@ import { MobileLoginView } from '@/features/auth/components/views/LoginView/Mobi
 - **Shared chrome** stays as flat single-file components *beside* the views folder when it is used by both surfaces. Items that differed only by a label or a class string become **one component with a surface data record** (§5).
 - **Shared overlays** (toast, modal, drawer) are flat components that render nothing when hidden (`if (!open) return null;`).
 
+---
+
 ## 4. Sharing state between the surfaces
 
-Two valid options; prefer **context** when 3+ consumers would otherwise prop-drill the same bundle:
+Two valid options; prefer **context** when 3+ consumers would otherwise prop-drill the same bundle.
 
 ### 4.1 Context (recommended for page-wide state)
 One page manages its state, both views (and their shared chrome) read it.
@@ -91,14 +107,16 @@ export function useAuthLogin(): AuthLoginContextValue {
 export const AuthLoginProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => { … };
 ```
 
-**Fail loudly:** the hook throws outside the provider (skill `khawarizm-code-style` §9).
+**Fail loudly:** the hook throws outside the provider ([`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) §9).
 
 ### 4.2 Props (fine for a small bundle)
 When only the two views consume the state and it is 2–3 values, pass props from the page instead of creating a context. Do not prop-drill the same value through 4 intermediate components when context exists.
 
+---
+
 ## 5. Surface differences are data, not branches
 
-Two views of the same UI still follow `khawarizm-code-style` §3 and §6 — **never `if (isMobile)` or nested surface ternaries** to pick which markup renders.
+Two views of the same UI still follow [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) §3 and §6 — **never `if (isMobile)` or nested surface ternaries** to pick which markup renders.
 
 - **Label / class / width differs** → a `Record<AuthSurface, …>` inside the component, one entry per surface:
 
@@ -113,6 +131,8 @@ const TOP_BAR: Record<AuthSurface, { className: string; backLabel: string }> = {
 - **Genuinely different login-mode content with real markup differences** → an early return in one shared component (allowed: "genuinely different work"), or a record of render functions per surface.
 - The two surfaces share **one** top bar, **one** legal notice, **one** toast, **one** modal — never two copies.
 
+---
+
 ## 6. Step-by-step — split a page into views
 
 1. **Find the shared state** (mode, toggles, modal open, toast, URL sync) and the shared handlers.
@@ -121,6 +141,8 @@ const TOP_BAR: Record<AuthSurface, { className: string; backLabel: string }> = {
 4. **Create the folder** `components/views/<ComponentName>/` and move the existing desktop JSX → `Desktop<ComponentName>View.tsx`, mobile JSX → `Mobile<ComponentName>View.tsx`. Each reads context; each passes `surface` to shared chrome.
 5. **Slim the page** to: provider → shell div → toast → both views → modal.
 6. **Verify** (§8).
+
+---
 
 ## 7. Auth — the reference split
 
@@ -134,7 +156,7 @@ features/auth/
 ├── components/
 │   ├── cards/
 │   │   ├── ActiveAuthCard.tsx       # card-by-mode lookup, rendered by both views
-│   │   ├── DefaultLoginCard.tsx     # single surface API via variant prop
+│   │   ├── DefaultLoginCard.tsx     # single-surface API via variant prop
 │   │   └── WelcomeBackCard.tsx
 │   ├── hero/
 │   │   ├── AuthHeroPanel.tsx        # desktop-only, stays flat (single surface)
@@ -142,6 +164,9 @@ features/auth/
 │   ├── chrome/
 │   │   ├── AuthLegalNotice.tsx      # one component, LOGIN_NOTICE per surface
 │   │   └── AuthTopBar.tsx           # one top bar, TOP_BAR record per surface
+│   ├── controls/
+│   │   ├── AuthModeSwitch.tsx       # one pill for desktop and mobile
+│   │   └── AuthSocialButton.tsx     # PROVIDERS record (class + brand mark)
 │   ├── overlays/
 │   │   ├── AuthTermsModal.tsx       # shared overlay, null when closed
 │   │   └── AuthToast.tsx            # shared overlay, null when hidden
@@ -151,6 +176,10 @@ features/auth/
 └── pages/
     └── LoginPage.tsx                # provider + toast + 2 views + modal only
 ```
+
+`features/courses/` reuses the same pattern for `views/CourseLandingView/` and `views/CoursePlayerView/`.
+
+---
 
 ## 8. Verification
 
@@ -164,9 +193,10 @@ Then verify **behavior**, not just types: the refactor must render the exact sam
 
 ---
 
-## Related skills
+## 9. Related skills & docs
 
 - [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) — one-line comments, data over branches, JSON placement, no desktop/mobile duplication.
 - [`khawarizm-layout-edit`](../khawarizm-layout-edit/SKILL.md) — fixing misaligned views after a split (centering, grids, sticky offsets).
 - [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md) — directory placement matrix, concept classes, RTL rules.
 - [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md) — the full 10-step flow for building a new page, which produces these view splits.
+- **Human-facing docs:** [`docs/02-architecture.md`](../../../docs/02-architecture.md)

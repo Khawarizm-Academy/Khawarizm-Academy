@@ -1,41 +1,31 @@
 # Khawarizm Academy — Design Tokens & CSS Classes Reference
 
-This reference provides a comprehensive lookup of all design tokens, gradients, CSS variables, and concept-oriented classes defined in `src/styles/tokens.css`, `src/styles/globals.css`, and the per-feature CSS files.
+Lookup for every design token, gradient, CSS variable and concept class in `src/styles/tokens.css`, `src/styles/globals.css`, and the per-feature CSS files.
 
-**Where a class lives:** `tokens.css` (variables) → `globals.css` (classes shared by 2+ features) → `src/features/<feature>/<feature>.css` (classes used by one feature, e.g. `features/auth/auth.css`). Every feature CSS is `@import`ed at the top of `globals.css`, so the app still loads one stylesheet — never import a feature CSS from a `.tsx`.
+**Where a class lives:** `tokens.css` (variables) → `globals.css` (classes shared by 2+ features) → `src/features/<feature>/<feature>.css` (classes used by one feature). `globals.css` imports each feature CSS (`auth.css`, `catalog.css`, `courses.css`, `dashboard.css`, `home.css`, `profile.css`), so the app still loads **one** stylesheet — never import a feature CSS from a `.tsx`.
 
 ---
 
-## 1. Design Tokens (`tokens.css`)
+## 1. Design tokens (`tokens.css`)
 
-`tokens.css` is the **single source of truth** for the Observatory palette. It is
-imported by `globals.css` after `@import "tailwindcss"`, so its `@theme` block
-registers real Tailwind v4 utilities (`bg-`, `text-`, `border-`, `outline-`,
-`ring-`, `fill-`, `stroke-`).
+`tokens.css` is the **single source of truth** for the Observatory palette. It is imported by `globals.css` right after `@import "tailwindcss"`, so its `@theme` block registers real Tailwind v4 utilities (`bg-`, `text-`, `border-`, `outline-`, `ring-`, `fill-`, `stroke-`).
 
-> **Key design decision — default-name overrides.** The `@theme` block also
-> **overrides Tailwind's default color names** (`slate-*`, `sky-*`, `blue-900/950`,
-> `amber-*`, `orange-*`, `emerald-*`, `red-*`) with locked brand values. This means
-> every `text-slate-400`, `bg-sky-400`, etc. already resolves to the brand palette —
-> there is **zero** Tailwind-default leakage and **no** need for a plain-CSS
-> override utility layer. Use the default-name utilities directly in new work.
-> Prefer semantic brand names (`navy-*`, `gold-*`, `blue-400/500`, `success-*`…) for
-> intent, and the overridden defaults where a component already reads that way.
+> **Key decision — default-name overrides.** The `@theme` block also **overrides Tailwind's default color names** (`slate-*`, `sky-*`, `blue-900/950`, `amber-*`, `orange-*`, `emerald-*`, `red-*`) with locked brand values. Every `text-slate-400`, `bg-sky-400`, etc. already resolves to the brand palette — there is **zero** Tailwind-default leakage. Prefer semantic brand names (`navy-*`, `gold-*`, `blue-400/500`, `success-*`) for intent.
 
 ```css
 @theme {
-  /* Brand Navy (canvases & surfaces) */
+  /* Brand navy (canvases & surfaces) */
   --color-navy-950: #040f24;
   --color-navy-900: #061a3a;
   --color-navy-800: #092557;
   --color-navy-700: #123168;
   --color-navy-600: #1b3f80;
 
-  /* Brand Cyan (courses pillar / tech accent) */
+  /* Brand cyan (courses pillar / tech accent) */
   --color-blue-500: #167bdb;
   --color-blue-400: #29a9ff;
 
-  /* Brand Gold (scholarships pillar / achievement accent) */
+  /* Brand gold (scholarships pillar / achievement accent) */
   --color-gold-600: #c88a32;
   --color-gold-400: #e5b65c;
   --color-gold-200: #f3ce7a;
@@ -44,7 +34,7 @@ registers real Tailwind v4 utilities (`bg-`, `text-`, `border-`, `outline-`,
   --color-white-000: #f5f8fc;
   --color-white-100: #dce5ee;
 
-  /* Brand semantic status */
+  /* Semantic status */
   --color-success-500: #3fae6b;
   --color-warning-500: #e0a23b;
   --color-danger-500: #d9534f;
@@ -70,8 +60,7 @@ registers real Tailwind v4 utilities (`bg-`, `text-`, `border-`, `outline-`,
 }
 ```
 
-Non-utility CSS variables live in a `:root` block in the same file (consumed via
-`var(--…)` in runtime CSS only — they are **not** Tailwind utilities):
+Non-utility CSS variables live in a `:root` block in the same file (consumed via `var(--…)` at runtime — they are **not** Tailwind utilities):
 
 ```css
 :root {
@@ -89,33 +78,20 @@ Non-utility CSS variables live in a `:root` block in the same file (consumed via
 }
 ```
 
-> **Fonts (canonical, unified).** Headings/display: **IBM Plex Sans Arabic**;
-> body: **Tajawal**; those are the only two brand Arabic faces. `Cairo` has been
-> eliminated from every component — do not reintroduce it.
-
-> **Icons (canonical).** Use **lucide-react** for all UI icons. Raw `<svg>` is
-> permitted only for illustrations/BrandVisuals artwork and third-party brand
-> marks (Google/Facebook logos).
+> **Fonts (canonical).** Display/headings: **IBM Plex Sans Arabic**; body: **Tajawal**. Those are the only two brand Arabic faces — `Cairo` has been eliminated, do not reintroduce it.
+> **Icons (canonical).** Use **lucide-react** for all UI icons. Raw `<svg>` is allowed only for illustrations / `BrandVisuals` artwork and third-party brand marks (Google/Facebook logos).
 
 ---
 
-## 2. Gradients & Atmosphere Classes
+## 2. Gradients & atmosphere
 
 ```css
-.gradient-gold {
-  background: linear-gradient(135deg, #C88A32 0%, #E5B65C 100%);
-}
-
-.gradient-tech {
-  background: linear-gradient(135deg, #167BDB 0%, #29A9FF 100%);
-}
-
-.gradient-navy {
-  background: linear-gradient(180deg, #061A3A 0%, #092557 100%);
-}
+.gradient-gold  { background: linear-gradient(135deg, #C88A32 0%, #E5B65C 100%); }
+.gradient-tech  { background: linear-gradient(135deg, #167BDB 0%, #29A9FF 100%); }
+.gradient-navy  { background: linear-gradient(180deg, #061A3A 0%, #092557 100%); }
 
 .space-stars-bg {
-  background-image: 
+  background-image:
     radial-gradient(1.5px 1.5px at 15% 25%, rgba(229, 182, 92, 0.45) 50%, transparent),
     radial-gradient(1.5px 1.5px at 80% 18%, rgba(41, 169, 255, 0.55) 50%, transparent),
     radial-gradient(1.2px 1.2px at 35% 60%, rgba(220, 229, 238, 0.45) 50%, transparent),
@@ -126,122 +102,115 @@ Non-utility CSS variables live in a `:root` block in the same file (consumed via
 
 ---
 
-## 3. Comprehensive CSS Class Index
+## 3. Comprehensive class index
 
-> **Cascade rule:** classes declared **unlayered** (`.btn-gold`, `.glass-panel`, …) beat
-> Tailwind's `@layer utilities`, so JSX utilities cannot override them. New concept classes
-> go inside `@layer components` instead — there, JSX utilities win. `@apply` accepts only
-> real utilities: it fails on `.flex-center` and `group`.
+> **Cascade rule:** classes declared **unlayered** (`.btn-gold`, `.glass-panel`, …) beat Tailwind's `@layer utilities`, so JSX utilities cannot override them. New concept classes go inside `@layer components` instead — there, JSX utilities win. `@apply` accepts only real utilities: it fails on `.flex-center` and `group`.
 
-### Layout Primitives
-- `.page-wrapper`: Root container with `bg-[#040F24]`, `text-[#DCE5EE]`, selection styling, and `overflow-x-clip`.
-- `.content-container`: Main content wrapper (`max-w-[1280px]`, responsive padding, flex column).
+### Layout primitives
+- `.page-wrapper`: root container — `bg-[#040F24]`, `text-[#DCE5EE]`, selection styling, `overflow-x-clip`.
+- `.content-container`: main content wrapper (`max-w-[1280px]`, responsive padding, flex column).
 - `.flex-center`, `.flex-between`, `.flex-start`, `.flex-end`, `.flex-col-center`, `.flex-col-between`.
-- `.horizontal-scroll-row`: Horizontal flex swipe row with `-mx-4 px-4 overflow-x-auto` and hidden scrollbar.
+- `.horizontal-scroll-row`: horizontal flex swipe row with `-mx-4 px-4 overflow-x-auto` and hidden scrollbar.
 
 > **Sticky rules (learned the hard way):**
-> 1. **Never `overflow-x-hidden` on an ancestor of sticky chrome.** `hidden` on one axis computes the other axis to `auto`, creating a scroll container that swallows `position: sticky` — the sidebar/navbar scrolls away with the page. Use `overflow-x-clip` (clips the same, creates no scroll container). `.page-wrapper`, `.dash-page` and every future page shell use `clip`.
-> 2. **A sticky element only travels inside its parent.** The RootLayout navbar wrappers are `sticky top-0` themselves (their parent is the tall `.page-wrapper`); the navbar inside a wrapper of its own height can never stick.
-> 3. **Isolated rails** (dashboard sidebar): `sticky top-0 h-screen overflow-y-auto` — pinned to the viewport for the whole page, scrolling internally if their content is taller than the screen.
+> 1. **Never `overflow-x-hidden` on an ancestor of sticky chrome.** `hidden` on one axis computes the other to `auto`, creating a scroll container that swallows `position: sticky`. Use `overflow-x-clip`. `.page-wrapper` and `.dash-page` use `clip`.
+> 2. **A sticky element only travels inside its parent.** The RootLayout navbar wrappers are `sticky top-0` themselves (parent = the tall `.page-wrapper`).
+> 3. **Isolated rails** (dashboard sidebar): `sticky top-0 h-screen overflow-y-auto` — pinned to the viewport, scrolling internally if taller than the screen.
 
-### Surfaces & Cards
-- `.glass-panel`: Glassmorphic panel with `#061A3A/40`, blur, and `#1B3F80/40` border.
-- `.glass-panel-deep`: Opaque glassmorphic panel (`#040F24/90`).
-- `.glass-navbar`: Sticky top desktop navigation bar with bottom cyan glow line.
-- `.glass-mobile-header`: Sticky mobile top header with bottom shadow.
-- `.glass-mobile-bottom-bar`: Fixed mobile bottom navigation with safe-area padding.
-- `.card-interactive`: Card with subtle border, 20px shadow, hover `-translate-y-1`.
-- `.card-interactive-blue`: Card with hover cyan glow (`#29A9FF`).
-- `.card-interactive-gold`: Card with hover gold glow (`#E5B65C`).
-- `.card-media-box`: Media image container with `#092557/60` backdrop.
-- `.card-icon-box`: Icon box with hover scale.
-- `.card-accent-blue` / `.card-accent-gold`: Glowing 2px bottom strip.
+### Surfaces & cards
+- `.glass-panel` (`#061A3A/40` + blur + `#1B3F80/40` border), `.glass-panel-deep` (`#040F24/90`).
+- `.glass-navbar`, `.glass-mobile-header`, `.glass-mobile-bottom-bar`.
+- `.card-interactive`, `.card-interactive-blue` (cyan hover glow), `.card-interactive-gold` (gold hover glow).
+- `.card-media-box`, `.card-icon-box`, `.card-accent-blue` / `.card-accent-gold`.
 - `.card-title`, `.card-title-lg`, `.card-subtitle`, `.card-meta-row`.
 
-### Buttons & Links
-- `.btn-gold`: Primary CTA button with gold gradient, active press scale, and drop shadow.
-- `.btn-outline-blue`: Secondary CTA button with cyan outline and subtle hover fill.
-- `.btn-pill-subtle`: Dark navy button with slate border.
-- `.btn-icon-box`: 36x36 squircle button with border.
-- `.btn-icon-circle`: 40x40 circle button with border.
-- `.link-action-blue` & `.link-action-gold`: Action link with hover background and arrow.
+### Buttons & links
+- `.btn-gold`, `.btn-outline-blue`, `.btn-pill-subtle`, `.btn-icon-box`, `.btn-icon-circle`, `.btn-search-submit`.
+- `.link-action-blue` / `.link-action-gold`.
 
-### Forms & Search
-- `.search-form-desktop`: 64px rounded pill search bar with `#061A3A/85` glass and blue focus ring.
-- `.search-form-mobile`: 56px rounded pill search bar for mobile.
-- `.search-pills-container`: Inner capsule holding type filter pills.
-- `.btn-search-submit`: Gradient submit button with pulse effect.
+### Forms & search
+- `.search-form-desktop` (64px glass pill), `.search-form-mobile` (56px), `.search-pills-container`, `.btn-search-submit`.
 
-### Badges & Tags
-- `.badge-gold`: Gold text on `#040F24/85` pill with gold border.
-- `.badge-blue`: Cyan text on `#040F24/85` pill with cyan border.
-- `.badge-gold-subtle`: Soft gold badge for scholarship coverage.
-- `.tag-box`: Rectangular tag with `#092557/40` fill.
+### Section headers & badges
+- `.section-header-row`, `.section-header-title`, `.section-accent-title-blue`, `.section-accent-title-gold`.
+- `.badge-gold`, `.badge-blue`, `.badge-gold-subtle`, `.tag-box`.
 
-### Scrollbar Hiding
-- `.no-scrollbar` and `[data-no-scrollbar]`:
-  - `scrollbar-width: none !important;`
-  - `-ms-overflow-style: none !important;`
-  - `::-webkit-scrollbar { display: none !important; width: 0 !important; }`
+### Shared state & switch
+- `.state-panel`, `.state-panel-icon`, `.state-panel-title`, `.state-panel-text` — the shared empty/error chamber used by `<StatePanel />`.
+- `.seg-control`, `.seg-track`, `.seg-puck` (+ `-blue` / `-gold`), `.seg-option`, `.seg-option-idle`, `.seg-option-on-blue` / `.seg-option-on-gold` — the `SlidingSegmentedControl` puck (see [`khawarizm-motion`](../../khawarizm-motion/SKILL.md) §7).
 
-### Authentication (`.auth-*`, in `features/auth/auth.css`)
-Full-screen login / welcome-back chamber (`features/auth/`). The feature owns
-`src/features/auth/auth.css`, which `globals.css` imports. Declared in `@layer components`
-so JSX utilities can override them — see §3.7 of the skill for the cascade rule.
+### Scrollbar hiding
+- `.no-scrollbar` and `[data-no-scrollbar]` → `scrollbar-width: none !important; -ms-overflow-style: none !important; ::-webkit-scrollbar { display: none !important; width: 0 !important; }`.
 
-- **Shells:** `.auth-shell` (centered full-screen), `.auth-split-screen` (desktop frame), `.auth-chamber` (form side), `.auth-mobile` (single-column side).
-- **Toast & terms modal:** `.auth-toast`, `.auth-toast-dot`, `.auth-terms-scrim` (`var(--color-overlay-scrim)`), `.auth-terms-panel`, `.auth-terms-title`, `.auth-terms-body`, `.auth-terms-actions`.
-- **Top bar & mode switcher:** `.auth-top-bar`, `.auth-back-link`, `.auth-mode-switch`, `.auth-mode-option`, `.auth-mode-option-login`, `.auth-mode-option-returning`.
+### Authentication (`.auth-*`, `features/auth/auth.css`)
+Declared in `@layer components`. Full-screen login / welcome-back chamber.
+- **Shells:** `.auth-shell`, `.auth-split-screen`, `.auth-chamber`, `.auth-mobile`.
+- **Toast & terms:** `.auth-toast`, `.auth-toast-dot`, `.auth-terms-scrim` (`var(--color-overlay-scrim)`), `.auth-terms-panel`, `.auth-terms-title`, `.auth-terms-body`, `.auth-terms-actions`.
+- **Top bar & mode switch:** `.auth-top-bar`, `.auth-back-link`, `.auth-mode-switch`, `.auth-mode-option`, `.auth-mode-option-login`, `.auth-mode-option-returning`.
 - **Card:** `.auth-card-slot`, `.auth-body`, `.auth-card` (`var(--shadow-elev-2)`), `.auth-card-head`, `.auth-card-title`, `.auth-card-subtitle`.
-- **Social buttons:** `.auth-social-stack`, `.auth-social-btn`, `.auth-social-google`, `.auth-social-facebook`.
-- **Divider:** `.auth-divider`, `.auth-divider-line`, `.auth-divider-label`.
+- **Social & divider:** `.auth-social-stack`, `.auth-social-btn`, `.auth-social-google`, `.auth-social-facebook`, `.auth-divider`, `.auth-divider-line`, `.auth-divider-label`.
 - **Form:** `.auth-form`, `.auth-field`, `.auth-label`, `.auth-input-wrap` (+ `-error`), `.auth-input-icon`, `.auth-input`, `.auth-error`.
 - **Links & legal:** `.auth-link-slot`, `.auth-link-gold`, `.auth-link-muted`, `.auth-legal`, `.auth-legal-text`, `.auth-legal-link`.
-- **Welcome-back stats:** `.auth-avatar`, `.auth-avatar-inner`, `.auth-avatar-img`, `.auth-avatar-fallback`, `.auth-user-name`, `.auth-user-badge`, `.auth-stats-bar`, `.auth-stat`, `.auth-stat-value`, `.auth-stat-label`, `.auth-stat-divider`.
+- **Welcome-back:** `.auth-avatar`, `.auth-avatar-inner`, `.auth-avatar-img`, `.auth-avatar-fallback`, `.auth-user-name`, `.auth-user-badge`, `.auth-stats-bar`, `.auth-stat`, `.auth-stat-value`, `.auth-stat-label`, `.auth-stat-divider`.
 - **Mobile header:** `.auth-mobile-brand`, `.auth-mobile-heading`, `.auth-mobile-title`, `.auth-mobile-subtitle`.
-- **Hero panel:** `.auth-hero`, `.auth-glow-gold`, `.auth-glow-cyan`, `.auth-glow-mobile`, `.auth-brand`, `.auth-brand-name`, `.auth-brand-tag`, `.auth-orbit-stage`, `.auth-orbit-canvas`, `.auth-orbit-ring-outer` (add `.animate-orbit-slow` in JSX), `.auth-orbit-ring-inner`, `.auth-orbit-line`, `.auth-orbit-core`, `.auth-orbit-core-glow`, `.auth-orbit-core-star`, `.auth-hero-foot`, `.auth-hero-group`, `.auth-hero-title`, `.auth-hero-text`, `.auth-trust`, `.auth-trust-text`, `.auth-hero-stats`.
+- **Hero:** `.auth-hero`, `.auth-glow-gold`, `.auth-glow-cyan`, `.auth-glow-mobile`, `.auth-brand`, `.auth-brand-name`, `.auth-brand-tag`, `.auth-orbit-stage`, `.auth-orbit-canvas`, `.auth-orbit-ring-outer` (+ `.animate-orbit-slow` in JSX), `.auth-orbit-ring-inner`, `.auth-orbit-line`, `.auth-orbit-core`, `.auth-orbit-core-glow`, `.auth-orbit-core-star`, `.auth-hero-foot`, `.auth-hero-group`, `.auth-hero-title`, `.auth-hero-text`, `.auth-trust`, `.auth-trust-text`, `.auth-hero-stats`.
 
-### Catalog (`.catalog-*`, in `features/catalog/catalog.css`)
-Catalog explorer route (`/catalog`). Same pattern as auth: the feature owns
-`src/features/catalog/catalog.css`, `globals.css` imports it, classes sit in `@layer components`.
-
-- **Page layout:** `.catalog-hero`, `.catalog-hero-title`, `.catalog-hero-subtitle`, `.catalog-search-slot` (mobile adds `mt-3`), `.catalog-results`, `.catalog-results-main`, `.catalog-results-aside`.
-- **Toolbar:** `.catalog-toolbar`, `.catalog-toolbar-count`, `.catalog-chip-btn` (+ `.catalog-chip-filters` / `.catalog-chip-sort`), `.catalog-sort-menu`, `.catalog-sort-option` (+ `-idle` / `-active`).
+### Catalog (`.catalog-*`, `features/catalog/catalog.css`)
+- **Page:** `.catalog-hero`, `.catalog-hero-title`, `.catalog-hero-subtitle`, `.catalog-search-slot`, `.catalog-results`, `.catalog-results-main`, `.catalog-results-aside`.
+- **Toolbar:** `.catalog-toolbar`, `.catalog-toolbar-count`, `.catalog-chip-btn` (+ `-filters` / `-sort`), `.catalog-sort-menu`, `.catalog-sort-option` (+ `-idle` / `-active`).
 - **Data section:** `.catalog-data`, `.catalog-revalidation-line`, `.catalog-grid` (cards **and** skeleton), `.catalog-state`, `.catalog-state-icon`, `.catalog-state-title`, `.catalog-state-text`.
-- **Result card:** `.catalog-card-media`, `.catalog-card-thumb`, `.catalog-card-media-shade`, `.catalog-card-symbol` (skeleton: `.catalog-skeleton-symbol`), `.catalog-card-badge`, `.catalog-card-body`, `.catalog-card-category`, `.catalog-card-title`, `.catalog-card-meta`, `.catalog-card-divider`, `.catalog-card-footer`.
-- **Filter panels:** `.catalog-sidebar`, `.catalog-panel-head`, `.catalog-panel-title`, `.catalog-reset`, `.catalog-drawer`, `.catalog-drawer-scrim`, `.catalog-drawer-panel`, `.catalog-drawer-handle`.
-- **Filter pills:** `.catalog-group-label`, `.catalog-pill`, `.catalog-pill-idle`, `.catalog-pill-gold`, `.catalog-pill-sky`, `.catalog-pill-glow-gold`, `.catalog-pill-glow-sky`.
+- **Card:** `.catalog-card-media`, `.catalog-card-thumb`, `.catalog-card-media-shade`, `.catalog-card-symbol` (+ `.catalog-skeleton-symbol`), `.catalog-card-badge`, `.catalog-card-body`, `.catalog-card-category`, `.catalog-card-title`, `.catalog-card-meta`, `.catalog-card-divider`, `.catalog-card-footer`.
+- **Filters:** `.catalog-sidebar`, `.catalog-panel-head`, `.catalog-panel-title`, `.catalog-reset`, `.catalog-drawer`, `.catalog-drawer-scrim`, `.catalog-drawer-panel`, `.catalog-drawer-handle`, `.catalog-group-label`, `.catalog-pill`, `.catalog-pill-idle`, `.catalog-pill-gold`, `.catalog-pill-sky`, `.catalog-pill-glow-gold`, `.catalog-pill-glow-sky`.
 - **Pagination:** `.catalog-pagination`, `.catalog-page-nav`, `.catalog-page` (+ `-idle` / `-active`).
 
-### Dashboard (`.dash-*`, in `features/dashboard/dashboard.css`)
-Learning workspace (`/dashboard`). Same pattern as auth/catalog: the feature owns
-`src/features/dashboard/dashboard.css`, `globals.css` imports it, classes sit in `@layer components`.
-`dashboard.css` orders variant classes after their base (hero → hero-cyan/hero-red,
-nav-item → nav-item-active/idle, modal-icon → -red/-sky/-gold, …).
+### Courses (`.course-*`, `.player-*`, `.cert-*`, `features/courses/courses.css`)
+Course landing, player and certificate. Declared in `@layer components`.
+- **Landing:** `.course-hero-grid`, `.course-hero-main`, `.course-hero-aside`, `.course-cover` (+ `-img` / `-shade` / `-badge`), `.course-breadcrumb` (+ `-link`), `.course-title`, `.course-tagline`, `.course-meta-row`, `.course-stat` (+ `-row` / `-label` / `-value`), `.course-action-card`, `.course-action-price` (+ `-free`), `.course-info-*`, `.course-outcome-*`, `.course-accordion*`, `.course-section*`, `.course-sticky-cta`, `.course-toast`, `.course-surface-desktop` / `.course-surface-mobile`.
+- **Player:** `.player-stage` (+ `-sticky`), `.player-bar` (+ `-title`), `.player-seek*`, `.player-controls-bar`, `.player-action-btn` / `.player-action-primary`, `.player-sidebar` (+ `-head`), `.player-panel` (+ `-head` / `-title`), `.player-tabs` / `.player-tab` (+ `-active` / `-idle`), `.player-lesson` (+ `-active` / `-available` / `-completed` / `-locked`) and `.player-lesson-*`, `.player-path-*`, `.player-live-card` (+ `-live` / `-past` / `-upcoming`), `.player-exam-*`, `.player-option-*`, `.player-feedback*`, `.player-drawer*`, `.player-menu*`, `.player-mini*`.
+- **Certificate:** `.cert-stage`, `.cert-frame` (+ `-inner`), `.cert-burst` (+ `-core` / `-ring`), `.cert-seal`, `.cert-heading`, `.cert-subtitle`, `.cert-course`, `.cert-name`, `.cert-certifies`, `.cert-completed`, `.cert-meta`, `.cert-score`, `.cert-stats`, `.cert-stat` (+ `-label` / `-value`), `.cert-actions`, `.cert-watermark`.
 
-**Canvas & elevation (aligned with every other page):**
-- `.dash-page` paints **no background** — the dashboard sits on the navy-950 page-wrapper and the global celestial washes glow through it. Never add a page-level background to a feature page; the shell owns the canvas.
-- **Cards are lighter than the canvas:** floating surfaces are translucent glass (`bg-navy-900/70–80 + backdrop-blur-md + border-navy-600/50`), wells inside them go darker (`bg-navy-950/50`). Never flip this (dark cards on a dark page read as holes).
-- Chrome is `.glass-navbar`-grade: `.dash-sidebar` / `.dash-topbar` use `bg-navy-950/90 + backdrop-blur-md`, and both are `sticky top-0`. The sidebar is an **isolated rail** — `sticky top-0 h-screen overflow-y-auto`: pinned to the viewport on every view, scrolling internally if the nav outgrows the screen (see the sticky rules under Layout Primitives).
-- Modals, drawer, dropdowns and search panels stay **solid navy-900** for readability over the scrim (same idiom as `.auth-terms-panel`).
-- Accent pills are translucent, never solid fills: active nav = `bg-gold-400/10 outline-gold-400/50 text-gold-400`, subnav/filter pills = `bg-blue-400/15`, toggles & sort = `bg-gold-400/15 text-gold-400` (mirrors `.catalog-pill-gold`).
+### Home (`.quick-*`, `features/home/home.css`)
+- `.quick-rail`, `.quick-link` (+ `-blue` / `-gold`), `.quick-link-icon` (+ `-blue` / `-gold`), `.quick-link-title`, `.quick-link-sub`, `.quick-link-text`, `.quick-link-arrow`.
 
-- **Page shell:** `.dash-page` (`selection:` variant), `.dash-grid` (RTL 2-col; pair with inline `animate-fade-in-up animation-delay-100` — plain globals helpers stay in JSX), `.dash-grid-main`, `.dash-grid-aside`.
-- **View scaffold:** `.dash-view-title`, `.dash-section-head`, `.dash-row-title`, `.dash-mobile-top-row` (+ `-title` / `-back`), `.dash-chip`, `.dash-chip-mobile` / `.dash-chip-desktop`, `.dash-chip-row` (+ `.no-scrollbar`).
-- **Desktop sidebar (Right / Child #1):** `.dash-sidebar`, `.dash-side-section`, `.dash-side-row` (add `group` in JSX), `.dash-nav-item` (+ `-active` / `-idle`), `.dash-avatar`, `.dash-brand-mark`, `.dash-brand-name`, `.dash-user-name` (hover via `group-hover:*`), and the bottom icon pair: saved `.dash-bell` bookmark + notification `.dash-bell` (both `-active` / `-idle`, badge via `.dash-bell-badge` / `.dash-bell-count`).
-- **Top bar & search:** `.dash-topbar` (sticky glass, matches `.glass-navbar`), `.dash-topbar-search`, `.dash-search-overlay`, `.dash-search-panel`, `.dash-subnav` (mobile/tablet-only — carries `lg:hidden`), `.dash-tab` / `.dash-pill-active`.
-- **Stats header & sidebar:** `.dash-greet-*`, `.dash-bell-*` (+ `-active` / `-idle`), `.dash-stat-chip-row`, `.dash-widget`, `.dash-widget-icon`, `.dash-widget-head`, `.dash-widget-title`, `.dash-stat/stat-value/stat-label-row`, `.dash-upcoming-row`, `.dash-course-live-dot`.
-- **Hero priority cards:** `.dash-hero`, `.dash-hero-cyan`, `.dash-hero-red`, `.dash-hero-tag` (+ `-cyan` / `-red`), `.dash-hero-tag-label` (+ `-live`), `.dash-hero-thumb` (+ `-cyan` / `-red`), `.dash-progress` / `.dash-progress-bar` / `.dash-progress-fill`, `.dash-course-title`, `.dash-countdown-*` (uses `var(--color-danger)`), `.dash-cta*`.
-- **Rows & cards:** `.dash-row` (+ `-meta`, `-label`, `-value`, `-icon`), `.dash-deadline-tag`, `.dash-course-icon` (+ tone records `COURSE_ICON`), `.dash-card`, `.dash-card-head`, `.dash-card-body`, `.dash-course-card-details`, `.dash-course-score`.
-- **Enrolled view:** `.dash-chip-btn` (+ `-filters` / `-sort`), `.dash-sort-menu` (pair with inline `animate-fade-in-up`), `.dash-sort-option` (+ `-idle` / `-active`, `cursor-pointer`), `.dash-filter-pill` (+ `-idle` / `-active`), `.dash-empty-btn` (+ `-primary` / `-ghost`).
-- **Empty hero:** `.dash-empty-hero`, `.dash-empty-badge`, `.dash-empty-title`, `.dash-empty-text`, `.dash-compass` (+ `.animate-orbit-slow` in JSX).
+### Profile (`.profile-*`, `.toggle-*`, `features/profile/profile.css`)
+- **Layout:** `.profile-root`, `.profile-stack`, `.profile-columns`, `.profile-column-primary`, `.profile-column-secondary`, `.profile-block`, `.profile-wash-blue`, `.profile-wash-gold`.
+- **Hero:** `.profile-hero`, `.profile-hero-row`, `.profile-hero-id`, `.profile-hero-action`, `.profile-avatar` (+ `-ring` / `-orbit` / `-initials` / `-edit`), `.profile-name` (+ `-row`), `.profile-badge`, `.profile-verified`, `.profile-meta`.
+- **Cards & fields:** `.profile-card` (+ `-head` / `-icon` / `-title`), `.profile-fields-grid`, `.profile-field` (+ `-icon` / `-label-row`), `.profile-label`, `.profile-hint`, `.profile-form`, `.profile-actions`, `.profile-stat` (+ `-label` / `-value`), `.profile-interests` (+ `-head`), `.profile-interest` (+ `-on` / `-off`), `.profile-toast` (+ `-icon` / `-text`).
+- **Toggle:** `.toggle-row`, `.toggle-label`, `.toggle-track` (+ `-on` / `-off`), `.toggle-knob` (+ `-on` / `-off`).
+
+### Dashboard (`.dash-*`, `features/dashboard/dashboard.css`)
+`dashboard.css` orders variant classes after their base (hero → hero-cyan/hero-red, nav-item → nav-item-active/idle, modal-icon → -red/-sky/-gold, …).
+
+**Canvas & elevation:**
+- `.dash-page` paints **no background** — the dashboard sits on the navy-950 `.page-wrapper` and the global celestial washes glow through. Never add a page-level background to a feature page.
+- **Cards are lighter than the canvas:** floating surfaces are translucent glass (`bg-navy-900/70–80 + backdrop-blur-md + border-navy-600/50`); wells inside them go darker (`bg-navy-950/50`). Never flip this.
+- Chrome is `.glass-navbar`-grade: `.dash-sidebar` / `.dash-topbar` use `bg-navy-950/90 + backdrop-blur-md`, both `sticky top-0`. The sidebar is an **isolated rail** (`sticky top-0 h-screen overflow-y-auto`).
+- Modals, drawer, dropdowns and search panels stay **solid navy-900** for readability over the scrim.
+- Accent pills are translucent, never solid: active nav = `bg-gold-400/10 outline-gold-400/50 text-gold-400`, subnav/filter pills = `bg-blue-400/15`, toggles & sort = `bg-gold-400/15 text-gold-400`.
+
+- **Page shell:** `.dash-page`, `.dash-grid` (RTL 2-col; pair with inline `animate-fade-in-up animation-delay-100`), `.dash-grid-main`, `.dash-grid-aside`.
+- **View scaffold:** `.dash-view-title`, `.dash-section-head`, `.dash-row-title`, `.dash-mobile-top-row` (+ `-title` / `-back`), `.dash-chip`, `.dash-chip-mobile` / `.dash-chip-desktop`, `.dash-chip-row`.
+- **Sidebar (right / Child #1):** `.dash-sidebar`, `.dash-side-section`, `.dash-side-row`, `.dash-nav-item` (+ `-active` / `-idle`), `.dash-avatar`, `.dash-brand-mark`, `.dash-brand-name`, `.dash-user-name`, `.dash-bell` (+ `-active` / `-idle` / `-badge` / `-count`).
+- **Top bar & search:** `.dash-topbar`, `.dash-topbar-search`, `.dash-search-overlay`, `.dash-search-panel`, `.dash-subnav` (mobile/tablet-only, `lg:hidden`), `.dash-tab` / `.dash-pill-active`.
+- **Stats:** `.dash-greet-*`, `.dash-stat-chip-row`, `.dash-widget` (+ `-icon` / `-head` / `-title`), `.dash-stat` (+ `-value` / `-label` / `-row`), `.dash-upcoming-row`, `.dash-course-live-dot`.
+- **Hero priority cards:** `.dash-hero` (+ `-cyan` / `-red`), `.dash-hero-tag` (+ `-cyan` / `-red` / `-label` / `-live`), `.dash-hero-thumb` (+ `-cyan` / `-red`), `.dash-progress` / `.dash-progress-bar` / `.dash-progress-fill`, `.dash-course-title`, `.dash-countdown-*`, `.dash-cta*`.
+- **Rows & cards:** `.dash-row` (+ `-meta` / `-label` / `-value` / `-icon`), `.dash-deadline-tag`, `.dash-course-icon`, `.dash-card` (+ `-head` / `-body`), `.dash-course-card-details`, `.dash-course-score`.
+- **Enrolled view:** `.dash-chip-btn` (+ `-filters` / `-sort`), `.dash-sort-menu`, `.dash-sort-option` (+ `-idle` / `-active`), `.dash-filter-pill` (+ `-idle` / `-active`), `.dash-empty-btn` (+ `-primary` / `-ghost`).
+- **Empty hero:** `.dash-empty-hero`, `.dash-empty-badge`, `.dash-empty-title`, `.dash-empty-text`, `.dash-compass`.
 - **Competitions & certificates:** `.dash-toggle`, `.dash-toggle-btn`, `.dash-toggle-active` / `.dash-toggle-idle`, `.dash-cert-card`, `.dash-cert-badge`, `.dash-cert-title`, `.dash-cert-cta`, `.dash-cert-cta-blue`.
-- **Notifications:** `.dash-notif` (add `group` in JSX; + `-unread` / `-read`), `.dash-notif-icon` (+ `-tone-*`), `.dash-drawer-scrim`, `.dash-drawer-panel`, `.dash-drawer-head`, `.dash-drawer-item`, `.dash-toast`.
-- **Modal chrome (chambers):** `.dash-modal-overlay`, `.dash-modal-shell` (built on `workspace-card`), `.dash-modal-head`, `.dash-modal-title`, `.dash-modal-close`, `.dash-modal-icon` (+ `-red` / `-sky` / `-gold`), `.dash-modal-divider`, plus chamber internals: `.dash-stage-*`, `.dash-chat-*`, `.dash-arena-*`, `.dash-code-*`, `.dash-lead-*`, `.dash-check-*`, `.dash-editor-*`.
+- **Notifications:** `.dash-notif` (+ `-unread` / `-read`), `.dash-notif-icon` (+ `-tone-*`), `.dash-drawer-scrim`, `.dash-drawer-panel`, `.dash-drawer-head`, `.dash-drawer-item`, `.dash-toast`.
+- **Modal chrome (chambers):** `.dash-modal-overlay`, `.dash-modal-shell`, `.dash-modal-head`, `.dash-modal-title`, `.dash-modal-close`, `.dash-modal-icon` (+ `-red` / `-sky` / `-gold`), `.dash-modal-divider`, plus chamber internals `.dash-stage-*`, `.dash-chat-*`, `.dash-arena-*`, `.dash-code-*`, `.dash-lead-*`, `.dash-check-*`, `.dash-editor-*`.
 
 ### Animations
-- `.animate-fade-in` — generic opacity fade (modals, toasts, view swaps). **Was used in 15+ files while undefined; now defined in `globals.css`.**
+- `.animate-fade-in` — generic opacity fade (modals, toasts, view swaps).
 - `.animate-fade-in-up` / `.animate-fade-in-down` — entrance slides (+ `animation-delay-*` helpers).
-- `.animate-page-enter` — page-level entrance (220ms, `--transition-page-ease`).
-- `.animate-orbit-slow` / `.animate-counter-orbit-slow` — rotating rings (`AstrolabeLoader`, brand seal, hero orbit). There is **no** `animate-spin-very-slow`.
-- `.animate-shimmer`, `.animate-celestial-pulse`, `.animate-radar-ping`, `.animate-dropdown-in` / `.animate-dropdown-out` — skeletons, pulses, dropdowns.
+- `.animate-page-enter` — page entrance (220ms, `--transition-page-ease`); disabled when `html[data-vt-enabled='true']`.
+- `.animate-orbit-slow` / `.animate-counter-orbit-slow` — rotating rings. There is **no** `animate-spin-very-slow`.
+- `.animate-shimmer`, `.animate-celestial-pulse`, `.animate-radar-ping`, `.animate-dropdown-in` / `.animate-dropdown-out`.
+- **`@utility` motion** (composed with `hover:` / `group-hover:`): `animate-pop-in`, `animate-float`, `animate-float-slow`, `animate-wiggle`, `animate-bell-ring`, `animate-star-twinkle`. Full system: [`khawarizm-motion`](../../khawarizm-motion/SKILL.md).
+
+---
+
+## 4. Project docs
+
+[`docs/01-design-system.md`](../../../../docs/01-design-system.md) is the human-facing twin of this reference; the skill remains canonical for agents.

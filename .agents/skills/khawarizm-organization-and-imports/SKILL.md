@@ -5,9 +5,9 @@ description: The canonical folder taxonomy and import system for Khawarizm Acade
 
 # Khawarizm Academy — Folder Organization & Import System
 
-This skill is the standard for **where feature components live** and **how every import line is written**, so a folder name tells you what a component is for and a one-line import reads top-to-bottom with no `../../../` chains.
+The standard for **where feature components live** and **how every import line is written**, so a folder name tells you what a component is for and a one-line import reads top-to-bottom with no `../../../` chains.
 
-> Applies with [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) (data over branches, no duplication) and [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md) (directory placement matrix). This skill *is the folder taxonomy + import syntax* those skills point at.
+> Applies with [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) (data over branches, no duplication) and [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md) (directory placement matrix). This skill *is* the folder taxonomy + import syntax those skills point at.
 
 ---
 
@@ -36,20 +36,22 @@ Rules:
 4. **External packages stay bare** (`import { Trophy } from 'lucide-react'`).
 5. New files import everything via `@/` from the first line — never add a relative import to a file that already has aliases.
 
+---
+
 ## 2. Feature component folders — the taxonomy
 
 Every file under `features/<feature>/components/` sits in **one lowercase plural category folder** that says what the component *is for*. A feature creates only the categories it actually uses — a one-file category is fine; an empty one is not.
 
 | Folder | What lives there | Examples (after the refactor) |
 | :--- | :--- | :--- |
-| `layout/` | Page composition roots & shells, data-boundary sections | `DashboardShell`, `DashboardMain`, `CatalogResults`, `CatalogDataSection`, `HomeContent`, `TwinPillarRails`, `SurfaceSlot`, `ProfileView`, `ProfileContent` |
-| `views/` | Render-complete page surfaces; surface-pair folders go inside | `EnrolledCoursesView`, `SavedScholarshipsView`, `views/LoginView/DesktopLoginView.tsx` + `MobileLoginView.tsx` |
-| `chrome/` | Navigation & page furniture — bars, sidebars, sub-nav, rails, legal | `AuthTopBar`, `DesktopDashboardSidebar`, `DashboardTopBar`, `MobileDashboardTopBar`, `DashboardSubNavigation`, `DashboardStatsHeader`, `DashboardStatsSidebar`, `QuickAccessRail` |
-| `cards/` | Cards, card rows, list items, and their sub-visuals | `ActiveAuthCard`, `DefaultLoginCard`, `WelcomeBackCard`, `CatalogCard`, `PriorityContinueCard`, `EnrolledCourseCard`, `EnrolledCourseRow`, `NotificationListItem`, `RadialProgressRing`, `SettingsCard`, `ChallengeSpotlightCard` |
-| `hero/` | Hero banners & decorative artwork panels | `AuthHeroPanel`, `BrandSeal`, `CatalogHero`, `HeroSection`, `ProfileHero` |
-| `overlays/` | Modals, drawers, toasts — things that escape the flow | `AuthTermsModal`, `AuthToast`, `CourseWorkspaceModal`, `LiveClassroomModal`, `CompetitionArenaModal`, `ScholarshipApplicationModal`, `CertificatePreviewModal`, `NotificationsDrawer`, `ProfileToast` |
-| `controls/` | Inputs, buttons, switches, toggles, action rows | `AuthModeSwitch`, `AuthSocialButton`, `FieldText`, `ToggleSwitch`, `ProfileSaveActions` |
-| `states/` | Skeletons, loading, empty/error states | `CatalogGridSkeleton`, `EmptyDashboardState` |
+| `layout/` | Page composition roots & shells, data-boundary sections | `DashboardShell`, `DashboardMain`, `CatalogResults`, `CatalogDataSection`, `HomeContent`, `TwinPillarRails`, `CourseAbout`, `CourseCurriculum`, `PlayerStage`, `PlayerPanels` |
+| `views/` | Render-complete page surfaces; surface-pair folders go inside | `EnrolledCoursesView`, `SavedScholarshipsView`, `CertificateView`, `views/LoginView/`, `views/CourseLandingView/` |
+| `chrome/` | Navigation & page furniture — bars, sidebars, sub-nav, rails, legal, breadcrumbs | `AuthTopBar`, `DesktopDashboardSidebar`, `DashboardTopBar`, `MobileDashboardTopBar`, `DashboardSubNavigation`, `DashboardStatsHeader`, `DashboardStatsSidebar`, `PlayerTopBar`, `LessonTabBar`, `CoursePathSidebar`, `CourseBreadcrumb` |
+| `cards/` | Cards, card rows, list items, and their sub-visuals | `ActiveAuthCard`, `DefaultLoginCard`, `WelcomeBackCard`, `CatalogCard`, `PriorityContinueCard`, `EnrolledCourseCard`, `EnrolledCourseRow`, `NotificationListItem`, `RadialProgressRing`, `CurriculumModuleCard`, `InstructorCard`, `LiveSessionCard`, `ExamCalloutCard`, `CertificatePreview` |
+| `hero/` | Hero banners & decorative artwork panels | `AuthHeroPanel`, `BrandSeal`, `CatalogHero`, `CourseHeaderBlock`, `HeroSection`, `ProfileHero` |
+| `overlays/` | Modals, drawers, toasts — things that escape the flow | `AuthTermsModal`, `AuthToast`, `CourseWorkspaceModal`, `LiveClassroomModal`, `CompetitionArenaModal`, `ScholarshipApplicationModal`, `CertificatePreviewModal`, `NotificationsDrawer`, `ProfileToast`, `PlayerMiniPlayer`, `PlayerSyllabusDrawer`, `CourseToast` |
+| `controls/` | Inputs, buttons, switches, toggles, action rows | `AuthModeSwitch`, `AuthSocialButton`, `CourseActionPanel`, `CoursePrimaryCta`, `CourseStickyCta`, `PlayerSettingsMenu`, `FieldText`, `ToggleSwitch`, `ProfileSaveActions` |
+| `states/` | Skeletons, loading, empty/error states | `CatalogGridSkeleton`, `EmptyDashboardState`, `CourseLandingSkeleton`, `CoursePlayerSkeleton`, `CourseNotFound` |
 | `filters/` | Filter & sort panels (any surface) | `CatalogFilterSidebar`, `CatalogFilterGroups`, `CatalogMobileFilterDrawer` |
 | `toolbar/` | Toolbar & pagination strips | `CatalogToolbar`, `CatalogPagination` |
 
@@ -71,9 +73,19 @@ features/dashboard/components/
 ├── cards/{PriorityContinueCard,LiveSessionPriorityCard,RadialProgressRing,EnrolledCourseCard,EnrolledCourseRow,NotificationListItem,ChallengeSpotlightCard}.tsx
 ├── overlays/{CourseWorkspaceModal,LiveClassroomModal,CompetitionArenaModal,ScholarshipApplicationModal,CertificatePreviewModal,NotificationsDrawer}.tsx
 └── states/EmptyDashboardState.tsx
+
+features/courses/components/
+├── views/{CourseLandingView/,CoursePlayerView/,CertificateView.tsx}
+├── layout/{CourseAbout,CourseOutcomes,CourseCurriculum,CoursePathModules,RelatedCoursesRail,PlayerStage,PlayerPanels}.tsx
+├── chrome/{CourseBreadcrumb,PlayerTopBar,LessonTabBar,CoursePathSidebar}.tsx
+├── cards/{CurriculumModuleCard,PathLessonRow,InstructorCard,LiveSessionCard,ExamCalloutCard,CertificatePreview}.tsx
+├── controls/{CourseActionPanel,CoursePrimaryCta,CourseStickyCta,PlayerSettingsMenu}.tsx
+└── states/{CourseLandingSkeleton,CoursePlayerSkeleton,CourseNotFound}.tsx
 ```
 
-Existing volume is the guide: **dashboard** (28 files) splits fully by purpose; **auth/profile/home/catalog** split the same way but smaller. Do not invent a new category name for a lone file — place it in the closest existing bucket.
+Existing volume is the guide: **dashboard** and **courses** split fully by purpose; **auth/profile/home/catalog** split the same way but smaller. Do not invent a new category name for a lone file — place it in the closest existing bucket.
+
+---
 
 ## 3. Surface-pair folders go inside `views/`
 
@@ -92,29 +104,33 @@ import { DesktopLoginView } from '@/features/auth/components/views/LoginView/Des
 import { MobileLoginView } from '@/features/auth/components/views/LoginView/MobileLoginView';
 ```
 
+---
+
 ## 4. Placement quick-reference (where every file kind lives)
 
 | What | Where | e.g. |
 | :--- | :--- | :--- |
-| Shared component (2+ features) | `src/shared/components/<Category>/` | `Cards/CourseCard.tsx`, `Search/SmartSearchBox.tsx` |
+| Shared component (2+ features) | `src/shared/components/<Category>/` | `Cards/CourseCard.tsx`, `Search/SmartSearchBox.tsx`, `State/StatePanel.tsx` |
 | Feature component | `src/features/<feature>/components/<category>/` | `@/features/dashboard/components/cards/PriorityContinueCard` |
-| Component with 2 surfaces | `…/components/views/<Component>/` | `views/LoginView/` |
+| Component with 2 surfaces | `…/components/views/<Component>/` | `views/LoginView/`, `views/CoursePlayerView/` |
 | Page state shared per surface | `src/features/<feature>/context/` | `authLoginContext.ts` + `AuthLoginProvider.tsx` |
 | Page view | `src/features/<feature>/pages/` | `<Feature>Page.tsx` |
 | Shared entity types | `src/shared/types/entities.ts` | `Course`, `Scholarship` |
 | Feature view types | `src/features/<feature>/types.ts` | `LearningLevel`, `EnrolledCourse` |
-| Shared hook | `src/shared/hooks/` | `useCachedData.ts` |
+| Shared hook | `src/shared/hooks/` | `useCachedData.ts`, `useCountdown.ts` |
 | Feature hook | `src/features/<feature>/hooks/` | `useLiveCountdown.ts` |
 | Feature data (non-JSON) | `src/features/<feature>/data/` | `dashboardFetchers.ts`, `radialRingColors.ts` |
 | Feature styles | `src/features/<feature>/<feature>.css` | `auth.css` — imported by `globals.css` only |
 | Static data | `src/shared/json/` | `routes.json`, `catalog.json` |
 | **Hydrated mock modules** | **`src/shared/mocks/`** | `shared/mocks/catalog.ts` (types + JSON casts), barrel `index.ts` |
-| Shared lib/helpers | `src/shared/lib/` | `navigation.ts`, `localization.ts` |
+| Shared lib/helpers | `src/shared/lib/` | `navigation.ts`, `localization.ts`, `cacheManager.ts` |
 | Tokens + shared styles | `src/styles/` | `tokens.css`, `globals.css` |
-| Routes & root app | `src/app/` | `router.tsx`, `routes.tsx`, `layouts/`, `pages/` |
+| Routes & root app | `src/app/` | `router.tsx`, `routes.tsx`, `pageLoads.ts`, `layouts/`, `pages/` |
 | Brand assets | `src/assets/brand/` | `source/`, `generated/` |
 
 The complete decision matrix lives in [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md).
+
+---
 
 ## 5. Verification after moving or importing
 
@@ -128,9 +144,10 @@ Mechanical moves are safe only when verified behaviorally: compare the built bun
 
 ---
 
-## Related skills
+## 6. Related skills & docs
 
 - [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) — comments, data over branches, no duplication, verification gates.
 - [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md) — the folder-per-surface split that lives under `views/`.
 - [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md) — the full directory placement matrix and component catalog.
 - [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md) — the 10-step flow for new pages, which uses this taxonomy.
+- **Human-facing docs:** [`docs/02-architecture.md`](../../../docs/02-architecture.md) · [`docs/05-feature-directory.md`](../../../docs/05-feature-directory.md)

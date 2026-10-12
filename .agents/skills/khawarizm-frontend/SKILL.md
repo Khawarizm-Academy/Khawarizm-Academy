@@ -5,226 +5,219 @@ description: Master design, engineering, and architecture playbook for Khawarizm
 
 # Khawarizm Academy — Master Frontend Engineering & Design Skill
 
-This skill is the **definitive operational guide and standard** for developing the Khawarizm Academy web platform. It ensures you know:
-1. **How to use everything in the design** (Observatory celestial theme, tokens, and Tailwind v4 `@apply` concept classes).
-2. **Where every file belongs** (Directory & placement rules).
-3. **How to avoid repeating code** (Strict anti-duplication rules and component reuse).
-4. **How to assemble any new page/feature in minutes** without writing redundant markup.
+The **definitive operational guide and standard** for developing the Khawarizm Academy web platform. It tells you:
+1. **How to use the design** (Observatory celestial theme, tokens, Tailwind v4 `@apply` concept classes).
+2. **Where every file belongs** (directory & placement rules).
+3. **How to avoid repeating code** (anti-duplication rules and component reuse).
+4. **How to assemble any new page/feature in minutes** without redundant markup.
+
+> Human-facing twins of this skill: [`docs/01-design-system.md`](../../../docs/01-design-system.md) and [`docs/02-architecture.md`](../../../docs/02-architecture.md). The skill stays the canonical source for agents.
 
 ---
 
-## 1. Deep Project Analysis & Mental Model
+## 1. Deep project analysis & mental model
 
-### 1.1 The Dual-Pillar Observatory Architecture
-The Khawarizm Academy platform is built on two core educational pillars sharing an identical geometric design grammar:
-- **Courses Pillar (الدورات التدريبية):** Identified by Cyber-Cyan accents (`#167BDB` / `#29A9FF`), code brackets, technology tracks, and practical skill verification.
-- **Scholarships & Opportunities Pillar (المنح والفرص الدولية):** Identified by Brass Gold accents (`#C88A32` / `#E5B65C`), global academic opportunities, prestigious degree sponsorships, and deadline countdowns.
-- **The Visual Theme:** "Observatory & Cyber-Intelligence" (المرصد الفلكي الذكي) — dark space canvas (`#040F24`, `#061A3A`, `#092557`), glowing brass astrolabes, starlight elevation, and clean typography.
+### 1.1 The dual-pillar Observatory architecture
+Two core educational pillars share one geometric design grammar:
+- **Courses pillar (الدورات التدريبية):** cyber-cyan accents (`#167BDB` / `#29A9FF`), code brackets, technology tracks, practical skill verification.
+- **Scholarships & opportunities pillar (المنح والفرص الدولية):** brass gold accents (`#C88A32` / `#E5B65C`), global academic opportunities, degree sponsorships, deadline countdowns.
+- **The visual theme:** "Observatory & Cyber-Intelligence" (المرصد الفلكي الذكي) — dark space canvas (`#040F24`, `#061A3A`, `#092557`), glowing brass astrolabes, starlight elevation, clean typography.
 
-### 1.2 Core Technology Stack
-- **Framework:** React 19 + TypeScript (Strict mode) + Vite.
-- **Styling Engine:** Tailwind CSS v4 (`@import "tailwindcss"`) augmented with `@import "./tokens.css"` and concept-oriented `@apply` classes in `src/styles/globals.css`, which also imports per-feature CSS files (e.g. `src/features/auth/auth.css`, `src/features/catalog/catalog.css`, `src/features/dashboard/dashboard.css`).
-- **Localization Engine:** English domain keys internally + `toArabic(category, key)` / `toArabicNav(key)` in `src/shared/lib/localization.ts`.
-- **Master Branding:** Official logo `src/assets/brand/source/KhawarizmLogo.jpg`. Run `npm run brand:generate` to regenerate all app icons and favicons.
+### 1.2 Core technology stack
+- **Framework:** React 19 + TypeScript (strict) + Vite.
+- **Styling engine:** Tailwind CSS v4 (`@import "tailwindcss"`) + `@import "./tokens.css"` + concept-oriented `@apply` classes in `src/styles/globals.css`, which also imports each per-feature CSS file (`features/auth/auth.css`, `features/catalog/catalog.css`, `features/courses/courses.css`, `features/dashboard/dashboard.css`, `features/home/home.css`, `features/profile/profile.css`).
+- **Localization engine:** English domain keys internally + `toArabic(category, key)` / `toArabicNav(key, isMobile?)` in `src/shared/lib/localization.ts`.
+- **Master branding:** official logo `src/assets/brand/source/KhawarizmLogo.jpg`; run `npm run brand:generate` to regenerate app icons and favicons.
+- **Routing & data:** a hand-rolled data-driven router (`routes.json` + `routes.tsx` + `router.tsx`) with an in-memory SWR cache (`useCachedData` + `dataCacheManager`).
 
 ---
 
-## 2. Directory & File Placement Matrix
+## 2. Directory & file placement matrix
 
-Always follow this exact mapping when creating or moving files:
+Always follow this mapping when creating or moving files.
 
-| What are you adding? | Target Directory | File Pattern |
+| What are you adding? | Target directory | File pattern |
 | :--- | :--- | :--- |
-| **Shared Component (2+ features)** | `src/shared/components/<Category>/` | `<Component>.tsx` (e.g. `Navbar/DesktopNavbar.tsx`, `Cards/CourseCard.tsx`) |
-| **Feature Component (1 feature only)**| `src/features/<feature>/components/<category>/` | `<Component>.tsx` inside a purpose folder — `layout/`, `views/`, `chrome/`, `cards/`, `hero/`, `overlays/`, `controls/`, `states/`, `filters/`, `toolbar/` (e.g. `CatalogFilterSidebar.tsx` → `filters/CatalogFilterSidebar.tsx`). Taxonomy: [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md) |
-| **Component with Desktop + Mobile views** | `src/features/<feature>/components/views/<Component>/` | `Desktop<Component>View.tsx` + `Mobile<Component>View.tsx` (e.g. `views/LoginView/DesktopLoginView.tsx`) — one folder per component that renders differently per surface |
-| **Feature page state shared per surface** | `src/features/<feature>/context/` | `<Area>Context.ts` (context + hook) + `<Area>Provider.tsx` (state owner) — keeps hook and component in separate files for fast refresh |
-| **Page View** | `src/features/<feature>/pages/` | `<Feature>Page.tsx` (e.g. `CatalogPage.tsx`, `HomePage.tsx`) |
-| **Shared Domain Entity Types** | `src/shared/types/` | `entities.ts` (e.g. `Course`, `Scholarship`, `Event`) |
-| **Feature View Types** | `src/features/<feature>/` | `types.ts` (e.g. `CatalogTab`, `FilterDomain`) |
-| **Shared Hook** | `src/shared/hooks/` | `use<Name>.ts` (e.g. `useHorizontalScroll.ts`) |
-| **Feature Hook** | `src/features/<feature>/hooks/` | `use<FeatureHook>.ts` |
-| **Feature Styles (one feature only)** | `src/features/<feature>/` | `<feature>.css` (e.g. `auth.css`, `catalog.css`, `dashboard.css`) — imported by `src/styles/globals.css` |
-| **Static Data (any kind)** | `src/shared/json/` | `<name>.json` (e.g. `routes.json`, `catalog.json`, `mockDashboard.json`) |
-| **Shared Utility / Helpers** | `src/shared/lib/` | `<name>.ts` (e.g. `localization.ts`, `navigation.ts`) |
-| **Shared Styles & Tokens (2+ features)** | `src/styles/` | `tokens.css` (variables), `globals.css` (shared concept classes; imports every feature `*.css`) |
-| **Routes & Root App** | `src/app/` | `router.tsx`, `routes.tsx`, `App.tsx` |
+| **Shared component (2+ features)** | `src/shared/components/<Category>/` | `<Component>.tsx` (e.g. `Cards/CourseCard.tsx`, `Navbar/DesktopNavbar.tsx`) |
+| **Feature component (1 feature)** | `src/features/<feature>/components/<category>/` | `<Component>.tsx` in a purpose folder — `layout/`, `views/`, `chrome/`, `cards/`, `hero/`, `overlays/`, `controls/`, `states/`, `filters/`, `toolbar/`. Taxonomy: [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md) |
+| **Component with Desktop + Mobile views** | `src/features/<feature>/components/views/<Component>/` | `Desktop<Component>View.tsx` + `Mobile<Component>View.tsx` |
+| **Feature page state shared per surface** | `src/features/<feature>/context/` | `<Area>Context.ts` (context + hook) + `<Area>Provider.tsx` (state owner) |
+| **Page view** | `src/features/<feature>/pages/` | `<Feature>Page.tsx` |
+| **Shared domain entity types** | `src/shared/types/` | `entities.ts` (`Course`, `Scholarship`, `Event`) |
+| **Feature view types** | `src/features/<feature>/` | `types.ts` |
+| **Shared hook** | `src/shared/hooks/` | `use<Name>.ts` (`useCachedData.ts`, `useHorizontalScroll.ts`) |
+| **Feature hook** | `src/features/<feature>/hooks/` | `use<FeatureHook>.ts` |
+| **Feature data (non-JSON)** | `src/features/<feature>/data/` | `<name>.ts` (`dashboardFetchers.ts`, `radialRingColors.ts`) |
+| **Feature styles (one feature)** | `src/features/<feature>/` | `<feature>.css` — imported by `globals.css` only |
+| **Static data (any kind)** | `src/shared/json/` | `<name>.json` |
+| **Hydrated mock modules** | `src/shared/mocks/` | `<name>.ts` + `index.ts` barrel |
+| **Shared utility / helpers** | `src/shared/lib/` | `<name>.ts` (`localization.ts`, `navigation.ts`, `cacheManager.ts`) |
+| **Shared styles & tokens (2+ features)** | `src/styles/` | `tokens.css`, `globals.css` |
+| **Routes & root app** | `src/app/` | `router.tsx`, `routes.tsx`, `App.tsx`, `pageLoads.ts`, `layouts/` |
 
-> 📖 **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — route table, redirects, tabs, query params.
-> 📖 **Code style:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) — comments, no if-chains, JSON data, no duplication.
-
-> 📖 **Full Directory Rules & Flowchart:** Read `references/code-reuse-and-directory-rules.md`.
+> 📖 **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md).
+> 📖 **Code style:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md).
+> 📖 **Full directory rules & flowchart:** [`references/code-reuse-and-directory-rules.md`](references/code-reuse-and-directory-rules.md).
 
 ---
 
-## 3. Strict Anti-Duplication Rules & Component Reuse
+## 3. Strict anti-duplication rules & component reuse
 
 ### 3.1 Buttons
-**Never write raw utility strings for buttons.** Reuse the standard semantic classes:
-- **Primary Action (Gold):** `<button className="btn-gold">تقدم الآن</button>` (One per section/screen).
-- **Secondary Action (Cyan Outline):** `<button className="btn-outline-blue">استكشف التفاصيل</button>`.
-- **Filter Chips / Selector Pills:** `<button className={active ? "btn-gold py-1.5 px-4 text-xs" : "btn-pill-subtle py-1.5 px-4 text-xs"}>...</button>`.
-- **Squircle Icon Action (36x36):** `<button className="btn-icon-box"><BookmarkIcon /></button>`.
-- **Circular Icon Action (40x40):** `<button className="btn-icon-circle"><ShareIcon /></button>`.
-- **Search Submit Button:** `<button className="btn-search-submit"><CompassIcon /></button>`.
-- **Action Link:** `<a className="link-action-blue">عرض الكل ←</a>`.
+**Never write raw utility strings for buttons.** Reuse the concept classes:
+- **Primary action (gold):** `<button className="btn-gold">تقدم الآن</button>` — one per section/screen.
+- **Secondary action (cyan outline):** `<button className="btn-outline-blue">استكشف التفاصيل</button>`.
+- **Filter chips / selector pills:** `<button className={active ? "btn-gold py-1.5 px-4 text-xs" : "btn-pill-subtle py-1.5 px-4 text-xs"}>…</button>`.
+- **Squircle icon action (36×36):** `<button className="btn-icon-box"><BookmarkIcon /></button>`.
+- **Circular icon action (40×40):** `<button className="btn-icon-circle"><ShareIcon /></button>`.
+- **Search submit:** `<button className="btn-search-submit"><CompassIcon /></button>`.
+- **Action link:** `<a className="link-action-blue">عرض الكل ←</a>`.
 
 ### 3.2 Cards
-- **Course Card:** `<CourseCard course={course} layout="desktop" | "mobile" />`
-- **Scholarship Card:** `<ScholarshipCard scholarship={scholarship} layout="desktop" | "mobile" />`
-- **Custom Cards:** If assembling a custom card (e.g., Problem Set or Quiz), wrap with `.card-interactive-blue` or `.card-interactive-gold`, nesting `.card-media-box`, `.card-title`, `.card-subtitle`, and `.card-meta-row`.
+- **Course:** `<CourseCard course={course} layout="desktop" | "mobile" />`.
+- **Scholarship:** `<ScholarshipCard scholarship={scholarship} layout="desktop" | "mobile" />`.
+- **Custom cards:** wrap with `.card-interactive-blue` or `.card-interactive-gold`, nesting `.card-media-box`, `.card-title`, `.card-subtitle`, `.card-meta-row`.
 
-### 3.3 Search & Inputs
-- **Smart Search Box:** `<SmartSearchBox variant="desktop" | "mobile" onSearch={(query, type) => ...} />`.
-- **Form Containers:** `.search-form-desktop`, `.search-form-mobile`, `.search-pills-container`.
+### 3.3 Search & inputs
+- **Smart search box:** `<SmartSearchBox variant="desktop" | "mobile" onSearch={(query, type) => …} />`.
+- **Form containers:** `.search-form-desktop`, `.search-form-mobile`, `.search-pills-container`, `.btn-search-submit`.
+- **Dropdown:** `<Dropdown />` (`src/shared/components/Form/Dropdown.tsx`).
 
-### 3.4 Banners & Countdown Timers
-- **Competition Banner:** `<CompetitionBanner competition={data} />`.
-- **Event Keynote & Workshop:** `<EventSection featuredEvent={e1} workshopEvent={e2} />`.
-- **Timer Digits:** `.digit-box`, `.digit-box-active`, `.digit-text`, `.sliding-chamber-indicator`.
+### 3.4 States
+- **Empty / error chamber:** `<StatePanel title text icon tone="neutral" | "danger" action? />` — the shared `.state-panel*` block. Prefer it over hand-rolled empty states.
+- **Skeletons:** `<DataSectionSkeleton variant count />`, `<CatalogGridSkeleton count />`, `SkeletonPrimitives`. See [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md).
 
-### 3.5 App Shell & Navigation
+### 3.5 Banners & timers
+- **Competition banner:** `<CompetitionBanner competition={data} />`.
+- **Event keynote & workshop:** `<EventSection featuredEvent={e1} workshopEvent={e2} />`.
+- **Countdown digits:** `<CountdownDigits … />` (driven by `useCountdown`), `.digit-box` / `.digit-box-active` / `.digit-text`, `.sliding-chamber-indicator`.
+
+### 3.6 App shell & navigation
 - Top navigation: `<DesktopNavbar />` (desktop) + `<MobileHeader />` (mobile).
 - Bottom navigation: `<MobileBottomBar />`.
-- Page wrapper: `.page-wrapper`.
-- Main content: `.content-container`.
 - Global footer: `<Footer />`.
+- **These belong to `RootLayout` only.** A page renders content inside `<main className="content-container">` and never re-mounts the shell (`page-wrapper` is the RootLayout root, not a page wrapper).
 
-### 3.6 Authentication (Login & Welcome-Back)
-- **Page:** `<LoginPage />` (`features/auth/pages/LoginPage.tsx`, `hideShell: true`) — a thin orchestrator: mounts `AuthLoginProvider`, both surfaces, the toast, and the terms modal.
-- **Surfaces:** `<DesktopLoginView />` + `<MobileLoginView />` in `features/auth/components/views/LoginView/`; shared page state (`authMode`, toast, terms modal, navigation) comes from `useAuthLogin()` (`features/auth/context/authLoginContext.ts`), owned by `AuthLoginProvider.tsx`. Surface-varying chrome is one component with a data record: `<AuthTopBar surface />`, `<AuthLegalNotice surface />`, and `<ActiveAuthCard surface />` picks the card by a `Record<AuthMode, …>`.
-- **Mode pill (demo switcher):** `<AuthModeSwitch mode={mode} onChange={setMode} />` — one component for desktop and mobile; `lg:` breakpoints and short/long labels pick the size. Never render two copies.
-- **Social providers:** `<AuthSocialButton provider="google" | "facebook" label={…} />` — one `PROVIDERS` record holds surface class + brand mark, so there is no provider if-chain.
-- **Cards & hero:** `<DefaultLoginCard />`, `<WelcomeBackCard />`, `<AuthHeroPanel />`, `<BrandSeal />`.
-- **Overlays:** `<AuthToast />` and `<AuthTermsModal />` are flat shared components that return `null` when hidden.
-- **Styling:** every auth element sits on an `.auth-*` concept class (`.auth-shell`, `.auth-split-screen`, `.auth-chamber`, `.auth-card`, `.auth-field`, `.auth-hero`, `.auth-mode-switch`, `.auth-terms-scrim`, …), all declared in **`src/features/auth/auth.css`** and imported by `globals.css`. JSX only layers one-off utilities on top — never a 10-class string.
-- **Full layout pattern:** [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md).
-
-### 3.7 Repeated Class Strings → Concept Class
+### 3.7 Repeated class strings → concept class
 **The same run of utilities twice for the same kind of element is a missing concept class, not styling.** Extract it and use the short name in JSX.
 
-**Where it goes — the same placement rule as components (2+ features → shared):**
-- **Used by one feature only** → that feature's own CSS file: `src/features/<feature>/<feature>.css` (e.g. `features/auth/auth.css`). Feature-owned, edited next to the components that use it.
+- **Used by one feature only** → that feature's CSS: `src/features/<feature>/<feature>.css` (`auth.css`, `catalog.css`, `courses.css`, `dashboard.css`, `home.css`, `profile.css`).
 - **Used by 2+ features** → `src/styles/globals.css`.
-- Every feature CSS is `@import`ed at the top of `globals.css` (`index.css → globals.css → features/*/*.css`), so there is still **one stylesheet entry point** — never import a feature CSS from a `.tsx`.
+- Each feature CSS is `@import`ed at the top of `globals.css` (`index.css → globals.css → features/*/*.css`), so there is still **one** stylesheet entry point — never import a feature CSS from a `.tsx`.
 
-1. **Declare new concept classes inside `@layer components`.** Tailwind utilities live in `@layer utilities`, so a utility in JSX still wins over the class. An **unlayered** class (`.btn-gold`, `.link-action-blue`) beats every utility — leave a class unlayered only when JSX must never override it.
-2. **Use the CSS variables, not literals:** `var(--shadow-elev-2)`, `var(--shadow-elev-1)`, `var(--shadow-glow-gold)`, `var(--shadow-glow-blue)`, `var(--color-overlay-scrim)`. Elevation, scrim, and glow then stay editable in one place (`tokens.css`).
-3. **`@apply` accepts real Tailwind utilities only.** It fails on plain custom classes (`.flex-center`), marker classes (`group`), and plain global helpers (`animate-fade-in`, `animate-fade-in-up`, `animation-delay-100`) — write raw utilities inside the class, keep `group` in the JSX `className`, and either keep global animation helpers inline in JSX or mirror them with a raw `animation:` property inside the class (the `fadeIn` / `fadeInUp` keyframes stay global). `animate-spin`, `animate-pulse`, `animate-bounce` ARE real utilities and may be `@apply`-ed.
-4. **No ad-hoc hex or arbitrary fonts:** use token utilities (`bg-navy-950`, `text-gold-400`, `border-navy-600`, `text-slate-400`, `bg-success-500`, `text-danger-500`) and `font-display` / `font-body` instead of `font-['IBM_Plex_Sans_Arabic']` / `font-['Tajawal',sans-serif]`.
-5. **Check the class exists.** Dead classes render nothing: `.animate-fade-in` is now defined (it was used in 15+ files while missing), and `animate-spin-very-slow` never existed — use `.animate-orbit-slow`.
+Rules:
+1. **Declare new concept classes inside `@layer components`.** Tailwind utilities live in `@layer utilities`, so a utility in JSX still wins. An **unlayered** class (`.btn-gold`, `.link-action-blue`) beats every utility — leave a class unlayered only when JSX must never override it.
+2. **Use the CSS variables, not literals:** `var(--shadow-elev-2)`, `var(--shadow-elev-1)`, `var(--shadow-glow-gold)`, `var(--shadow-glow-blue)`, `var(--color-overlay-scrim)`.
+3. **`@apply` accepts real Tailwind utilities only.** It fails on plain custom classes (`.flex-center`), marker classes (`group`), and plain global helpers (`animate-fade-in`, `animate-fade-in-up`, `animation-delay-100`). Keep `group` and the global helpers in JSX, or mirror an animation with a raw `animation:` property inside the class. `animate-spin`, `animate-pulse`, `animate-bounce` are real utilities and may be `@apply`-ed.
+4. **No ad-hoc hex or arbitrary fonts:** use token utilities (`bg-navy-950`, `text-gold-400`, `border-navy-600`, `text-slate-400`, `bg-success-500`, `text-danger-500`) and `font-display` / `font-body` / `font-mono`.
+5. **Check the class exists.** Dead classes render nothing (`.animate-fade-in` used to be missing; `animate-spin-very-slow` never existed — use `.animate-orbit-slow`).
 
-> 📖 **Full Catalog & Prop APIs:** Read `references/component-catalog.md`.
+> 📖 **Full catalog & prop APIs:** [`references/component-catalog.md`](references/component-catalog.md).
 
-### 3.8 Catalog (Explorer & Filters)
-- **Page:** `<CatalogPage />` (`features/catalog/pages/CatalogPage.tsx`, standard shell). `type` and `q` are URL-derived; the two `<SmartSearchBox />` slots share one `searchProps` object — only the wrapper differs (`hidden md:flex` / `md:hidden`).
-- **Filter panels:** `<CatalogFilterSidebar />` (desktop) and `<CatalogMobileFilterDrawer />` (mobile sheet) both render `<CatalogFilterGroups surface tab … />` — pill rows are written once; `PILL_ACTIVE` / `PILL_IDLE` records pick the `.catalog-pill*` classes.
-- **Data boundary:** `<CatalogDataSection />` — the only section that re-renders on filter/data changes; error and empty states share `glass-panel` + `.catalog-state`.
-- **Card & chrome:** `<CatalogCard />` (shell from `card-interactive-blue|gold`, `pillarStyle()` + `DEADLINE_ACCENT` records instead of branches), `<CatalogToolbar />`, `<CatalogPagination />`, `<CatalogGridSkeleton />`.
-- **Styling:** every catalog element sits on a `.catalog-*` concept class (`.catalog-hero`, `.catalog-toolbar`, `.catalog-card-media`, `.catalog-pill*`, `.catalog-drawer*`, `.catalog-page*`, …) declared in **`src/features/catalog/catalog.css`** and imported by `globals.css` — the same feature-CSS pattern as `auth.css`.
+### 3.8 Authentication (login & welcome-back)
+- **Page:** `<LoginPage />` (`features/auth/pages/LoginPage.tsx`, `hideShell: true`) — thin orchestrator: provider → shell → toast → both views → terms modal.
+- **Surfaces:** `components/views/LoginView/DesktopLoginView.tsx` + `MobileLoginView.tsx`; shared state from `useAuthLogin()` (`context/authLoginContext.ts`) owned by `AuthLoginProvider.tsx`. Surface-varying chrome is one component with a data record: `<AuthTopBar surface />`, `<AuthLegalNotice surface />`, `<ActiveAuthCard surface />` (`Record<AuthMode, …>`).
+- **Controls:** `<AuthModeSwitch />` (one pill for desktop and mobile), `<AuthSocialButton provider="google" | "facebook" />` (`PROVIDERS` record).
+- **Overlays:** `<AuthToast />`, `<AuthTermsModal />` (flat shared, `null` when hidden).
+- **Styling:** every element sits on an `.auth-*` class in `src/features/auth/auth.css` (imported by `globals.css`).
+- **Full layout pattern:** [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md).
 
-### 3.9 Dashboard (Learning Workspace)
-- **Page:** `<DashboardPage />` (`features/dashboard/pages/DashboardPage.tsx`) — self-contained layout: right sidebar + top bar, RTL grid declared with the sidebar as **Child #1** (§6.1). `?view=` drives the active view through `getDashboardNavItem` (aliases resolve too); `?state=live|empty` are demo modes.
-- **Shell & stats:** `<DesktopDashboardSidebar />` (Child #1) — its bottom row pairs the **saved bookmark + notification bell** icons (both `.dash-bell` tone family; saved opens `?view=saved`, which has no sidebar nav item), `<DashboardTopBar />` (search overlay), `<MobileDashboardTopBar />` (bookmark + bell pair on mobile), `<DashboardStatsHeader />`, `<DashboardStatsSidebar />` (widgets + stat rows), `<DashboardSubNavigation />` (mobile/tablet-only pill strip — `.dash-subnav` is `lg:hidden`; at `lg+` the sidebar owns navigation).
-- **Priority cards:** `<PriorityContinueCard />` (cyan) and `<LiveSessionPriorityCard />` (red live countdown) share the `.dash-hero*` family and `<RadialProgressRing />` (its `RING_COLORS` live in `features/dashboard/data/radialRingColors.ts` — hex is required for the `$(color)80` glow alpha).
-- **Views:** `<EnrolledCoursesView />` (filters + sort dropdown + empty state), `<CompetitionsCertificatesView />` (toggle pills + rows + cert cards), `<SavedScholarshipsView />` (rows, deadline tags, undo toast), `<NotificationsView />` + `<NotificationsDrawer />`, `<EmptyDashboardState />` — every view is data-driven from `src/shared/json/dashboardViews.json` / `dashboardChambers.json`.
-- **In-dashboard chambers (§6.2):** `<CourseWorkspaceModal />`, `<LiveClassroomModal />`, `<CompetitionArenaModal />`, `<ScholarshipApplicationModal />`, `<CertificatePreviewModal />` — all share the `.dash-modal-*` chrome.
-- **Styling:** every dashboard element sits on a `.dash-*` concept class (`.dash-hero*`, `.dash-side-row`, `.dash-nav-item`, `.dash-tab`, `.dash-stat*`, `.dash-row`, `.dash-modal*`, `.dash-toast`, `.dash-notif*`, `.dash-cert-*`, …) declared in **`src/features/dashboard/dashboard.css`** and imported by `globals.css` — the same feature-CSS pattern as `auth.css` / `catalog.css`. The canvas, elevation, and accent rules live in §6.7.
+### 3.9 Catalog (explorer & filters)
+- **Page:** `<CatalogPage />` (`features/catalog/pages/CatalogPage.tsx`). `type` and `q` are URL-derived; the two `<SmartSearchBox />` slots share one `searchProps`.
+- **Filters:** `<CatalogFilterSidebar />` + `<CatalogMobileFilterDrawer />` both render `<CatalogFilterGroups surface tab … />`; `PILL_ACTIVE` / `PILL_IDLE` pick the `.catalog-pill*` classes.
+- **Data boundary:** `<CatalogDataSection />` — the only section that re-renders on filter/data change; empty and error states use `<StatePanel />` + `.catalog-state`.
+- **Card & chrome:** `<CatalogCard />`, `<CatalogToolbar />`, `<CatalogPagination />`, `<CatalogGridSkeleton />`.
+- **Styling:** every element sits on a `.catalog-*` class in `src/features/catalog/catalog.css`.
+
+### 3.10 Courses (landing & player)
+- **Pages:** `CourseLandingPage`, `CoursePlayerPage`, `CourseCertificatePage` (`features/courses/pages/`).
+- **Views:** `views/CourseLandingView/` and `views/CoursePlayerView/` are Desktop/Mobile pairs; `views/CertificateView.tsx`.
+- **CTA:** `CoursePrimaryCta`, `CourseStickyCta`, `CourseActionPanel`; **player chrome:** `PlayerTopBar`, `LessonTabBar`, `CoursePathSidebar`, `PlayerStage`, `PlayerPanels`, `PlayerSyllabusDrawer`, `PlayerMiniPlayer`.
+- **Data:** reads via `shared/mocks/courses.ts` + `useCachedData` (`['course-detail', slug]`, `['course-problems', slug]`).
+- **Styling:** `.course-*` / `.player-*` / `.cert-*` classes in `src/features/courses/courses.css`.
+
+### 3.11 Dashboard (learning workspace)
+- **Page:** `<DashboardPage />` — self-contained layout: right sidebar + top bar, RTL grid with the sidebar as **Child #1** (§6.1). `?view=` drives the active view through `getDashboardNavItem`; `?state=live|empty` are demo modes.
+- **Shell & stats:** `<DesktopDashboardSidebar />` (Child #1; its bottom row pairs the saved bookmark + notification bell), `<DashboardTopBar />`, `<MobileDashboardTopBar />`, `<DashboardStatsHeader />`, `<DashboardStatsSidebar />`, `<DashboardSubNavigation />` (mobile/tablet-only, `.dash-subnav` is `lg:hidden`).
+- **Priority cards:** `<PriorityContinueCard />` (cyan) and `<LiveSessionPriorityCard />` (red live countdown) share `.dash-hero*` and `<RadialProgressRing />` (`RING_COLORS` in `features/dashboard/data/radialRingColors.ts`).
+- **Views:** `<EnrolledCoursesView />`, `<CompetitionsCertificatesView />`, `<SavedScholarshipsView />`, `<NotificationsView />`, `<NotificationsDrawer />`, `<EmptyDashboardState />` — data-driven from `dashboardViews.json` / `dashboardChambers.json`.
+- **Chambers (§6.2):** `<CourseWorkspaceModal />`, `<LiveClassroomModal />`, `<CompetitionArenaModal />`, `<ScholarshipApplicationModal />`, `<CertificatePreviewModal />` — all share `.dash-modal-*` chrome.
+- **Styling:** every element sits on a `.dash-*` class in `src/features/dashboard/dashboard.css`. Canvas, elevation and accent rules live in §6.7.
 
 ---
 
-## 4. Universal Page Creation Blueprint (Zero-From-Scratch)
+## 4. Universal page creation blueprint (zero-from-scratch)
 
-Whenever asked to create any new page:
-1. **Analyze Design:** Identify what can be reused directly from the Component Catalog (usually 80%+ of the page!).
-2. **Setup Types & Localization:** Keep internal state in English; register display labels in `localization.ts`.
-3. **Assemble Subcomponents:** Build any unique feature sidebar or toolbar using existing concept classes — and if you catch yourself repeating the same utility run, extract it into a concept class (`khawarizm-frontend` §3.7).
-4. **Compose Page Shell:** Use the standard 5-layer layout template (Atmosphere → Top Nav → Content Container → Bottom Nav → Footer).
-5. **Verify:** Run `npm run build` and `npx eslint src` inside `frontend/` to confirm zero TypeScript, CSS, and lint errors.
+1. **Analyze the design:** identify what can be reused directly from the component catalog (usually 80%+).
+2. **Types & localization:** English internal state; display labels in `localization.ts`.
+3. **Assemble subcomponents** from existing concept classes — and if a utility run repeats, extract a concept class (§3.7).
+4. **Compose the page body:** a thin `<main className="content-container">`; the shell stays in `RootLayout`.
+5. **Verify:** `npm run build` and `npx eslint src` in `frontend/` — zero TypeScript, CSS and lint errors.
 
-> 📖 **Full Page Blueprint & Catalog Walkthrough:** Read `references/page-creation-blueprint.md`.
+> 📖 **Full blueprint & catalog walkthrough:** [`references/page-creation-blueprint.md`](references/page-creation-blueprint.md), and the 10-step protocol in [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md).
 
 ---
 
-## 5. Skills & Reference Quick-Links
+## 5. Skills & reference quick-links
 
 **Skills:**
-- **Code style & quality:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) — one-line comments, no if-chains, static data in JSON, no desktop/mobile duplication.
-- **Desktop & mobile view split:** [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md) — folder-per-component organization, `Desktop…View` / `Mobile…View` files, context or props for shared surface state.
-- **Component folders & imports:** [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md) — the category taxonomy under feature `components/` and the `@/` alias import rules.
-- **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — routes.json, redirects, nav tabs, query params, URL debugging.
-- **Loading, caching & transitions:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md) — dual-tier skeletons, SWR, scroll memory.
-- **Page & feature creation:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md) — the full 10-step flow.
-- **Motion & animations:** [`khawarizm-motion`](../khawarizm-motion/SKILL.md) — the Celestial Motion System: primitives, cascades, sliding-puck switches, shine/halo, countdowns.
-- **Editing & fixing pages:** [`khawarizm-layout-edit`](../khawarizm-layout-edit/SKILL.md) — alignment/centering fixes, two-column grids, desktop-vs-mobile action rows, sticky offsets, CTA hierarchy.
+- **Code style & quality:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md)
+- **Desktop & mobile view split:** [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md)
+- **Component folders & imports:** [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md)
+- **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md)
+- **Loading, caching & transitions:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md)
+- **Page & feature creation:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md)
+- **Motion & animations:** [`khawarizm-motion`](../khawarizm-motion/SKILL.md)
+- **Editing & fixing pages:** [`khawarizm-layout-edit`](../khawarizm-layout-edit/SKILL.md)
 
 **References:**
-- **Directory Placement & Anti-Duplication:** [`references/code-reuse-and-directory-rules.md`](references/code-reuse-and-directory-rules.md)
-- **Component & Class Catalog:** [`references/component-catalog.md`](references/component-catalog.md)
-- **Page Creation Blueprint & Real Case Study:** [`references/page-creation-blueprint.md`](references/page-creation-blueprint.md)
-- **Design Tokens & CSS Variables Dictionary:** [`references/design-tokens-and-classes.md`](references/design-tokens-and-classes.md)
-- **Loading, Caching & Routing Architecture:** [`references/loading-caching-routing-guide.md`](references/loading-caching-routing-guide.md)
+- [Directory placement & anti-duplication](references/code-reuse-and-directory-rules.md)
+- [Component & class catalog](references/component-catalog.md)
+- [Page creation blueprint & case study](references/page-creation-blueprint.md)
+- [Design tokens & CSS variables dictionary](references/design-tokens-and-classes.md)
+- [Loading, caching & routing architecture](references/loading-caching-routing-guide.md)
 
 ---
 
-## 6. Dashboard System & RTL Engineering Rules
+## 6. Dashboard system & RTL engineering rules
 
-### 6.1 RTL Flex Ordering for Right-Hand Sidebars
-- In any container with `dir="rtl"` and horizontal flex (`display: flex; flex-direction: row`), **Child #1 in the DOM is rendered on the FAR RIGHT**.
-- **Crucial Layout Rule:** Desktop navigation sidebars located on the right edge MUST be declared as **Child #1** in the JSX structure (`<DesktopDashboardSidebar />` first, then `<MainBody />` second). Reversing this pushes the sidebar to the left.
-- **Internal Item Alignment:** Inside sidebar navigation items, use `inline-flex justify-start items-center gap-3`. Child #1 is the icon (renders on right), Child #2 is the label (renders on left). Do not use `justify-between` which scatters the icon to the opposite edge.
+### 6.1 RTL flex ordering for right-hand sidebars
+- In a container with `dir="rtl"` and horizontal flex, **child #1 in the DOM renders on the far right**.
+- Desktop sidebars on the right edge MUST be declared as **child #1** in JSX (`<DesktopDashboardSidebar />` first, `<MainBody />` second). Reversing pushes the sidebar left.
+- Inside nav items use `inline-flex justify-start items-center gap-3` — icon first (right), label second (left). Avoid `justify-between`.
 
-### 6.2 Self-Contained Workspace Architecture
-- Students must never be forced out of the dashboard or bounce to external pages to perform student actions.
-- Any action originating from the dashboard must resolve in an in-dashboard interactive chamber:
-  - **Resume Learning / Continue:** In-dashboard lesson workspace modal (`CourseWorkspaceModal.tsx`) with player simulation, curriculum drawer, and progress tracking.
-  - **Join Live Session:** In-dashboard interactive classroom chamber (`LiveClassroomModal.tsx`) with real-time Q&A chat, teacher blackboard, and audio/video controls.
-  - **Saved Scholarship Details & Apply:** In-dashboard application modal (`ScholarshipApplicationModal.tsx`) with qualification checklist and instant submission.
-  - **Competition Challenge:** In-dashboard coding challenge arena (`CompetitionArenaModal.tsx`) with live leaderboard, test-runner, and code editor.
-  - **Certificates:** In-dashboard verified certificate preview modal.
+### 6.2 Self-contained workspace architecture
+Students must never be bounced out of the dashboard for a student action. Every dashboard action resolves in an in-dashboard chamber:
+- **Resume learning:** `CourseWorkspaceModal` (player simulation, curriculum drawer, progress).
+- **Join live session:** `LiveClassroomModal` (Q&A chat, blackboard, audio/video controls).
+- **Saved scholarship details & apply:** `ScholarshipApplicationModal` (qualification checklist, instant submission).
+- **Competition challenge:** `CompetitionArenaModal` (live leaderboard, test-runner, code editor).
+- **Certificates:** verified certificate preview modal.
 
-### 6.3 Dedicated Semantic Icon Library (`lucide-react`)
-- **Strict Rule:** Never use raw emojis (`📚`, `🎓`, `🏆`, `🔴`), random Unicode symbols, or inconsistent ad-hoc SVGs for UI elements.
-- Always import from `lucide-react` with semantic naming and consistent stroke widths (`1.8` - `2.2`):
-  - Dashboard: `Home` / `LayoutDashboard`
-  - Courses: `BookOpen`
-  - Scholarships: `GraduationCap` / `Award`
-  - Saved: `LayoutGrid` / `Bookmark`
-  - Competitions: `Trophy`
-  - Notifications: `Bell`
-  - Search: `Search`
-  - Technical Tracks: `Brain` (AI), `Code2` (Programming), `Palette` (Design)
-  - Interactive Actions: `Radio`, `Play`, `Pause`, `Download`, `CheckCircle2`, `X`.
+### 6.3 Dedicated semantic icon library (`lucide-react`)
+- **Never** use raw emojis (`📚`, `🎓`, `🏆`, `🔴`), random Unicode symbols, or ad-hoc SVGs for UI.
+- Always import from `lucide-react` with consistent stroke widths (`1.8`–`2.2`): `Home`/`LayoutDashboard`, `BookOpen`, `GraduationCap`/`Award`, `LayoutGrid`/`Bookmark`, `Trophy`, `Bell`, `Search`, `Brain`/`Code2`/`Palette`, `Radio`, `Play`, `Pause`, `Download`, `CheckCircle2`, `X`.
 
-### 6.4 Clean Scroll & State Management
+### 6.4 Clean scroll & state management
 - Never leave temporary debug tab switchers or browser-like scroll buttons.
-- For horizontal chip lists and cards on mobile, use touch scrolling with `.no-scrollbar` (`scrollbar-width: none !important; -webkit-overflow-scrolling: touch;`).
+- Mobile chip lists and cards use touch scrolling with `.no-scrollbar` (`scrollbar-width: none !important; -webkit-overflow-scrolling: touch;`).
 
-### 6.5 Celestial Observatory Scrollbar Standards
-- The platform uses a curated dark celestial scrollbar system configured in `globals.css`:
-  - Width/Height: `7px`
-  - Track: `#040F24` (Deep navy void)
-  - Thumb: `#1B3F80` (Navy border) with rounded pill radius (`rounded-full`)
-  - Hover: `#29A9FF` (Electric blue celestial glow)
-  - Firefox support: `scrollbar-width: thin; scrollbar-color: #1B3F80 #040F24;`
-- Never let unstyled browser OS scrollbars render across desktop viewports.
+### 6.5 Celestial observatory scrollbar standards
+Configured in `globals.css`: width/height `7px`, track `#040F24`, thumb `#1B3F80` with a pill radius, hover `#29A9FF`, Firefox `scrollbar-width: thin; scrollbar-color: #1B3F80 #040F24;`. Never let unstyled OS scrollbars render across desktop viewports.
 
-### 6.6 Dashboard Tab Architecture & Prohibition of Prototype Tabs
-- **Prohibited:** Never inject dashboard-wide ad-hoc view tabs (e.g. `DashboardTabFilter` with `overview / saved / achievements` and emoji state buttons).
-- Primary dashboard navigation is strictly governed by the **Right Sidebar** (Desktop) and the **mobile pill strip** (`.dash-subnav`, mobile/tablet-only — `lg:hidden`) / URL queries.
-- **Icon-only views:** the saved courses & opportunities view and the notifications view have **no sidebar nav item** — both open from icons beside each other in the chrome (bookmark + bell in the desktop sidebar bottom row and in every mobile top bar). Never re-add them as nav tabs; `getDashboardNavItem` resolving them to `null` is by design.
-- The ONLY valid tabs inside the dashboard are section-level pill toggle filters:
-  - **Saved Scholarships:** `ToggleFilter` (`المنح المحفوظة` vs `الدورات المفضلة`) using `.dash-toggle-active` (`bg-gold-400/15 text-gold-400 font-bold`) vs `.dash-toggle-idle`.
-  - **Competitions & Certificates:** `ToggleFilter` (`أكمل المسابقة` vs `لم يحل المسابقة`) using the same `.dash-toggle-*` classes — one concept pair, two surfaces.
+### 6.6 Dashboard tab architecture & prohibition of prototype tabs
+- **Prohibited:** dashboard-wide ad-hoc view tabs (`overview / saved / achievements` with emoji state buttons).
+- Primary dashboard navigation is governed by the **right sidebar** (desktop) and the **mobile pill strip** (`.dash-subnav`, `lg:hidden`) / URL queries.
+- **Icon-only views:** the saved courses & opportunities view and the notifications view have **no sidebar nav item** — both open from the bookmark + bell pair in the chrome. Never re-add them as nav tabs; `getDashboardNavItem` resolving them to `null` is by design.
+- The only valid in-dashboard tabs are section-level pill filters: **Saved Scholarships** `ToggleFilter` (`المنح المحفوظة` vs `الدورات المفضلة`) and **Competitions & Certificates** `ToggleFilter` (`أكمل المسابقة` vs `لم يحل المسابقة`), both using `.dash-toggle-active` / `.dash-toggle-idle`.
 
-### 6.7 Dashboard Canvas & Elevation = The App Design System
-The dashboard is an `immersive` page (own sidebar + topbar) but it must still look like the same product:
-- **Never paint a page-level background.** `.dash-page` is transparent; every page sits on the navy-950 `.page-wrapper` with the global celestial washes glowing through. A solid `bg-navy-900` page is what made the dashboard feel like a different app — do not reintroduce it.
-- **Elevation direction:** cards are *lighter* than the canvas — translucent glass (`bg-navy-900/70–80 backdrop-blur-md border-navy-600/50`) for hero, rows, widgets, chips and cards; darker inset wells (`bg-navy-950/50`) only *inside* a raised surface. Dark cards on the void read as holes.
+### 6.7 Dashboard canvas & elevation = the app design system
+The dashboard is `immersive` (own sidebar + topbar) but must still look like the same product:
+- **Never paint a page-level background.** `.dash-page` is transparent; every page sits on the navy-950 `.page-wrapper` with the global celestial washes glowing through. A solid `bg-navy-900` page is what made the dashboard feel like a different app.
+- **Elevation direction:** cards are *lighter* than the canvas — translucent glass (`bg-navy-900/70–80 backdrop-blur-md border-navy-600/50`) for hero/rows/widgets/cards; darker inset wells (`bg-navy-950/50`) only *inside* a raised surface.
 - **Chrome matches `.glass-navbar`:** `.dash-sidebar` / `.dash-topbar` are `bg-navy-950/90 backdrop-blur-md` with navy-600 borders; the topbar is sticky.
-- **Panels over scrims stay solid** (`bg-navy-900`): modals, drawer, sort menus, search panels — readability beats ambience there (same as `.auth-terms-panel`).
-- **Active accents are translucent, never solid fills:** gold for the sidebar (`bg-gold-400/10 outline-gold-400/50 text-gold-400`), blue for subnav/filter pills (`bg-blue-400/15`), gold for toggles/sort (`bg-gold-400/15`).
-- **Titles are white** (`text-white`), section titles carry the app's accent bar (`section-accent-title-blue|gold`), and hovers must use real `border` utilities (an `outline`-based card has a dead `hover:border-*`).
-- **CTAs follow the app button idioms:** gold `btn-gold` for the one primary action, cyan gradient (`from-blue-400 to-blue-500 text-white`) for course-domain actions, `btn-outline-blue` styling for secondary blue CTAs.
-- **Sticky chrome needs two things:** (1) no ancestor with `overflow-x-hidden` — that creates a scroll container and swallows sticky; page shells use `overflow-x-clip`; (2) a parent taller than the sticky element to travel in. The sidebar is an isolated rail: `sticky top-0 h-screen overflow-y-auto` — pinned on every view, scrolling internally if long. The topbar is `sticky top-0` inside the tall `.dash-main`.
-
+- **Panels over scrims stay solid** (`bg-navy-900`): modals, drawer, sort menus, search panels.
+- **Active accents are translucent, never solid:** gold for the sidebar (`bg-gold-400/10 outline-gold-400/50 text-gold-400`), blue for subnav/filter pills (`bg-blue-400/15`), gold for toggles/sort (`bg-gold-400/15`).
+- **Titles are white**, section titles carry the accent bar (`section-accent-title-blue|gold`), and hovers use real `border` utilities.
+- **CTAs follow the app button idioms:** gold `btn-gold` for the one primary action, cyan gradient (`from-blue-400 to-blue-500 text-white`) for course-domain actions, `btn-outline-blue` for secondary blue CTAs.
+- **Sticky chrome needs two things:** (1) no ancestor with `overflow-x-hidden` — the page shells use `overflow-x-clip`; (2) a parent taller than the sticky element. The sidebar is an isolated rail (`sticky top-0 h-screen overflow-y-auto`); the topbar is `sticky top-0` inside the tall `.dash-main`.

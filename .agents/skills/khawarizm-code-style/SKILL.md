@@ -5,13 +5,13 @@ description: Code style and code quality standard for Khawarizm Academy frontend
 
 # Khawarizm Academy — Code Style & Quality Standard
 
-This skill is the **definitive standard** for how code is written in Khawarizm Academy. It applies to every `.ts` and `.tsx` file, in both `src/app/`, `src/features/`, and `src/shared/`.
+The **definitive standard** for how code is written in Khawarizm Academy. It applies to every `.ts` and `.tsx` file, in `src/app/`, `src/features/`, and `src/shared/`.
 
-> These rules exist because they were learned the hard way during the routing and navigation refactor. Every one of them replaced a real bug or a real maintenance problem.
+> These rules were learned the hard way during the routing and navigation refactor. Each one replaced a real bug or a real maintenance problem.
 
 ---
 
-## 1. Comments — One Line, Short, Simple
+## 1. Comments — one line, short, simple
 
 ```tsx
 // GOOD
@@ -34,21 +34,21 @@ This skill is the **definitive standard** for how code is written in Khawarizm A
 ```
 
 **Rules:**
-1. **One line per comment.** If it needs two lines, it is too long — shorten it or delete it.
-2. **Say why, not what.** `// render the chart` is noise. `// Charts the browser gives us, or skips when it has none` earns its place.
-3. **No `====` banners.** No `// 1.`, `// 2.`, `// Step 1:` numbering inside files. The file order says it already.
+1. **One line per comment.** If it needs two, shorten it or delete it.
+2. **Say why, not what.** `// render the chart` is noise; `// Charts the browser gives us, or skips when it has none` earns its place.
+3. **No `====` banners.** No `// 1.`, `// 2.`, `// Step 1:` numbering inside files — the file order says it already.
 4. **JSX comments** follow the same rule: `{/* Sidebar renders first so RTL puts it on the right */}`.
-5. **No commented-out code.** Delete it. Git remembers it.
+5. **No commented-out code.** Delete it; git remembers it.
 6. **Section headers are allowed only as a single `/** … */` line** when a file has clearly distinct parts.
 
 ---
 
-## 2. No Clever Code
+## 2. No clever code
 
 Write the obvious version. Cleverness costs a reader more than it saves a writer.
 
 ```ts
-// BAD — clever cast the reader must decode
+// BAD — a cast the reader must decode
 export const CATALOG_COURSES_ROUTE = (CATALOG_COURSES_ROUTE.split('?')[0] as string);
 const x = (a && b) || (c ?? d);
 
@@ -58,9 +58,9 @@ const x = a && b ? a && b : c ?? d;
 ```
 
 **Banned without a comment explaining *why*:**
-- Nested ternaries inside JSX props or className strings.
+- Nested ternaries inside JSX props or `className` strings.
 - Bit tricks, comma operators, `!` as a statement.
-- Chained optional access mixed with `??` and `||` on the same expression.
+- Chained optional access mixed with `??` and `||` in one expression.
 - Clever string slicing to fake a type conversion.
 - Self-describing one-liners that need a comment to be understood.
 
@@ -68,9 +68,9 @@ const x = a && b ? a && b : c ?? d;
 
 ---
 
-## 3. No `if` / `else` Chains — Use Data
+## 3. No `if` / `else` chains — use data
 
-This is the single most important rule in this skill. Branches are where bugs hide and where duplication starts.
+The single most important rule in this skill. Branches are where bugs hide and duplication starts.
 
 ```tsx
 // BAD — the chain grows a branch every time someone adds a nav item
@@ -99,14 +99,15 @@ const label = VIEW_HEADERS[view].title;
 
 ---
 
-## 4. Static Data Lives in `src/shared/json/`
+## 4. Static data lives in `src/shared/json/`
 
-Every list, label, record, and config map goes in a JSON file under `frontend/src/shared/json/`.
+Every list, label, record and config map goes in a JSON file under `frontend/src/shared/json/`.
 
 ```
 src/shared/json/
 ├── auth.json                    # login mode options (short/long labels per surface)
 ├── catalog.json                 # page titles, sort options, filter groups
+├── courseSystem.json            # course landing/player system content
 ├── dashboardChambers.json       # in-dashboard modal content (workspace, arena, scholarship…)
 ├── dashboardNav.json            # dashboard sidebar items
 ├── dashboardNotifications.json  # notification type -> payload
@@ -114,6 +115,8 @@ src/shared/json/
 ├── footer.json                  # tagline, link columns, copyright
 ├── localization.json            # every EN -> AR dictionary
 ├── mockCatalog.json             # mock course + scholarship records
+├── mockCourses.json             # mock course pages
+├── mockCourseProblems.json      # mock problem-set records
 ├── mockDashboard.json           # mock dashboard records
 ├── mockHomepage.json            # mock homepage records
 ├── routes.json                  # paths, redirects, titles, shell flags
@@ -139,13 +142,13 @@ export function resolveIcon(name: string): LucideIcon {
 2. Add a type or cast (`as EnrolledCourse[]`).
 3. Hydrate names into components.
 
-If it holds data of its own, that data belongs in the JSON.
+If it holds data of its own, that data belongs in the JSON. Typed mock assemblies live in `src/shared/mocks/<name>.ts` (the one place a barrel `index.ts` is allowed).
 
 **Rule: a `.ts` file next to JSON is allowed to add types and hydrate. Nothing else.**
 
 ---
 
-## 5. One Source of Truth — Never Write a Value Twice
+## 5. One source of truth — never write a value twice
 
 If a label, path, or list appears in two files, one of them is wrong.
 
@@ -173,7 +176,7 @@ const navLinks = [
 
 ---
 
-## 6. No Duplication Between Desktop and Mobile
+## 6. No duplication between desktop and mobile
 
 Two variants of the same UI render **one component**. What differs is data or CSS, never a JS branch.
 
@@ -199,7 +202,7 @@ Two variants of the same UI render **one component**. What differs is data or CS
 
 ---
 
-## 7. Types Over Casts — But Cast JSON Once
+## 7. Types over casts — but cast JSON once
 
 JSON imports widen every literal to `string`, which breaks unions. Fix it **once**, at the boundary, with a named type — never sprinkle `as` through the components.
 
@@ -218,7 +221,7 @@ export const EN_TO_AR = enToArJson as unknown as Dictionaries;
 
 ---
 
-## 8. Booleans in JSON Must Be Real Booleans
+## 8. Booleans in JSON must be real booleans
 
 ```json
 { "isExternalRoute": "false" }   // WRONG — a non-empty string is truthy
@@ -229,7 +232,7 @@ A quoted `"false"` silently flips behavior. Write real JSON booleans and numbers
 
 ---
 
-## 9. Fail Loudly on Bad Config
+## 9. Fail loudly on bad config
 
 Config errors should stop the build, not reach the browser.
 
@@ -241,7 +244,7 @@ Throw when a name is unknown, a required field is missing, or a route is half-de
 
 ---
 
-## 10. Verification Before You Call It Done
+## 10. Verification before you call it done
 
 ```bash
 cd frontend
@@ -255,9 +258,7 @@ npx eslint src     # must be clean
 
 ---
 
-## 11. Quick Self-Review Checklist
-
-Run through this before finishing any change:
+## 11. Quick self-review checklist
 
 - [ ] Every comment is one line and explains *why*.
 - [ ] No `====` banners, no commented-out code.
@@ -274,17 +275,17 @@ Run through this before finishing any change:
 
 ---
 
-## 12. Component Folders & Import Hygiene
+## 12. Component folders & import hygiene
 
 **Feature components** group by purpose in lowercase plural folders under `features/<feature>/components/`:
 
 - `layout/` — page shells and composition roots (`DashboardShell`, `HomeContent`, `CatalogResults`)
 - `views/` — full page surfaces; a Desktop/Mobile pair lives in `views/<Component>/`
-- `chrome/` — bars, sidebars, sub-nav, rails, legal (`AuthTopBar`, `DesktopDashboardSidebar`)
-- `cards/` — cards, rows, list items (`CatalogCard`, `EnrolledCourseRow`, `NotificationListItem`)
-- `hero/` — hero banners & artwork (`CatalogHero`, `BrandSeal`)
+- `chrome/` — bars, sidebars, sub-nav, rails, legal (`AuthTopBar`, `DesktopDashboardSidebar`, `PlayerTopBar`)
+- `cards/` — cards, rows, list items (`CatalogCard`, `EnrolledCourseRow`, `CurriculumModuleCard`)
+- `hero/` — hero banners & artwork (`CatalogHero`, `CourseHeaderBlock`, `BrandSeal`)
 - `overlays/` — modals, drawers, toasts
-- `controls/` — inputs, buttons, switches
+- `controls/` — inputs, buttons, switches (`AuthModeSwitch`, `CourseActionPanel`)
 - `states/` — skeletons, empty/error states
 - `filters/` — filter panels · `toolbar/` — toolbar & pagination strips
 
@@ -301,10 +302,11 @@ import { toArabic } from '@/shared/lib/localization';
 
 Rules: **direct file paths, no component barrels** (one exception: `@/shared/mocks` index); `.ts`/`.tsx` extensionless, `.json`/`.css` keep the extension; **types use `import type`** (`verbatimModuleSyntax`). Full taxonomy & placement: [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md).
 
-## 13. Related Skills
+## 13. Related skills & docs
 
 - **Routing and URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md) — the route table, `NAV_TARGETS`, query params, shell flags.
 - **Data boundaries and loading:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md) — skeletons, SWR caching, page transitions.
 - **Design and component reuse:** [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md) — tokens, class catalog, directory rules.
 - **Component folders & imports:** [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md) — the category taxonomy and the `@/` alias rules.
 - **Adding a page:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md) — the full 10-step flow.
+- **Human-facing docs:** [`docs/06-development-guide.md`](../../../docs/06-development-guide.md).
