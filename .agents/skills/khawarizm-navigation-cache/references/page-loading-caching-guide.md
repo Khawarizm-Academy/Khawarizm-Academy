@@ -1,6 +1,8 @@
 # Khawarizm Academy — Page Loading, Caching & Routing: 8-Step Application Guide
 
-The universal run-book for applying the routing / dual-tier skeleton / caching / transition system to **any** page. Follow it every time you create or refactor a page, listing which future or placeholder pages still need to be wired.
+The universal run-book for applying the routing / dual-tier skeleton / caching / transition system to **any** page. Follow it every time you create or refactor a page.
+
+> Companion: [`khawarizm-navigation-cache`](../SKILL.md) holds the mental model; [`khawarizm-routing`](../../khawarizm-routing/SKILL.md) owns URLs and the route table.
 
 ---
 
@@ -12,7 +14,7 @@ The universal run-book for applying the routing / dual-tier skeleton / caching /
 | Path → page component, plus lookups | `frontend/src/app/routes.tsx` |
 | Lazy page loaders (one chunk per page) | `frontend/src/app/pageLoads.ts` |
 | Persistent shell + Suspense skeleton + error boundary | `frontend/src/app/layouts/RootLayout.tsx` |
-| Router engine (scroll memory, View Transitions) | `frontend/src/app/router.tsx` |
+| Router engine (scroll memory, view transitions) | `frontend/src/app/router.tsx` |
 | Hooks | `frontend/src/app/routerContext.ts` |
 | Tier 1 / Tier 2 / primitives | `frontend/src/shared/components/Loading/*` |
 | In-memory SWR cache | `frontend/src/shared/lib/cacheManager.ts` |
@@ -27,7 +29,7 @@ The universal run-book for applying the routing / dual-tier skeleton / caching /
    ```ts
    export const MyPage = lazy(() => import('../features/my-feature/pages/MyPage').then((m) => ({ default: m.MyPage })));
    ```
-2. Add the route entry in `src/shared/json/routes.json` with `title` (Arabic), `activeTab`, and `skeletonVariant`, then map the path to the chunk in `routes.tsx`:
+2. Add the route entry in `src/shared/json/routes.json` and map the path to the chunk in `routes.tsx`:
    ```json
    { "path": "/my-path", "title": "… — أكاديمية خوارزم", "activeTab": "myfeature", "skeletonVariant": "default" }
    ```
@@ -35,21 +37,21 @@ The universal run-book for applying the routing / dual-tier skeleton / caching /
    const PAGE_BY_PATH: Record<string, ComponentType> = { '/my-path': MyPage };
    ```
    `skeletonVariant` is one of `'home' | 'catalog' | 'detail' | 'dashboard' | 'default'`.
-3. If the URL is a duplicate of another canonical path → set `"redirect": "/canonical?…"` in the JSON. Redirects are data, never an inline `<Navigate />` component.
-4. If the feature isn't built yet → a tiny page that renders `<FeaturePlaceholder title description …/>` from `shared/components/Placeholder/FeaturePlaceholder.tsx`.
+3. Duplicate of another canonical path → set a `"redirect": "/canonical?…"` field. Redirects are data, never inline `<Navigate />` in the table.
+4. Feature not built yet → a tiny page rendering `<FeaturePlaceholder title description … />` from `shared/components/Placeholder/FeaturePlaceholder.tsx`.
 
 > Rules: `*` catch-all → `NotFoundPage`, never `null`. No two routes render the same page view.
 
 ## Step 2 — Build the page view without a shell
 
 ```tsx
-export const MyPage: React.FC = () => {
-  return <main className="content-container">{/* page content */}</main>;
-};
+export const MyPage: React.FC = () => (
+  <main className="content-container">{/* page content */}</main>
+);
 ```
 - **No** `<DesktopNavbar>` / `<Footer>` / `<MobileBottomBar>` / `<MobileHeader>`.
 - **No** `<PageSkeleton>` inside the page — Tier 1 is automatic via Suspense.
-- **No** fake `setTimeout` loading timers — never. Skeleton is driven by chunk suspense + data loading.
+- **No** fake `setTimeout` loading timers — never. Skeletons are driven by chunk suspense + real data loading.
 
 ## Step 3 — Derive URL-driven state at render (no effect-sync)
 
@@ -57,20 +59,20 @@ export const MyPage: React.FC = () => {
 const [searchParams, setSearchParams] = useSearchParams();
 const activeType = searchParams.get('type') || 'all'; // derived, no useState
 ```
-- Only persist the parts that aren't in the URL (e.g. `filter.field`, `page`).
+- Persist only the parts that are not in the URL (e.g. `filter.field`, `page`).
 - Merge at render: `const viewState = { ...localState, type: activeType, q: queryFromUrl }`.
 - Use `setSearchParams({...})` to change URL-backed state — it replaces and preserves scroll.
-- **Never** mirror URL values into `useState` + `useEffect` (lint blocks it; it causes stale closure + double renders).
+- **Never** mirror URL values into `useState` + `useEffect` (stale closures + double renders).
 
 ## Step 4 — Isolate the dynamic data boundary
 
 - Static controls (titles, search box, filter sidebar, toolbar) stay in the page.
-- The dynamic cards/list/countdown go into their own component: `features/<feature>/components/MyDataSection.tsx`.
+- The dynamic cards/list/countdown go into their own component: `features/<feature>/components/layout/MyDataSection.tsx`.
 
 ## Step 5 — Wire `useCachedData` in the data section
 
 ```tsx
-const cacheKey = ['my-feature-key', { ...all filter fields, page }]; // deterministic
+const cacheKey = ['my-feature-key', { ...allFilterFields, page }]; // deterministic
 const { data, isLoading, isFetching, isError, error, refetch } = useCachedData<MyResult>(cacheKey, fetcher, {
   staleTime: 5 * 60 * 1000,
   cacheTime: 30 * 60 * 1000,
@@ -79,34 +81,37 @@ const { data, isLoading, isFetching, isError, error, refetch } = useCachedData<M
 ```
 Render order: `isLoading` → Tier 2 skeleton → `isError` → retry block → `data` empty → empty state → grid.
 
-> **Dashboard convention:** dashboard sections key under the `'dashboard'` namespace with a per-section token — `['dashboard', 'stats']`, `['dashboard', 'courses-list']`, `['dashboard', 'competitions']`, `['dashboard', 'saved-scholarships']`, `['dashboard', 'notifications-view']`, … (mocks/fetchers live in `features/dashboard/data/dashboardFetchers.ts`).
+> **Dashboard convention:** dashboard sections key under the `'dashboard'` namespace with a per-section token — `['dashboard', 'stats']`, `['dashboard', 'courses-list']`, `['dashboard', 'competitions']`, `['dashboard', 'saved-scholarships']`, `['dashboard', 'notifications-view']`, `['dashboard', 'notifications-drawer']`, … (fetchers live in `features/dashboard/data/dashboardFetchers.ts`).
 
 ## Step 6 — Warm the detail page (prefetch on hover)
 
 ```tsx
-<MyCard
-  onSelect={…}
-  onPrefetch={() => dataCacheManager.prefetch(['my-detail', id], async () => item)}
-/>
+<MyCard onSelect={…} onPrefetch={() => dataCacheManager.prefetch(['my-detail', id], async () => item)} />
 ```
-The detail route reads the **same** key via `useCachedData(['my-detail', slug], …)` → instant navigation.
+The detail route reads the **same** key via `useCachedData(['my-detail', slug], …)` → instant navigation. Course detail/player use `['course-detail', slug]` and `['course-problems', slug]`.
 
 ## Step 7 — Handle loading / error / empty / reduced-motion
 
 - Loading: Tier 2 skeleton only on a true cold miss.
-- Error: themed glass panel + `refetch()` retry — never an infinite skeleton.
-- Empty: search-empty-state with a `onResetFilters` affordance.
-- Respect `prefers-reduced-motion` (already global in `globals.css`; don't add motion that ignores it).
+- Error: themed panel (`<StatePanel tone="danger" … />`) + `refetch()` retry — never an infinite skeleton.
+- Empty: search-empty state with an `onResetFilters` affordance.
+- Respect `prefers-reduced-motion` (already global in `globals.css`; do not add motion that ignores it).
 
 ## Step 8 — Verify
 
 ```bash
-cd frontend && npm run build && npm run lint
+cd frontend && npm run build && npx eslint src
 ```
 Manual checklist:
 - [ ] Cold visit to the route → Tier 1 `PageSkeleton` (matching variant) once, then content.
 - [ ] Navigating back to a visited route → content instant (cached), no skeleton.
 - [ ] Filter / search / pagination changes → only the data section re-renders; no page remount; previous cards stay while shimmering.
-- [ ] Back/Forward restores scroll; cross-page nav scrolls to top.
+- [ ] Back/forward restores scroll; cross-page nav scrolls to top.
 - [ ] Unknown URL → 404 page; broken tab → placeholder page (never blank).
 - [ ] `prefers-reduced-motion: reduce` → no page-transition / shimmer motion.
+
+---
+
+## Project docs
+
+[`docs/04-loading-caching-and-motion.md`](../../../../docs/04-loading-caching-and-motion.md) · [`docs/03-routing-and-navigation.md`](../../../../docs/03-routing-and-navigation.md).

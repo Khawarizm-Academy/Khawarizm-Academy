@@ -5,66 +5,62 @@ description: How to add, change, and debug routes and URLs in Khawarizm Academy.
 
 # Khawarizm Academy — Routing & URL Handling
 
-This skill is the **definitive guide** to how URLs work in Khawarizm Academy. Read it before adding a route, changing a path, or debugging a URL.
+The **definitive guide** to how URLs work in Khawarizm Academy. Read it before adding a route, changing a path, or debugging a URL.
 
-> Style rules for the code you write while doing this live in [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md).
-
----
-
-## 1. The Mental Model — Four Files, Four Jobs
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                          THE URL PIPELINE                            │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                       │
-│   routes.json         ── what each path IS                          │
-│   (src/shared/json/)      path, redirect, title, activeTab,          │
-│                           tabsByQuery, hideShell, immersive,         │
-│                           skeletonVariant                            │
-│         │                                                                 │
-│         ▼  joined with                                                    │
-│   routes.tsx          ── which COMPONENT renders it                   │
-│   (src/app/)             PAGE_BY_PATH: path → lazy page chunk         │
-│         │                                                                 │
-│         ▼                                                                 │
-│   router.tsx          ── how the URL CHANGES                        │
-│   (src/app/)             navigate(), back/forward, scroll memory,     │
-│                           view transitions                           │
-│         │                                                                 │
-│         ▼                                                                 │
-│   RootLayout.tsx      ── what the SHELL does                         │
-│   (src/app/layouts/)     header, footer, bottom bar, active tab      │
-│                                                                       │
-│   shellNav.json       ── where the TABS go                          │
-│   (src/shared/json/)      NAV_TARGETS paths + one tab list            │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-**One sentence per file:** the JSON says what a path is, the TSX says what renders it, the router says how it changes, the layout says what wraps it.
+> Style rules for the code you write live in [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md). Human-facing twin: [`docs/03-routing-and-navigation.md`](../../../docs/03-routing-and-navigation.md).
 
 ---
 
-## 2. Adding a Page — The 4 Steps
+## 1. The mental model — five files, five jobs
 
-### Step 1 — Register the lazy chunk
-`src/app/pageLoads.ts`:
+```
+THE URL PIPELINE
+
+  routes.json      ── what each path IS          (src/shared/json/)
+                      path, redirect, title, activeTab, tabsByQuery,
+                      hideShell, immersive, skeletonVariant
+        │
+        ▼  joined with
+  routes.tsx       ── which COMPONENT renders it   (src/app/)
+                      PAGE_BY_PATH: path → lazy page chunk
+        │
+        ▼
+  router.tsx       ── how the URL CHANGES          (src/app/)
+                      navigate(), back/forward, scroll memory, view transitions
+        │
+        ▼
+  RootLayout.tsx   ── what the SHELL does          (src/app/layouts/)
+                      header, footer, bottom bar, active tab
+        │
+  shellNav.json    ── where the TABS go            (src/shared/json/)
+                      NAV_TARGETS paths + one tab list
+```
+
+**One sentence per file:** the JSON says what a path is, the TSX says what renders it, the router says how it changes, the layout says what wraps it, the nav JSON says where the tabs point.
+
+---
+
+## 2. Adding a page — the 4 steps
+
+### Step 1 — Register the lazy chunk (`src/app/pageLoads.ts`)
 ```ts
-export const MyNewPage = lazy(() => import('../features/myfeature/pages/MyNewPage'));
+export const MyNewPage = lazy(() =>
+  import('../features/myfeature/pages/MyNewPage').then((m) => ({ default: m.MyNewPage }))
+);
 ```
 
-### Step 2 — Add the route entry to `src/shared/json/routes.json`
+### Step 2 — Add the route entry (`src/shared/json/routes.json`)
 ```json
 {
   "path": "/my-feature",
   "title": "ميزة جديدة — أكاديمية خوارزم",
-  "description": "وصف الصفحة للبحث Engines.",
+  "description": "وصف الصفحة لمحركات البحث.",
   "activeTab": "home",
   "skeletonVariant": "default"
 }
 ```
 
-### Step 3 — Map the path to its component in `routes.tsx`
+### Step 3 — Map the path to its component (`src/app/routes.tsx`)
 ```ts
 const PAGE_BY_PATH: Record<string, ComponentType> = {
   // ...
@@ -73,27 +69,31 @@ const PAGE_BY_PATH: Record<string, ComponentType> = {
 ```
 
 ### Step 4 — Build the page
-`<main className="content-container">`. No navbar, no footer, no `<PageSkeleton>`, no shell markup. The layout provides all of that.
+`<main className="content-container">`. No navbar, no footer, no `<PageSkeleton>`, no shell markup — the layout provides all of that.
 
 **Order in `routes.json` matters.** `findRoute()` returns the first match, so specific paths go above `*`.
 
 ---
 
-## 3. Adding a Redirect
+## 3. Adding a redirect
 
-A route renders a page **or** redirects, never both. `redirect` is data — there is no `<Navigate />` component in the table.
+A route renders a page **or** redirects, never both. `redirect` is data — there is no `<Navigate />` in the table (the router detects the field and renders the redirect variant, which mounts `<Navigate />`).
 
 ```json
 { "path": "/courses", "redirect": "/catalog?type=courses", "activeTab": "courses", "skeletonVariant": "catalog" }
 ```
 
-`routes.tsx` detects the field and builds the redirect variant automatically. `Outlet` renders `<Navigate to={redirect} replace />`.
+Current canonical redirects:
+- `/courses` → `/catalog?type=courses`
+- `/scholarships` → `/catalog?type=scholarships`
+- `/dashboard/enrolled` → `/dashboard?view=enrolled`
+- `/auth` → `/login`
 
-**Canonical URLs:** one real page per view, everything else redirects. `/courses` and `/scholarships` redirect to `/catalog?type=…`. Never register two page routes for the same view.
+**One page per view, everything else redirects.** Never register two page routes for the same view.
 
 ---
 
-## 4. Route Entry Fields
+## 4. Route entry fields
 
 | Field | Required | What it does |
 | :--- | :---: | :--- |
@@ -103,14 +103,14 @@ A route renders a page **or** redirects, never both. `redirect` is data — ther
 | `description` | — | Meta description. |
 | `activeTab` | — | Which navbar tab lights up. Defaults to `home`. |
 | `tabsByQuery` | — | `{ "queryValue": "tabKey" }` — a query value switches the tab. |
-| `hideShell` | — | No navbar, no footer, **no** bottom bar. For full-screen pages. |
+| `hideShell` | — | No navbar, no footer, **no** bottom bar. Full-screen pages. |
 | `immersive` | — | Page owns its own nav. No navbar, no footer; bottom bar stays. |
 | `skeletonVariant` | ✅ | `home` \| `catalog` \| `detail` \| `dashboard` \| `default`. |
 
 **`hideShell` vs `immersive`** — the only confusing pair:
 
 | | navbar | footer | bottom bar | Use for |
-| :--- | :--- | :--- | :--- | :--- |
+| :--- | :---: | :---: | :---: | :--- |
 | neither | ✅ | ✅ | ✅ | Normal pages |
 | `immersive: true` | ❌ | ❌ | ✅ | Dashboard (has its own top bar) |
 | `hideShell: true` | ❌ | ❌ | ❌ | Login, full-screen player |
@@ -122,31 +122,22 @@ const showHeaderAndFooter = !hideShell && !activeRoute?.meta?.immersive;
 
 ---
 
-## 5. `tabsByQuery` — Why the Tab Is Not Always `activeTab`
+## 5. `tabsByQuery` — why the tab is not always `activeTab`
 
 `/dashboard?view=profile` must light the **profile** tab, while `/dashboard?view=courses` is a legacy alias that must **not** light it. A global "query value = tab key" rule cannot express that, so each route declares its own map.
 
 ```json
-{
-  "path": "/catalog",
-  "activeTab": "catalog",
-  "tabsByQuery": { "courses": "courses", "scholarships": "scholarships" }
-}
-{
-  "path": "/dashboard",
-  "activeTab": "dashboard",
-  "tabsByQuery": { "profile": "profile" },
-  "immersive": true
-}
+{ "path": "/catalog", "activeTab": "catalog", "tabsByQuery": { "courses": "courses", "scholarships": "scholarships" } }
+{ "path": "/dashboard", "activeTab": "dashboard", "tabsByQuery": { "profile": "profile" }, "immersive": true }
 ```
 
 `resolveActiveTab(pathname, search)` tries `tabsByQuery` first, then falls back to `activeTab`.
 
-**When to use it:** any query value that must highlight a tab other than the route's own. **When not to:** when the tab is just the page — `activeTab` is enough.
+**Use it** for any query value that must highlight a tab other than the route's own. **Don't** when the tab is just the page — `activeTab` is enough.
 
 ---
 
-## 6. Paths and Tabs — `shellNav.json` and `NAV_TARGETS`
+## 6. Paths and tabs — `shellNav.json` and `NAV_TARGETS`
 
 **Never type a path string.** Every URL in the app comes from `shellNav.json`.
 
@@ -164,13 +155,13 @@ const showHeaderAndFooter = !hideShell && !activeRoute?.meta?.immersive;
     "login": "/login"
   },
   "tabs": [
-    { "key": "home",          "icon": "Home",            "desktop": true,  "mobile": true },
-    { "key": "courses",       "icon": "BookOpen",        "desktop": true,  "mobile": true },
-    { "key": "scholarships",  "icon": "GraduationCap",   "desktop": true,  "mobile": true },
-    { "key": "events",        "icon": "CalendarDays",    "desktop": true,  "mobile": false },
-    { "key": "competitions",  "icon": "Trophy",          "desktop": true,  "mobile": false },
-    { "key": "dashboard",     "icon": "LayoutDashboard", "desktop": false, "mobile": true },
-    { "key": "profile",       "icon": "User",            "desktop": false, "mobile": true }
+    { "key": "home",         "icon": "Home",            "desktop": true,  "mobile": true },
+    { "key": "courses",      "icon": "BookOpen",        "desktop": true,  "mobile": true },
+    { "key": "scholarships", "icon": "GraduationCap",   "desktop": true,  "mobile": true },
+    { "key": "events",       "icon": "CalendarDays",    "desktop": true,  "mobile": false },
+    { "key": "competitions", "icon": "Trophy",          "desktop": true,  "mobile": false },
+    { "key": "dashboard",    "icon": "LayoutDashboard", "desktop": false, "mobile": true },
+    { "key": "profile",      "icon": "User",            "desktop": false, "mobile": true }
   ]
 }
 ```
@@ -182,13 +173,13 @@ export const NAV_TABS = shellNavJson.tabs.map((tab) => ({ ...tab, icon: resolveI
 export const DASHBOARD_TOP_BAR_TABS = NAV_TABS.filter((tab) => tab.desktop);
 ```
 
-**One list, two surfaces.** The desktop navbar renders `desktop: true`, the mobile bottom bar renders `mobile: true`, the dashboard top bar renders the desktop set. Add a tab once and all three follow. Labels come from `toArabicNav(tab.key)` — never restate them.
+**One list, two surfaces.** The desktop navbar renders `desktop: true`, the mobile bottom bar renders `mobile: true`, the dashboard top bar renders the desktop set. Add a tab once and all three follow. Labels come from `toArabicNav(tab.key, isMobile?)` — never restate them.
 
 **Adding a tab:** add the target, add the tab row with its flags, register a matching `NavTabKey` in `localization.ts`, and add the label to `localization.json`. That is the whole job.
 
 ---
 
-## 7. Reading the URL in a Component
+## 7. Reading the URL in a component
 
 ```tsx
 import { useRouter, useNavigate, useParams, useSearchParams, useLocation, useActiveRoute } from '@/app/routerContext';
@@ -204,7 +195,7 @@ const [searchParams, setSearchParams] = useSearchParams();
 | `useRouter()` | Everything at once: `pathname`, `search`, `params`, `activeRoute`, `navigate` |
 | `useNavigate()` | `navigate(to, { replace? })` |
 | `useParams<T>()` | Route params, typed |
-| `useSearchParams()` | `[URLSearchParams, setter]` — setter replaces the URL and keeps scroll |
+| `useSearchParams()` | `[URLSearchParams, setter]` — the setter replaces the URL and keeps scroll |
 | `useLocation()` | `pathname` + `search` |
 | `useActiveRoute()` | The matched `RouteDefinition` or `null` |
 
@@ -217,7 +208,7 @@ setSearchParams({ type: 'courses', q: 'python' });  // query update, scroll pres
 
 ---
 
-## 8. URL Is the Single Source of Truth for View State
+## 8. URL is the single source of truth for view state
 
 **Never** copy a URL value into `useState` and sync it back with `useEffect`. Derive it at render, and keep only non-URL state local.
 
@@ -233,7 +224,7 @@ The query changes re-render automatically, the page never remounts, and the prev
 
 ---
 
-## 9. Dashboard Views — `dashboardNav.json`
+## 9. Dashboard views — `dashboardNav.json`
 
 ```json
 {
@@ -250,8 +241,8 @@ The query changes re-render automatically, the page never remounts, and the prev
 | Field | Meaning |
 | :--- | :--- |
 | `id` | Canonical view. `?view=<id>` opens it. |
-| `aliases` | Extra `?view=` values that light this item — here `?view=courses` opens enrolled. |
-| `inSubNav` | Shows in the pill strip. Currently `main`, `enrolled`, `profile`. |
+| `aliases` | Extra `?view=` values that light this item — `?view=courses` opens enrolled. |
+| `inSubNav` | Shows in the pill strip (`main`, `enrolled`, `profile`). |
 | `isExternalRoute` | Real JSON boolean. `true` **requires** `path`; the app throws otherwise. |
 | `icon` | Name, hydrated by `resolveIcon()`. |
 
@@ -263,7 +254,7 @@ const navItem = getDashboardNavItem(view);   // null for views outside the sideb
 
 **The pill strip is derived, not authored.** `DASHBOARD_SUB_NAV` is `DASHBOARD_NAV.filter(item => item.inSubNav)` and each item's `activeViews` is `[item.id, ...item.aliases]` — so `?view=courses` lights the same sidebar item **and** pill as `?view=enrolled`. Show/hide a pill by toggling `inSubNav` in `dashboardNav.json`, never by editing `DashboardSubNavigation`.
 
-`?view=notifications` intentionally has no sidebar item and resolves to `null`. **So does `?view=saved`**: the saved courses & opportunities view is icon-only — it opens from the bookmark button beside the notification bell (desktop sidebar bottom + every mobile top bar). Its `dashboardNav.json` entry is gone; `getDashboardNavItem('saved')` returns `null` and `DashboardPage` falls back to the raw view id, so `?view=saved` still renders.
+`?view=notifications` intentionally has no sidebar item and resolves to `null`. **So does `?view=saved`**: the saved courses & opportunities view is icon-only — it opens from the bookmark button beside the notification bell (desktop sidebar bottom + every mobile top bar). `getDashboardNavItem('saved')` returns `null` and `DashboardPage` falls back to the raw view id, so `?view=saved` still renders.
 
 **The pill strip is mobile/tablet-only** (`.dash-subnav` carries `lg:hidden`): below `lg` there is no sidebar, so the capsule is the only in-dashboard nav; at `lg+` the right sidebar owns navigation and the capsule disappears.
 
@@ -273,9 +264,7 @@ const navItem = getDashboardNavItem(view);   // null for views outside the sideb
 
 ---
 
-## 10. Debugging a URL — A Checklist
-
-When a URL renders the wrong thing, work down this list.
+## 10. Debugging a URL — a checklist
 
 | Symptom | Look at |
 | :--- | :--- |
@@ -301,15 +290,15 @@ console.log(hit?.route.path, hit?.params, resolveActiveTab(pathname, search), hi
 
 ---
 
-## 11. What the Router Handles For You
+## 11. What the router handles for you
 
 `router.tsx` already does these — never reimplement them:
 
-- **View transitions** — `document.startViewTransition` when the browser has it, CSS fallback otherwise. `withViewTransition()` wraps every update.
+- **View transitions** — `document.startViewTransition` when available, CSS fallback otherwise (`withViewTransition()` wraps every update).
 - **Scroll memory** — cross-page navigation scrolls to top, back/forward restores the exact offset.
 - **Query updates keep scroll** — same page, new query, reader stays put.
 - **Title updates** — `document.title` follows `meta.title`.
-- **Lazy suspense** — `RootLayout` wraps `<Outlet />` in `<Suspense fallback={<PageSkeleton variant={...} />}>`.
+- **Lazy suspense** — `RootLayout` wraps `<Outlet />` in `<Suspense fallback={<PageSkeleton variant={…} />}>`.
 
 ---
 
@@ -320,15 +309,16 @@ console.log(hit?.route.path, hit?.params, resolveActiveTab(pathname, search), hi
 3. **No Arabic as a URL value.** English keys internally, Arabic at display time only.
 4. **One page per view.** Everything else is a `redirect` entry.
 5. **`*` goes last** and renders `NotFoundPage`, never `null`.
-6. **Never branch on a route or view.** `resolveActiveTab`, `findRoute`, `getDashboardNavItem`.
+6. **Never branch on a route or view.** Use `resolveActiveTab`, `findRoute`, `getDashboardNavItem`.
 7. **Verify every URL you touch** — route, redirect, active tab, skeleton variant, params.
-8. **Shareable view state lives in the query** — `?mode=welcome-back`, `?type=courses` — derived at render, never kept only in `useState`.
+8. **Shareable view state lives in the query** (`?mode=welcome-back`, `?type=courses`), derived at render, never kept only in `useState`.
 
 ---
 
-## 13. Related Skills
+## 13. Related skills & docs
 
 - **Style for the code you write here:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md)
 - **Skeletons, caching, page transitions:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md)
 - **Design system and component reuse:** [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md)
 - **Full page creation flow:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md)
+- **Human-facing docs:** [`docs/03-routing-and-navigation.md`](../../../docs/03-routing-and-navigation.md)

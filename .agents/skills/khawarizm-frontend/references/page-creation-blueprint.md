@@ -1,253 +1,137 @@
-# Khawarizm Academy — Universal Page Creation Blueprint & Walkthrough
+# Khawarizm Academy — Page Creation Blueprint & Worked Example
 
-> **Goal:** Create any new page or feature in under 15 minutes with zero styling guesswork and zero redundant code.
-
----
-
-## 1. The 6-Step Universal Recipe
-
-Follow these exact 6 steps whenever implementing a new screen or feature from a prompt or Figma/HTML mockup:
-
-```
-[Step 1: Scaffold Feature Folder]
-         │
-         ▼
-[Step 2: Define Types & Localization]
-         │
-         ▼
-[Step 3: Setup Mock Data]
-         │
-         ▼
-[Step 4: Build Feature-Specific Subcomponents]
-         │
-         ▼
-[Step 5: Assemble the Page Shell & Layout]
-         │
-         ▼
-[Step 6: Register Route & Verify Build]
-```
+> **Authoritative protocol:** the full **10-step flow** lives in [`khawarizm-page-builder`](../../khawarizm-page-builder/SKILL.md). This reference is the condensed recipe plus a real deconstruction, so you can see the moves in practice.
+> **Companions:** [`khawarizm-frontend`](../SKILL.md) (design system & placement) · [`khawarizm-routing`](../../khawarizm-routing/SKILL.md) (URLs) · [`khawarizm-navigation-cache`](../../khawarizm-navigation-cache/SKILL.md) (loading/caching) · [`khawarizm-organization-and-imports`](../../khawarizm-organization-and-imports/SKILL.md) (folders & imports).
 
 ---
 
-### Step 1: Scaffold Feature Folder
-Create the standard feature hierarchy inside `src/features/<feature-name>/`:
+## 1. The condensed recipe
+
 ```
-src/features/<feature-name>/
-├── components/          # Feature-specific pieces (e.g. FilterSidebar, QuickSummaryStrip)
-├── data/                # Non-component modules (e.g. dashboard's radialRingColors.ts)
-├── hooks/               # Feature queries and state hooks
-├── pages/               # Top-level Page view (e.g. CatalogPage.tsx)
-├── types.ts             # Feature-specific state/props interfaces
-└── <feature>.css        # Feature-owned concept classes (e.g. auth.css, catalog.css, dashboard.css)
+1. Ingest the design      →  Designs/Khawarizm Academy Platfrom Design/<NN-feature>/*.png
+2. Audit reuse            →  shared/components + concept classes (usually 80%+ of the page)
+3. Scaffold the feature   →  features/<feature>/{pages,components,context,data,types.ts,<feature>.css}
+4. Types & localization   →  English keys internally, Arabic via toDictionary()
+5. Choose the shell mode  →  routes.json flags (standard / immersive / hideShell)
+6. Wire URL state         →  derive from useSearchParams / useParams at render
+7. Assemble page + data   →  thin page + isolated data section (useCachedData + keepPreviousData)
+8. Register the route     →  pageLoads.ts + routes.json + PAGE_BY_PATH
+9. Polish                 →  RTL alignment, hover glows, press scales, mobile safe area
+10. Verify                →  npm run build && npx eslint src  (+ behavioral check)
 ```
-The feature CSS holds every 1-feature concept class in `@layer components` and is `@import`ed at the top of `globals.css` (never imported by a `.tsx`) — see `khawarizm-frontend` §3.7.
+
+Steps 1–6 are design and structure; 7–10 are wiring and verification. The 10-step skill expands each one.
 
 ---
 
-### Step 2: Define Types & Localization
-1. **Types (`types.ts`):** Keep domain state in clean English:
+## 2. Types, localization & mock data
+
+**Types (`features/<feature>/types.ts`) — English keys only:**
 ```ts
 export type CatalogTab = 'all' | 'courses' | 'scholarships';
 export type EducationLevel = 'all' | 'bachelor' | 'master' | 'phd' | 'bootcamp';
-export type FilterDomain = 'all' | 'ai' | 'programming' | 'cybersecurity' | 'space';
 ```
 
-2. **Localization (`src/shared/lib/localization.ts`):**
-Register any new keys in the dictionary:
-```ts
-catalog_filters: {
-  all: 'الكل',
-  ai: 'ذكاء اصطناعي',
-  programming: 'برمجة',
-  cybersecurity: 'أمن سيبراني',
-  space: 'علوم الفضاء',
-}
-```
+**Localization:** register new labels in `src/shared/json/localization.json` and read them through `toArabic(category, key)` / `toArabicNav(key, isMobile?)` from `src/shared/lib/localization.ts`. Never store Arabic in state or in a URL.
+
+**Mock data:** the records go in `src/shared/json/mock<Feature>.json`; a typed module under `src/shared/mocks/<feature>.ts` casts the JSON (and holds only types, never data). Reuse existing shared entities (`Course`, `Scholarship`, `Event`) from `src/shared/types/entities.ts`.
 
 ---
 
-### Step 3: Setup Mock Data
-Put the records in `src/shared/json/mock<Feature>.json`. If the feature needs a typed adapter, create `src/mocks/<feature>.ts` that only casts the JSON — it must hold no data of its own.
-- Ensure entities match the Django REST backend schema defined in `docs/07-backend-notes.md`.
-- Use existing shared entities (`Course`, `Scholarship`, `Event`) whenever possible.
+## 3. Assemble the page (content only — no shell)
 
----
+A page view never renders the navbar, footer, bottom bar or atmosphere: `RootLayout` owns them. It starts with `<main className="content-container">`.
 
-### Step 4: Build Feature Subcomponents (Using Concept Classes!)
-If a section or sidebar is unique to this feature, build it using **existing semantic classes**, avoiding ad-hoc inline styles.
+Build any feature-specific piece from the **existing concept classes** and reuse shared components. The real `CatalogFilterSidebar` shows the pattern — the shell comes from the feature's own classes, the pill rows are delegated to the shared `<CatalogFilterGroups />`:
 
-Example — the real `CatalogFilterSidebar.tsx` builds its chrome from the feature's concept classes (`.catalog-sidebar`, `.catalog-panel-head`, `.catalog-panel-title`, `.catalog-reset` in `features/catalog/catalog.css`), and delegates the pill rows to the shared `<CatalogFilterGroups />`:
 ```tsx
 export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
-  type,
-  filters,
-  onChangeFilter,
-  onReset,
-}) => {
-  return (
-    <aside className="catalog-sidebar">
-      <div className="catalog-panel-head">
-        <div className="catalog-panel-title">
-          <Filter size={16} className="text-gold-400" />
-          <span>{catalogJson.filters.header}</span>
-        </div>
-
-        <button type="button" onClick={onReset} className="catalog-reset hover:text-gold-200">
-          {catalogJson.filters.resetLabel}
-        </button>
+  type, filters, onChangeFilter, onReset,
+}) => (
+  <aside className="catalog-sidebar">
+    <div className="catalog-panel-head">
+      <div className="catalog-panel-title">
+        <Filter size={16} className="text-gold-400" />
+        <span>{catalogJson.filters.header}</span>
       </div>
-
-      <CatalogFilterGroups
-        tab={type}
-        filters={filters}
-        surface="desktop"
-        onChangeFilter={onChangeFilter}
-      />
-    </aside>
-  );
-};
-```
-
----
-
-### Step 5: Assemble the Page Shell
-Construct the final page using the **Universal Page Template**:
-```tsx
-import React, { useState } from 'react';
-import { DesktopNavbar } from '@/shared/components/Navbar/DesktopNavbar';
-import { MobileHeader } from '@/shared/components/Navbar/MobileHeader';
-import { MobileBottomBar } from '@/shared/components/BottomNav/MobileBottomBar';
-import { Footer } from '@/shared/components/Footer/Footer';
-import { SmartSearchBox } from '@/shared/components/Search/SmartSearchBox';
-import { CourseCard } from '@/shared/components/Cards/CourseCard';
-import { ScholarshipCard } from '@/shared/components/Cards/ScholarshipCard';
-import { CatalogFilterSidebar } from '@/features/catalog/components/filters/CatalogFilterSidebar';
-import { mockCourses, mockScholarships } from '@/shared/mocks/homepage';
-import type { NavTabKey } from '@/shared/lib/localization';
-import type { FilterDomain } from '@/features/catalog/types';
-
-export const CatalogPage: React.FC = () => {
-  const [activeNavTab, setActiveNavTab] = useState<NavTabKey>('catalog');
-  const [activeDomain, setActiveDomain] = useState<FilterDomain>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  return (
-    <div className="page-wrapper">
-      {/* 1. Atmospheric Celestial Glows */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[5%] right-[5%] w-[600px] h-[600px] rounded-full bg-blue-400/[0.04] blur-[140px]" />
-        <div className="absolute top-[35%] left-[5%] w-[550px] h-[550px] rounded-full bg-gold-400/[0.03] blur-[130px]" />
-      </div>
-
-      {/* 2. Top Navbars */}
-      <div className="w-full hidden md:block animate-fade-in-down relative z-20">
-        <DesktopNavbar activeTab={activeNavTab} onSelectTab={setActiveNavTab} />
-      </div>
-      <div className="w-full block md:hidden animate-fade-in-down relative z-20">
-        <MobileHeader />
-      </div>
-
-      {/* 3. Main Content Container */}
-      <main className="content-container">
-        {/* Hero Section */}
-        <section className="w-full flex flex-col items-center text-center gap-3 pt-6 pb-2 animate-fade-in-up animation-delay-100">
-          <h1 className="text-3xl md:text-4xl font-bold text-white font-display">
-            دليل المعرفة والمنح الدولية
-          </h1>
-          <p className="max-w-2xl text-slate-400 text-sm md:text-base font-body">
-            البوابة الموحدة لاستكشاف أرقى الفرص التعليمية والمسارات الأكاديمية والمنح الممولة حول العالم.
-          </p>
-          
-          {/* Smart Search Bar */}
-          <div className="w-full flex-center mt-4">
-            <SmartSearchBox 
-              variant="desktop" 
-              onSearch={(query) => setSearchQuery(query)} 
-            />
-          </div>
-        </section>
-
-        {/* Catalog Main Layout (Sidebar + Results Grid) */}
-        <div className="w-full flex flex-col lg:flex-row items-start gap-8 animate-fade-in-up animation-delay-200">
-          {/* Left / Main Results Pane */}
-          <div className="flex-1 w-full flex flex-col gap-6">
-            {/* Toolbar Row */}
-            <div className="w-full flex-between pb-2 border-b border-navy-600/40 text-sm text-slate-400">
-              <span>تم العثور على {mockCourses.length + mockScholarships.length} نتيجة</span>
-              <div className="flex items-center gap-2">
-                <span>ترتيب حسب:</span>
-                <button className="btn-pill-subtle py-1 px-3 text-xs">الأحدث ▼</button>
-              </div>
-            </div>
-
-            {/* Results Grid (reusing CourseCard & ScholarshipCard) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-              {mockCourses.slice(0, 2).map(c => (
-                <CourseCard key={c.id} course={c} layout="desktop" />
-              ))}
-              {mockScholarships.slice(0, 2).map(s => (
-                <ScholarshipCard key={s.id} scholarship={s} layout="desktop" />
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="w-full flex-center gap-2 pt-4">
-              <button className="btn-icon-box">‹</button>
-              <button className="btn-gold w-8 h-8 p-0 text-xs">1</button>
-              <button className="btn-pill-subtle w-8 h-8 p-0 text-xs">2</button>
-              <button className="btn-pill-subtle w-8 h-8 p-0 text-xs">3</button>
-              <button className="btn-icon-box">›</button>
-            </div>
-          </div>
-
-          {/* Right Filter Sidebar (Desktop) */}
-          <div className="hidden lg:block shrink-0">
-            <CatalogFilterSidebar 
-              activeDomain={activeDomain}
-              onSelectDomain={setActiveDomain}
-              onReset={() => setActiveDomain('all')}
-            />
-          </div>
-        </div>
-      </main>
-
-      {/* 4. Global Footer & Mobile Bottom Navigation */}
-      <Footer />
-      <MobileBottomBar activeTab={activeNavTab} onSelectTab={setActiveNavTab} />
+      <button type="button" onClick={onReset} className="catalog-reset hover:text-gold-200">
+        {catalogJson.filters.resetLabel}
+      </button>
     </div>
-  );
-};
+    <CatalogFilterGroups tab={type} filters={filters} surface="desktop" onChangeFilter={onChangeFilter} />
+  </aside>
+);
 ```
+
+When you catch the same utility run twice, extract a concept class into the owning CSS file (`@layer components`), per [`khawarizm-frontend`](../SKILL.md) §3.7.
 
 ---
 
-### Step 6: Route Registration & Verification
-1. Open `src/app/router.tsx` or `src/App.tsx`.
-2. Add the route:
-```tsx
-<Route path="/catalog" element={<CatalogPage />} />
+## 4. Register the route (exactly three places)
+
+```ts
+// 1. src/app/pageLoads.ts — one lazy chunk per page
+export const MyNewPage = lazy(() => import('../features/my-feature/pages/MyNewPage').then((m) => ({ default: m.MyNewPage })));
 ```
-3. Run verification command:
+```json
+// 2. src/shared/json/routes.json
+{ "path": "/my-feature", "title": "عنوان الصفحة — أكاديمية خوارزم", "activeTab": "home", "skeletonVariant": "default" }
+```
+```ts
+// 3. src/app/routes.tsx
+const PAGE_BY_PATH: Record<string, ComponentType> = { '/my-feature': MyNewPage };
+```
+
+That is all: `skeletonVariant` drives the Tier-1 skeleton, `title` drives `document.title`, and `RootLayout` picks the shell from the flags. There is **no** `<Route>` JSX to edit, and `*` must stay last (it renders `NotFoundPage`). Adding a top-level tab also means a target + row in `shellNav.json` and a `NavTabKey` label — see [`khawarizm-routing`](../../khawarizm-routing/SKILL.md).
+
+---
+
+## 5. Verify
+
 ```bash
-npm run build
+cd frontend
+npm run build      # tsc -b + vite build — zero errors
+npx eslint src     # zero warnings
 ```
-Ensure 0 TypeScript errors and 0 build warnings.
+
+Then check **behavior**: desktop (1280px) and mobile (390px) both render, RTL inputs have their icon on the start edge, back/forward restores scroll, and a cached revisit shows no skeleton.
 
 ---
 
-## 2. Concrete Case Study: Deconstructing `catalog-all-desktop.html`
+## 6. Worked example — deconstructing the catalog screen
 
-Let's look at `Design Code/02-catalog/catalog-all-desktop.html` (873 lines of raw HTML):
+The catalog design ships as PNGs under `Designs/Khawarizm Academy Platfrom Design/02-catalog/`. Almost the entire screen is existing components and concept classes — only the new pieces are feature files.
 
-| Prototype HTML Chunk | What it does | How we build it in Khawarizm Frontend | Code Saved |
-| :--- | :--- | :--- | :--- |
-| Lines 5–133 | Desktop Top Navigation | `<DesktopNavbar activeTab="catalog" />` | **128 lines of HTML eliminated** |
-| Lines 134–142 | Hero Title + Subtitle | Semantic header with `.flex-col-center` | **8 lines simplified** |
-| Lines 143–183 | Smart Search Input + Toggle Chips | `<SmartSearchBox variant="desktop" />` | **40 lines eliminated** |
-| Lines 209–282 | Course Card 1 | `<CourseCard course={c1} layout="desktop" />` | **73 lines eliminated** |
-| Lines 283–339 | Scholarship Card 1 | `<ScholarshipCard scholarship={s1} layout="desktop" />` | **56 lines eliminated** |
-| Lines 340–415 | Course Card 2 | `<CourseCard course={c2} layout="desktop" />` | **75 lines eliminated** |
-| Lines 589–624 | Pagination | `.flex-center` row with `.btn-icon-box` and `.btn-gold` | **35 lines simplified** |
-| Lines 626–750 | Filter Sidebar | `<CatalogFilterSidebar />` using `.btn-pill-subtle` | **124 lines simplified** |
+| Design region | Built with | New code needed |
+| :--- | :--- | :--- |
+| Desktop top navigation | `<DesktopNavbar />` (RootLayout) | none |
+| Hero title + subtitle | `.catalog-hero` + `.section-accent-title-*` | none |
+| Smart search + type toggle | `<SmartSearchBox />` (two slots share one `searchProps`) | none |
+| Result cards | `<CatalogCard item={…} />` inside `.catalog-grid` | small |
+| Filter sidebar + mobile drawer | `<CatalogFilterSidebar />` + `<CatalogMobileFilterDrawer />`, both delegating to `<CatalogFilterGroups />` | small |
+| Toolbar + sort menu | `<CatalogToolbar />` (`.catalog-chip-btn`, `.catalog-sort-option`) | none |
+| Pagination | `<CatalogPagination />` (`.catalog-page-nav`, `.catalog-page*`) | none |
+| Empty / error / skeleton | `<StatePanel />` + `.catalog-state`, `<CatalogGridSkeleton />` | none |
 
-**Conclusion:** Over **85% of the page** is built instantly simply by calling existing components! No styling needed from scratch!
+**Takeaway:** the page view is a thin composition; the real work is the data boundary (`CatalogDataSection`) and the feature's concept classes. That ratio — reuse first, new code last — is the target for every new screen.
+
+---
+
+## 7. Common pitfalls
+
+| Pitfall | Fix |
+| :--- | :--- |
+| Rendering the shell inside the page | Let `RootLayout` own navbars/footer; pages start with `<main className="content-container">`. |
+| Editing `router.tsx`/`App.tsx` to add a route | Routes are data: `pageLoads.ts` + `routes.json` + `PAGE_BY_PATH`. |
+| Fake `setTimeout` loader | Suspense handles Tier 1; `useCachedData` handles Tier 2. |
+| Arabic string in state or URL | English keys internally; Arabic only via `toArabic`. |
+| Repeating a class string | Extract a concept class into the owning CSS file (`@layer components`). |
+| Icon on the wrong side in RTL | In an RTL flex row, the first child is on the **right** — icon first, input second. |
+| Sidebar renders on the left | In `dir="rtl" flex-row`, child #1 is on the far right — sidebar first. |
+| `verbatimModuleSyntax` error (TS1484) | Use `import type { … }` for types. |
+
+---
+
+## 8. Project docs
+
+Human-facing walkthroughs: [`docs/06-development-guide.md`](../../../../docs/06-development-guide.md) and [`docs/02-architecture.md`](../../../../docs/02-architecture.md).
