@@ -47,7 +47,8 @@ backend/
 │   └── views/                  catalog, courses, scholarships, dashboard,
 │                               home, events, competitions, profile, auth
 ├── requirements.txt
-├── .env.example
+├── .env.development            dev profile (loaded by default)
+├── .env.production             prod profile (loaded when DJANGO_ENV=production)
 └── manage.py
 ```
 
@@ -73,9 +74,31 @@ python manage.py runserver 127.0.0.1:8000
 
 The API is then at `http://127.0.0.1:8000/api/`.
 
-Environment variables (all optional in dev — see `.env.example`):
-`DJANGO_DEBUG`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`,
-`DJANGO_CORS_ALLOWED_ORIGINS`.
+### Environment
+
+Configuration is split into **profiles** selected by `DJANGO_ENV` (default
+`development`). `config/settings.py` loads `.env.<DJANGO_ENV>` with
+**python-dotenv**, so origins and secrets are edited in the file rather than
+exported by hand:
+
+| File | Loaded when | Use for |
+| :--- | :--- | :--- |
+| `.env.development` | `DJANGO_ENV` is unset or `development` | Local dev |
+| `.env.production` | `DJANGO_ENV=production` | Production deploy |
+
+**Real environment variables always win over the file**, so in deployment set
+the values in the host/platform environment (they override `.env.production`):
+
+| Variable | Purpose |
+| :--- | :--- |
+| `DJANGO_ENV` | Picks the profile (`development` \| `production`) |
+| `DJANGO_DEBUG` | `true` in dev, `false` in production (defaults from `DJANGO_ENV`) |
+| `DJANGO_SECRET_KEY` | Django secret — required and must be real when `DEBUG=false` |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames the API answers on |
+| `DJANGO_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins allowed to call the API |
+
+The secret check **fails loudly**: a non-debug run refuses to boot while
+`DJANGO_SECRET_KEY` is still a placeholder.
 
 ### Commands
 
@@ -128,8 +151,9 @@ data-section error state can render a message and a retry.
 
 ## Using it from the frontend
 
-The frontend is fully API-driven (no mocks). Point it at this server with
-`frontend/.env`:
+The frontend is fully API-driven (no mocks). It reads the API origin from its
+own profile files (`frontend/.env.development` for `npm run dev`,
+`frontend/.env.production` for `npm run build`):
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api

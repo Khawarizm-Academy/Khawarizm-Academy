@@ -7,7 +7,16 @@ The frontend is the only client, so there is no template/static setup.
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Profile selector — export DJANGO_ENV in the host environment to pick a profile.
+DJANGO_ENV = os.environ.get("DJANGO_ENV", "development")
+
+# Load that profile's env file; real environment variables always take precedence.
+load_dotenv(BASE_DIR / f".env.{DJANGO_ENV}")
 
 # Reads an env var with a type-appropriate default, so local dev needs no .env file.
 def env_bool(name: str, default: bool) -> bool:
@@ -24,9 +33,16 @@ def env_list(name: str, default: list[str]) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+# Placeholder secrets that must never reach a non-debug run.
+_PLACEHOLDER_SECRETS = {"dev-only-insecure-secret-key", "dev-only-change-me", "replace-with-a-real-secret"}
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-secret-key")
-DEBUG = env_bool("DJANGO_DEBUG", True)
+DEBUG = env_bool("DJANGO_DEBUG", DJANGO_ENV == "development")
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["localhost", "127.0.0.1"])
+
+# Fail loudly instead of shipping a placeholder secret to production.
+if not DEBUG and SECRET_KEY in _PLACEHOLDER_SECRETS:
+    raise ImproperlyConfigured("Set a real DJANGO_SECRET_KEY for non-debug environments.")
 
 INSTALLED_APPS = [
     "django.contrib.admin",

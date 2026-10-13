@@ -41,13 +41,14 @@ npx eslint src     # zero warnings
 
 ## 3. Environment
 
-`frontend/.env` holds the API configuration:
+Each side uses **dev + production profiles** (no manual copying):
 
-```env
-VITE_API_BASE_URL=http://localhost:8000/api
-```
+- **Frontend** — Vite loads `frontend/.env.development` for `npm run dev` and
+  `frontend/.env.production` for `npm run build`; `.env.local` overrides locally.
+- **Backend** — `config/settings.py` loads `backend/.env.<DJANGO_ENV>` (default
+  `development`), so `DJANGO_ENV=production` picks `.env.production`.
 
-The app is **fully API-driven** — a running backend is required. See [07 · Backend Contract](07-backend-contract.md).
+`VITE_API_BASE_URL` is **required** — `shared/lib/apiClient.ts` throws at startup without it. `DJANGO_CORS_ALLOWED_ORIGINS` lists the frontend origins. Real environment variables override the profile files in deployment. The app is **fully API-driven** — a running backend is required. See [07 · Backend Contract](07-backend-contract.md).
 
 ---
 

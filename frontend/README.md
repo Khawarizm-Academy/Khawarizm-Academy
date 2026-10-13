@@ -38,13 +38,14 @@ npm run dev        # http://localhost:5173
 
 ### Environment
 
-`.env`:
+Configuration is split into **profiles** that Vite loads by mode:
 
-```env
-VITE_API_BASE_URL=http://localhost:8000/api
-```
+| File | Loaded by | `VITE_API_BASE_URL` |
+| :--- | :--- | :--- |
+| `.env.development` | `npm run dev` | `http://localhost:8000/api` |
+| `.env.production` | `npm run build` | your production API origin |
 
-The app is fully API-driven and needs the Django backend running. Every feature fetcher calls the API through `shared/lib/apiClient.ts`; components only ever read the cache. See [`../docs/07-backend-contract.md`](../docs/07-backend-contract.md).
+`VITE_API_BASE_URL` is **required** — `shared/lib/apiClient.ts` throws at startup if it is missing. The app is fully API-driven and needs the Django backend running; every feature fetcher calls the API through that client and components only ever read the cache. Use `.env.local` (gitignored) for machine-specific overrides. See [`../docs/07-backend-contract.md`](../docs/07-backend-contract.md).
 
 ---
 

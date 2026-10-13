@@ -12,15 +12,41 @@ expects, and the REST surface that serves them.
 
 ## 1. Environment
 
-`frontend/.env`:
+Both sides read their configuration from **profiles** (dev + production), so
+origins change without editing code.
+
+**Frontend** — Vite loads the profile by mode:
+
+| File | Loaded by | Purpose |
+| :--- | :--- | :--- |
+| `frontend/.env.development` | `npm run dev` | `VITE_API_BASE_URL=http://localhost:8000/api` |
+| `frontend/.env.production` | `npm run build` | Production API origin |
+| `frontend/.env.local` (gitignored) | any | Machine-specific override |
+
+`VITE_API_BASE_URL` is **required**: the app always reads the API at that origin
+(no fallback), so a missing value throws at startup. The backend must be running.
+
+**Backend** — `config/settings.py` loads the profile named by `DJANGO_ENV`
+(default `development`) with `python-dotenv`:
+
+| File | Loaded when | Purpose |
+| :--- | :--- | :--- |
+| `backend/.env.development` | `DJANGO_ENV` unset / `development` | Local dev |
+| `backend/.env.production` | `DJANGO_ENV=production` | Production deploy |
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api
+DJANGO_DEBUG=true
+DJANGO_SECRET_KEY=dev-only-change-me
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
-The app always reads from the API at `VITE_API_BASE_URL` (default
-`http://localhost:8000/api`), so the backend must be running. The UI is written
-against the shapes below, so the two sides evolve independently.
+Real environment variables always win over the profile file, so in deployment you
+set these in the platform/host environment. `DJANGO_CORS_ALLOWED_ORIGINS` is a
+comma-separated allow-list of the frontend origins, and a non-debug run **fails
+loudly** while `DJANGO_SECRET_KEY` is still a placeholder.
+
+The UI is written against the shapes below, so the two sides evolve independently.
 
 **Fetcher seam.** Every feature exposes its data through a small fetcher module; components never call the network directly:
 

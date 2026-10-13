@@ -2,10 +2,16 @@
  * Thin fetch wrapper for the Khawarizm Academy API.
  *
  * The app is fully API-driven — there are no mocks. Every feature fetcher goes
- * through these helpers against `VITE_API_BASE_URL`.
+ * through these helpers against `VITE_API_BASE_URL` (set in frontend/.env.development
+ * and frontend/.env.production).
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// Fail loudly at startup: a missing base URL would otherwise surface as cryptic fetch errors.
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL is not set. Add it to frontend/.env.development or frontend/.env.production.');
+}
 
 /** Error carrying the HTTP status, so callers can special-case a 404. */
 export class ApiError extends Error {
