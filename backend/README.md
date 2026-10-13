@@ -37,7 +37,7 @@ backend/
 │   ├── models_events_competitions.py
 │   ├── choices.py              enum-style choices (single source of truth)
 │   ├── admin.py                Django admin registration
-│   ├── seeds/*.json            frontend mock JSON, copied verbatim
+│   ├── seed_data.py            demo data as Python literals (no JSON anywhere)
 │   └── management/commands/seed_data.py   idempotent loader
 ├── api/                        the HTTP layer, one module per feature
 │   ├── urls.py                 route table (grouped by feature)
@@ -67,7 +67,7 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 python manage.py migrate
-python manage.py seed_data         # loads academy/seeds/*.json
+python manage.py seed_data         # writes academy/seed_data.py into SQLite
 python manage.py runserver 127.0.0.1:8000
 ```
 
@@ -82,7 +82,7 @@ Environment variables (all optional in dev — see `.env.example`):
 | Command | Description |
 | :--- | :--- |
 | `python manage.py migrate` | Create/update the SQLite schema |
-| `python manage.py seed_data` | Idempotent: clears academy tables and reloads the mocks |
+| `python manage.py seed_data` | Idempotent: clears academy tables and reloads the demo data |
 | `python manage.py runserver` | Dev server |
 | `python manage.py check` | Framework sanity check |
 
@@ -126,16 +126,16 @@ data-section error state can render a message and a retry.
 
 ---
 
-## Turning it on in the frontend
+## Using it from the frontend
 
-The frontend defaults to mocks. To point it at this server, set in `frontend/.env`:
+The frontend is fully API-driven (no mocks). Point it at this server with
+`frontend/.env`:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
-VITE_USE_MOCK_API=false
 ```
 
-Leave `VITE_USE_MOCK_API=true` (the default) for the self-contained demo.
+Start the backend first (`python manage.py runserver`), then `npm run dev`.
 
 ---
 

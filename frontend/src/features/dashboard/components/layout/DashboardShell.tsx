@@ -1,5 +1,5 @@
 import React from 'react';
-import { UNREAD_COUNT, useDashboard } from '@/features/dashboard/context/dashboardContext';
+import { useDashboard } from '@/features/dashboard/context/dashboardContext';
 import { DesktopDashboardSidebar } from '@/features/dashboard/components/chrome/DesktopDashboardSidebar';
 import { DashboardMain } from '@/features/dashboard/components/layout/DashboardMain';
 import { CourseWorkspaceModal } from '@/features/dashboard/components/overlays/CourseWorkspaceModal';
@@ -23,6 +23,7 @@ export const DashboardShell: React.FC = () => {
     closeCompetition,
     previewCertificateItem,
     closeCertificate,
+    unreadCount,
   } = useDashboard();
 
   return (
@@ -31,7 +32,7 @@ export const DashboardShell: React.FC = () => {
       <DesktopDashboardSidebar
         currentView={currentView}
         onSelectView={selectView}
-        unreadNotificationsCount={UNREAD_COUNT}
+        unreadNotificationsCount={unreadCount}
       />
 
       <DashboardMain />

@@ -21,21 +21,22 @@ export interface UserProfileData {
   timezone: string;
 }
 
-export const INITIAL_USER_PROFILE: UserProfileData = {
-  fullName: 'أحمد محمد القحطاني',
-  email: 'ahmad.q@example.com',
-  phone: '+966 55 820 1437',
-  membershipStatus: 'متعلّم منذ مارس 2024 · المستوى المتوسط',
-  avatarInitials: 'أق',
-  learningLevel: 'intermediate',
-  interests: ['الذكاء الاصطناعي', 'تحليل البيانات', 'البرمجة والتطوير'],
+/** Blank form model; real values arrive from GET /profile. */
+export const EMPTY_PROFILE: UserProfileData = {
+  fullName: '',
+  email: '',
+  phone: '',
+  membershipStatus: '',
+  avatarInitials: '',
+  learningLevel: 'beginner',
+  interests: [],
   notifications: {
-    liveSessionReminders: true,
-    weeklyProgressSummary: true,
+    liveSessionReminders: false,
+    weeklyProgressSummary: false,
     recommendedOpportunities: false,
   },
   language: 'ar',
-  timezone: 'الرياض (GMT+3)',
+  timezone: '',
 };
 
 export const AVAILABLE_INTERESTS: string[] = [

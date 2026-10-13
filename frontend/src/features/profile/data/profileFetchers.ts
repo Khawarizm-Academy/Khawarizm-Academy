@@ -1,18 +1,12 @@
-import { apiGet, apiPatch, isMockApi } from '@/shared/lib/apiClient';
-import { INITIAL_USER_PROFILE } from '@/features/profile/types';
+import { apiGet, apiPatch } from '@/shared/lib/apiClient';
 import type { UserProfileData } from '@/features/profile/types';
 
-/** Seed profile used in mock mode and as the live fetch's fallback. */
-export const PROFILE_MOCK_DATA = INITIAL_USER_PROFILE;
-
-/** Load the learner's profile; live mode reads GET /profile. */
-export async function fetchProfile(): Promise<UserProfileData> {
-  if (!isMockApi) return apiGet<UserProfileData>('/profile');
-  return PROFILE_MOCK_DATA;
+/** Load the learner's profile from GET /profile. */
+export function fetchProfile(): Promise<UserProfileData> {
+  return apiGet<UserProfileData>('/profile');
 }
 
-/** Persist profile edits; live mode PATCHes /profile and echoes the saved row. */
-export async function saveProfile(profile: UserProfileData): Promise<UserProfileData> {
-  if (!isMockApi) return apiPatch<UserProfileData>('/profile', profile);
-  return profile;
+/** Persist profile edits via PATCH /profile and echo the saved row. */
+export function saveProfile(profile: UserProfileData): Promise<UserProfileData> {
+  return apiPatch<UserProfileData>('/profile', profile);
 }

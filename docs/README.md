@@ -17,7 +17,7 @@ Engineering and design documentation for the Khawarizm Academy platform. Everyth
 | — | [**04 · Loading, Caching & Motion**](04-loading-caching-and-motion.md) | Build skeletons, caching, page transitions, and animation. |
 | — | [**05 · Feature Directory**](05-feature-directory.md) | Jump to a feature and its own README. |
 | — | [**06 · Development Guide**](06-development-guide.md) | Set up the project and follow the page-creation workflow. |
-| — | [**07 · Backend Contract**](07-backend-contract.md) | See the entities, endpoints, and mock strategy. |
+| — | [**07 · Backend Contract**](07-backend-contract.md) | See the entities, endpoints, and API environment. |
 
 ---
 
@@ -33,7 +33,7 @@ docs/
 ├── 04-loading-caching-and-motion.md dual-tier skeletons, SWR cache, view transitions, motion system
 ├── 05-feature-directory.md          every feature + link to its feature README
 ├── 06-development-guide.md          setup, scripts, code style, page blueprint, verification
-└── 07-backend-contract.md           domain entities, REST endpoints, mocks, environment
+└── 07-backend-contract.md           domain entities, REST endpoints, environment
 ```
 
 Every feature also owns a README inside its own folder:

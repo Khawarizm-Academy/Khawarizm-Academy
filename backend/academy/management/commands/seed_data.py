@@ -1,36 +1,36 @@
-"""Seed the database with the mocked domain data.
+"""Seed the database with the demo data.
 
 Run with: python manage.py seed_data
 
 The command is idempotent: it clears the academy tables and re-creates every
-record from the JSON files in ``academy/seeds``. Those files are copied from the
-frontend's ``shared/json`` mocks, so the API returns exactly the shapes the UI
-expects.
+record from the Python literals in ``academy/seed_data.py``. There are no JSON
+files involved — the data is defined in code and written into SQLite through
+the ORM, matching the shapes the frontend expects.
 """
 
 from __future__ import annotations
 
-import json
 from decimal import Decimal
-from pathlib import Path
 from typing import Any
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from academy import models as m
-
-# .../academy/management/commands/seed_data.py -> .../academy/seeds
-SEEDS_DIR = Path(__file__).resolve().parents[2] / "seeds"
-
-
-def load(filename: str) -> dict[str, Any]:
-    """Read one seed file as JSON."""
-    return json.loads((SEEDS_DIR / filename).read_text(encoding="utf-8"))
+from academy.seed_data import (
+    DASHBOARD_CHAMBERS,
+    DASHBOARD_NOTIFICATIONS,
+    DASHBOARD_VIEWS,
+    MOCK_CATALOG,
+    MOCK_COURSE_PROBLEMS,
+    MOCK_COURSES,
+    MOCK_DASHBOARD,
+    MOCK_HOMEPAGE,
+)
 
 
 def decimal(value: Any) -> Decimal | None:
-    """Convert catalog ratings to Decimal (JSON has floats)."""
+    """Convert catalog ratings to Decimal (seed floats are plain numbers)."""
     if value is None:
         return None
     return Decimal(str(value))
@@ -108,7 +108,7 @@ class Command(BaseCommand):
     # Catalog + courses
 
     def seed_catalog(self) -> None:
-        data = load("mockCatalog.json")
+        data = MOCK_CATALOG
 
         # Categories are the distinct categorySlug/label pairs found in the catalog.
         seen: set[str] = set()
@@ -158,7 +158,7 @@ class Command(BaseCommand):
             )
 
     def seed_course_details(self) -> None:
-        data = load("mockCourses.json")
+        data = MOCK_COURSES
 
         for seed in data["details"]:
             course = m.Course.objects.get(slug=seed["id"])
@@ -209,7 +209,7 @@ class Command(BaseCommand):
                 )
 
     def seed_course_problems(self) -> None:
-        data = load("mockCourseProblems.json")
+        data = MOCK_COURSE_PROBLEMS
 
         for problem in data["problems"]:
             row = m.CourseProblem.objects.create(
@@ -230,7 +230,7 @@ class Command(BaseCommand):
     # Dashboard
 
     def seed_dashboard(self) -> None:
-        data = load("mockDashboard.json")
+        data = MOCK_DASHBOARD
 
         from api.learners import get_demo_learner
 
@@ -366,7 +366,7 @@ class Command(BaseCommand):
     # Home
 
     def seed_homepage(self) -> None:
-        data = load("mockHomepage.json")
+        data = MOCK_HOMEPAGE
 
         for course in data["courses"]:
             m.HomeFeaturedCourse.objects.create(
@@ -437,7 +437,7 @@ class Command(BaseCommand):
 
     def seed_events_and_competitions(self) -> None:
         """Global event/competition lists, sourced from the home content."""
-        data = load("mockHomepage.json")
+        data = MOCK_HOMEPAGE
 
         for key, label in (
             ("eventMobile", "mobile"),
@@ -471,7 +471,7 @@ class Command(BaseCommand):
     # Chambers + content
 
     def seed_chambers(self) -> None:
-        data = load("dashboardChambers.json")
+        data = DASHBOARD_CHAMBERS
 
         for lesson in data["workspaceLessons"]:
             m.WorkspaceLesson.objects.create(
@@ -519,9 +519,9 @@ class Command(BaseCommand):
             )
 
     def seed_content_blocks(self) -> None:
-        views = load("dashboardViews.json")
-        notifications = load("dashboardNotifications.json")
-        chambers = load("dashboardChambers.json")
+        views = DASHBOARD_VIEWS
+        notifications = DASHBOARD_NOTIFICATIONS
+        chambers = DASHBOARD_CHAMBERS
 
         m.DashboardContentBlock.objects.create(key="dashboard-views", payload=views)
         m.DashboardContentBlock.objects.create(key="dashboard-notifications", payload=notifications)

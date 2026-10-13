@@ -4,6 +4,7 @@ import type { UserProfileData } from '@/features/profile/types';
 
 export interface ProfileContextValue {
   profile: UserProfileData;
+  isLoading: boolean;
   isSaving: boolean;
   showToast: boolean;
   changeField: <K extends keyof UserProfileData>(key: K, value: UserProfileData[K]) => void;

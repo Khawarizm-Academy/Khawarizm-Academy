@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Trophy, Play, CheckCircle2, X, Code2 } from 'lucide-react';
 import type { CompetitionItem } from '@/features/dashboard/components/views/CompetitionsCertificatesView';
-import dashboardChambersJson from '@/shared/json/dashboardChambers.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface CompetitionArenaModalProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface CompetitionArenaModalProps {
 
 type ArenaLang = 'python' | 'ts';
 
-/** Leaderboard row + score tones from dashboardChambers.json. */
+/** Leaderboard row + score tones by place. */
 const LEADER_TONE = {
   gold: {
     row: 'bg-gold-400/10 border border-gold-400/40 text-gold-400 font-bold',
@@ -23,20 +23,15 @@ const LEADER_TONE = {
   },
 } as const;
 
-const LANGUAGES = dashboardChambersJson.arenaLanguages as { id: ArenaLang; label: string }[];
-const LEADERS = dashboardChambersJson.arenaLeaders as {
-  name: string;
-  score: string;
-  tone: 'gold' | 'plain';
-}[];
-const STARTER_CODE = dashboardChambersJson.arenaStarterCode;
-
 export const CompetitionArenaModal: React.FC<CompetitionArenaModalProps> = ({
   isOpen,
   onClose,
   competition,
 }) => {
-  const [code, setCode] = useState(STARTER_CODE);
+  const { chambers } = useDashboardContent();
+  const LANGUAGES = chambers.arenaLanguages;
+  const LEADERS = chambers.arenaLeaders;
+  const [code, setCode] = useState(chambers.arenaStarterCode);
   const [selectedLang, setSelectedLang] = useState<ArenaLang>('python');
   const [testResult, setTestResult] = useState<'idle' | 'running' | 'passed' | 'failed'>('idle');
 

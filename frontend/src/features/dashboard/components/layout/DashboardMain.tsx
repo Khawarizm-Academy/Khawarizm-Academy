@@ -7,15 +7,8 @@ import {
 } from '@/shared/lib/navigation';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
 import type { EnrolledCourse } from '@/features/dashboard/types';
-import {
-  CHALLENGE_ITEM,
-  FULL_PAGE_VIEWS,
-  SINGLE_COLUMN_VIEWS,
-  SPOTLIGHT,
-  SUB_NAV_VIEWS,
-  UNREAD_COUNT,
-  useDashboard,
-} from '@/features/dashboard/context/dashboardContext';
+import { SUB_NAV_VIEWS, useDashboard } from '@/features/dashboard/context/dashboardContext';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 import { DashboardTopBar } from '@/features/dashboard/components/chrome/DashboardTopBar';
 import { MobileDashboardTopBar } from '@/features/dashboard/components/chrome/MobileDashboardTopBar';
 import { DashboardStatsHeader, DashboardMobileChips } from '@/features/dashboard/components/chrome/DashboardStatsHeader';
@@ -53,6 +46,8 @@ const MobileTitle = ({
 /** The single responsive dash-main body: headers, mobile chrome, and view sections. */
 export const DashboardMain: React.FC = () => {
   const navigate = useNavigate();
+  const { content } = useDashboardContent();
+  const { fullPageViews, singleColumnViews, spotlight, challengeItem } = content.views;
   const {
     currentView,
     isLive,
@@ -60,6 +55,7 @@ export const DashboardMain: React.FC = () => {
     isSavedView,
     header,
     statChips,
+    unreadCount,
     coursesData,
     isLoadingCourses,
     selectView,
@@ -99,14 +95,14 @@ export const DashboardMain: React.FC = () => {
       {/* Inner padding container */}
       <div className="dash-container">
         {/* Stats & greeting header for the grid views */}
-        {!isEmpty && !FULL_PAGE_VIEWS.includes(currentView) && (
+        {!isEmpty && !fullPageViews.includes(currentView) && (
           <div className="animate-fade-in-up">
             <DashboardStatsHeader
               title={header.title}
               subtitle={header.subtitle}
               chips={statChips}
               studentName="أحمد"
-              unreadNotificationsCount={UNREAD_COUNT}
+              unreadNotificationsCount={unreadCount}
               onNotificationsClick={() => selectView('notifications')}
               onAvatarClick={() => selectView('profile')}
               onSavedClick={() => selectView('saved')}
@@ -178,7 +174,7 @@ export const DashboardMain: React.FC = () => {
         )}
 
         {/* Mobile reminder chips sit under the tab strip, so the strip keeps its place */}
-        {!isEmpty && !FULL_PAGE_VIEWS.includes(currentView) && <DashboardMobileChips chips={statChips} />}
+        {!isEmpty && !fullPageViews.includes(currentView) && <DashboardMobileChips chips={statChips} />}
 
         {/* Empty state view */}
         {isEmpty && (
@@ -206,7 +202,7 @@ export const DashboardMain: React.FC = () => {
         )}
 
         {/* Two-column grid for main, live, saved, achievements views */}
-        {!isEmpty && !SINGLE_COLUMN_VIEWS.includes(currentView) && (
+        {!isEmpty && !singleColumnViews.includes(currentView) && (
           <div className="dash-grid animate-fade-in-up animation-delay-100">
             {/* Primary column (center) */}
             <div className="dash-grid-main">
@@ -219,10 +215,10 @@ export const DashboardMain: React.FC = () => {
                     <LiveSessionPriorityCard onJoinSession={openLiveClassroom} />
                   ) : (
                     <>
-                      {SPOTLIGHT.hasChallenge && (
-                        <ChallengeSpotlightCard onEnter={() => selectCompetition(CHALLENGE_ITEM)} />
+                      {spotlight.hasChallenge && (
+                        <ChallengeSpotlightCard onEnter={() => selectCompetition(challengeItem)} />
                       )}
-                      {SPOTLIGHT.hasCourse && (
+                      {spotlight.hasCourse && (
                         <PriorityContinueCard onContinue={() => navigate(COURSE_PLAYER_ROUTE('course-1'))} />
                       )}
                     </>

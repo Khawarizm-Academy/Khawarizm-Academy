@@ -4,10 +4,11 @@ import { CatalogCard } from '@/features/catalog/components/cards/CatalogCard';
 import { CatalogPagination } from '@/features/catalog/components/toolbar/CatalogPagination';
 import { CatalogGridSkeleton } from '@/features/catalog/components/states/CatalogGridSkeleton';
 import { fetchCourseDetail } from '@/features/courses/data/courseFetchers';
+import { fetchScholarshipDetail } from '@/features/scholarships/data/scholarshipFetchers';
 import { fetchCatalogPage, type CatalogPage } from '@/features/catalog/data/catalogFetcher';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import { dataCacheManager } from '@/shared/lib/cacheManager';
-import type { CatalogItem } from '@/shared/mocks/catalog';
+import type { CatalogItem } from '@/shared/types/entities';
 import type { CatalogFiltersState, CatalogTab } from '@/features/catalog/types';
 
 interface CatalogDataSectionProps {
@@ -60,11 +61,9 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
   // Warm the detail-page cache on card hover -> instant detail navigation.
   const handlePrefetchDetail = (item: CatalogItem) => {
     const key = DETAIL_KEY[item.type];
-    dataCacheManager.prefetch([key, item.id], async () => {
-      if (item.type === 'course') return fetchCourseDetail(item.id);
-      await new Promise((res) => setTimeout(res, 1));
-      return item;
-    });
+    dataCacheManager.prefetch([key, item.id], async () =>
+      item.type === 'course' ? fetchCourseDetail(item.id) : fetchScholarshipDetail(item.id)
+    );
   };
 
   return (

@@ -1,18 +1,18 @@
 import React from 'react';
 import { Radio } from 'lucide-react';
 import { useLiveCountdown } from '@/features/dashboard/hooks/useLiveCountdown';
-import dashboardViewsJson from '@/shared/json/dashboardViews.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface LiveSessionPriorityCardProps {
   onJoinSession?: () => void;
 }
 
-const CARD = dashboardViewsJson.liveCard;
-
 export const LiveSessionPriorityCard: React.FC<LiveSessionPriorityCardProps> = ({
   onJoinSession,
 }) => {
-  const totalSeconds = CARD.initialMinutes * 60 + CARD.initialSeconds;
+  const { content } = useDashboardContent();
+  const card = content.views.liveCard;
+  const totalSeconds = card.initialMinutes * 60 + card.initialSeconds;
   const { formattedTime } = useLiveCountdown(totalSeconds);
 
   return (
@@ -40,9 +40,9 @@ export const LiveSessionPriorityCard: React.FC<LiveSessionPriorityCardProps> = (
         </div>
 
         <div className="dash-hero-text">
-          <h2 className="dash-hero-title">{CARD.courseTitle}</h2>
+          <h2 className="dash-hero-title">{card.courseTitle}</h2>
           <p className="dash-hero-sub md:text-base md:leading-6">
-            المعلم: {CARD.instructorName} • {CARD.sessionDescription}
+            المعلم: {card.instructorName} • {card.sessionDescription}
           </p>
         </div>
       </div>

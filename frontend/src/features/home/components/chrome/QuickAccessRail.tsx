@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { NAV_TARGETS, resolveIcon } from '@/shared/lib/navigation';
-import type { QuickLink } from '@/shared/mocks/homepage';
+import type { QuickLink } from '@/shared/types/entities';
 
 interface QuickAccessRailProps {
   links: QuickLink[];

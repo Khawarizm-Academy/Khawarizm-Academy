@@ -38,7 +38,7 @@ There is no feature state, data, or component folder yet.
 This is a **thin placeholder**, not a built feature. A full implementation would add:
 - a competitions listing and a competition detail/arena route,
 - team/registration, scoring, and submission flows,
-- data sources under `data/` and mocks under `shared/mocks/`,
+- data sources under `data/` (API fetchers),
 - its own view components and `competitions.css` concept classes.
 
 ## Related

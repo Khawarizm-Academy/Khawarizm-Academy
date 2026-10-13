@@ -8,7 +8,7 @@ import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSeg
 import { fetchEnrolledCourses } from '@/features/dashboard/data/dashboardFetchers';
 import type { EnrolledCourse } from '@/features/dashboard/types';
 import { EnrolledCourseCard } from '@/features/dashboard/components/cards/EnrolledCourseCard';
-import dashboardViewsJson from '@/shared/json/dashboardViews.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface EnrolledCoursesViewProps {
   onResumeCourse: (course: EnrolledCourse) => void;
@@ -20,9 +20,6 @@ interface EnrolledCoursesViewProps {
 type FilterStatus = 'all' | 'in-progress' | 'completed';
 type SortOption = 'recent' | 'progress-desc' | 'alphabetical';
 
-const FILTERS = dashboardViewsJson.enrolledFilters as { id: FilterStatus; label: string }[];
-const SORT_OPTIONS = dashboardViewsJson.enrolledSortOptions as { id: SortOption; label: string }[];
-
 export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
   onResumeCourse,
   onViewCertificate,
@@ -30,6 +27,9 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
   forceEmptyState = false,
 }) => {
   const navigate = useNavigate();
+  const { content } = useDashboardContent();
+  const FILTERS = content.views.enrolledFilters;
+  const SORT_OPTIONS = content.views.enrolledSortOptions;
 
   // State for filter and sort
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');

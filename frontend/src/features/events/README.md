@@ -38,7 +38,7 @@ There is no feature state, data, or component folder yet.
 This is a **thin placeholder**, not a built feature. A full implementation would add:
 - an events listing (upcoming/past) and an event detail view,
 - registration/RSVP,
-- data sources under `data/` and mocks under `shared/mocks/`,
+- data sources under `data/` (API fetchers),
 - its own `EventsPage` view components and `events.css` concept classes.
 
 ## Related

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Award, CheckCircle2, Clock, FileCheck, Send, X, Sparkles, type LucideIcon } from 'lucide-react';
 import type { SavedScholarshipItem } from '@/features/dashboard/components/views/SavedScholarshipsView';
-import dashboardChambersJson from '@/shared/json/dashboardChambers.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface ScholarshipApplicationModalProps {
   isOpen: boolean;
@@ -12,7 +12,7 @@ interface ScholarshipApplicationModalProps {
 interface ScholarshipCheck {
   kind: 'gpa' | 'static';
   label?: string;
-  icon: 'CheckCircle2' | 'FileCheck';
+  icon: string;
   status: string;
 }
 
@@ -26,7 +26,6 @@ const DEADLINE = {
 } as const;
 
 const CHECK_ICON: Record<string, LucideIcon> = { CheckCircle2, FileCheck };
-const CHECKS = dashboardChambersJson.scholarshipChecks as ScholarshipCheck[];
 
 /** GPA row reads the live requirement; static rows carry their own label. */
 const checkLabel = (check: ScholarshipCheck, scholarship: SavedScholarshipItem) =>
@@ -39,6 +38,8 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   onClose,
   scholarship,
 }) => {
+  const { chambers } = useDashboardContent();
+  const CHECKS: ScholarshipCheck[] = chambers.scholarshipChecks;
   const [statement, setStatement] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);

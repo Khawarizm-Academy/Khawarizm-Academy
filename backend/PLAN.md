@@ -5,31 +5,33 @@ stays explainable rather than arbitrary.
 
 ## Goal
 
-Replace the frontend's in-repo mocks and the data embedded in `shared/json/*`
-with a real service, without changing any component. The frontend keeps its
-`VITE_USE_MOCK_API` switch and defaults to mock, so the demo is unchanged until
-someone flips it.
+Make the frontend fully API-driven: it keeps its presentation config and copy,
+but every piece of **data** is served by the backend. All mock data and mock
+files were deleted from the frontend; nothing is behind a switch anymore.
 
 ## Scope
 
-**Moves to the backend (data):**
+**Backend owns all data:**
 
-- `mockCatalog`, `mockCourses`, `mockCourseProblems`
-- `mockDashboard` + `dashboardNotifications`
-- `mockHomepage`
-- The **content** half of `dashboardViews` / `dashboardChambers` (stored as
-  `DashboardContentBlock` JSON blobs)
+- Catalog, course details, course problems, homepage, dashboard records, and
+  the dashboard content blocks (views, chambers, notifications) — seeded into
+  SQLite from the Python literals in `academy/seed_data.py` (no JSON files).
+- The seed data is defined in code and written through the ORM into SQLite by
+  the idempotent `seed_data` command.
 
 **Stays in the frontend (presentation config):**
 
 - `routes`, `shellNav`, `dashboardNav`
 - `localization`, `footer`
-- Catalog filter *configuration* (labels, groups) — the backend only filters
-- `courseSystem` copy, `auth`
+- Catalog filter *configuration* (labels, groups), dashboard filter chips
+- `courseSystem` copy, `auth` (untouched for now; handled separately later)
 
-`dashboardViews.json` / `dashboardChambers.json` still have synchronous
-direct-JSON consumers (`dashboardContext.ts`, modal components), so those were
-deliberately left as-is. The matching endpoints exist for the contract.
+**Removed from the frontend:**
+
+- `shared/mocks/*` and `shared/json/mock*.json`
+- `shared/json/dashboardViews.json`, `dashboardChambers.json`,
+  `dashboardNotifications.json` — their content is fetched via
+  `/dashboard/content` and `/dashboard/chambers`
 
 ## Stack
 
@@ -64,10 +66,10 @@ registers them and `academy.models.<Name>` resolves.
 ## Build order
 
 1. Scaffold `config/` + `academy/models*` + migrations.
-2. Copy the frontend JSON into `academy/seeds/` and write the idempotent
-   `seed_data` command.
+2. Define the demo data as Python literals in `academy/seed_data.py` and write
+   the idempotent `seed_data` command.
 3. Add `api/` serializers, then views, then `urls.py` — feature by feature.
 4. Smoke-test every endpoint and mutation with `curl`.
-5. Rewire frontend fetchers behind `isMockApi`; verify with
-   `npm run build` + `npx eslint src`.
+5. Delete the frontend mocks and rewire every fetcher/consumer to the API;
+   verify with `npm run build` + `npx eslint src`.
 6. Document (`docs/07-backend-contract.md`, this folder's README, root README).

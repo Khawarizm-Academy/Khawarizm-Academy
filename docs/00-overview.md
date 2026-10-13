@@ -57,7 +57,7 @@ Full descriptions, file maps, and links to each feature README live in [05 · Fe
 | Styling | **Tailwind CSS v4** (`@theme` tokens) + concept classes in plain CSS |
 | Routing | A **custom, data-driven router** in `src/app/` (no router library) |
 | Icons | **lucide-react** exclusively |
-| Data layer | In-memory **SWR** cache (`useCachedData` + `dataCacheManager`) over mock fetchers |
+| Data layer | In-memory **SWR** cache (`useCachedData` + `dataCacheManager`) over API fetchers |
 | Localization | English internal keys + an Arabic dictionary in `shared/json/localization.json` |
 | Branding | A single source logo + a `sharp` build script (`npm run brand:generate`) |
 
@@ -73,7 +73,7 @@ Khawarizm-Academy/
 │   ├── src/
 │   │   ├── app/              router, route table, layouts, app-level pages
 │   │   ├── features/         one folder per product feature (+ its README)
-│   │   ├── shared/           components, hooks, lib, json, mocks, types
+│   │   ├── shared/           components, hooks, lib, json, types
 │   │   ├── styles/           design tokens + global & shared concept classes
 │   │   ├── assets/brand/     source + generated brand assets
 │   │   └── scripts/          brand asset generation

@@ -1,26 +1,26 @@
 # 07 · Backend Contract
 
-The frontend runs on mocks **by default**, behind a single switch. A Django + DRF
-+ SQLite service in `backend/` now implements the live side of this contract, so
-this document is both the specification and the reference for what is built. See
+The frontend is **fully API-driven** — there are no mocks. A Django + DRF +
+SQLite service in `backend/` implements this contract, so this document is both
+the specification and the reference for what is built. See
 [`backend/README.md`](../backend/README.md) for how to run it.
 
-This page describes the environment switch, the domain entities, the data flows
-the UI expects, and the REST surface that replaces the mocks.
+This page describes the environment, the domain entities, the data flows the UI
+expects, and the REST surface that serves them.
 
 ---
 
-## 1. Mock vs. live
+## 1. Environment
 
 `frontend/.env`:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
-VITE_USE_MOCK_API=true
 ```
 
-- With `VITE_USE_MOCK_API=true` (the default), features read from `frontend/src/shared/mocks/` and feature `data/` fetchers.
-- With it `false`, the same fetchers call the API at `VITE_API_BASE_URL`. The UI is written against the shapes below, so switching backends does not change components.
+The app always reads from the API at `VITE_API_BASE_URL` (default
+`http://localhost:8000/api`), so the backend must be running. The UI is written
+against the shapes below, so the two sides evolve independently.
 
 **Fetcher seam.** Every feature exposes its data through a small fetcher module; components never call the network directly:
 
@@ -29,11 +29,11 @@ VITE_USE_MOCK_API=true
 | Catalog | `features/catalog/data/catalogFetcher.ts` | `CatalogItem[]` (server-side filter/sort/paginate) |
 | Courses | `features/courses/data/courseFetchers.ts` | `CourseDetail`, `CourseProblem[]`, related, certificate |
 | Dashboard | `features/dashboard/data/dashboardFetchers.ts` | stats, enrolled courses, notifications, certificates, … |
-| Scholarships | `features/scholarships/pages/ScholarshipDetailPage.tsx` + catalog fetcher | one `CatalogItem` (scholarship) |
+| Scholarships | `features/scholarships/data/scholarshipFetchers.ts` | one `CatalogItem` (scholarship) |
 | Home | `features/home/data/homeFetcher.ts` | featured courses/scholarships, competition, events, quick links |
 | Profile | `features/profile/data/profileFetchers.ts` | `UserProfileData` (read + patch) |
 
-Swapping a mock for a real call happens **inside the fetcher**; the component and its cache key stay identical. Fetchers branch on `isMockApi` from `frontend/src/shared/lib/apiClient.ts`.
+The network seam is `frontend/src/shared/lib/apiClient.ts` (`apiGet` / `apiPost` / `apiPatch` / `buildQuery`, plus `ApiError`). Fetchers stay thin: the component and its cache key never change.
 
 ---
 
@@ -56,9 +56,9 @@ From `frontend/src/shared/types/entities.ts`:
 
 Type aliases: `CourseLessonStatus` (`locked` / `available` / `completed`, etc.) and `LiveSessionState` (`live` / `upcoming` / `ended`).
 
-Catalog items are typed by `CatalogItem` (`frontend/src/shared/mocks/catalog.ts`), a discriminated shape used by both courses and scholarships with a `type: 'course' | 'scholarship'` field.
+Catalog items are typed by `CatalogItem` (`frontend/src/shared/types/entities.ts`), a discriminated shape used by both courses and scholarships with a `type: 'course' | 'scholarship'` field.
 
-Dashboard-specific projections live in `shared/mocks/dashboard.ts` and cover: `EnrolledCourse`, `LiveSessionInfo`, `DashboardStats`, `UpcomingEvent`, `DashboardNotification`, `NotificationItemData`, `SavedScholarshipItem`, `FavoriteCourseItem`, `CompetitionItem`, `CertificateItem`.
+Dashboard-specific projections live in `frontend/src/features/dashboard/types.ts` and cover: `EnrolledCourse`, `LiveSessionInfo`, `DashboardStats`, `UpcomingEvent`, `DashboardNotification`, `NotificationItemData`, `SavedScholarshipItem`, `FavoriteCourseItem`, `CompetitionItem`, `CertificateItem`.
 
 ---
 
@@ -89,7 +89,7 @@ A conventional resource layout that matches the frontend's reads and mutations.
 Every path below is implemented by `backend/api/urls.py` under `/api/`.
 
 **Response shapes.** Payloads use camelCase keys matching `entities.ts` and each
-feature's `types.ts`. Empty/`None` fields are omitted (mirroring the mocks).
+feature's `types.ts`. Empty/`None` fields are omitted (the backend `compact` helper).
 Errors share one structured shape (`backend/api/errors.py`).
 
 **Current user.** There is no auth yet: `backend/api/learners.py` resolves a

@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import catalogJson from '@/shared/json/catalog.json';
-import type { CatalogItem } from '@/shared/mocks/catalog';
+import type { CatalogItem } from '@/shared/types/entities';
 import type { CatalogFiltersState, CatalogTab, SearchType } from '@/features/catalog/types';
 
 // Non-pillar filters live in local state; `type` and `q` are URL-derived.

@@ -64,12 +64,13 @@ dashboard/
 
 ## How it works
 
-- `DashboardProvider` parses `?view=` / `?state=` at render (never copied into state) and owns:
-  - header + stat chips and async `coursesData` with `isLoadingCourses`,
+- `DashboardProvider` reads the shared dashboard content from `DashboardContentProvider` (`GET /dashboard/content` + `/dashboard/chambers`) and parses `?view=` / `?state=` at render (never copied into state). It owns:
+  - header + stat chips (hydrated from the content view headers) and async `coursesData` with `isLoadingCourses`,
+  - `unreadCount` derived from the notifications call,
   - five chamber states: `activeWorkspaceCourse`, `isLiveClassroomOpen`, `selectedScholarship`, `selectedCompetition`, `previewCertificateItem`,
   - all open/close/select actions and `handleNotificationAction`, which routes a notification type to the right chamber or course route.
-- `dashboardContext.ts` also exposes derived constants (`LIVE_COURSE`, `FULL_PAGE_VIEWS`, `SINGLE_COLUMN_VIEWS`, `SPOTLIGHT`, `CHALLENGE_ITEM`, `SUB_NAV_VIEWS`, `UNREAD_COUNT`, hydrated `VIEW_HEADERS`).
-- `DashboardMain` chooses full-page, single-column, or two-column layout from `dashboardViews.json`.
+- `dashboardContext.ts` keeps only pure UI constants (`SUB_NAV_VIEWS`) and the `buildViewHeaders` hydrator; `DashboardContentContext.ts` exposes `content` + `chambers` via `useDashboardContent()`.
+- `DashboardMain` chooses full-page, single-column, or two-column layout from `content.views.fullPageViews` / `singleColumnViews`.
 
 ### RTL sidebar rule
 `DesktopDashboardSidebar` is **Child #1** in the RTL flex row, so it renders on the far right. Reversing the order pushes it to the left.
@@ -81,12 +82,9 @@ Every student action opens a chamber: `CourseWorkspaceModal` (resume learning), 
 
 | Source | Provides |
 | :--- | :--- |
-| `@/shared/json/dashboardViews.json` | view headers/chips, `liveCard`, `fullPageViews`, single-column lists, spotlight, challenge |
-| `@/shared/json/dashboardChambers.json` | chamber content (workspace, classroom, arena, application) |
-| `@/shared/json/dashboardNotifications.json` | fallback notification payloads |
+| `data/dashboardContentFetcher.ts` | `GET /dashboard/content` (view headers, hero cards, filter chips, notification targets) + `GET /dashboard/chambers` |
 | `@/shared/json/dashboardNav.json` | sidebar/sub-nav items via `@/shared/lib/navigation` |
-| `@/shared/mocks/dashboard` (from `mockDashboard.json`) | enrolled courses, stats, events, saved, favorites, competitions, certificates, notifications (mock mode) |
-| `data/dashboardFetchers.ts` | per-section fetchers under `['dashboard', '…']`; live mode calls the matching `/dashboard/*` endpoints |
+| `data/dashboardFetchers.ts` | per-section fetchers under `['dashboard', '…']` calling the matching `/dashboard/*` endpoints |
 
 Cache keys are namespace-prefixed, e.g. `['dashboard', 'stats']`, `['dashboard', 'courses-list']`, `['dashboard', 'notifications-view']`; invalidating `['dashboard']` marks them all stale.
 

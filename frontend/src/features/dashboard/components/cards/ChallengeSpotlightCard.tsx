@@ -2,24 +2,24 @@ import React from 'react';
 import { Trophy } from 'lucide-react';
 import { CountdownDigits } from '@/shared/components/Banners/CountdownDigits';
 import { useCountdown } from '@/shared/hooks/useCountdown';
-import dashboardViewsJson from '@/shared/json/dashboardViews.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface ChallengeSpotlightCardProps {
   onEnter?: () => void;
 }
-
-const CARD = dashboardViewsJson.challengeCard;
 
 /**
  * Gold priority spotlight: the annual challenge with a live countdown,
  * the dashboard twin of the home competition banner.
  */
 export const ChallengeSpotlightCard: React.FC<ChallengeSpotlightCardProps> = ({ onEnter }) => {
+  const { content } = useDashboardContent();
+  const card = content.views.challengeCard;
   const timeLeft = useCountdown({
-    days: CARD.days,
-    hours: CARD.hours,
-    minutes: CARD.minutes,
-    seconds: CARD.seconds,
+    days: card.days,
+    hours: card.hours,
+    minutes: card.minutes,
+    seconds: card.seconds,
   });
 
   return (
@@ -30,7 +30,7 @@ export const ChallengeSpotlightCard: React.FC<ChallengeSpotlightCardProps> = ({ 
       {/* Challenge tag */}
       <div className="dash-hero-tag dash-hero-tag-gold">
         <span className="size-2 rounded-full bg-gold-400 animate-ping shrink-0" />
-        <span className="dash-hero-tag-label-gold">{CARD.badge}</span>
+        <span className="dash-hero-tag-label-gold">{card.badge}</span>
       </div>
 
       {/* Title + description */}
@@ -47,8 +47,8 @@ export const ChallengeSpotlightCard: React.FC<ChallengeSpotlightCardProps> = ({ 
         </div>
 
         <div className="dash-hero-text">
-          <h3 className="dash-hero-title">{CARD.title}</h3>
-          <p className="dash-hero-sub">{CARD.description}</p>
+          <h3 className="dash-hero-title">{card.title}</h3>
+          <p className="dash-hero-sub">{card.description}</p>
         </div>
       </div>
 
@@ -63,7 +63,7 @@ export const ChallengeSpotlightCard: React.FC<ChallengeSpotlightCardProps> = ({ 
           className="btn-gold btn-attention w-full md:w-auto px-6 py-3 text-sm md:text-base"
         >
           <Trophy size={18} />
-          <span>{CARD.ctaLabel}</span>
+          <span>{card.ctaLabel}</span>
         </button>
       </div>
     </div>

@@ -16,7 +16,7 @@ The React + TypeScript + Vite application for Khawarizm Academy: an Arabic-first
 | Styling | Tailwind CSS v4 (`@theme` tokens) + plain-CSS concept classes |
 | Routing | A custom, data-driven router in `src/app/` (no router library) |
 | Icons | lucide-react exclusively |
-| Data | In-memory SWR cache (`useCachedData` + `dataCacheManager`) over mock fetchers |
+| Data | In-memory SWR cache (`useCachedData` + `dataCacheManager`) over REST fetchers |
 | Localization | English internal keys + Arabic dictionary (`shared/json/localization.json`) |
 
 ---
@@ -42,10 +42,9 @@ npm run dev        # http://localhost:5173
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
-VITE_USE_MOCK_API=true
 ```
 
-With `VITE_USE_MOCK_API=true` the app reads from `src/shared/mocks/`. Swapping to a live API happens inside each feature's fetcher, not in components. See [`../docs/07-backend-contract.md`](../docs/07-backend-contract.md).
+The app is fully API-driven and needs the Django backend running. Every feature fetcher calls the API through `shared/lib/apiClient.ts`; components only ever read the cache. See [`../docs/07-backend-contract.md`](../docs/07-backend-contract.md).
 
 ---
 
@@ -58,7 +57,7 @@ src/
 ├── index.css                @import "./styles/globals.css"
 ├── app/                     router, route table, layouts, app-level pages
 ├── features/                one folder per feature (+ its README)
-├── shared/                  components, hooks, lib, json, mocks, types
+├── shared/                  components, hooks, lib, json, types
 ├── styles/                  tokens.css + globals.css
 ├── assets/brand/            source/ + generated/
 └── scripts/                 brand asset generation

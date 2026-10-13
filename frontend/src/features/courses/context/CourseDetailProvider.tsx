@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@/app/routerContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
-import { fetchCourseDetail, getStartedLessonId } from '@/features/courses/data/courseFetchers';
+import { fetchCourseDetail } from '@/features/courses/data/courseFetchers';
 import { courseCopy } from '@/features/courses/data/courseCopy';
 import { courseProgress, flattenLessons, seedCompletedLessonIds } from '@/features/courses/data/coursePath';
 import type { CourseDetail } from '@/shared/types/entities';
@@ -27,8 +27,8 @@ export const CourseDetailProvider: React.FC<{ slug: string; children: React.Reac
     { keepPreviousData: true, staleTime: 10 * 60 * 1000, cacheTime: 30 * 60 * 1000 }
   );
 
-  // The fetched detail carries the resume point; the mock seed is a fallback.
-  const startedLessonId = course?.startedLessonId ?? getStartedLessonId(slug);
+  // The fetched detail carries the resume point for returning learners.
+  const startedLessonId = course?.startedLessonId ?? '';
 
   /** Seed-based resume progress, so "استمر" already shows a real percentage. */
   const progress = useMemo(() => {

@@ -1,6 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Competition, Course, EventItem, Scholarship } from '@/shared/types/entities';
-import type { QuickLink } from '@/shared/mocks/homepage';
+import type { Competition, Course, EventItem, Scholarship, QuickLink } from '@/shared/types/entities';
 
 export type CatalogSearchType = 'course' | 'scholarship' | 'all';
 

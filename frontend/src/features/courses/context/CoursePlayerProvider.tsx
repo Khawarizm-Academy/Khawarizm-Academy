@@ -3,7 +3,6 @@ import { useCachedData } from '@/shared/hooks/useCachedData';
 import {
   fetchCourseDetail,
   fetchCourseProblems,
-  getStartedLessonId,
 } from '@/features/courses/data/courseFetchers';
 import { courseCopy } from '@/features/courses/data/courseCopy';
 import {
@@ -44,8 +43,8 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
   });
   const problemList = useMemo(() => problems ?? [], [problems]);
 
-  // The fetched detail carries the resume point; the mock seed is a fallback.
-  const startedLessonId = course?.startedLessonId ?? getStartedLessonId(slug);
+  // The fetched detail carries the resume point for returning learners.
+  const startedLessonId = course?.startedLessonId ?? '';
   const ordered = useMemo(() => (course ? flattenLessons(course.modules) : []), [course]);
 
   // Seed the resume point the moment the detail arrives. Adjusting state during

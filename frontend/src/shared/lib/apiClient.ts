@@ -1,15 +1,11 @@
 /**
  * Thin fetch wrapper for the Khawarizm Academy API.
  *
- * The app reads from the in-repo mocks by default. Setting
- * `VITE_USE_MOCK_API=false` routes the same feature fetchers to the Django
- * backend at `VITE_API_BASE_URL`, so no component has to change.
+ * The app is fully API-driven — there are no mocks. Every feature fetcher goes
+ * through these helpers against `VITE_API_BASE_URL`.
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
-
-/** True while features should read from the local mocks. */
-export const isMockApi = (import.meta.env.VITE_USE_MOCK_API ?? 'true') !== 'false';
 
 /** Error carrying the HTTP status, so callers can special-case a 404. */
 export class ApiError extends Error {

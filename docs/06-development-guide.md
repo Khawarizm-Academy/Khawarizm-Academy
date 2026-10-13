@@ -45,10 +45,9 @@ npx eslint src     # zero warnings
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
-VITE_USE_MOCK_API=true
 ```
 
-With `VITE_USE_MOCK_API=true`, the app reads from the shared mock modules instead of a live backend. See [07 · Backend Contract](07-backend-contract.md).
+The app is **fully API-driven** — a running backend is required. See [07 · Backend Contract](07-backend-contract.md).
 
 ---
 
@@ -75,8 +74,8 @@ Write the obvious version. If a new teammate would pause on a line, rewrite it. 
 
 Allowed `if`s: early returns for genuinely different work (`if (!canvas) return`), loading/empty/error branches, and feature guards that cannot be expressed as data.
 
-### 4.4 Static data lives in `src/shared/json/`
-Every list, label, record, and config map goes in a JSON file. JSON cannot hold a component or a type, so a `.ts` beside it may only import the JSON, add a type/cast, and hydrate names into components.
+### 4.4 Static presentation data lives in `src/shared/json/`
+Every route, nav item, label, and config map goes in a JSON file. JSON cannot hold a component or a type, so a `.ts` beside it may only import the JSON, add a type/cast, and hydrate names into components. **Record data does not live here** — it is fetched from the backend API (see [07](07-backend-contract.md)).
 
 ### 4.5 One source of truth
 If a label, path, or list appears in two files, one is wrong. Before typing a literal, check whether it already exists in a config or helper. **Class strings are values too** — the same utility run twice becomes a concept class.
@@ -241,7 +240,7 @@ export const MyFeaturePage: React.FC = () => {
 - [ ] Desktop (1280px) renders without overflow; mobile (390px) has ≥ 44px targets.
 - [ ] Every comment is one line and explains *why*.
 - [ ] No new `if`/`else`/`switch` chain where a lookup would do.
-- [ ] New static data is in `src/shared/json/`.
+- [ ] New static presentation config is in `src/shared/json/`; record data comes from the API.
 - [ ] Desktop and mobile share one component (or a `views/<Component>/` split).
 - [ ] Casts live at the JSON boundary.
 - [ ] Navigating back/forward restores scroll; cold loads skeleton once; cached returns are instant.

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from '@/app/routerContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
-import { fetchHome, HOME_MOCK_PAYLOAD, type HomePayload } from '@/features/home/data/homeFetcher';
+import { PageSkeleton } from '@/shared/components/Loading/PageSkeleton';
+import { fetchHome, type HomePayload } from '@/features/home/data/homeFetcher';
 import { HomeContext } from '@/features/home/context/homeContext';
 import type { CatalogSearchType, HomeContextValue } from '@/features/home/context/homeContext';
 
@@ -16,16 +17,19 @@ const TAB_BY_SEARCH_TYPE: Record<CatalogSearchType, string> = {
 export const HomeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
 
-  // One cached payload for all home rails (mock or live).
-  const { data } = useCachedData<HomePayload>(['home-content'], fetchHome, {
-    initialData: HOME_MOCK_PAYLOAD,
+  // One cached payload for all home rails.
+  const { data: home, isLoading } = useCachedData<HomePayload>(['home-content'], fetchHome, {
     staleTime: 10 * 60 * 1000,
   });
-  const home = data ?? HOME_MOCK_PAYLOAD;
 
   const submitSearch = (query: string, type: CatalogSearchType) => {
     navigate(`/catalog?type=${TAB_BY_SEARCH_TYPE[type]}&q=${encodeURIComponent(query)}`);
   };
+
+  // The home rails are one payload; show the page skeleton until it arrives.
+  if (isLoading || !home) {
+    return <PageSkeleton variant="home" />;
+  }
 
   const value: HomeContextValue = {
     coursesData: home.courses,
