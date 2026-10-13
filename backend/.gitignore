@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Local database (seeded per machine)
+db.sqlite3
+db.sqlite3-journal
+
+# Static collected by collectstatic
+/staticfiles/
+
+# Local env
+.env

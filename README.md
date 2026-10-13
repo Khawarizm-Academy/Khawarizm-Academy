@@ -55,6 +55,13 @@ Each feature owns a README inside its folder — see the [feature directory](doc
 
 There is intentionally no global state library: state is URL-derived, page-scoped via context, or cached through the shared SWR layer.
 
+**Backend** (`backend/`)
+
+- **[Django 6](https://www.djangoproject.com/)** + **[Django REST Framework](https://www.django-rest-framework.org/)** — one thin view module per feature
+- **SQLite** via the Django ORM, seeded from the frontend mocks
+- **django-cors-headers** — an origin allow-list for the SPA
+- Returns the same camelCase JSON shapes as the mocks, so the frontend can switch with `VITE_USE_MOCK_API` alone
+
 ---
 
 ## Repository layout
@@ -71,6 +78,11 @@ Khawarizm-Academy/
 │   │   └── scripts/          brand asset generation
 │   ├── public/               static files (favicons, og-image)
 │   └── README.md             frontend entry point
+├── backend/                  Django + DRF + SQLite API (mocks → real data)
+│   ├── config/               settings, URLs, WSGI/ASGI
+│   ├── academy/              models, choices, seeds, seed_data command
+│   ├── api/                  feature-grouped views + serializers
+│   └── README.md             backend entry point
 ├── docs/                     design system, architecture, and guides
 ├── .agents/skills/           agent playbooks for working on the project
 ├── Designs/                  design references (mockups + design code)
@@ -85,6 +97,7 @@ Khawarizm-Academy/
 
 - [Node.js](https://nodejs.org/) 18+
 - npm, pnpm, or yarn
+- [Python](https://www.python.org/) 3.11+ — only for the backend (optional; the frontend defaults to mocks)
 
 ### Run it
 
@@ -95,6 +108,21 @@ cd Khawarizm-Academy/frontend
 npm install
 npm run dev        # opens http://localhost:5173
 ```
+
+The frontend runs on its in-repo mocks by default — no backend needed for the
+demo. To run against the real API instead:
+
+```bash
+cd ../backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_data
+python manage.py runserver 127.0.0.1:8000
+```
+
+Then set `VITE_USE_MOCK_API=false` in `frontend/.env` (base URL default:
+`http://localhost:8000/api`). See [`backend/README.md`](backend/README.md).
 
 ### Commands
 

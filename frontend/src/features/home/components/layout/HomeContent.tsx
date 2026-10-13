@@ -2,14 +2,6 @@ import React from 'react';
 import { CATALOG_COURSES_ROUTE, CATALOG_SCHOLARSHIPS_ROUTE, COURSE_LANDING_ROUTE } from '@/shared/lib/navigation';
 import { CompetitionBanner } from '@/shared/components/Banners/CompetitionBanner';
 import { EventSection } from '@/shared/components/Events/EventSection';
-import {
-  mockCompetitionDesktop,
-  mockCompetitionMobile,
-  mockEventDesktopFeatured,
-  mockEventDesktopWorkshop,
-  mockEventMobile,
-  quickLinks,
-} from '@/shared/mocks/homepage';
 import { useHome } from '@/features/home/context/homeContext';
 import { HeroSection } from '@/features/home/components/hero/HeroSection';
 import { QuickAccessRail } from '@/features/home/components/chrome/QuickAccessRail';
@@ -18,7 +10,18 @@ import { SurfaceSlot } from '@/features/home/components/layout/SurfaceSlot';
 
 /** All five home sections, each mounting both surfaces through one SurfaceSlot. */
 export const HomeContent: React.FC = () => {
-  const { coursesData, scholarshipsData, navigateTo, submitSearch } = useHome();
+  const {
+    coursesData,
+    scholarshipsData,
+    quickLinks,
+    competitionMobile,
+    competitionDesktop,
+    eventMobile,
+    eventDesktopFeatured,
+    eventDesktopWorkshop,
+    navigateTo,
+    submitSearch,
+  } = useHome();
 
   return (
     <main className="content-container">
@@ -43,14 +46,14 @@ export const HomeContent: React.FC = () => {
           desktop={
             <CompetitionBanner
               variant="desktop"
-              competition={mockCompetitionDesktop}
+              competition={competitionDesktop}
               onRegister={() => alert('تم فتح نافذة التسجيل في تحدي الخوارزميات السنوي!')}
             />
           }
           mobile={
             <CompetitionBanner
               variant="mobile"
-              competition={mockCompetitionMobile}
+              competition={competitionMobile}
               onRegister={() => alert('تم فتح نافذة التسجيل في تحدي الخوارزميات الشتوي!')}
             />
           }
@@ -91,11 +94,11 @@ export const HomeContent: React.FC = () => {
           desktop={
             <EventSection
               variant="desktop"
-              featuredEvent={mockEventDesktopFeatured}
-              workshopEvent={mockEventDesktopWorkshop}
+              featuredEvent={eventDesktopFeatured}
+              workshopEvent={eventDesktopWorkshop}
             />
           }
-          mobile={<EventSection variant="mobile" featuredEvent={mockEventMobile} />}
+          mobile={<EventSection variant="mobile" featuredEvent={eventMobile} />}
         />
       </div>
     </main>

@@ -44,7 +44,8 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
   });
   const problemList = useMemo(() => problems ?? [], [problems]);
 
-  const startedLessonId = getStartedLessonId(slug);
+  // The fetched detail carries the resume point; the mock seed is a fallback.
+  const startedLessonId = course?.startedLessonId ?? getStartedLessonId(slug);
   const ordered = useMemo(() => (course ? flattenLessons(course.modules) : []), [course]);
 
   // Seed the resume point the moment the detail arrives. Adjusting state during

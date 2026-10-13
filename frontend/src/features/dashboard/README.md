@@ -85,8 +85,8 @@ Every student action opens a chamber: `CourseWorkspaceModal` (resume learning), 
 | `@/shared/json/dashboardChambers.json` | chamber content (workspace, classroom, arena, application) |
 | `@/shared/json/dashboardNotifications.json` | fallback notification payloads |
 | `@/shared/json/dashboardNav.json` | sidebar/sub-nav items via `@/shared/lib/navigation` |
-| `@/shared/mocks/dashboard` (from `mockDashboard.json`) | enrolled courses, stats, events, saved, favorites, competitions, certificates, notifications |
-| `data/dashboardFetchers.ts` | per-section fetchers, each under `['dashboard', '…']` |
+| `@/shared/mocks/dashboard` (from `mockDashboard.json`) | enrolled courses, stats, events, saved, favorites, competitions, certificates, notifications (mock mode) |
+| `data/dashboardFetchers.ts` | per-section fetchers under `['dashboard', '…']`; live mode calls the matching `/dashboard/*` endpoints |
 
 Cache keys are namespace-prefixed, e.g. `['dashboard', 'stats']`, `['dashboard', 'courses-list']`, `['dashboard', 'notifications-view']`; invalidating `['dashboard']` marks them all stale.
 

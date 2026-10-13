@@ -1,10 +1,9 @@
 import React from 'react';
 import { useNavigate } from '@/app/routerContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
-import { mockCourses, mockScholarships } from '@/shared/mocks/homepage';
+import { fetchHome, HOME_MOCK_PAYLOAD, type HomePayload } from '@/features/home/data/homeFetcher';
 import { HomeContext } from '@/features/home/context/homeContext';
 import type { CatalogSearchType, HomeContextValue } from '@/features/home/context/homeContext';
-import type { Course, Scholarship } from '@/shared/types/entities';
 
 /** The search type (course|scholarship|all) maps to the catalog's type query. */
 const TAB_BY_SEARCH_TYPE: Record<CatalogSearchType, string> = {
@@ -17,26 +16,26 @@ const TAB_BY_SEARCH_TYPE: Record<CatalogSearchType, string> = {
 export const HomeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
 
-  // Cached data fetchers for the twin rails
-  const { data: coursesData } = useCachedData<Course[]>(
-    ['home-featured-courses'],
-    async () => mockCourses,
-    { initialData: mockCourses, staleTime: 10 * 60 * 1000 }
-  );
-
-  const { data: scholarshipsData } = useCachedData<Scholarship[]>(
-    ['home-featured-scholarships'],
-    async () => mockScholarships,
-    { initialData: mockScholarships, staleTime: 10 * 60 * 1000 }
-  );
+  // One cached payload for all home rails (mock or live).
+  const { data } = useCachedData<HomePayload>(['home-content'], fetchHome, {
+    initialData: HOME_MOCK_PAYLOAD,
+    staleTime: 10 * 60 * 1000,
+  });
+  const home = data ?? HOME_MOCK_PAYLOAD;
 
   const submitSearch = (query: string, type: CatalogSearchType) => {
     navigate(`/catalog?type=${TAB_BY_SEARCH_TYPE[type]}&q=${encodeURIComponent(query)}`);
   };
 
   const value: HomeContextValue = {
-    coursesData: coursesData || mockCourses,
-    scholarshipsData: scholarshipsData || mockScholarships,
+    coursesData: home.courses,
+    scholarshipsData: home.scholarships,
+    quickLinks: home.quickLinks,
+    competitionMobile: home.competitionMobile,
+    competitionDesktop: home.competitionDesktop,
+    eventMobile: home.eventMobile,
+    eventDesktopFeatured: home.eventDesktopFeatured,
+    eventDesktopWorkshop: home.eventDesktopWorkshop,
     navigateTo: navigate,
     submitSearch,
   };

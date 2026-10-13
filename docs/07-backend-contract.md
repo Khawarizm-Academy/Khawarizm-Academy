@@ -1,6 +1,12 @@
 # 07 · Backend Contract
 
-The frontend runs on mocks today, behind a single switch. This document describes the environment switch, the domain entities, the data flows the UI expects, and the proposed REST surface that will replace the mocks.
+The frontend runs on mocks **by default**, behind a single switch. A Django + DRF
++ SQLite service in `backend/` now implements the live side of this contract, so
+this document is both the specification and the reference for what is built. See
+[`backend/README.md`](../backend/README.md) for how to run it.
+
+This page describes the environment switch, the domain entities, the data flows
+the UI expects, and the REST surface that replaces the mocks.
 
 ---
 
@@ -13,20 +19,21 @@ VITE_API_BASE_URL=http://localhost:8000/api
 VITE_USE_MOCK_API=true
 ```
 
-- With `VITE_USE_MOCK_API=true`, features read from `frontend/src/shared/mocks/` and feature `data/` fetchers.
-- With it `false`, the same fetchers are expected to call the API at `VITE_API_BASE_URL`. The UI is written against the shapes below, so switching backends should not change components.
+- With `VITE_USE_MOCK_API=true` (the default), features read from `frontend/src/shared/mocks/` and feature `data/` fetchers.
+- With it `false`, the same fetchers call the API at `VITE_API_BASE_URL`. The UI is written against the shapes below, so switching backends does not change components.
 
 **Fetcher seam.** Every feature exposes its data through a small fetcher module; components never call the network directly:
 
 | Feature | Fetcher | Returns |
 | :--- | :--- | :--- |
-| Catalog | `useCachedData` + `shared/mocks/catalog.ts` | `CatalogItem[]` |
-| Courses | `features/courses/data/courseFetchers.ts` | `CourseDetail`, `CourseProblem[]` |
+| Catalog | `features/catalog/data/catalogFetcher.ts` | `CatalogItem[]` (server-side filter/sort/paginate) |
+| Courses | `features/courses/data/courseFetchers.ts` | `CourseDetail`, `CourseProblem[]`, related, certificate |
 | Dashboard | `features/dashboard/data/dashboardFetchers.ts` | stats, enrolled courses, notifications, certificates, … |
-| Scholarships | `useCachedData` + `shared/mocks/catalog.ts` | one `CatalogItem` (scholarship) |
-| Home | `shared/mocks/homepage.ts` | featured courses/scholarships, competition, events |
+| Scholarships | `features/scholarships/pages/ScholarshipDetailPage.tsx` + catalog fetcher | one `CatalogItem` (scholarship) |
+| Home | `features/home/data/homeFetcher.ts` | featured courses/scholarships, competition, events, quick links |
+| Profile | `features/profile/data/profileFetchers.ts` | `UserProfileData` (read + patch) |
 
-Swapping a mock for a real call happens **inside the fetcher**; the component and its cache key stay identical.
+Swapping a mock for a real call happens **inside the fetcher**; the component and its cache key stay identical. Fetchers branch on `isMockApi` from `frontend/src/shared/lib/apiClient.ts`.
 
 ---
 
@@ -76,9 +83,17 @@ Dashboard-specific projections live in `shared/mocks/dashboard.ts` and cover: `E
 
 ---
 
-## 4. Proposed REST surface
+## 4. REST surface
 
 A conventional resource layout that matches the frontend's reads and mutations.
+Every path below is implemented by `backend/api/urls.py` under `/api/`.
+
+**Response shapes.** Payloads use camelCase keys matching `entities.ts` and each
+feature's `types.ts`. Empty/`None` fields are omitted (mirroring the mocks).
+Errors share one structured shape (`backend/api/errors.py`).
+
+**Current user.** There is no auth yet: `backend/api/learners.py` resolves a
+single seeded demo learner. The `auth/*` routes are stubs for a later flow.
 
 ### Auth
 
@@ -93,10 +108,12 @@ A conventional resource layout that matches the frontend's reads and mutations.
 
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
-| `GET` | `/catalog` | Paged, filterable list (`type`, `q`, `field`, `level`, `language`, `cost`, `country`, `status`, `sort`, `page`). |
+| `GET` | `/catalog` | Paged, filterable list (`type`, `q`, `field`, `level`, `language`, `cost`, `country`, `status`, `sort`, `page`, `ids`). |
 | `GET` | `/catalog/:slug` | Single course or scholarship detail. |
 | `GET` | `/courses/:slug` | Course detail (modules, lessons, sessions, exam). |
 | `GET` | `/courses/:slug/problems` | Practice problems. |
+| `GET` | `/problems` | The shared practice set. |
+| `GET` | `/courses/:slug/related` | Related-course rail. |
 | `POST` | `/courses/:slug/enroll` | Enroll the learner. |
 | `POST` | `/courses/:slug/progress` | Sync completed lessons / progress. |
 | `GET` | `/courses/:slug/certificate` | Certificate metadata. |
@@ -119,11 +136,14 @@ A conventional resource layout that matches the frontend's reads and mutations.
 | `GET` | `/dashboard/competitions` | Competitions + certificates. |
 | `GET` | `/dashboard/notifications` | Notifications list. |
 | `POST` | `/dashboard/notifications/:id/read` | Mark one read. |
+| `GET` | `/dashboard/chambers` | Action-chamber copy/counters. |
+| `GET` | `/dashboard/content` | Dashboard view content blocks. |
 
 ### Content & profile
 
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
+| `GET` | `/home` | Home rails: featured courses, scholarships, competition, events, quick links. |
 | `GET` | `/events` | Events & seminars list. |
 | `GET` | `/competitions` | Competitions list. |
 | `GET` | `/profile` | Profile preferences. |

@@ -56,6 +56,8 @@ export interface CourseModule {
 /** The full landing-page picture of one course, merged from base + seed data. */
 export interface CourseDetail {
   id: string;
+  /** Lesson the student left off at; lessons before it count as completed. */
+  startedLessonId?: string;
   title: string;
   category: string;
   categorySlug: string;

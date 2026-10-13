@@ -35,6 +35,8 @@ profile/
 │   │   ├── ToggleSwitch.tsx         on/off control
 │   │   └── ProfileSaveActions.tsx   save/reset actions (rendered for both surfaces)
 │   └── overlays/ProfileToast.tsx    transient save feedback
+├── data/
+│   └── profileFetchers.ts           mock/live profile read + save
 ├── context/
 │   ├── profileContext.ts            context + useProfile()
 │   └── ProfileProvider.tsx          owns editable state + save/reset
@@ -45,7 +47,7 @@ profile/
 
 ## How it works
 
-- `ProfileProvider` owns `profile` (seeded from `INITIAL_USER_PROFILE`), `isSaving`, and `showToast`, and exposes `changeField`, `toggleInterest`, `toggleNotification`, `changeAvatar` (object URL from a file), `saveChanges` (700ms mock save → toast for 3.5s), and `resetProfile`.
+- `ProfileProvider` owns `profile` (`INITIAL_USER_PROFILE` in mock mode, `GET /profile` in live mode), `isSaving`, and `showToast`, and exposes `changeField`, `toggleInterest`, `toggleNotification`, `changeAvatar` (object URL from a file), `saveChanges` (700ms mock delay, or a real `PATCH /profile` → toast for 3.5s), and `resetProfile`.
 - `ProfileContent` derives `currentLevelLabel` and `activeReminders` from the profile.
 - `ProfileSaveActions` is deliberately rendered twice with surface classes (`hidden lg:flex` desktop anchor / `lg:hidden` mobile footer) so the taller summary card never pushes the buttons down.
 - The UI is **mounted inside the dashboard** at `?view=profile`; the `/profile` route only redirects there. There is no separate profile page layout.
@@ -55,11 +57,14 @@ profile/
 | Source | Provides |
 | :--- | :--- |
 | `types.ts` | `INITIAL_USER_PROFILE`, `AVAILABLE_INTERESTS`, profile types |
+| `data/profileFetchers.ts` | `GET`/`PATCH /profile` in live mode; mock seed otherwise |
 | `@/shared/components/Form/Dropdown` | language / timezone selects |
 | `@/shared/components/Controls/SlidingSegmentedControl` | learning-level switch |
 | `@/shared/lib/navigation` | `NAV_TARGETS.profile` (via `ProfilePage`) |
 
-There is no persistence yet: edits live in provider state and are "saved" with a mock delay.
+In mock mode edits live in provider state and are "saved" with a mock delay; in
+live mode `saveChanges` PATCHes `/profile` and the provider loads the saved row on
+mount. The backend has no auth yet — it targets the seeded demo learner.
 
 ## Notes
 

@@ -27,7 +27,8 @@ export const CourseDetailProvider: React.FC<{ slug: string; children: React.Reac
     { keepPreviousData: true, staleTime: 10 * 60 * 1000, cacheTime: 30 * 60 * 1000 }
   );
 
-  const startedLessonId = getStartedLessonId(slug);
+  // The fetched detail carries the resume point; the mock seed is a fallback.
+  const startedLessonId = course?.startedLessonId ?? getStartedLessonId(slug);
 
   /** Seed-based resume progress, so "استمر" already shows a real percentage. */
   const progress = useMemo(() => {

@@ -1,11 +1,18 @@
 import { createContext, useContext } from 'react';
-import type { Course, Scholarship } from '@/shared/types/entities';
+import type { Competition, Course, EventItem, Scholarship } from '@/shared/types/entities';
+import type { QuickLink } from '@/shared/mocks/homepage';
 
 export type CatalogSearchType = 'course' | 'scholarship' | 'all';
 
 export interface HomeContextValue {
   coursesData: Course[];
   scholarshipsData: Scholarship[];
+  quickLinks: QuickLink[];
+  competitionMobile: Competition;
+  competitionDesktop: Competition;
+  eventMobile: EventItem;
+  eventDesktopFeatured: EventItem;
+  eventDesktopWorkshop: EventItem;
   navigateTo: (path: string) => void;
   submitSearch: (query: string, type: CatalogSearchType) => void;
 }

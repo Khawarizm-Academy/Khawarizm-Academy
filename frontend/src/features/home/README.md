@@ -53,7 +53,9 @@ home/
 
 | Source | Provides |
 | :--- | :--- |
-| `@/shared/mocks/homepage` | featured `mockCourses`, `mockScholarships`, competition (desktop/mobile), events (desktop featured/workshop, mobile), `quickLinks` |
+| `@/shared/mocks/homepage` | featured `mockCourses`, `mockScholarships`, competition (desktop/mobile), events (desktop featured/workshop, mobile), `quickLinks` (mock mode) |
+| `data/homeFetcher.ts` | one payload — mock rails, or live `GET /home` when `VITE_USE_MOCK_API=false` |
+| `context/HomeProvider.tsx` | loads the payload once and shares it with every home section |
 | `@/shared/hooks/useCachedData` | cached featured data |
 | `@/shared/hooks/useHorizontalScroll` | drag/wheel scrolling for the mobile rails |
 | `@/shared/lib/navigation` | `NAV_TARGETS`, `resolveIcon`, route constants |
