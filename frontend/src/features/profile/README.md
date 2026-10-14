@@ -64,7 +64,7 @@ profile/
 
 Edits live in provider state until saved; `saveChanges` PATCHes `/profile` and the
 provider loads the saved row on mount. The backend has no auth yet — it targets
-the seeded demo learner.
+the demo learner (created on first request).
 
 ## Notes
 

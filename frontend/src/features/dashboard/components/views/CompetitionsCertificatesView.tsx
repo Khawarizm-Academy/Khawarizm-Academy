@@ -8,6 +8,7 @@ import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSeg
 import { fetchCompetitions, fetchCertificates } from '@/features/dashboard/data/dashboardFetchers';
 import type { CompetitionItem, CertificateItem } from '@/features/dashboard/types';
 import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
+import { DashboardSectionEmpty } from '@/features/dashboard/components/states/DashboardSectionEmpty';
 export type { CompetitionItem, CertificateItem };
 
 interface CompetitionsCertificatesViewProps {
@@ -80,6 +81,12 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
       <div className="flex flex-col gap-3">
         {isLoadingCompetitions ? (
           <DataSectionSkeleton variant="list" count={3} />
+        ) : competitions.length === 0 ? (
+          <DashboardSectionEmpty
+            icon={<Trophy size={28} className="text-gold-400" />}
+            title="لا توجد مسابقات أو تحديات بعد"
+            text="عند انضمامك إلى تحدي أو مسابقة ستظهر تفاصيلها هنا."
+          />
         ) : (
           competitions.map((comp, idx) => (
             <div
@@ -124,6 +131,14 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {isLoadingCertificates ? (
             <DataSectionSkeleton variant="grid" count={2} className="md:col-span-2" />
+          ) : certificates.length === 0 ? (
+            <div className="md:col-span-2">
+              <DashboardSectionEmpty
+                icon={<Award size={28} className="text-gold-400" />}
+                title="لا توجد شهادات مكتملة بعد"
+                text="أكملي دوراتك للحصول على شهادات رسمية معتمدة تظهر هنا."
+              />
+            </div>
           ) : (
             certificates.map((cert, idx) => (
               <div

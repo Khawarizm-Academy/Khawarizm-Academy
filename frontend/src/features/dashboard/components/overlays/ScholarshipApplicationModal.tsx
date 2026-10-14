@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Award, CheckCircle2, Clock, FileCheck, Send, X, Sparkles, type LucideIcon } from 'lucide-react';
 import type { SavedScholarshipItem } from '@/features/dashboard/components/views/SavedScholarshipsView';
-import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface ScholarshipApplicationModalProps {
   isOpen: boolean;
@@ -15,6 +14,9 @@ interface ScholarshipCheck {
   icon: string;
   status: string;
 }
+
+/** Eligibility rows pulled from the learner profile (empty until provided). */
+const CHECKS: ScholarshipCheck[] = [];
 
 /** Deadline chip + clock tone by urgency. */
 const DEADLINE = {
@@ -38,8 +40,6 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   onClose,
   scholarship,
 }) => {
-  const { chambers } = useDashboardContent();
-  const CHECKS: ScholarshipCheck[] = chambers.scholarshipChecks;
   const [statement, setStatement] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -101,19 +101,23 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
           {/* Automatic profile verification checklist */}
           <div className="space-y-3">
             <h3 className="dash-modal-h3">المستندات والمعايير المطابقة من ملفك الأكاديمي</h3>
-            <div className="space-y-2">
-              {CHECKS.map((check) => {
-                const CheckIcon = CHECK_ICON[check.icon];
-                return (
-                  <div key={check.status} className="dash-check">
-                    <span className="text-slate-200">{checkLabel(check, scholarship)}</span>
-                    <span className="dash-check-ok">
-                      <CheckIcon size={14} /> {check.status}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            {CHECKS.length === 0 ? (
+              <p className="text-slate-500 text-xs py-2">لا توجد مستندات مطابقة بعد.</p>
+            ) : (
+              <div className="space-y-2">
+                {CHECKS.map((check) => {
+                  const CheckIcon = CHECK_ICON[check.icon];
+                  return (
+                    <div key={check.status} className="dash-check">
+                      <span className="text-slate-200">{checkLabel(check, scholarship)}</span>
+                      <span className="dash-check-ok">
+                        <CheckIcon size={14} /> {check.status}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Submission form or success state */}

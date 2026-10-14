@@ -3,8 +3,8 @@ import { useParams } from '@/app/routerContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import { PageSkeleton } from '@/shared/components/Loading/PageSkeleton';
 import { ItemDetailView } from '@/shared/components/Detail/ItemDetailView';
-import { StatePanel } from '@/shared/components/State/StatePanel';
 import { fetchScholarshipDetail } from '@/features/scholarships/data/scholarshipFetchers';
+import { ScholarshipNotFound } from '@/features/scholarships/components/states/ScholarshipNotFound';
 import type { CatalogItem } from '@/shared/types/entities';
 
 export const ScholarshipDetailPage: React.FC = () => {
@@ -25,10 +25,7 @@ export const ScholarshipDetailPage: React.FC = () => {
   if (!item) {
     return (
       <main className="content-container">
-        <StatePanel
-          title="المنحة غير متوفرة"
-          text="لم يتم العثور على هذه المنحة. قد يكون التقديم قد أغلق أو لم تُنشر بعد."
-        />
+        <ScholarshipNotFound />
       </main>
     );
   }

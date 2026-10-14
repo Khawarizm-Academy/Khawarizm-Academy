@@ -9,9 +9,6 @@ from academy.choices import (
     CompetitionStatusColor,
     CourseTrackIcon,
     NotificationType,
-    QuickLinkTone,
-    ScholarshipCheckIcon,
-    ScholarshipCheckKind,
 )
 
 

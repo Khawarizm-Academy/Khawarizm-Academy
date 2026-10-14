@@ -1,0 +1,85 @@
+{
+  "views": {
+    "headers": {
+      "main": {
+        "title": "مرحبًا، أحمد",
+        "subtitle": "تابع تقدمك الدراسي ومساراتك التعليمية من هنا.",
+        "chips": [
+          { "icon": "Trophy", "label": "تحدياتك ومسابقاتك", "iconColor": "text-gold-400", "view": "achievements" },
+          { "icon": "GraduationCap", "label": "منحك المحفوظة", "iconColor": "text-blue-400", "view": "saved" },
+          { "icon": "BookOpen", "label": "دوراتك المسجّلة", "iconColor": "text-blue-400", "view": "enrolled" }
+        ]
+      },
+      "live": {
+        "title": "الجلسات المباشرة",
+        "subtitle": "انضم للفصول الافتراضية التفاعلية مع المعلمين",
+        "chips": [
+          { "icon": "Trophy", "label": "تحدياتك ومسابقاتك", "iconColor": "text-gold-400", "view": "achievements" },
+          { "icon": "BookOpen", "label": "دوراتك المسجّلة", "iconColor": "text-blue-400", "view": "enrolled" }
+        ]
+      },
+      "saved": {
+        "title": "لوحتي المحفوظة",
+        "subtitle": "تابع المنح الدراسية والدورات المفضلة والتقديمات القادمة",
+        "chips": [
+          { "icon": "GraduationCap", "label": "منحك المحفوظة", "iconColor": "text-gold-400", "view": "saved" },
+          { "icon": "BookOpen", "label": "دوراتك المفضلة", "iconColor": "text-blue-400", "view": "saved" }
+        ]
+      },
+      "achievements": {
+        "title": "إنجازاتي وتحدياتي",
+        "subtitle": "سجل التحديات البرمجية والشهادات الرسمية المعتمدة",
+        "chips": [
+          { "icon": "Trophy", "label": "تحدياتك النشطة", "iconColor": "text-gold-400", "view": "achievements" },
+          { "icon": "Award", "label": "شهاداتك الموثقة", "iconColor": "text-blue-400", "view": "achievements" }
+        ]
+      },
+      "notifications": {
+        "title": "مركز الإشعارات",
+        "subtitle": "تابع كل تنبيهاتك ورسائلك هنا"
+      },
+      "enrolled": {
+        "title": "دوراتي المسجّلة",
+        "subtitle": "تابع مساراتك الأكاديمية والدروس المكتملة وجلساتك المباشرة",
+        "chips": [
+          { "icon": "BookOpen", "label": "دوراتك المسجلة", "iconColor": "text-blue-400", "view": "enrolled" },
+          { "icon": "Trophy", "label": "إنجازك الدراسي", "iconColor": "text-gold-400", "view": "enrolled" }
+        ]
+      },
+      "profile": {
+        "title": "الملف الشخصي",
+        "subtitle": "إدارة بياناتك الشخصية، تفضيلات التعلّم، وإعدادات الحساب",
+        "chips": [
+          { "icon": "User", "label": "بيانات الحساب", "iconColor": "text-gold-400" },
+          { "icon": "Sparkles", "label": "مسارات اهتمامك", "iconColor": "text-blue-400" }
+        ]
+      }
+    },
+    "fullPageViews": ["profile", "enrolled", "notifications"],
+    "singleColumnViews": ["notifications", "profile", "enrolled"],
+    "savedTabs": [
+      { "id": "scholarships", "label": "المنح المحفوظة" },
+      { "id": "courses", "label": "الدورات المفضلة" }
+    ],
+    "enrolledFilters": [
+      { "id": "all", "label": "الكل" },
+      { "id": "in-progress", "label": "قيد التقدم" },
+      { "id": "completed", "label": "مكتملة" }
+    ],
+    "enrolledSortOptions": [
+      { "id": "recent", "label": "الأحدث نشاطًا" },
+      { "id": "progress-desc", "label": "الأعلى إنجازًا" },
+      { "id": "alphabetical", "label": "أبجديًا" }
+    ],
+    "competitionFilters": [
+      { "id": "completed", "label": "أكمل المسابقة" },
+      { "id": "active", "label": "لم يحل المسابقة" }
+    ]
+  },
+  "chambers": {
+    "arenaLanguages": [
+      { "id": "python", "label": "Python 3.12" },
+      { "id": "ts", "label": "TypeScript" }
+    ]
+  }
+}

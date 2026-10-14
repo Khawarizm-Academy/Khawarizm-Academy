@@ -16,7 +16,7 @@ The post-login learner workspace. It answers "what do I do next?" and keeps ever
 
 ## Purpose
 
-A single persistent shell — right sidebar (desktop) or pill strip (mobile) plus a main body — that hosts several learner views: enrolled courses, a prioritized continue/live card, saved scholarships & favorite courses, competitions & certificates, notifications, achievement stats, and the embedded profile. Actions never navigate the learner away; they resolve in in-place modal **chambers**.
+A single persistent shell — right sidebar (desktop) or pill strip (mobile) plus a main body — that hosts several learner views: enrolled courses, saved scholarships & favorite courses, competitions & certificates, notifications, achievement stats, and the embedded profile. Actions never navigate the learner away; they resolve in in-place modal **chambers**. Every section renders an empty state when the backend has no data.
 
 ## Views
 
@@ -24,13 +24,13 @@ A single persistent shell — right sidebar (desktop) or pill strip (mobile) plu
 
 | View | Notes |
 | :--- | :--- |
-| `main` | Default landing: stats, priority cards, upcoming events, spotlight. |
+| `main` | Default landing: stats, enrolled courses, upcoming events. |
 | `enrolled` (alias `courses`) | Enrolled courses with filters + sort + empty state. |
 | `saved` | Saved scholarships & favorite courses. **Icon-only** entry (bookmark); no sidebar item. |
 | `achievements` | Competitions & certificates with toggle pills. |
 | `notifications` | Notifications list; also available as a global drawer. |
 | `profile` | The profile feature's `ProfileView` embedded here. Lights the `profile` tab. |
-| `?state=live` | Swaps hero cards for the live session priority card. |
+| `?state=live` | Labels the `main` courses section as the rest of today's sessions. |
 | `?state=empty` | Renders the empty dashboard state. |
 
 `saved` and `notifications` intentionally resolve to `null` from `getDashboardNavItem` — they are icon-only entry points, not sidebar tabs.
@@ -45,17 +45,16 @@ dashboard/
 │   ├── chrome/                        DesktopDashboardSidebar, DashboardTopBar,
 │   │                                  MobileDashboardTopBar, DashboardSubNavigation,
 │   │                                  DashboardStatsHeader, DashboardStatsSidebar
-│   ├── cards/                         PriorityContinueCard, LiveSessionPriorityCard,
-│   │                                  RadialProgressRing, EnrolledCourseCard, EnrolledCourseRow,
-│   │                                  NotificationListItem, ChallengeSpotlightCard
+│   ├── cards/                         RadialProgressRing, EnrolledCourseCard,
+│   │                                  EnrolledCourseRow, NotificationListItem
 │   ├── views/                         EnrolledCoursesView, SavedScholarshipsView,
 │   │                                  CompetitionsCertificatesView, NotificationsView
 │   ├── overlays/                      CourseWorkspaceModal, LiveClassroomModal,
 │   │                                  CompetitionArenaModal, ScholarshipApplicationModal,
 │   │                                  CertificatePreviewModal, NotificationsDrawer
-│   └── states/EmptyDashboardState.tsx
+│   └── states/                        EmptyDashboardState, DashboardSectionEmpty
 ├── context/                           dashboardContext.ts + DashboardProvider.tsx
-├── data/                              dashboardFetchers.ts, radialRingColors.ts
+├── data/                              dashboardContent.ts, dashboardFetchers.ts, radialRingColors.ts
 ├── hooks/useLiveCountdown.ts          live-session countdown
 ├── types.ts
 ├── dashboard.css
@@ -64,7 +63,7 @@ dashboard/
 
 ## How it works
 
-- `DashboardProvider` reads the shared dashboard content from `DashboardContentProvider` (`GET /dashboard/content` + `/dashboard/chambers`) and parses `?view=` / `?state=` at render (never copied into state). It owns:
+- `DashboardProvider` reads the shared dashboard chrome from `DashboardContentProvider` (static config) and parses `?view=` / `?state=` at render (never copied into state). It owns:
   - header + stat chips (hydrated from the content view headers) and async `coursesData` with `isLoadingCourses`,
   - `unreadCount` derived from the notifications call,
   - five chamber states: `activeWorkspaceCourse`, `isLiveClassroomOpen`, `selectedScholarship`, `selectedCompetition`, `previewCertificateItem`,
@@ -82,7 +81,7 @@ Every student action opens a chamber: `CourseWorkspaceModal` (resume learning), 
 
 | Source | Provides |
 | :--- | :--- |
-| `data/dashboardContentFetcher.ts` | `GET /dashboard/content` (view headers, hero cards, filter chips, notification targets) + `GET /dashboard/chambers` |
+| `@/shared/json/dashboardContent.json` | View headers, page/filter lists and chamber chrome (static, no round-trip) |
 | `@/shared/json/dashboardNav.json` | sidebar/sub-nav items via `@/shared/lib/navigation` |
 | `data/dashboardFetchers.ts` | per-section fetchers under `['dashboard', '…']` calling the matching `/dashboard/*` endpoints |
 
@@ -103,6 +102,7 @@ Cache keys are namespace-prefixed, e.g. `['dashboard', 'stats']`, `['dashboard',
 - `NotificationsDrawer` is also mounted globally in `RootLayout`, so notifications are reachable from every page.
 - The mobile pill strip (`.dash-subnav`) is `lg:hidden`; at `lg+` the sidebar owns navigation.
 - The canvas stays transparent (`.dash-page`) so the global celestial washes show through; chrome matches `.glass-navbar`.
+- With an empty database every data-driven section falls back to `DashboardSectionEmpty` (`.dash-empty-sm`) or `.dash-list-empty`, so the dashboard never shows a permanent skeleton or blank space.
 
 ## Related
 

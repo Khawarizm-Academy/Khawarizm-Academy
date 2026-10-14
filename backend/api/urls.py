@@ -34,8 +34,6 @@ urlpatterns = [
     path("dashboard/competitions", dashboard.dashboard_competitions, name="dashboard-competitions"),
     path("dashboard/notifications", dashboard.dashboard_notifications, name="dashboard-notifications"),
     path("dashboard/notifications/<str:notification_id>/read", dashboard.dashboard_notification_read, name="dashboard-notification-read"),
-    path("dashboard/chambers", dashboard.dashboard_chambers, name="dashboard-chambers"),
-    path("dashboard/content", dashboard.dashboard_content, name="dashboard-content"),
     # Content
     path("home", home.home_view, name="home"),
     path("events", events.events_list, name="events-list"),

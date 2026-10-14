@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, ChevronDown, Lock, Play, PlayCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { courseEmptyStates } from '@/features/courses/data/courseStates';
 import type { CourseLesson, CourseLessonStatus, CourseModule } from '@/shared/types/entities';
 
 interface CurriculumModuleCardProps {
@@ -40,6 +41,9 @@ export const CurriculumModuleCard: React.FC<CurriculumModuleCardProps> = ({
 
       {isOpen && (
         <div className="course-accordion-body animate-fade-in-up">
+          {module.lessons.length === 0 && (
+            <p className="course-empty-row">{courseEmptyStates.module.title}</p>
+          )}
           {module.lessons.map((lesson: CourseLesson) => {
             const status = getStatus(lesson.id);
             const mark = STATUS_MARK[status];

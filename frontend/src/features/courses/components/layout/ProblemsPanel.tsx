@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Lightbulb, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, ClipboardList, Lightbulb, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCoursePlayer } from '@/features/courses/context/coursePlayerContext';
 import { courseCopy } from '@/features/courses/data/courseCopy';
+import { courseEmptyStates } from '@/features/courses/data/courseStates';
+import { CourseSectionEmpty } from '@/features/courses/components/states/CourseSectionEmpty';
 import type { CourseProblemOption } from '@/shared/types/entities';
 
 /** Every practice option renders the same grammar; only the tone changes. */
@@ -42,9 +44,7 @@ export const ProblemsPanel: React.FC = () => {
   const [showHint, setShowHint] = useState(false);
 
   const problem = currentIndex < problems.length ? problems[currentIndex] : null;
-  if (!problem || !activeLesson) return null;
-
-  const isCorrect = selectedId === problem.correctOptionId;
+  const options = problem?.options ?? [];
 
   const moveTo = (index: number) => {
     setCurrentIndex(index);
@@ -52,22 +52,40 @@ export const ProblemsPanel: React.FC = () => {
     setShowHint(false);
   };
 
+  const panelHead = (
+    <div className="player-panel-head">
+      <ClipboardCheck size={16} className="text-blue-400 shrink-0" />
+      <div className="flex flex-col gap-0.5">
+        <h2 className="player-panel-title">{courseCopy.player.problemsTitle}</h2>
+        <span className="text-[11px] text-slate-400 font-body">{courseCopy.player.practiceLabel}</span>
+      </div>
+    </div>
+  );
+
+  if (!activeLesson) return null;
+
+  // No practice set for this lesson yet — show the empty chamber, not a blank panel.
+  if (!problem) {
+    return (
+      <div className="player-panel">
+        {panelHead}
+        <CourseSectionEmpty copy={courseEmptyStates.problems} icon={<ClipboardList size={18} />} />
+      </div>
+    );
+  }
+
+  const isCorrect = selectedId === problem.correctOptionId;
+
   return (
     <div className="player-panel">
-      <div className="player-panel-head">
-        <ClipboardCheck size={16} className="text-blue-400 shrink-0" />
-        <div className="flex flex-col gap-0.5">
-          <h2 className="player-panel-title">{courseCopy.player.problemsTitle}</h2>
-          <span className="text-[11px] text-slate-400 font-body">{courseCopy.player.practiceLabel}</span>
-        </div>
-      </div>
+      {panelHead}
 
       <p className="player-problem-prompt">{problem.prompt}</p>
 
       <pre className="player-code">{problem.code}</pre>
 
       <div className="flex flex-col gap-2.5">
-        {problem.options.map((option: CourseProblemOption, index: number) => {
+        {options.map((option: CourseProblemOption, index: number) => {
           const tone = optionTone(option.id, problem.correctOptionId, selectedId);
           const mark = MARK_BY_TONE[tone];
           return (

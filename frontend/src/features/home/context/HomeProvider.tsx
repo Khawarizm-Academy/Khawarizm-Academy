@@ -31,10 +31,11 @@ export const HomeProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return <PageSkeleton variant="home" />;
   }
 
+  // Normalize the transport payload: rails are always arrays, singulars stay nullable.
   const value: HomeContextValue = {
-    coursesData: home.courses,
-    scholarshipsData: home.scholarships,
-    quickLinks: home.quickLinks,
+    coursesData: home.courses ?? [],
+    scholarshipsData: home.scholarships ?? [],
+    quickLinks: home.quickLinks ?? [],
     competitionMobile: home.competitionMobile,
     competitionDesktop: home.competitionDesktop,
     eventMobile: home.eventMobile,

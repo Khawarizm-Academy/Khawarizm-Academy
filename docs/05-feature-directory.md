@@ -42,7 +42,7 @@ The full course lifecycle: a marketing/enrollment **landing** page, an in-browse
 
 ## Dashboard — `features/dashboard/`
 
-The post-login learner workspace: enrolled courses, a prioritized continue/live card, saved scholarships, competitions & certificates, notifications, and an embedded profile — inside one persistent right sidebar (desktop) and pill strip (mobile). All actions resolve in-place in modal **chambers**.
+The post-login learner workspace: enrolled courses, saved scholarships, competitions & certificates, notifications, and an embedded profile — inside one persistent right sidebar (desktop) and pill strip (mobile). All actions resolve in-place in modal **chambers**, and each section shows an empty state when the backend has no data.
 
 - **Entry:** `pages/DashboardPage.tsx` (immersive shell) → `DashboardProvider` + `DashboardShell`.
 - **View state:** `?view=` and `?state=` (`live` / `empty`).

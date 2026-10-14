@@ -121,13 +121,3 @@ class CourseTrackIcon(models.TextChoices):
 class QuickLinkTone(models.TextChoices):
     BLUE = "blue", "blue"
     GOLD = "gold", "gold"
-
-
-class ScholarshipCheckIcon(models.TextChoices):
-    CHECK_CIRCLE = "CheckCircle2", "CheckCircle2"
-    FILE_CHECK = "FileCheck", "FileCheck"
-
-
-class ScholarshipCheckKind(models.TextChoices):
-    GPA = "gpa", "gpa"
-    STATIC = "static", "static"

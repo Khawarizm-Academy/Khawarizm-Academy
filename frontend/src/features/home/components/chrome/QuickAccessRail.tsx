@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { NAV_TARGETS, resolveIcon } from '@/shared/lib/navigation';
 import type { QuickLink } from '@/shared/types/entities';
+import { HomeSectionEmpty } from '@/features/home/components/states/HomeSectionEmpty';
 
 interface QuickAccessRailProps {
   links: QuickLink[];
@@ -23,6 +24,10 @@ const ICON_TONE: Record<QuickLink['tone'], string> = {
  * competitions. Cards cascade in and lift with the icon on hover.
  */
 export const QuickAccessRail: React.FC<QuickAccessRailProps> = ({ links, onNavigate }) => {
+  if (links.length === 0) {
+    return <HomeSectionEmpty section="quickLinks" />;
+  }
+
   return (
     <div className="quick-rail">
       {links.map((link, idx) => {

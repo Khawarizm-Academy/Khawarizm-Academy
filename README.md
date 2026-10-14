@@ -58,7 +58,7 @@ There is intentionally no global state library: state is URL-derived, page-scope
 **Backend** (`backend/`)
 
 - **[Django 6](https://www.djangoproject.com/)** + **[Django REST Framework](https://www.django-rest-framework.org/)** — one thin view module per feature
-- **SQLite** via the Django ORM, seeded from Python literals in `academy/seed_data.py`
+- **SQLite** via the Django ORM — the schema ships empty, with no seed data
 - **django-cors-headers** — an origin allow-list for the SPA
 - Returns the camelCase JSON shapes the frontend types declare, so the app consumes the API directly
 
@@ -80,7 +80,7 @@ Khawarizm-Academy/
 │   └── README.md             frontend entry point
 ├── backend/                  Django + DRF + SQLite API
 │   ├── config/               settings, URLs, WSGI/ASGI
-│   ├── academy/              models, choices, seeds, seed_data command
+│   ├── academy/              models and choices (empty schema, no seed data)
 │   ├── api/                  feature-grouped views + serializers
 │   └── README.md             backend entry point
 ├── docs/                     design system, architecture, and guides
@@ -109,7 +109,6 @@ cd Khawarizm-Academy/backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed_data
 python manage.py runserver 127.0.0.1:8000
 ```
 

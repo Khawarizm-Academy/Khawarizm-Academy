@@ -1,7 +1,9 @@
 import React from 'react';
-import { Video } from 'lucide-react';
+import { Radio, Video } from 'lucide-react';
 import { useCourseDetail } from '@/features/courses/context/courseDetailContext';
 import { courseCopy } from '@/features/courses/data/courseCopy';
+import { courseEmptyStates } from '@/features/courses/data/courseStates';
+import { CourseSectionEmpty } from '@/features/courses/components/states/CourseSectionEmpty';
 import type { LiveSessionState } from '@/shared/types/entities';
 
 /** State label and tone of a weekly live session row. */
@@ -25,25 +27,30 @@ export const LiveSessionCard: React.FC = () => {
         <h2 className="course-info-title">{courseCopy.landing.liveTitle}</h2>
       </div>
       <p className="course-info-text">{courseCopy.landing.liveNote}</p>
-      <div className="flex flex-col gap-2">
-        {course.liveSessions.map((session) => {
-          const tone = SESSION_TONE[session.state];
-          return (
-            <div key={session.id} className="course-live-row">
-              <div className="flex items-center gap-3 min-w-0">
-                {session.state === 'live' && <span className="course-live-dot" />}
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[13px] text-slate-200 font-body truncate">{session.title}</span>
-                  <span className="text-[11px] text-slate-400 font-body">
-                    {session.dateLabel} · {session.timeLabel}
-                  </span>
+      {course.liveSessions.length === 0 ? (
+        <CourseSectionEmpty copy={courseEmptyStates.live} icon={<Radio size={18} />} />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {course.liveSessions.map((session) => {
+            // An unexpected phase from the API falls back to the calm "past" tone.
+            const tone = SESSION_TONE[session.state] ?? SESSION_TONE.past;
+            return (
+              <div key={session.id} className="course-live-row">
+                <div className="flex items-center gap-3 min-w-0">
+                  {session.state === 'live' && <span className="course-live-dot" />}
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[13px] text-slate-200 font-body truncate">{session.title}</span>
+                    <span className="text-[11px] text-slate-400 font-body">
+                      {session.dateLabel} · {session.timeLabel}
+                    </span>
+                  </div>
                 </div>
+                <span className={tone.stateClass}>{tone.label}</span>
               </div>
-              <span className={tone.stateClass}>{tone.label}</span>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 };

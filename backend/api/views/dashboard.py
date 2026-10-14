@@ -1,4 +1,4 @@
-"""Dashboard endpoints: summary, sections, notifications, chambers."""
+"""Dashboard endpoints: summary, sections and notifications."""
 
 from __future__ import annotations
 
@@ -8,11 +8,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from academy.models import (
-    ArenaLeader,
-    ArenaLanguage,
     CertificateItem,
-    ClassroomCodeLine,
-    ClassroomMessage,
     CompetitionItem,
     DashboardNotification,
     DashboardStat,
@@ -22,20 +18,9 @@ from academy.models import (
     NotificationItemData,
     PriorityContinue,
     SavedScholarshipItem,
-    ScholarshipCheck,
     UpcomingEvent,
-    WorkspaceLesson,
 )
 from api.learners import get_demo_learner
-from api.serializers.content import (
-    arena_language,
-    arena_leader,
-    classroom_code_line,
-    classroom_message,
-    content_block_payload,
-    scholarship_check,
-    workspace_lesson,
-)
 from api.serializers.dashboard import (
     certificate_item,
     competition_item,
@@ -117,31 +102,3 @@ def dashboard_notification_read(request: Any, notification_id: str) -> Response:
     DashboardNotification.objects.filter(learner=learner, notification_id=notification_id).update(is_read=True)
     NotificationItemData.objects.filter(learner=learner, notification_id=notification_id).update(is_unread=False)
     return Response({"read": True, "id": notification_id})
-
-
-@api_view(["GET"])
-def dashboard_chambers(request: Any) -> Response:
-    """Static content for the in-dashboard modal chambers."""
-    misc = content_block_payload("dashboard-chambers-misc") or {}
-    return Response(
-        {
-            "workspaceLessons": [workspace_lesson(row) for row in WorkspaceLesson.objects.all()],
-            "classroomMessages": [classroom_message(row) for row in ClassroomMessage.objects.all()],
-            "classroomCode": [classroom_code_line(row) for row in ClassroomCodeLine.objects.all()],
-            "arenaLanguages": [arena_language(row) for row in ArenaLanguage.objects.all()],
-            "arenaStarterCode": misc.get("arenaStarterCode", ""),
-            "arenaLeaders": [arena_leader(row) for row in ArenaLeader.objects.all()],
-            "scholarshipChecks": [scholarship_check(row) for row in ScholarshipCheck.objects.all()],
-        }
-    )
-
-
-@api_view(["GET"])
-def dashboard_content(request: Any) -> Response:
-    """View headers/cards and notification action payloads (dashboardViews/Notifications)."""
-    return Response(
-        {
-            "views": content_block_payload("dashboard-views"),
-            "notifications": content_block_payload("dashboard-notifications"),
-        }
-    )

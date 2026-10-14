@@ -23,6 +23,10 @@ export const HomeContent: React.FC = () => {
     submitSearch,
   } = useHome();
 
+  // Singular rails are null when unseeded; hide those sections instead of dereferencing.
+  const hasCompetition = competitionDesktop !== null || competitionMobile !== null;
+  const hasEvents = eventDesktopFeatured !== null || eventMobile !== null;
+
   return (
     <main className="content-container">
       {/* 1. Hero Section with Smart Search */}
@@ -40,25 +44,31 @@ export const HomeContent: React.FC = () => {
       </div>
 
       {/* 3. Competition Announcement Banner */}
-      <div className="w-full animate-fade-in-up animation-delay-200">
-        <SurfaceSlot
-          breakpoint="md"
-          desktop={
-            <CompetitionBanner
-              variant="desktop"
-              competition={competitionDesktop}
-              onRegister={() => alert('تم فتح نافذة التسجيل في تحدي الخوارزميات السنوي!')}
-            />
-          }
-          mobile={
-            <CompetitionBanner
-              variant="mobile"
-              competition={competitionMobile}
-              onRegister={() => alert('تم فتح نافذة التسجيل في تحدي الخوارزميات الشتوي!')}
-            />
-          }
-        />
-      </div>
+      {hasCompetition && (
+        <div className="w-full animate-fade-in-up animation-delay-200">
+          <SurfaceSlot
+            breakpoint="md"
+            desktop={
+              competitionDesktop && (
+                <CompetitionBanner
+                  variant="desktop"
+                  competition={competitionDesktop}
+                  onRegister={() => alert('تم فتح نافذة التسجيل في تحدي الخوارزميات السنوي!')}
+                />
+              )
+            }
+            mobile={
+              competitionMobile && (
+                <CompetitionBanner
+                  variant="mobile"
+                  competition={competitionMobile}
+                  onRegister={() => alert('تم فتح نافذة التسجيل في تحدي الخوارزميات الشتوي!')}
+                />
+              )
+            }
+          />
+        </div>
+      )}
 
       {/* 4. Twin Pillar Rails: Featured Courses & Scholarships (Cached) */}
       <div className="w-full animate-fade-in-up animation-delay-300">
@@ -88,19 +98,23 @@ export const HomeContent: React.FC = () => {
       </div>
 
       {/* 5. Events & Seminars Section */}
-      <div className="w-full animate-fade-in-up animation-delay-400">
-        <SurfaceSlot
-          breakpoint="lg"
-          desktop={
-            <EventSection
-              variant="desktop"
-              featuredEvent={eventDesktopFeatured}
-              workshopEvent={eventDesktopWorkshop}
-            />
-          }
-          mobile={<EventSection variant="mobile" featuredEvent={eventMobile} />}
-        />
-      </div>
+      {hasEvents && (
+        <div className="w-full animate-fade-in-up animation-delay-400">
+          <SurfaceSlot
+            breakpoint="lg"
+            desktop={
+              eventDesktopFeatured && (
+                <EventSection
+                  variant="desktop"
+                  featuredEvent={eventDesktopFeatured}
+                  workshopEvent={eventDesktopWorkshop ?? undefined}
+                />
+              )
+            }
+            mobile={eventMobile && <EventSection variant="mobile" featuredEvent={eventMobile} />}
+          />
+        </div>
+      )}
     </main>
   );
 };

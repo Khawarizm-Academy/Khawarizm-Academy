@@ -1,8 +1,8 @@
 import type { CourseLesson, CourseLessonStatus, CourseModule } from '@/shared/types/entities';
 
 /** Every lesson in module order, so path logic works on one flat list. */
-export function flattenLessons(modules: CourseModule[]): CourseLesson[] {
-  return modules.flatMap((module) => module.lessons);
+export function flattenLessons(modules: CourseModule[] | undefined): CourseLesson[] {
+  return (modules ?? []).flatMap((module) => module.lessons ?? []);
 }
 
 /** Lessons before the resume point count as completed when a course opens. */

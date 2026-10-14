@@ -292,6 +292,27 @@
     @apply w-[280px] sm:w-[320px] shrink-0;
   }
 
+  /* Compact per-section empty state so an empty array never leaves a blank gap. */
+  .course-empty {
+    @apply w-full flex flex-col items-center justify-center text-center gap-2.5 rounded-2xl border border-dashed border-navy-600/60 bg-navy-950/40 px-6 py-8;
+  }
+
+  .course-empty-icon {
+    @apply w-10 h-10 rounded-full bg-navy-800/70 border border-navy-600 flex items-center justify-center text-slate-400;
+  }
+
+  .course-empty-title {
+    @apply text-sm font-bold text-white font-display;
+  }
+
+  .course-empty-text {
+    @apply text-xs text-slate-400 font-body leading-relaxed max-w-sm;
+  }
+
+  .course-empty-row {
+    @apply px-3 py-3 text-[12px] text-slate-400 font-body text-center;
+  }
+
   /* ======================================================================
      Course player
      ====================================================================== */

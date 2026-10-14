@@ -5,6 +5,7 @@ import { CourseCard } from '@/shared/components/Cards/CourseCard';
 import { ScholarshipCard } from '@/shared/components/Cards/ScholarshipCard';
 import { toArabic } from '@/shared/lib/localization';
 import { useHorizontalScroll } from '@/shared/hooks/useHorizontalScroll';
+import { HomeSectionEmpty } from '@/features/home/components/states/HomeSectionEmpty';
 
 interface TwinPillarRailsProps {
   variant?: 'desktop' | 'mobile';
@@ -49,13 +50,17 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
           </div>
 
           {/* Horizontal Swipeable Card Row — cards cascade in with a soft stagger */}
-          <div ref={coursesRowRef} className="horizontal-scroll-row no-scrollbar">
-            {courses.map((course, idx) => (
-              <div key={course.id} className="shrink-0 animate-pop-in" style={{ animationDelay: `${idx * 80}ms` }}>
-                <CourseCard course={course} layout="mobile" onDetails={onCourseDetails} />
-              </div>
-            ))}
-          </div>
+          {courses.length > 0 ? (
+            <div ref={coursesRowRef} className="horizontal-scroll-row no-scrollbar">
+              {courses.map((course, idx) => (
+                <div key={course.id} className="shrink-0 animate-pop-in" style={{ animationDelay: `${idx * 80}ms` }}>
+                  <CourseCard course={course} layout="mobile" onDetails={onCourseDetails} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <HomeSectionEmpty section="courses" />
+          )}
         </section>
 
         {/* Section 2: Available Scholarships (المنح والفرص المتاحة) */}
@@ -77,13 +82,17 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
           </div>
 
           {/* Horizontal Swipeable Card Row — cards cascade in with a soft stagger */}
-          <div ref={scholarshipsRowRef} className="horizontal-scroll-row no-scrollbar">
-            {scholarships.map((scholarship, idx) => (
-              <div key={scholarship.id} className="shrink-0 animate-pop-in" style={{ animationDelay: `${idx * 80}ms` }}>
-                <ScholarshipCard scholarship={scholarship} layout="mobile" />
-              </div>
-            ))}
-          </div>
+          {scholarships.length > 0 ? (
+            <div ref={scholarshipsRowRef} className="horizontal-scroll-row no-scrollbar">
+              {scholarships.map((scholarship, idx) => (
+                <div key={scholarship.id} className="shrink-0 animate-pop-in" style={{ animationDelay: `${idx * 80}ms` }}>
+                  <ScholarshipCard scholarship={scholarship} layout="mobile" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <HomeSectionEmpty section="scholarships" />
+          )}
         </section>
 
       </div>
@@ -115,13 +124,17 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         </div>
 
         {/* 2-Card Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-stretch">
-          {courses.slice(0, 2).map((course, idx) => (
-            <div key={course.id} className="animate-pop-in" style={{ animationDelay: `${idx * 100}ms` }}>
-              <CourseCard course={course} layout="desktop" onDetails={onCourseDetails} />
-            </div>
-          ))}
-        </div>
+        {courses.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-stretch">
+            {courses.slice(0, 2).map((course, idx) => (
+              <div key={course.id} className="animate-pop-in" style={{ animationDelay: `${idx * 100}ms` }}>
+                <CourseCard course={course} layout="desktop" onDetails={onCourseDetails} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <HomeSectionEmpty section="courses" />
+        )}
       </section>
 
       {/* Left Column (End in RTL): Available Scholarships */}
@@ -145,13 +158,17 @@ export const TwinPillarRails: React.FC<TwinPillarRailsProps> = ({
         </div>
 
         {/* 2-Card Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-stretch">
-          {scholarships.slice(0, 2).map((scholarship, idx) => (
-            <div key={scholarship.id} className="animate-pop-in" style={{ animationDelay: `${idx * 100}ms` }}>
-              <ScholarshipCard scholarship={scholarship} layout="desktop" />
-            </div>
-          ))}
-        </div>
+        {scholarships.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-stretch">
+            {scholarships.slice(0, 2).map((scholarship, idx) => (
+              <div key={scholarship.id} className="animate-pop-in" style={{ animationDelay: `${idx * 100}ms` }}>
+                <ScholarshipCard scholarship={scholarship} layout="desktop" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <HomeSectionEmpty section="scholarships" />
+        )}
       </section>
 
     </div>

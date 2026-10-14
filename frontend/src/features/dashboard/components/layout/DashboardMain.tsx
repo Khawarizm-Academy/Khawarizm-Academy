@@ -2,6 +2,7 @@ import React from 'react';
 import { BookOpen, User } from 'lucide-react';
 import { useNavigate } from '@/app/routerContext';
 import {
+  CATALOG_COURSES_ROUTE,
   COURSE_CERTIFICATE_ROUTE,
   COURSE_PLAYER_ROUTE,
 } from '@/shared/lib/navigation';
@@ -14,15 +15,13 @@ import { MobileDashboardTopBar } from '@/features/dashboard/components/chrome/Mo
 import { DashboardStatsHeader, DashboardMobileChips } from '@/features/dashboard/components/chrome/DashboardStatsHeader';
 import { NotificationsView } from '@/features/dashboard/components/views/NotificationsView';
 import { EmptyDashboardState } from '@/features/dashboard/components/states/EmptyDashboardState';
+import { DashboardSectionEmpty } from '@/features/dashboard/components/states/DashboardSectionEmpty';
 import { ProfileView } from '@/features/profile/components/layout/ProfileView';
 import { EnrolledCoursesView } from '@/features/dashboard/components/views/EnrolledCoursesView';
 import { SavedScholarshipsView } from '@/features/dashboard/components/views/SavedScholarshipsView';
 import { CompetitionsCertificatesView } from '@/features/dashboard/components/views/CompetitionsCertificatesView';
 import { DashboardSubNavigation } from '@/features/dashboard/components/chrome/DashboardSubNavigation';
 import { DashboardStatsSidebar } from '@/features/dashboard/components/chrome/DashboardStatsSidebar';
-import { ChallengeSpotlightCard } from '@/features/dashboard/components/cards/ChallengeSpotlightCard';
-import { PriorityContinueCard } from '@/features/dashboard/components/cards/PriorityContinueCard';
-import { LiveSessionPriorityCard } from '@/features/dashboard/components/cards/LiveSessionPriorityCard';
 import { EnrolledCourseRow } from '@/features/dashboard/components/cards/EnrolledCourseRow';
 
 /** Mobile top-bar title: rounded avatar + heading, shared by the dedicated views. */
@@ -47,7 +46,7 @@ const MobileTitle = ({
 export const DashboardMain: React.FC = () => {
   const navigate = useNavigate();
   const { content } = useDashboardContent();
-  const { fullPageViews, singleColumnViews, spotlight, challengeItem } = content.views;
+  const { fullPageViews, singleColumnViews } = content.views;
   const {
     currentView,
     isLive,
@@ -208,54 +207,51 @@ export const DashboardMain: React.FC = () => {
             <div className="dash-grid-main">
               {/* Main / live view */}
               {currentView === 'main' && (
-                <>
-                  {/* Hero cards: live session dominates, otherwise the
-                      challenge spotlight and the continue-learning card */}
-                  {isLive ? (
-                    <LiveSessionPriorityCard onJoinSession={openLiveClassroom} />
-                  ) : (
-                    <>
-                      {spotlight.hasChallenge && (
-                        <ChallengeSpotlightCard onEnter={() => selectCompetition(challengeItem)} />
-                      )}
-                      {spotlight.hasCourse && (
-                        <PriorityContinueCard onContinue={() => navigate(COURSE_PLAYER_ROUTE('course-1'))} />
-                      )}
-                    </>
-                  )}
-
-                  {/* Courses section */}
-                  <div className="dash-section">
-                    <div className="dash-section-head">
-                      <div className="section-accent-title-blue">
-                        <h2 className="dash-view-title">{isLive ? 'بقية دوراتك لليوم' : 'دوراتي الحالية'}</h2>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => selectView('enrolled')}
-                        className="dash-section-link"
-                      >
-                        عرض الكل
-                      </button>
+                <div className="dash-section">
+                  <div className="dash-section-head">
+                    <div className="section-accent-title-blue">
+                      <h2 className="dash-view-title">{isLive ? 'بقية دوراتك لليوم' : 'دوراتي الحالية'}</h2>
                     </div>
-
-                    {/* Courses list */}
-                    <div className="dash-list">
-                      {isLoadingCourses ? (
-                        <DataSectionSkeleton variant="list" count={3} />
-                      ) : (
-                        coursesData.map((course, idx) => (
-                          <EnrolledCourseRow
-                            key={course.id}
-                            index={idx}
-                            course={course}
-                            onContinue={() => resumeCourse(course)}
-                          />
-                        ))
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => selectView('enrolled')}
+                      className="dash-section-link"
+                    >
+                      عرض الكل
+                    </button>
                   </div>
-                </>
+
+                  {/* Courses list, or its empty state */}
+                  {isLoadingCourses ? (
+                    <DataSectionSkeleton variant="list" count={3} />
+                  ) : coursesData.length === 0 ? (
+                    <DashboardSectionEmpty
+                      icon={<BookOpen size={28} className="text-blue-400" />}
+                      title="لا توجد دورات مسجّلة بعد"
+                      text="استكشفي الدورات المميزة وابدئي مسارك التعليمي الأول."
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => navigate(CATALOG_COURSES_ROUTE)}
+                          className="dash-cta-blue"
+                        >
+                          استكشاف الدورات
+                        </button>
+                      }
+                    />
+                  ) : (
+                    <div className="dash-list">
+                      {coursesData.map((course, idx) => (
+                        <EnrolledCourseRow
+                          key={course.id}
+                          index={idx}
+                          course={course}
+                          onContinue={() => resumeCourse(course)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Saved scholarships & favorites view */}

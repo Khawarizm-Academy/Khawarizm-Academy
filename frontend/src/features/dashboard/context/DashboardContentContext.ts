@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import type {
   DashboardChambersPayload,
   DashboardContentPayload,
-} from '@/features/dashboard/data/dashboardContentFetcher';
+} from '@/features/dashboard/data/dashboardContent';
 
 export interface DashboardContentContextValue {
   content: DashboardContentPayload;

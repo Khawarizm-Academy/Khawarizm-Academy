@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { Bell, ChevronLeft } from 'lucide-react';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
 import { fetchDashboardNotifications } from '@/features/dashboard/data/dashboardFetchers';
 import { NotificationListItem } from '@/features/dashboard/components/cards/NotificationListItem';
+import { DashboardSectionEmpty } from '@/features/dashboard/components/states/DashboardSectionEmpty';
 import type { NotificationItemData } from '@/features/dashboard/types';
 export type { NotificationItemData };
 
@@ -88,9 +89,15 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         </div>
       </div>
 
-      {/* Notification list */}
+      {/* Notification list, or its empty state */}
       {isLoading ? (
         <DataSectionSkeleton variant="list" count={5} />
+      ) : notifications.length === 0 ? (
+        <DashboardSectionEmpty
+          icon={<Bell size={28} className="text-blue-400" />}
+          title="لا توجد إشعارات بعد"
+          text="ستظهر هنا كل التحديثات والتنبيهات المتعلقة بدوراتك ومنحك."
+        />
       ) : (
         <div className="dash-list">
           {notifications.map((item, idx) => (

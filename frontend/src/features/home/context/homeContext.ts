@@ -7,11 +7,11 @@ export interface HomeContextValue {
   coursesData: Course[];
   scholarshipsData: Scholarship[];
   quickLinks: QuickLink[];
-  competitionMobile: Competition;
-  competitionDesktop: Competition;
-  eventMobile: EventItem;
-  eventDesktopFeatured: EventItem;
-  eventDesktopWorkshop: EventItem;
+  competitionMobile: Competition | null;
+  competitionDesktop: Competition | null;
+  eventMobile: EventItem | null;
+  eventDesktopFeatured: EventItem | null;
+  eventDesktopWorkshop: EventItem | null;
   navigateTo: (path: string) => void;
   submitSearch: (query: string, type: CatalogSearchType) => void;
 }

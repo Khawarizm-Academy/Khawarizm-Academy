@@ -29,6 +29,8 @@ home/
 │   │   └── QuickAccessRail.tsx      shortcut rail to dashboard/catalog surfaces
 │   ├── hero/
 │   │   └── HeroSection.tsx          celestial hero + SmartSearchBox
+│   ├── states/
+│   │   └── HomeSectionEmpty.tsx     StatePanel copy for every empty home rail
 │   └── layout/
 │       ├── HomeContent.tsx          page composition root
 │       ├── SurfaceSlot.tsx          renders one of a desktop/mobile node per breakpoint
@@ -48,6 +50,7 @@ home/
   - `submitSearch(query, type)` maps `CatalogSearchType` (`course` / `scholarship` / `all`) to a catalog tab and navigates to `/catalog?type=…&q=…`.
 - `SurfaceSlot` mounts both a desktop and a mobile node; CSS breakpoints choose which one is visible. Five sections ship desktop + mobile variants (hero, competition, twin rails, events).
 - `TwinPillarRails` is a 50/50 desktop grid (two cards each) and a stacked, horizontally scrollable set of rows on mobile.
+- **Empty data:** the API returns `null` for singular rails and `[]` for list rails when unseeded. `HomeContent` hides the competition and events sections entirely when their objects are missing; the quick-access, courses and scholarships rails keep their section heading and swap the cards for `HomeSectionEmpty` (an on-brand `StatePanel`).
 
 ## Data
 

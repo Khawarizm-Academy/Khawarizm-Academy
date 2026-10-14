@@ -1,16 +1,10 @@
-"""Content models for home, events, competitions, dashboard content blocks."""
+"""Content models for home, events and competitions."""
 
 from __future__ import annotations
 
 from django.db import models
 
-from academy.choices import (
-    EventFormat,
-    QuickLinkTone,
-    ScholarshipCheckIcon,
-    ScholarshipCheckKind,
-    ThumbnailType,
-)
+from academy.choices import EventFormat, QuickLinkTone, ThumbnailType
 
 
 class HomeFeaturedCourse(models.Model):
@@ -82,83 +76,3 @@ class HomeQuickLink(models.Model):
 
     class Meta:
         ordering = ["link_id"]
-
-
-# Chambers content
-
-
-class WorkspaceLesson(models.Model):
-    lesson_id = models.CharField(max_length=40, unique=True)
-    title = models.CharField(max_length=160)
-    duration = models.CharField(max_length=20)
-    is_completed = models.BooleanField(default=False)
-
-    class Meta:
-        ordering = ["lesson_id"]
-
-
-class ClassroomMessage(models.Model):
-    message_id = models.CharField(max_length=40, unique=True)
-    sender = models.CharField(max_length=80)
-    text = models.CharField(max_length=240)
-    time = models.CharField(max_length=20)
-    is_instructor = models.BooleanField(default=False)
-
-    class Meta:
-        ordering = ["message_id"]
-
-
-class ClassroomCodeLine(models.Model):
-    order = models.PositiveIntegerField(default=0)
-    tone = models.CharField(max_length=20)
-    indent = models.PositiveIntegerField(default=0)
-    text = models.TextField()
-
-    class Meta:
-        ordering = ["order", "id"]
-
-
-class ArenaLanguage(models.Model):
-    lang_id = models.CharField(max_length=20, unique=True)
-    label = models.CharField(max_length=40)
-
-    class Meta:
-        ordering = ["lang_id"]
-
-
-class ArenaLeader(models.Model):
-    order = models.PositiveIntegerField(default=0)
-    name = models.CharField(max_length=80)
-    score = models.CharField(max_length=40)
-    tone = models.CharField(max_length=20)
-
-    class Meta:
-        ordering = ["order", "id"]
-
-
-class ScholarshipCheck(models.Model):
-    order = models.PositiveIntegerField(default=0)
-    kind = models.CharField(max_length=20, choices=ScholarshipCheckKind.choices)
-    icon = models.CharField(max_length=20, choices=ScholarshipCheckIcon.choices, blank=True)
-    label = models.CharField(max_length=120, blank=True)
-    status = models.CharField(max_length=80, blank=True)
-
-    class Meta:
-        ordering = ["order", "id"]
-
-
-class DashboardContentBlock(models.Model):
-    """Flexible content blocks from dashboardViews.json / dashboardNotifications.json.
-
-    Each block keeps its already-camelCase payload, so the API can pass it straight
-    through to the frontend without reshaping.
-    """
-
-    key = models.CharField(max_length=60, unique=True)
-    payload = models.JSONField(default=dict, blank=True)
-
-    class Meta:
-        ordering = ["key"]
-
-    def __str__(self) -> str:  # pragma: no cover - simple
-        return self.key

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Play, Pause, CheckCircle2, Check, BookOpen, Volume2, Maximize2, X, Sparkles } from 'lucide-react';
-import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
+import { DashboardSectionEmpty } from '@/features/dashboard/components/states/DashboardSectionEmpty';
 
 interface CourseWorkspaceModalProps {
   isOpen: boolean;
   onClose: () => void;
   courseTitle?: string;
   initialLessonIndex?: number;
+  lessons?: LessonItem[];
 }
 
 interface LessonItem {
@@ -26,18 +27,18 @@ const LESSON_STATE = {
 export const CourseWorkspaceModal: React.FC<CourseWorkspaceModalProps> = ({
   isOpen,
   onClose,
-  courseTitle = 'أساسيات الذكاء الاصطناعي وتعلم الآلة',
-  initialLessonIndex = 3,
+  courseTitle = 'مساحة العمل',
+  initialLessonIndex = 0,
+  lessons: initialLessons = [],
 }) => {
-  const { chambers } = useDashboardContent();
   const [currentIdx, setCurrentIdx] = useState(initialLessonIndex);
-  const [lessons, setLessons] = useState<LessonItem[]>(chambers.workspaceLessons);
+  const [lessons, setLessons] = useState<LessonItem[]>(initialLessons);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showCompletionToast, setShowCompletionToast] = useState(false);
 
   if (!isOpen) return null;
 
-  const currentLesson = lessons[currentIdx];
+  const currentLesson = lessons[currentIdx] ?? lessons[0];
   const completedCount = lessons.filter((l) => l.isCompleted).length;
   const progressPercent = Math.round((completedCount / lessons.length) * 100);
 
@@ -53,6 +54,38 @@ export const CourseWorkspaceModal: React.FC<CourseWorkspaceModalProps> = ({
       }
     }, 1200);
   };
+
+  // A workspace with no lessons shows an empty chamber instead of a broken player.
+  if (!currentLesson) {
+    return (
+      <div dir="rtl" className="dash-modal-overlay">
+        <div className="dash-modal-shell max-w-3xl">
+          <div className="dash-modal-head">
+            <div className="dash-modal-lead">
+              <div className="dash-modal-icon dash-modal-icon-sky">
+                <BookOpen size={18} />
+              </div>
+              <div>
+                <h2 className="dash-modal-title">{courseTitle}</h2>
+                <span className="dash-modal-sub">لا توجد دروس بعد</span>
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className="dash-modal-close">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="p-5 md:p-6">
+            <DashboardSectionEmpty
+              icon={<BookOpen size={28} className="text-blue-400" />}
+              title="لا توجد دروس في هذا المسار"
+              text="سيظهر هنا محتوى الدورة بمجرد إضافته."
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div dir="rtl" className="dash-modal-overlay">

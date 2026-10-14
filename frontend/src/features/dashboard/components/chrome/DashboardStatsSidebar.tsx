@@ -52,8 +52,10 @@ export const DashboardStatsSidebar: React.FC = () => {
       <div className="workspace-card dash-widget">
         <h3 className="dash-widget-title">إحصائيات الإنجاز</h3>
 
-        {isLoadingStats || !stats ? (
+        {isLoadingStats ? (
           <DataSectionSkeleton variant="rail" count={1} className="flex-col" />
+        ) : !stats ? (
+          <p className="dash-list-empty">لا توجد إحصائيات بعد.</p>
         ) : (
           <div className="dash-stat-stack">
             {STAT_ROWS.map((row, idx) => (
@@ -79,6 +81,8 @@ export const DashboardStatsSidebar: React.FC = () => {
 
         {isLoadingEvents ? (
           <DataSectionSkeleton variant="list" count={2} />
+        ) : events.length === 0 ? (
+          <p className="dash-list-empty">لا توجد أحداث قادمة حالياً.</p>
         ) : (
           <div className="dash-stat-stack">
             {events.map((event, idx) => (

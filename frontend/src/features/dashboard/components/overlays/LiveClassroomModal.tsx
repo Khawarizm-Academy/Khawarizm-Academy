@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Radio, Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Users, X, Send } from 'lucide-react';
-import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface LiveClassroomModalProps {
   isOpen: boolean;
@@ -16,6 +15,9 @@ interface ChatMessage {
   time: string;
   isInstructor?: boolean;
 }
+
+/** Blackboard code lines the instructor shares (empty until a course provides them). */
+const CODE_LINES: Array<{ tone: string; indent: number; text: string }> = [];
 
 /** Bubble + sender tones by chat role. */
 const CHAT_TONE = {
@@ -46,12 +48,10 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
   courseTitle = 'برمجة بايثون للمبتدئين',
   instructorName = 'م. خالد الشمري',
 }) => {
-  const { chambers } = useDashboardContent();
-  const CODE_LINES = chambers.classroomCode;
   const [isMicOn, setIsMicOn] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(chambers.classroomMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
 
   if (!isOpen) return null;
@@ -113,13 +113,17 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
                 <span className="text-[9px] text-slate-400 text-center font-mono">1080p 60fps</span>
               </div>
 
-              {/* Code presentation on blackboard */}
+              {/* Code presentation on blackboard, or its empty placeholder */}
               <div className="text-right font-mono text-xs md:text-sm text-slate-300 space-y-2 relative z-10">
-                {CODE_LINES.map((line, idx) => (
-                  <div key={idx} className={`${CODE_TONE[line.tone]} ${CODE_INDENT[line.indent]}`}>
-                    {line.text}
-                  </div>
-                ))}
+                {CODE_LINES.length === 0 ? (
+                  <span className="text-slate-500">لا يوجد محتوى معروض على السبورة حالياً.</span>
+                ) : (
+                  CODE_LINES.map((line, idx) => (
+                    <div key={idx} className={`${CODE_TONE[line.tone]} ${CODE_INDENT[line.indent]}`}>
+                      {line.text}
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Live status indicator */}
@@ -174,8 +178,13 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
                 </div>
               </div>
 
-              {/* Message list */}
+              {/* Message list, or its empty state */}
               <div className="h-64 lg:h-96 overflow-y-auto space-y-3 py-3 no-scrollbar">
+                {messages.length === 0 && (
+                  <p className="text-center text-slate-500 text-xs py-6">
+                    لا توجد رسائل بعد. كن أول من يشارك سؤالاً.
+                  </p>
+                )}
                 {messages.map((msg) => {
                   const tone = msg.isInstructor ? CHAT_TONE.instructor : CHAT_TONE.student;
                   return (

@@ -49,8 +49,8 @@ loudly** while `DJANGO_SECRET_KEY` is still a placeholder.
 **On Vercel**, the profile files are skipped (Vercel sets `VERCEL=1`); set the
 values as Project Environment Variables instead. `DATABASE_URL` selects Postgres
 and `.vercel.app` hosts/origins are allowed automatically. Without
-`DATABASE_URL`, the build bundles a seeded SQLite file that is read-only at
-runtime, so writes do not persist.
+`DATABASE_URL`, the build bundles an SQLite file that is read-only at runtime,
+so writes do not persist.
 
 The UI is written against the shapes below, so the two sides evolve independently.
 
@@ -125,7 +125,8 @@ feature's `types.ts`. Empty/`None` fields are omitted (the backend `compact` hel
 Errors share one structured shape (`backend/api/errors.py`).
 
 **Current user.** There is no auth yet: `backend/api/learners.py` resolves a
-single seeded demo learner. The `auth/*` routes are stubs for a later flow.
+single demo learner (created on first request). The `auth/*` routes are stubs for
+a later flow.
 
 ### Auth
 
@@ -168,8 +169,6 @@ single seeded demo learner. The `auth/*` routes are stubs for a later flow.
 | `GET` | `/dashboard/competitions` | Competitions + certificates. |
 | `GET` | `/dashboard/notifications` | Notifications list. |
 | `POST` | `/dashboard/notifications/:id/read` | Mark one read. |
-| `GET` | `/dashboard/chambers` | Action-chamber copy/counters. |
-| `GET` | `/dashboard/content` | Dashboard view content blocks. |
 
 ### Content & profile
 

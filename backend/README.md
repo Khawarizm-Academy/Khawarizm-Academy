@@ -18,7 +18,7 @@ switching a feature from mock to live changes a fetcher — never a component.
 | API layer | Django REST Framework 3.18 (function-based views) |
 | CORS | `django-cors-headers` (frontend origin allow-list) |
 | Database | SQLite locally · Postgres on Vercel when `DATABASE_URL` is set |
-| Auth | none yet — a single seeded demo learner is the current user |
+| Auth | none yet — a single demo learner is created on first request |
 
 ---
 
@@ -30,15 +30,14 @@ backend/
 │   ├── settings.py             SQLite, DRF, CORS, env-driven secrets
 │   ├── urls.py                 mounts the API under /api/
 │   ├── asgi.py · wsgi.py
-├── academy/                    the domain app: models + seed data
+├── academy/                    the domain app: models and choices only
 │   ├── models.py               catalog, courses, problems, scholarships (+ star-imports)
-│   ├── models_dashboard.py     learner, enrollments, favourites, notifications, chambers
-│   ├── models_content.py       home, events, competitions, dashboard content blocks
+│   ├── models_dashboard.py     learner, enrollments, favourites, notifications
+│   ├── models_content.py       home, events, competitions
 │   ├── models_events_competitions.py
 │   ├── choices.py              enum-style choices (single source of truth)
 │   ├── admin.py                Django admin registration
-│   ├── seed_data.py            demo data as Python literals (no JSON anywhere)
-│   └── management/commands/seed_data.py   idempotent loader
+│   └── migrations/             schema history (no data migrations, no seed data)
 ├── api/                        the HTTP layer, one module per feature
 │   ├── urls.py                 route table (grouped by feature)
 │   ├── learners.py             resolves the demo learner
@@ -54,8 +53,7 @@ backend/
 
 **Convention.** One feature = one view module + one serializer module. Views stay
 thin (resolve learner → query → serialize); serializers own the camelCase mapping
-and use `api/serializers/common.py::compact` to drop empty/`None` fields, matching
-the mocks.
+and use `api/serializers/common.py::compact` to drop empty/`None` fields.
 
 ---
 
@@ -68,7 +66,6 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 python manage.py migrate
-python manage.py seed_data         # writes academy/seed_data.py into SQLite
 python manage.py runserver 127.0.0.1:8000
 ```
 
@@ -110,9 +107,12 @@ The secret check **fails loudly**: a non-debug run refuses to boot while
 | Command | Description |
 | :--- | :--- |
 | `python manage.py migrate` | Create/update the SQLite schema |
-| `python manage.py seed_data` | Idempotent: clears academy tables and reloads the demo data |
 | `python manage.py runserver` | Dev server |
 | `python manage.py check` | Framework sanity check |
+
+> The database starts **empty** — the API ships no seed data. Add records through
+> the Django admin (`/admin/`) or the ORM; every frontend page renders an empty
+> state until then.
 
 ---
 
@@ -136,12 +136,12 @@ Function.
    Hosts and CORS need no manual value on Vercel: the app adds `.vercel.app` and
    the deployment host to `ALLOWED_HOSTS`, and allows `*.vercel.app` origins.
 
-`vercel.json` runs `migrate` + `seed_data` + `collectstatic` at **build time**,
-so the schema and demo data exist before the first request.
+`vercel.json` runs `migrate` + `collectstatic` at **build time**, so the schema
+exists before the first request.
 
-> **SQLite on Vercel is read-only.** Without `DATABASE_URL` the build still
-> seeds `db.sqlite3` and bundles it, so reads work — but writes (enroll, save,
-> profile edits) do not persist. Add Postgres for a fully working backend.
+> **SQLite on Vercel is read-only.** Without `DATABASE_URL` the build bundles
+> `db.sqlite3`, so reads work — but writes (enroll, save, profile edits) do not
+> persist. Add Postgres for a fully working backend.
 
 ---
 
@@ -169,8 +169,6 @@ All paths are relative to `/api/`.
 | `GET` | `/dashboard/competitions` | Competitions + certificates. |
 | `GET` | `/dashboard/notifications` | Notification items + drawer list. |
 | `POST` | `/dashboard/notifications/:id/read` | Mark one read. |
-| `GET` | `/dashboard/chambers` | Action-chamber copy/counters. |
-| `GET` | `/dashboard/content` | Dashboard view content blocks. |
 | `GET` | `/home` | Featured courses, scholarships, competition, events, quick links. |
 | `GET` | `/events` | Events & seminars. |
 | `GET` | `/competitions` | Competitions & challenges. |

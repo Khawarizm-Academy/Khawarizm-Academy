@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { FolderOpen } from 'lucide-react';
 import { useNavigate, useParams } from '@/app/routerContext';
 import { useCourseDetail } from '@/features/courses/context/courseDetailContext';
 import { courseCopy } from '@/features/courses/data/courseCopy';
+import { courseEmptyStates } from '@/features/courses/data/courseStates';
 import { flattenLessons, lessonStatus, seedCompletedLessonIds } from '@/features/courses/data/coursePath';
 import { CurriculumModuleCard } from '@/features/courses/components/cards/CurriculumModuleCard';
+import { CourseSectionEmpty } from '@/features/courses/components/states/CourseSectionEmpty';
 
 /** Full curriculum accordion; locked lessons stay visible, never hidden. */
 export const CourseCurriculum: React.FC = () => {
@@ -12,9 +15,10 @@ export const CourseCurriculum: React.FC = () => {
   const navigate = useNavigate();
 
   // First module opens by default so the syllabus preview never looks empty
-  const [openModuleIds, setOpenModuleIds] = useState<string[]>(() =>
-    course?.modules[0]?.id ? [course.modules[0].id] : []
-  );
+  const [openModuleIds, setOpenModuleIds] = useState<string[]>(() => {
+    const firstModuleId = course?.modules?.[0]?.id;
+    return firstModuleId ? [firstModuleId] : [];
+  });
 
   if (!course) return null;
 
@@ -47,19 +51,23 @@ export const CourseCurriculum: React.FC = () => {
   return (
     <section id="curriculum" className="course-section">
       <h2 className="course-section-title">{courseCopy.landing.curriculumTitle}</h2>
-      <div className="course-accordion">
-        {course.modules.map((module, idx) => (
-          <CurriculumModuleCard
-            key={module.id}
-            module={module}
-            index={idx + 1}
-            isOpen={openModuleIds.includes(module.id)}
-            onToggle={() => toggleModule(module.id)}
-            getStatus={getStatus}
-            onSelectLesson={selectLesson}
-          />
-        ))}
-      </div>
+      {course.modules.length === 0 ? (
+        <CourseSectionEmpty copy={courseEmptyStates.curriculum} icon={<FolderOpen size={18} />} />
+      ) : (
+        <div className="course-accordion">
+          {course.modules.map((module, idx) => (
+            <CurriculumModuleCard
+              key={module.id}
+              module={module}
+              index={idx + 1}
+              isOpen={openModuleIds.includes(module.id)}
+              onToggle={() => toggleModule(module.id)}
+              getStatus={getStatus}
+              onSelectLesson={selectLesson}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 };

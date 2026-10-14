@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from '@/app/routerContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
-import { getDashboardNavItem, COURSE_CERTIFICATE_ROUTE, COURSE_PLAYER_ROUTE } from '@/shared/lib/navigation';
+import { getDashboardNavItem } from '@/shared/lib/navigation';
 import { fetchDashboardNotifications, fetchEnrolledCourses } from '@/features/dashboard/data/dashboardFetchers';
 import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 import { buildViewHeaders, DashboardContext } from '@/features/dashboard/context/dashboardContext';
@@ -40,19 +40,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const viewHeaders = useMemo(() => buildViewHeaders(content.views.headers), [content.views.headers]);
-  const liveCourse = content.views.liveCard.courseTitle;
 
-  const chamberActions: Record<string, () => void> = {
-    live: () => setIsLiveClassroomOpen(true),
-    course: () => setActiveWorkspaceCourse(liveCourse),
-  };
-
-  // A chip opens a view or a chamber, and some chips are labels only.
-  const openChip = ({ view, action }: ViewChip) => {
-    if (action) return chamberActions[action];
-    if (view) return () => selectView(view);
-    return undefined;
-  };
+  // A chip opens its view; the reminder chips without a view are labels only.
+  const openChip = ({ view }: ViewChip) => (view ? () => selectView(view) : undefined);
 
   const header = viewHeaders[isLive ? 'live' : currentView] ?? viewHeaders.main;
   const statChips: StatChipItem[] = (header.chips ?? viewHeaders.main.chips ?? []).map((chip) => ({
@@ -77,13 +67,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
   const unreadCount = notifications.filter((notif) => notif.isUnread).length;
 
-  // Every notification opens the chamber its type points to; course ones deep-link to the player.
+  // Every notification routes to the view that owns its content.
   const notificationActions: Record<NotificationItemData['type'], () => void> = {
     live: () => setIsLiveClassroomOpen(true),
-    scholarship: () => setSelectedScholarship(content.notifications.scholarship),
-    competition: () => setSelectedCompetition(content.notifications.competition),
-    lesson: () => navigate(COURSE_PLAYER_ROUTE('course-1')),
-    exam: () => navigate(COURSE_CERTIFICATE_ROUTE('course-1')),
+    scholarship: () => selectView('saved'),
+    competition: () => selectView('achievements'),
+    lesson: () => selectView('enrolled'),
+    exam: () => selectView('achievements'),
   };
 
   const handleNotificationAction = (notif: NotificationItemData) => notificationActions[notif.type]();

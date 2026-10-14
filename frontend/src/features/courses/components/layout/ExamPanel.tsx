@@ -1,8 +1,10 @@
 import React from 'react';
-import { Award, Lock } from 'lucide-react';
+import { Award, FileQuestion, Lock } from 'lucide-react';
 import { useNavigate, useParams } from '@/app/routerContext';
 import { useCoursePlayer } from '@/features/courses/context/coursePlayerContext';
 import { courseCopy } from '@/features/courses/data/courseCopy';
+import { courseEmptyStates } from '@/features/courses/data/courseStates';
+import { CourseSectionEmpty } from '@/features/courses/components/states/CourseSectionEmpty';
 import type { CourseDetail } from '@/shared/types/entities';
 
 /** Stats grid data per exam dimension. */
@@ -24,6 +26,12 @@ export const ExamPanel: React.FC = () => {
   const navigate = useNavigate();
 
   if (!course) return null;
+
+  // The course has no final exam configured yet.
+  if (!course.exam) {
+    return <CourseSectionEmpty copy={courseEmptyStates.exam} icon={<FileQuestion size={18} />} />;
+  }
+
   const stats = examStats(course);
 
   const statRow = (

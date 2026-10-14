@@ -22,8 +22,6 @@ from academy.choices import (
     LiveSessionState,
     NotificationType,
     QuickLinkTone,
-    ScholarshipCheckIcon,
-    ScholarshipCheckKind,
     ScholarshipCountrySlug,
     ScholarshipCoverageType,
     ScholarshipDeadlineUrgency,

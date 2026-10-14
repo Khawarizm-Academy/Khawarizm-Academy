@@ -13,10 +13,10 @@ export const CourseHeaderBlock: React.FC<CourseHeaderBlockProps> = ({ course }) 
   const L = courseCopy.landing;
 
   const stats: Array<{ icon: LucideIcon; label: string; value: string }> = [
-    { icon: Star, label: L.metaRating, value: `${course.rating.toFixed(1)} / 5` },
-    { icon: Users, label: L.metaEnrolled, value: course.enrolledCount.toLocaleString('ar-EG') },
-    { icon: Clock, label: L.metaDuration, value: course.duration },
-    { icon: PlayCircle, label: L.metaLessons, value: `${course.lessonsCount}` },
+    { icon: Star, label: L.metaRating, value: `${(course.rating ?? 0).toFixed(1)} / 5` },
+    { icon: Users, label: L.metaEnrolled, value: (course.enrolledCount ?? 0).toLocaleString('ar-EG') },
+    { icon: Clock, label: L.metaDuration, value: course.duration ?? '' },
+    { icon: PlayCircle, label: L.metaLessons, value: `${course.lessonsCount ?? 0}` },
   ];
 
   return (
@@ -33,7 +33,7 @@ export const CourseHeaderBlock: React.FC<CourseHeaderBlockProps> = ({ course }) 
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="course-avatar">{course.instructorName.charAt(0)}</div>
+        <div className="course-avatar">{(course.instructorName ?? '').charAt(0)}</div>
         <div className="flex flex-col">
           <span className="course-instructor-name">{course.instructorName}</span>
           <span className="course-instructor-cred">{course.instructorCredential}</span>
