@@ -1,11 +1,13 @@
 ---
 name: khawarizm-code-style
-description: Code style and code quality standard for Khawarizm Academy frontend. Use whenever writing, reviewing, or refactoring any TypeScript or TSX file. Covers short one-line comments, no clever code, no if/else chains, data-driven lookups instead of branching, static data in JSON, no duplication between desktop and mobile, and extracting repeated class strings into CSS concept classes.
+description: Code style and code quality standard for Khawarizm Academy. Use whenever writing, reviewing, or refactoring any TypeScript, TSX, or backend Python file. Covers short one-line comments, no clever code, no if/else chains, data-driven lookups instead of branching, static data in JSON, one source of truth, failing loudly, no duplication between desktop and mobile, and extracting repeated class strings into CSS concept classes.
 ---
 
 # Khawarizm Academy — Code Style & Quality Standard
 
 The **definitive standard** for how code is written in Khawarizm Academy. It applies to every `.ts` and `.tsx` file, in `src/app/`, `src/features/`, and `src/shared/`.
+
+> **It applies to the backend Python too**, where the rule maps: one-line comments, no clever code, no `if`/`else` chains, one source of truth, and fail loudly all carry over to `backend/features/**/*.py`. The frontend-only sections (JSON config, CSS concept classes, desktop/mobile surfaces) do not. Backend specifics — models, serializers, camelCase, admin — live in [`khawarizm-backend`](../khawarizm-backend/SKILL.md).
 
 > These rules were learned the hard way during the routing and navigation refactor. Each one replaced a real bug or a real maintenance problem.
 

@@ -79,6 +79,10 @@ Khawarizm-Academy/
 │   │   └── scripts/          brand asset generation
 │   ├── public/               static files served as-is (favicons, og-image)
 │   └── README.md             frontend entry point
+├── backend/                  Django + DRF + SQLite API
+│   ├── config/               settings, URLs, middleware, WSGI/ASGI
+│   ├── features/             one app per product feature (+ its README)
+│   └── README.md             backend entry point
 ├── docs/                     this documentation set
 ├── .agents/skills/           agent playbooks for working on the project
 ├── Designs/                  design references (mockups + design code)

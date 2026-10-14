@@ -1,12 +1,12 @@
 # Khawarizm Academy · Backend
 
-A small **Django + Django REST Framework + SQLite** service that replaces the
-frontend's in-repo mocks. It owns the data; the frontend keeps the presentation
-config (routes, nav, localization, filter options).
+A small **Django + Django REST Framework + SQLite** service that owns all the
+data the frontend renders. It is organised as **one app per product feature**,
+mirroring `frontend/src/features/`.
 
 The API speaks the **exact camelCase shapes** the UI already expects
-(`frontend/src/shared/types/entities.ts` and each feature's `types.ts`), so
-switching a feature from mock to live changes a fetcher — never a component.
+(`frontend/src/shared/types/entities.ts` and each feature's `types.ts`), so a
+feature reads from the API without any shape-casting.
 
 ---
 
@@ -27,33 +27,41 @@ switching a feature from mock to live changes a fetcher — never a component.
 ```text
 backend/
 ├── config/                     project wiring
-│   ├── settings.py             SQLite, DRF, CORS, env-driven secrets
-│   ├── urls.py                 mounts the API under /api/
-│   ├── asgi.py · wsgi.py
-├── academy/                    the domain app: models and choices only
-│   ├── models.py               catalog, courses, problems, scholarships (+ star-imports)
-│   ├── models_dashboard.py     learner, enrollments, favourites, notifications
-│   ├── models_content.py       home, events, competitions
-│   ├── models_events_competitions.py
-│   ├── choices.py              enum-style choices (single source of truth)
-│   ├── admin.py                Django admin registration
-│   └── migrations/             schema history (no data migrations, no seed data)
-├── api/                        the HTTP layer, one module per feature
-│   ├── urls.py                 route table (grouped by feature)
-│   ├── learners.py             resolves the demo learner
-│   ├── pagination.py · errors.py
-│   ├── serializers/            JSON shaping (camelCase, compact)
-│   └── views/                  catalog, courses, scholarships, dashboard,
-│                               home, events, competitions, profile, auth
+│   ├── settings.py             SQLite/Postgres, DRF, CORS, env-driven secrets
+│   ├── urls.py                 mounts every feature's URLs under /api/
+│   ├── middleware.py
+│   └── asgi.py · wsgi.py
+├── features/                   one app per feature (see features/README.md)
+│   ├── common/                 shared choices + serializers (no models)
+│   ├── auth/                   learner identity + login stubs (label: accounts)
+│   ├── catalog/                browse union + taxonomy
+│   ├── courses/                course entity + curriculum + problems
+│   ├── scholarships/           scholarship entity + apply/save
+│   ├── dashboard/              learner workspace projections
+│   ├── home/                   curated landing rails
+│   ├── events/                 events + workshops
+│   ├── competitions/           competitions + challenges
+│   └── profile/                profile read/update
 ├── requirements.txt
 ├── .env.development            dev profile (loaded by default)
 ├── .env.production             prod profile (loaded when DJANGO_ENV=production)
 └── manage.py
 ```
 
-**Convention.** One feature = one view module + one serializer module. Views stay
-thin (resolve learner → query → serialize); serializers own the camelCase mapping
-and use `api/serializers/common.py::compact` to drop empty/`None` fields.
+**Convention.** One feature = one folder = one Django app. Inside a feature the
+files mean the same thing everywhere:
+
+| File | Holds |
+| :--- | :--- |
+| `models.py` | the feature's tables (skip when the feature owns no data) |
+| `serializers.py` | ORM row → the exact camelCase JSON the frontend reads |
+| `views.py` | thin function views: resolve → query → serialize |
+| `urls.py` | the feature's routes |
+| `admin.py` | admin registration so data is easy to inspect and edit |
+| `migrations/` | schema history |
+| `README.md` | what the feature does, routes, data, how it works |
+
+Feature map and the full backend guideline: [`features/README.md`](features/README.md).
 
 ---
 
@@ -84,16 +92,14 @@ exported by hand:
 | `.env.production` | `DJANGO_ENV=production` | Self-hosted production |
 
 > **On Vercel the profile files are skipped** (Vercel sets `VERCEL=1`).
-> Configuration comes from the project's **Environment Variables**, which is the
-> platform-native way and keeps secrets out of git.
+> Configuration comes from the project's **Environment Variables**.
 
-**Real environment variables always win over the file**, so in deployment set
-the values in the host/platform environment (they override `.env.production`):
+**Real environment variables always win over the file**:
 
 | Variable | Purpose |
 | :--- | :--- |
 | `DJANGO_ENV` | Picks the profile (`development` \| `production`). Ignored on Vercel |
-| `DJANGO_DEBUG` | `true` in dev, `false` on Vercel/self-hosted prod (defaults from above) |
+| `DJANGO_DEBUG` | `true` in dev, `false` on Vercel/self-hosted prod |
 | `DJANGO_SECRET_KEY` | Django secret — required and must be real when `DEBUG=false` |
 | `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames the API answers on |
 | `DJANGO_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins allowed to call the API |
@@ -107,12 +113,14 @@ The secret check **fails loudly**: a non-debug run refuses to boot while
 | Command | Description |
 | :--- | :--- |
 | `python manage.py migrate` | Create/update the SQLite schema |
+| `python manage.py makemigrations` | Generate migrations after a model change |
 | `python manage.py runserver` | Dev server |
 | `python manage.py check` | Framework sanity check |
 
 > The database starts **empty** — the API ships no seed data. Add records through
 > the Django admin (`/admin/`) or the ORM; every frontend page renders an empty
-> state until then.
+> state until then. The admin registers every model with useful list columns, so
+> it doubles as a data editor.
 
 ---
 
@@ -147,37 +155,31 @@ exists before the first request.
 
 ## Endpoints
 
-All paths are relative to `/api/`.
+All paths are relative to `/api/`. Each row is owned by the feature folder in
+the last column.
 
-| Method | Path | Purpose |
+| Method | Path | Feature |
 | :--- | :--- | :--- |
-| `GET` | `/catalog` | Paged, filterable list (`type`, `q`, `field`, `level`, `language`, `cost`, `country`, `status`, `sort`, `page`, `ids`). |
-| `GET` | `/catalog/:slug` | One course or scholarship summary. |
-| `GET` | `/courses/:slug` | Course detail (modules, lessons, live sessions, exam, progress). |
-| `GET` | `/courses/:slug/problems` | The course's practice problems. |
-| `GET` | `/problems` | The shared practice set. |
-| `GET` | `/courses/:slug/related` | Related-course rail. |
-| `POST` | `/courses/:slug/enroll` | Enroll the demo learner. |
-| `POST` | `/courses/:slug/progress` | Sync completed lessons / progress. |
-| `GET` | `/courses/:slug/certificate` | Certificate metadata. |
-| `GET` | `/scholarships/:slug` | Scholarship detail. |
-| `POST` | `/scholarships/:slug/apply` | Submit an application. |
-| `POST` | `/scholarships/:slug/save` | Save / unsave. |
-| `GET` | `/dashboard` | Summary (stats, priority continue, imminent live, upcoming events). |
-| `GET` | `/dashboard/enrolled` | Enrolled courses. |
-| `GET` | `/dashboard/saved` | Saved scholarships + favourite courses. |
-| `GET` | `/dashboard/competitions` | Competitions + certificates. |
-| `GET` | `/dashboard/notifications` | Notification items + drawer list. |
-| `POST` | `/dashboard/notifications/:id/read` | Mark one read. |
-| `GET` | `/home` | Featured courses, scholarships, competition, events, quick links. |
-| `GET` | `/events` | Events & seminars. |
-| `GET` | `/competitions` | Competitions & challenges. |
-| `GET` | `/profile` · `PATCH` | Learner profile & preferences. |
-| `GET` | `/auth/me` | Current learner (demo). |
-| `POST` | `/auth/login` · `/auth/oauth/:provider` · `/auth/logout` | Stubs for the future auth flow. |
+| `GET` | `/catalog` — paged, filterable list (`type`, `q`, `field`, `level`, `cost`, `country`, `status`, `sort`, `page`, `ids`) | catalog |
+| `GET` | `/catalog/:slug` — one course or scholarship summary | catalog |
+| `GET` | `/courses/:slug` — course detail (modules, lessons, live sessions, exam) | courses |
+| `GET` | `/courses/:slug/problems`, `/problems` — practice set | courses |
+| `GET` | `/courses/:slug/related` — related-course rail | courses |
+| `POST` | `/courses/:slug/enroll` · `/progress` — learner actions | courses |
+| `GET` | `/courses/:slug/certificate` — certificate metadata | courses |
+| `GET` | `/scholarships/:slug` — scholarship detail | scholarships |
+| `POST` | `/scholarships/:slug/apply` · `/save` | scholarships |
+| `GET` | `/dashboard` · `/enrolled` · `/saved` · `/competitions` · `/notifications` | dashboard |
+| `POST` | `/dashboard/notifications/:id/read` | dashboard |
+| `GET` | `/home` — featured courses/scholarships, competition, events, quick links | home |
+| `GET` | `/events` — events & seminars | events |
+| `GET` | `/competitions` — competitions & challenges | competitions |
+| `GET` · `PATCH` | `/profile` — learner profile & preferences | profile |
+| `GET` | `/auth/me` — current learner (demo) | auth |
+| `POST` | `/auth/login` · `/auth/oauth/:provider` · `/auth/logout` | auth |
 
-Errors use one structured shape (see `api/errors.py`) so the frontend's
-data-section error state can render a message and a retry.
+Errors use one structured shape (see `features/common/errors.py`) so the
+frontend's data-section error state can render a message and a retry.
 
 ---
 
@@ -197,5 +199,7 @@ Start the backend first (`python manage.py runserver`), then `npm run dev`.
 
 ## Related
 
+- Feature map & guideline: [`features/README.md`](features/README.md)
 - Frontend entry point: [`../frontend/README.md`](../frontend/README.md)
 - Contract & entity shapes: [`../docs/07-backend-contract.md`](../docs/07-backend-contract.md)
+- Backend architecture guide: [`../docs/08-backend-architecture.md`](../docs/08-backend-architecture.md)

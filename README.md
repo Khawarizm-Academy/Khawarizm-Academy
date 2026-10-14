@@ -57,10 +57,11 @@ There is intentionally no global state library: state is URL-derived, page-scope
 
 **Backend** (`backend/`)
 
-- **[Django 6](https://www.djangoproject.com/)** + **[Django REST Framework](https://www.django-rest-framework.org/)** — one thin view module per feature
+- **[Django 6](https://www.djangoproject.com/)** + **[Django REST Framework](https://www.django-rest-framework.org/)** — one feature app per product feature
 - **SQLite** via the Django ORM — the schema ships empty, with no seed data
 - **django-cors-headers** — an origin allow-list for the SPA
 - Returns the camelCase JSON shapes the frontend types declare, so the app consumes the API directly
+- **One folder per feature** under `backend/features/` — models, serializers, views, routes and a README live together
 
 ---
 
@@ -80,8 +81,17 @@ Khawarizm-Academy/
 │   └── README.md             frontend entry point
 ├── backend/                  Django + DRF + SQLite API
 │   ├── config/               settings, URLs, WSGI/ASGI
-│   ├── academy/              models and choices (empty schema, no seed data)
-│   ├── api/                  feature-grouped views + serializers
+│   ├── features/             one app per feature, mirroring the frontend
+│   │   ├── common/           shared choices + serializers (no models)
+│   │   ├── auth/             learners + login stubs (app label accounts)
+│   │   ├── catalog/          browse union + taxonomy
+│   │   ├── courses/          course entity + curriculum
+│   │   ├── scholarships/     scholarship entity + apply/save
+│   │   ├── dashboard/        learner workspace projections
+│   │   ├── home/             curated landing rails
+│   │   ├── events/           events + workshops
+│   │   ├── competitions/     competitions + challenges
+│   │   └── profile/          profile read/update
 │   └── README.md             backend entry point
 ├── docs/                     design system, architecture, and guides
 ├── .agents/skills/           agent playbooks for working on the project
@@ -182,6 +192,7 @@ See [`docs/01-design-system.md`](docs/01-design-system.md).
 | [`docs/05-feature-directory.md`](docs/05-feature-directory.md) | Every feature + its own README |
 | [`docs/06-development-guide.md`](docs/06-development-guide.md) | Setup, code style, page-creation workflow, verification |
 | [`docs/07-backend-contract.md`](docs/07-backend-contract.md) | Entities, endpoints, API environment |
+| [`docs/08-backend-architecture.md`](docs/08-backend-architecture.md) | Feature-app layout, models, serializers, views, admin |
 
 Start with [`docs/README.md`](docs/README.md).
 
@@ -192,7 +203,7 @@ Start with [`docs/README.md`](docs/README.md).
 Specialized playbooks live in [`/.agents/skills/`](.agents/skills/README.md) and are loaded while working on the project:
 
 - **khawarizm-frontend** — the master design, engineering, and architecture playbook
-- **khawarizm-code-style** — comments, data over branches, JSON placement, no duplication
+- **khawarizm-code-style** — comments, data over branches, JSON placement, no duplication (frontend and backend)
 - **khawarizm-organization-and-imports** — component folder taxonomy and `@/` import rules
 - **khawarizm-desktop-mobile-views** — the Desktop/Mobile view split
 - **khawarizm-routing** — routes, redirects, tabs, query params
@@ -200,6 +211,8 @@ Specialized playbooks live in [`/.agents/skills/`](.agents/skills/README.md) and
 - **khawarizm-motion** — the Celestial Motion System
 - **khawarizm-layout-edit** — alignment, grids, sticky offsets, CTA hierarchy
 - **khawarizm-page-builder** — the end-to-end page-creation protocol
+- **khawarizm-backend** — the Django + DRF backend playbook (one app per feature, camelCase contract)
+- **khawarizm-backend-feature** — the end-to-end backend feature-creation protocol
 
 ---
 
