@@ -1,8 +1,8 @@
 # 07 · Backend Contract
 
-The frontend is **fully API-driven** — there are no mocks. A Django + DRF +
-SQLite service in `backend/` implements this contract, so this document is both
-the specification and the reference for what is built. See
+The frontend is **fully API-driven** — there are no mocks. A Django + DRF service
+with a Postgres/SQLite database in `backend/` implements this contract, so this
+document is both the specification and the reference for what is built. See
 [`backend/README.md`](../backend/README.md) for how to run it.
 
 This page describes the environment, the domain entities, the data flows the UI
@@ -45,6 +45,12 @@ Real environment variables always win over the profile file, so in deployment yo
 set these in the platform/host environment. `DJANGO_CORS_ALLOWED_ORIGINS` is a
 comma-separated allow-list of the frontend origins, and a non-debug run **fails
 loudly** while `DJANGO_SECRET_KEY` is still a placeholder.
+
+**On Vercel**, the profile files are skipped (Vercel sets `VERCEL=1`); set the
+values as Project Environment Variables instead. `DATABASE_URL` selects Postgres
+and `.vercel.app` hosts/origins are allowed automatically. Without
+`DATABASE_URL`, the build bundles a seeded SQLite file that is read-only at
+runtime, so writes do not persist.
 
 The UI is written against the shapes below, so the two sides evolve independently.
 

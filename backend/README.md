@@ -17,7 +17,7 @@ switching a feature from mock to live changes a fetcher — never a component.
 | Framework | Django 6.1 |
 | API layer | Django REST Framework 3.18 (function-based views) |
 | CORS | `django-cors-headers` (frontend origin allow-list) |
-| Database | SQLite (`db.sqlite3`) |
+| Database | SQLite locally · Postgres on Vercel when `DATABASE_URL` is set |
 | Auth | none yet — a single seeded demo learner is the current user |
 
 ---
@@ -84,18 +84,23 @@ exported by hand:
 | File | Loaded when | Use for |
 | :--- | :--- | :--- |
 | `.env.development` | `DJANGO_ENV` is unset or `development` | Local dev |
-| `.env.production` | `DJANGO_ENV=production` | Production deploy |
+| `.env.production` | `DJANGO_ENV=production` | Self-hosted production |
+
+> **On Vercel the profile files are skipped** (Vercel sets `VERCEL=1`).
+> Configuration comes from the project's **Environment Variables**, which is the
+> platform-native way and keeps secrets out of git.
 
 **Real environment variables always win over the file**, so in deployment set
 the values in the host/platform environment (they override `.env.production`):
 
 | Variable | Purpose |
 | :--- | :--- |
-| `DJANGO_ENV` | Picks the profile (`development` \| `production`) |
-| `DJANGO_DEBUG` | `true` in dev, `false` in production (defaults from `DJANGO_ENV`) |
+| `DJANGO_ENV` | Picks the profile (`development` \| `production`). Ignored on Vercel |
+| `DJANGO_DEBUG` | `true` in dev, `false` on Vercel/self-hosted prod (defaults from above) |
 | `DJANGO_SECRET_KEY` | Django secret — required and must be real when `DEBUG=false` |
 | `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames the API answers on |
 | `DJANGO_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins allowed to call the API |
+| `DATABASE_URL` | Postgres connection string; falls back to SQLite when unset |
 
 The secret check **fails loudly**: a non-debug run refuses to boot while
 `DJANGO_SECRET_KEY` is still a placeholder.
@@ -108,6 +113,35 @@ The secret check **fails loudly**: a non-debug run refuses to boot while
 | `python manage.py seed_data` | Idempotent: clears academy tables and reloads the demo data |
 | `python manage.py runserver` | Dev server |
 | `python manage.py check` | Framework sanity check |
+
+---
+
+## Deploy on Vercel
+
+Vercel detects `manage.py` and runs the ASGI app named by `ASGI_APPLICATION`.
+**No `uvicorn`/`gunicorn` and no rewrite is needed** — Vercel wraps the app as a
+Function.
+
+1. Create a Vercel project with **Root Directory = `backend`**.
+2. Add a Postgres database (Vercel Postgres, Neon, Supabase…) and link it to the
+   project; Vercel injects `DATABASE_URL` automatically.
+3. Add these Environment Variables (Project → Settings → Environment
+   Variables), then redeploy:
+
+   | Variable | Value |
+   | :--- | :--- |
+   | `DJANGO_SECRET_KEY` | a long random string (required) |
+   | `DATABASE_URL` | set by the database integration |
+
+   Hosts and CORS need no manual value on Vercel: the app adds `.vercel.app` and
+   the deployment host to `ALLOWED_HOSTS`, and allows `*.vercel.app` origins.
+
+`vercel.json` runs `migrate` + `seed_data` + `collectstatic` at **build time**,
+so the schema and demo data exist before the first request.
+
+> **SQLite on Vercel is read-only.** Without `DATABASE_URL` the build still
+> seeds `db.sqlite3` and bundles it, so reads work — but writes (enroll, save,
+> profile edits) do not persist. Add Postgres for a fully working backend.
 
 ---
 

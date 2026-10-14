@@ -125,7 +125,8 @@ Configuration uses **dev + production profiles**: `frontend/.env.development` /
 `frontend/.env.production` for the API origin (Vite picks by mode) and
 `backend/.env.development` / `backend/.env.production` for origins and secrets
 (selected by `DJANGO_ENV`). `VITE_API_BASE_URL` is required — the app has no
-fallback. Real environment variables override the files in deployment. See
+fallback. Real environment variables override the files in deployment; on Vercel
+the files are skipped and variables are set in the project dashboard. See
 [`backend/README.md`](backend/README.md).
 
 ### Commands

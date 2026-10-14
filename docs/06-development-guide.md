@@ -46,7 +46,8 @@ Each side uses **dev + production profiles** (no manual copying):
 - **Frontend** — Vite loads `frontend/.env.development` for `npm run dev` and
   `frontend/.env.production` for `npm run build`; `.env.local` overrides locally.
 - **Backend** — `config/settings.py` loads `backend/.env.<DJANGO_ENV>` (default
-  `development`), so `DJANGO_ENV=production` picks `.env.production`.
+  `development`), so `DJANGO_ENV=production` picks `.env.production`. On Vercel
+  the files are skipped; variables come from the project dashboard.
 
 `VITE_API_BASE_URL` is **required** — `shared/lib/apiClient.ts` throws at startup without it. `DJANGO_CORS_ALLOWED_ORIGINS` lists the frontend origins. Real environment variables override the profile files in deployment. The app is **fully API-driven** — a running backend is required. See [07 · Backend Contract](07-backend-contract.md).
 
