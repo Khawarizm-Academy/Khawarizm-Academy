@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play, Pause, CheckCircle2, Check, BookOpen, Volume2, Maximize2, X, Sparkles } from 'lucide-react';
-import dashboardChambersJson from '@/shared/json/dashboardChambers.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface CourseWorkspaceModalProps {
   isOpen: boolean;
@@ -23,16 +23,15 @@ const LESSON_STATE = {
   todo: 'bg-navy-800 text-slate-400',
 };
 
-const defaultLessons = dashboardChambersJson.workspaceLessons as LessonItem[];
-
 export const CourseWorkspaceModal: React.FC<CourseWorkspaceModalProps> = ({
   isOpen,
   onClose,
   courseTitle = 'أساسيات الذكاء الاصطناعي وتعلم الآلة',
   initialLessonIndex = 3,
 }) => {
+  const { chambers } = useDashboardContent();
   const [currentIdx, setCurrentIdx] = useState(initialLessonIndex);
-  const [lessons, setLessons] = useState<LessonItem[]>(defaultLessons);
+  const [lessons, setLessons] = useState<LessonItem[]>(chambers.workspaceLessons);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showCompletionToast, setShowCompletionToast] = useState(false);
 

@@ -12,7 +12,7 @@ This document describes how the frontend is layered, where every kind of file be
 ├──────────────────────────────────────────────────────────────────────────┤
 │  features/   product       one self-contained folder per product feature  │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  shared/     foundations   components, hooks, lib, json, mocks, types     │
+│  shared/     foundations   components, hooks, lib, json, types             │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -56,8 +56,7 @@ frontend/src/
 │   │                Search, State
 │   ├── hooks/       useCachedData, useCountdown, useHorizontalScroll
 │   ├── lib/         cacheManager, localization, navigation
-│   ├── json/        all static configuration + mock data
-│   ├── mocks/       typed JSON wrappers (types + casts) + barrel
+│   ├── json/        all static presentation configuration
 │   └── types/       entities.ts (domain interfaces)
 ├── styles/
 │   ├── tokens.css   @theme tokens + :root variables
@@ -84,7 +83,6 @@ frontend/src/
 | Feature data (non-JSON) | `src/features/<feature>/data/` | `dashboardFetchers.ts`, `playerPanels.ts` |
 | Feature styles | `src/features/<feature>/<feature>.css` | `auth.css` — imported by `globals.css` only |
 | Static data | `src/shared/json/` | `routes.json`, `catalog.json` |
-| Hydrated mock modules | `src/shared/mocks/` | `catalog.ts` (types + JSON casts) |
 | Shared lib / helpers | `src/shared/lib/` | `navigation.ts`, `localization.ts` |
 | Tokens + shared styles | `src/styles/` | `tokens.css`, `globals.css` |
 | Routes & root app | `src/app/` | `router.tsx`, `routes.tsx`, `layouts/`, `pages/` |
@@ -155,11 +153,11 @@ import { DashboardTopBar } from '@/features/dashboard/components/chrome/Dashboar
 import { toArabic } from '@/shared/lib/localization';
 ```
 
-1. **Direct file paths, no barrels.** Import a component from its exact file. One exception: `@/shared/mocks` keeps its `index.ts` barrel.
+1. **Direct file paths, no barrels.** Import a component from its exact file.
 2. **`.ts` / `.tsx` extensionless**; **`.json` and `.css` keep the extension** (`@/shared/json/catalog.json`).
 3. **Types use `import type`** — the repo runs `verbatimModuleSyntax`:
    ```ts
-   import type { CatalogItem } from '@/shared/mocks/catalog';
+   import type { Course } from '@/shared/types/entities';
    import { CatalogCard, type CatalogCardProps } from '@/features/catalog/components/cards/CatalogCard';
    ```
 4. **External packages stay bare** (`import { Trophy } from 'lucide-react'`).
@@ -184,17 +182,17 @@ There is deliberately no global store. State is placed by scope:
 
 ## 8. Data flow
 
-Static configuration is JSON in `src/shared/json/`. JSON cannot hold a component or a type, so a **`.ts` file next to the JSON hydrates it**: it may import the JSON, add a type or cast, and turn names into components — nothing else.
+Static presentation configuration is JSON in `src/shared/json/` — routes, nav, localization, footer, catalog filter labels, and copy. JSON cannot hold a component or a type, so a **`.ts` file next to the JSON hydrates it**: it may import the JSON, add a type or cast, and turn names into components — nothing else. **All record data comes from the backend API**, never from local files.
 
 ```
 shared/json/routes.json      ──►  app/routes.tsx            path → component
 shared/json/shellNav.json    ──►  shared/lib/navigation.ts  NAV_TARGETS + tabs
 shared/json/dashboardNav.json──►  shared/lib/navigation.ts  dashboard nav items
 shared/json/localization.json──►  shared/lib/localization.ts EN→AR dictionaries
-shared/json/*.json           ──►  shared/mocks/*.ts          typed mock modules
+features/<feature>/data/*.ts ──►  shared/lib/apiClient.ts    typed API fetchers
 ```
 
-Data access happens through **fetchers** (feature `data/` or shared mocks) wrapped by `useCachedData`, which reads/writes the singleton `dataCacheManager`. See [04 · Loading, Caching & Motion](04-loading-caching-and-motion.md).
+Data access happens through **fetchers** (each feature's `data/` folder) built on `apiClient`, wrapped by `useCachedData`, which reads/writes the singleton `dataCacheManager`. See [04 · Loading, Caching & Motion](04-loading-caching-and-motion.md) and [07 · Backend Contract](07-backend-contract.md).
 
 ---
 

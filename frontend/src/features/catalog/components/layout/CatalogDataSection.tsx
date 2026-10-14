@@ -4,9 +4,11 @@ import { CatalogCard } from '@/features/catalog/components/cards/CatalogCard';
 import { CatalogPagination } from '@/features/catalog/components/toolbar/CatalogPagination';
 import { CatalogGridSkeleton } from '@/features/catalog/components/states/CatalogGridSkeleton';
 import { fetchCourseDetail } from '@/features/courses/data/courseFetchers';
+import { fetchScholarshipDetail } from '@/features/scholarships/data/scholarshipFetchers';
+import { fetchCatalogPage, type CatalogPage } from '@/features/catalog/data/catalogFetcher';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import { dataCacheManager } from '@/shared/lib/cacheManager';
-import { mockCatalogAll, type CatalogItem } from '@/shared/mocks/catalog';
+import type { CatalogItem } from '@/shared/types/entities';
 import type { CatalogFiltersState, CatalogTab } from '@/features/catalog/types';
 
 interface CatalogDataSectionProps {
@@ -17,82 +19,11 @@ interface CatalogDataSectionProps {
   onSelectCard: (item: CatalogItem) => void;
 }
 
-interface FilterResult {
-  items: CatalogItem[];
-  totalCount: number;
-  totalPages: number;
-  currentPage: number;
-}
-
-const ITEMS_PER_PAGE = 6;
-
 /** Detail cache key per catalog family: courses merge seed data, scholarships reuse the base. */
 const DETAIL_KEY: Record<'course' | 'scholarship', string> = {
   course: 'course-detail',
   scholarship: 'catalog-detail',
 };
-
-/** Pure filter + sort + pagination engine; the caller caches its result. */
-function computeFilteredCatalog(filters: CatalogFiltersState, activeTab: CatalogTab): FilterResult {
-  const filtered = mockCatalogAll.filter((item) => {
-    if (activeTab === 'courses' && item.type !== 'course') return false;
-    if (activeTab === 'scholarships' && item.type !== 'scholarship') return false;
-
-    if (filters.searchQuery.trim()) {
-      const q = filters.searchQuery.toLowerCase();
-      const matchTitle = item.title.toLowerCase().includes(q);
-      const matchCat = item.category.toLowerCase().includes(q);
-      const matchInst = item.instructor?.toLowerCase().includes(q);
-      const matchProv = item.provider?.toLowerCase().includes(q);
-      if (!matchTitle && !matchCat && !matchInst && !matchProv) return false;
-    }
-
-    if (filters.field !== 'all' && item.categorySlug !== filters.field) {
-      return false;
-    }
-
-    if (filters.level !== 'all') {
-      if (item.type === 'course' && item.courseLevel !== filters.level) return false;
-      if (item.type === 'scholarship' && item.degreeLevel !== filters.level) return false;
-    }
-
-    if (filters.cost !== 'all' && item.type === 'course' && item.priceType !== filters.cost) {
-      return false;
-    }
-
-    if (filters.country !== 'all' && item.type === 'scholarship' && item.countrySlug !== filters.country) {
-      return false;
-    }
-
-    if (filters.status !== 'all' && item.type === 'scholarship' && item.status !== filters.status) {
-      return false;
-    }
-
-    return true;
-  }).sort((a, b) => {
-    if (filters.sortBy === 'rating') {
-      return (b.rating || 0) - (a.rating || 0);
-    }
-    if (filters.sortBy === 'deadline') {
-      return (a.daysRemaining || 999) - (b.daysRemaining || 999);
-    }
-    return 0; // default newest
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const currentPage = Math.min(filters.page, totalPages);
-  const items = filtered.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  return {
-    items,
-    totalCount: filtered.length,
-    totalPages,
-    currentPage,
-  };
-}
 
 /** The only part of the page that re-renders on data/filter changes; surrounding chrome stays stable. */
 export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
@@ -119,13 +50,9 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
     },
   ];
 
-  // Cold miss waits 200ms so the Tier 2 skeleton is visible.
-  const fetcher = async (): Promise<FilterResult> => {
-    await new Promise((res) => setTimeout(res, 200));
-    return computeFilteredCatalog(filters, activeTab);
-  };
+  const fetcher = () => fetchCatalogPage(filters, activeTab);
 
-  const { data, isLoading, isFetching, isError, error, refetch } = useCachedData<FilterResult>(cacheKey, fetcher, {
+  const { data, isLoading, isFetching, isError, error, refetch } = useCachedData<CatalogPage>(cacheKey, fetcher, {
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 30 * 60 * 1000, // 30 minutes
     keepPreviousData: true, // keep old cards mounted while a new filter combination loads
@@ -134,11 +61,9 @@ export const CatalogDataSection: React.FC<CatalogDataSectionProps> = ({
   // Warm the detail-page cache on card hover -> instant detail navigation.
   const handlePrefetchDetail = (item: CatalogItem) => {
     const key = DETAIL_KEY[item.type];
-    dataCacheManager.prefetch([key, item.id], async () => {
-      if (item.type === 'course') return fetchCourseDetail(item.id);
-      await new Promise((res) => setTimeout(res, 1));
-      return item;
-    });
+    dataCacheManager.prefetch([key, item.id], async () =>
+      item.type === 'course' ? fetchCourseDetail(item.id) : fetchScholarshipDetail(item.id)
+    );
   };
 
   return (

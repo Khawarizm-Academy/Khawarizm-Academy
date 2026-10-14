@@ -5,7 +5,7 @@ import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkel
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
 import { fetchSavedScholarships, fetchFavoriteCourses } from '@/features/dashboard/data/dashboardFetchers';
 import type { SavedScholarshipItem, FavoriteCourseItem } from '@/features/dashboard/types';
-import dashboardViewsJson from '@/shared/json/dashboardViews.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 export type { SavedScholarshipItem };
 
 interface SavedScholarshipsViewProps {
@@ -14,8 +14,6 @@ interface SavedScholarshipsViewProps {
 }
 
 type SavedTab = 'scholarships' | 'courses';
-
-const SAVED_TABS = dashboardViewsJson.savedTabs as { id: SavedTab; label: string }[];
 
 /** Tag tone by deadline urgency, or duration for favorite courses. */
 const DEADLINE_TONE = {
@@ -28,6 +26,8 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
   onSelectScholarship,
   onSelectCourse,
 }) => {
+  const { content } = useDashboardContent();
+  const SAVED_TABS = content.views.savedTabs;
   const [activeTab, setActiveTab] = useState<SavedTab>('scholarships');
 
   const { data: scholarshipsData, isLoading: isLoadingScholarships } = useCachedData<

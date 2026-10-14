@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate } from '@/app/routerContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
-import { mockCourses, mockScholarships } from '@/shared/mocks/homepage';
+import { PageSkeleton } from '@/shared/components/Loading/PageSkeleton';
+import { fetchHome, type HomePayload } from '@/features/home/data/homeFetcher';
 import { HomeContext } from '@/features/home/context/homeContext';
 import type { CatalogSearchType, HomeContextValue } from '@/features/home/context/homeContext';
-import type { Course, Scholarship } from '@/shared/types/entities';
 
 /** The search type (course|scholarship|all) maps to the catalog's type query. */
 const TAB_BY_SEARCH_TYPE: Record<CatalogSearchType, string> = {
@@ -17,26 +17,29 @@ const TAB_BY_SEARCH_TYPE: Record<CatalogSearchType, string> = {
 export const HomeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
 
-  // Cached data fetchers for the twin rails
-  const { data: coursesData } = useCachedData<Course[]>(
-    ['home-featured-courses'],
-    async () => mockCourses,
-    { initialData: mockCourses, staleTime: 10 * 60 * 1000 }
-  );
-
-  const { data: scholarshipsData } = useCachedData<Scholarship[]>(
-    ['home-featured-scholarships'],
-    async () => mockScholarships,
-    { initialData: mockScholarships, staleTime: 10 * 60 * 1000 }
-  );
+  // One cached payload for all home rails.
+  const { data: home, isLoading } = useCachedData<HomePayload>(['home-content'], fetchHome, {
+    staleTime: 10 * 60 * 1000,
+  });
 
   const submitSearch = (query: string, type: CatalogSearchType) => {
     navigate(`/catalog?type=${TAB_BY_SEARCH_TYPE[type]}&q=${encodeURIComponent(query)}`);
   };
 
+  // The home rails are one payload; show the page skeleton until it arrives.
+  if (isLoading || !home) {
+    return <PageSkeleton variant="home" />;
+  }
+
   const value: HomeContextValue = {
-    coursesData: coursesData || mockCourses,
-    scholarshipsData: scholarshipsData || mockScholarships,
+    coursesData: home.courses,
+    scholarshipsData: home.scholarships,
+    quickLinks: home.quickLinks,
+    competitionMobile: home.competitionMobile,
+    competitionDesktop: home.competitionDesktop,
+    eventMobile: home.eventMobile,
+    eventDesktopFeatured: home.eventDesktopFeatured,
+    eventDesktopWorkshop: home.eventDesktopWorkshop,
     navigateTo: navigate,
     submitSearch,
   };

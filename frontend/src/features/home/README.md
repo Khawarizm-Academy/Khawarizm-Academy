@@ -53,7 +53,8 @@ home/
 
 | Source | Provides |
 | :--- | :--- |
-| `@/shared/mocks/homepage` | featured `mockCourses`, `mockScholarships`, competition (desktop/mobile), events (desktop featured/workshop, mobile), `quickLinks` |
+| `data/homeFetcher.ts` | one payload — live `GET /home` |
+| `context/HomeProvider.tsx` | loads the payload once, shows `PageSkeleton` while loading, then shares it with every home section |
 | `@/shared/hooks/useCachedData` | cached featured data |
 | `@/shared/hooks/useHorizontalScroll` | drag/wheel scrolling for the mobile rails |
 | `@/shared/lib/navigation` | `NAV_TARGETS`, `resolveIcon`, route constants |

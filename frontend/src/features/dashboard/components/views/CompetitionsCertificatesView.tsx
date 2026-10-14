@@ -7,7 +7,7 @@ import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkel
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
 import { fetchCompetitions, fetchCertificates } from '@/features/dashboard/data/dashboardFetchers';
 import type { CompetitionItem, CertificateItem } from '@/features/dashboard/types';
-import dashboardViewsJson from '@/shared/json/dashboardViews.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 export type { CompetitionItem, CertificateItem };
 
 interface CompetitionsCertificatesViewProps {
@@ -16,8 +16,6 @@ interface CompetitionsCertificatesViewProps {
 }
 
 type CompFilter = 'completed' | 'active';
-
-const COMP_FILTERS = dashboardViewsJson.competitionFilters as { id: CompFilter; label: string }[];
 
 /** Status dot tone by competition status color from the dashboard mock. */
 const STATUS_DOT: Record<CompetitionItem['statusColor'], string> = {
@@ -31,6 +29,8 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
   onPreviewCertificate,
 }) => {
   const navigate = useNavigate();
+  const { content } = useDashboardContent();
+  const COMP_FILTERS = content.views.competitionFilters;
   const [filterMode, setFilterMode] = useState<CompFilter>('completed');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 

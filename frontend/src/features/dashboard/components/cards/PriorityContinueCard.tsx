@@ -1,14 +1,14 @@
 import React from 'react';
 import { Brain } from 'lucide-react';
-import dashboardViewsJson from '@/shared/json/dashboardViews.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface PriorityContinueCardProps {
   onContinue?: () => void;
 }
 
-const CARD = dashboardViewsJson.priorityCard;
-
 export const PriorityContinueCard: React.FC<PriorityContinueCardProps> = ({ onContinue }) => {
+  const { content } = useDashboardContent();
+  const card = content.views.priorityCard;
   return (
     <div dir="rtl" className="dash-hero dash-hero-cyan group animate-pop-in">
       {/* Background ambient gradient glow */}
@@ -16,7 +16,7 @@ export const PriorityContinueCard: React.FC<PriorityContinueCardProps> = ({ onCo
 
       {/* Hero tag */}
       <div className="dash-hero-tag dash-hero-tag-cyan">
-        <span className="dash-hero-tag-label">{CARD.tagLabel}</span>
+        <span className="dash-hero-tag-label">{card.tagLabel}</span>
       </div>
 
       {/* Main row: thumbnail on right, title/info on left in RTL */}
@@ -33,8 +33,8 @@ export const PriorityContinueCard: React.FC<PriorityContinueCardProps> = ({ onCo
         </div>
 
         <div className="dash-hero-text">
-          <h2 className="dash-hero-title">{CARD.title}</h2>
-          <p className="dash-hero-sub">{CARD.track}</p>
+          <h2 className="dash-hero-title">{card.title}</h2>
+          <p className="dash-hero-sub">{card.track}</p>
         </div>
       </div>
 
@@ -42,14 +42,14 @@ export const PriorityContinueCard: React.FC<PriorityContinueCardProps> = ({ onCo
       <div className="dash-progress">
         <div className="dash-progress-head">
           <span className="dash-progress-label">
-            الدرس {CARD.currentLesson} من {CARD.totalLessons} دروس
+            الدرس {card.currentLesson} من {card.totalLessons} دروس
           </span>
-          <span className="dash-progress-value">{CARD.completionPercentage}% مكتمل</span>
+          <span className="dash-progress-value">{card.completionPercentage}% مكتمل</span>
         </div>
 
         <div className="dash-progress-track">
           <div
-            style={{ width: `${CARD.completionPercentage}%` }}
+            style={{ width: `${card.completionPercentage}%` }}
             className="dash-progress-fill"
           />
         </div>

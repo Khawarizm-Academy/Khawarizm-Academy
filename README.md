@@ -50,10 +50,17 @@ Each feature owns a README inside its folder — see the [feature directory](doc
 - **[Tailwind CSS v4](https://tailwindcss.com/)** — `@theme` design tokens + plain-CSS concept classes, with full RTL and logical-property support
 - **A custom, data-driven router** in `src/app/` — no router library
 - **[lucide-react](https://lucide.dev/)** — the only icon source
-- **In-memory SWR caching** (`useCachedData` + `dataCacheManager`) over mock fetchers
+- **In-memory SWR caching** (`useCachedData` + `dataCacheManager`) over API fetchers
 - **English domain keys + an Arabic dictionary** for localization
 
 There is intentionally no global state library: state is URL-derived, page-scoped via context, or cached through the shared SWR layer.
+
+**Backend** (`backend/`)
+
+- **[Django 6](https://www.djangoproject.com/)** + **[Django REST Framework](https://www.django-rest-framework.org/)** — one thin view module per feature
+- **SQLite** via the Django ORM, seeded from Python literals in `academy/seed_data.py`
+- **django-cors-headers** — an origin allow-list for the SPA
+- Returns the camelCase JSON shapes the frontend types declare, so the app consumes the API directly
 
 ---
 
@@ -65,12 +72,17 @@ Khawarizm-Academy/
 │   ├── src/
 │   │   ├── app/              router, route table, layouts, app-level pages
 │   │   ├── features/         one folder per feature (+ its README)
-│   │   ├── shared/           components, hooks, lib, json, mocks, types
+│   │   ├── shared/           components, hooks, lib, json, types
 │   │   ├── styles/           design tokens + shared concept classes
 │   │   ├── assets/brand/     source + generated brand assets
 │   │   └── scripts/          brand asset generation
 │   ├── public/               static files (favicons, og-image)
 │   └── README.md             frontend entry point
+├── backend/                  Django + DRF + SQLite API
+│   ├── config/               settings, URLs, WSGI/ASGI
+│   ├── academy/              models, choices, seeds, seed_data command
+│   ├── api/                  feature-grouped views + serializers
+│   └── README.md             backend entry point
 ├── docs/                     design system, architecture, and guides
 ├── .agents/skills/           agent playbooks for working on the project
 ├── Designs/                  design references (mockups + design code)
@@ -85,16 +97,36 @@ Khawarizm-Academy/
 
 - [Node.js](https://nodejs.org/) 18+
 - npm, pnpm, or yarn
+- [Python](https://www.python.org/) 3.11+ — required for the backend (the frontend is fully API-driven)
 
 ### Run it
 
+The frontend is **fully API-driven**, so start the backend first:
+
 ```bash
 git clone https://github.com/AhmedAl-Bahrawy/Khawarizm-Academy.git
-cd Khawarizm-Academy/frontend
+cd Khawarizm-Academy/backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_data
+python manage.py runserver 127.0.0.1:8000
+```
 
+Then, in a second terminal, start the frontend:
+
+```bash
+cd Khawarizm-Academy/frontend
 npm install
 npm run dev        # opens http://localhost:5173
 ```
+
+Configuration uses **dev + production profiles**: `frontend/.env.development` /
+`frontend/.env.production` for the API origin (Vite picks by mode) and
+`backend/.env.development` / `backend/.env.production` for origins and secrets
+(selected by `DJANGO_ENV`). `VITE_API_BASE_URL` is required — the app has no
+fallback. Real environment variables override the files in deployment. See
+[`backend/README.md`](backend/README.md).
 
 ### Commands
 
@@ -113,7 +145,7 @@ npm run dev        # opens http://localhost:5173
 ```
 app/       wiring      router, route table, layouts, app-level pages
 features/  product     one self-contained folder per feature
-shared/    building    components, hooks, lib, json, mocks, types
+shared/    building    components, hooks, lib, json, types
 ```
 
 - **One-way dependencies:** `app → features → shared`. Features never import from each other.
@@ -149,7 +181,7 @@ See [`docs/01-design-system.md`](docs/01-design-system.md).
 | [`docs/04-loading-caching-and-motion.md`](docs/04-loading-caching-and-motion.md) | Dual-tier skeletons, SWR cache, transitions, motion |
 | [`docs/05-feature-directory.md`](docs/05-feature-directory.md) | Every feature + its own README |
 | [`docs/06-development-guide.md`](docs/06-development-guide.md) | Setup, code style, page-creation workflow, verification |
-| [`docs/07-backend-contract.md`](docs/07-backend-contract.md) | Entities, endpoints, mock strategy, environment |
+| [`docs/07-backend-contract.md`](docs/07-backend-contract.md) | Entities, endpoints, API environment |
 
 Start with [`docs/README.md`](docs/README.md).
 

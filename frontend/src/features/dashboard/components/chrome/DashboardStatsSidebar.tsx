@@ -34,10 +34,10 @@ const EVENT_TAG_TONE: Record<string, string> = {
 };
 
 export const DashboardStatsSidebar: React.FC = () => {
-  const { data: stats, isLoading: isLoadingStats } = useCachedData<DashboardStats>(
+  const { data: stats, isLoading: isLoadingStats } = useCachedData<DashboardStats | null>(
     ['dashboard', 'stats'],
     fetchDashboardStats,
-    { initialData: null as unknown as DashboardStats }
+    { initialData: null }
   );
 
   const { data: events, isLoading: isLoadingEvents } = useCachedData<UpcomingEvent[]>(
@@ -52,7 +52,7 @@ export const DashboardStatsSidebar: React.FC = () => {
       <div className="workspace-card dash-widget">
         <h3 className="dash-widget-title">إحصائيات الإنجاز</h3>
 
-        {isLoadingStats ? (
+        {isLoadingStats || !stats ? (
           <DataSectionSkeleton variant="rail" count={1} className="flex-col" />
         ) : (
           <div className="dash-stat-stack">

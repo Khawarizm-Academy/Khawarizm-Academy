@@ -85,8 +85,8 @@ courses/
 
 | Source | Provides |
 | :--- | :--- |
-| `@/shared/mocks/catalog` | catalog summaries merged into the detail |
-| `@/shared/mocks/courses` | `mockCourseDetails`, `mockCourseProblems` |
+| `@/shared/types/entities` | `CatalogItem` (related rail) |
+| `data/courseFetchers.ts` | live `GET /courses/:slug` (+ `/problems`, `/related`, `/certificate`) |
 | `@/shared/json/courseSystem.json` | landing / player / certificate copy |
 | `@/shared/hooks/useCachedData`, `@/shared/lib/cacheManager` | cached detail & problems, related-rail prefetch |
 | `@/shared/types/entities` | `CourseDetail`, `CourseLesson`, `CourseProblem`, … |

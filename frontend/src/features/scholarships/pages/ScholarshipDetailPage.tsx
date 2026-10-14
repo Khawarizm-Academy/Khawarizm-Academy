@@ -4,15 +4,13 @@ import { useCachedData } from '@/shared/hooks/useCachedData';
 import { PageSkeleton } from '@/shared/components/Loading/PageSkeleton';
 import { ItemDetailView } from '@/shared/components/Detail/ItemDetailView';
 import { StatePanel } from '@/shared/components/State/StatePanel';
-import { mockCatalogAll, type CatalogItem } from '@/shared/mocks/catalog';
+import { fetchScholarshipDetail } from '@/features/scholarships/data/scholarshipFetchers';
+import type { CatalogItem } from '@/shared/types/entities';
 
 export const ScholarshipDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
 
-  const fetcher = useCallback(async (): Promise<CatalogItem | null> => {
-    await new Promise((res) => setTimeout(res, 60));
-    return mockCatalogAll.find((i) => i.id === slug && i.type === 'scholarship') ?? null;
-  }, [slug]);
+  const fetcher = useCallback(() => fetchScholarshipDetail(slug), [slug]);
 
   const { data: item, isLoading } = useCachedData<CatalogItem | null>(['catalog-detail', slug], fetcher, {
     keepPreviousData: true,

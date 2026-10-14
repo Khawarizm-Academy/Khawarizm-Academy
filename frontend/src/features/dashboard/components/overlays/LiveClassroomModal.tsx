@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Radio, Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Users, X, Send } from 'lucide-react';
-import dashboardChambersJson from '@/shared/json/dashboardChambers.json';
+import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 
 interface LiveClassroomModalProps {
   isOpen: boolean;
@@ -40,23 +40,18 @@ const CODE_TONE: Record<string, string> = {
 };
 const CODE_INDENT = ['', 'pr-4', 'pr-8'];
 
-const initialMessages = dashboardChambersJson.classroomMessages as ChatMessage[];
-const CODE_LINES = dashboardChambersJson.classroomCode as {
-  tone: string;
-  indent: number;
-  text: string;
-}[];
-
 export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
   isOpen,
   onClose,
   courseTitle = 'برمجة بايثون للمبتدئين',
   instructorName = 'م. خالد الشمري',
 }) => {
+  const { chambers } = useDashboardContent();
+  const CODE_LINES = chambers.classroomCode;
   const [isMicOn, setIsMicOn] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(chambers.classroomMessages);
   const [inputMessage, setInputMessage] = useState('');
 
   if (!isOpen) return null;

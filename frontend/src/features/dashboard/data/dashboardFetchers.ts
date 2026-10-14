@@ -1,3 +1,4 @@
+import { apiGet } from '@/shared/lib/apiClient';
 import type {
   EnrolledCourse,
   LiveSessionInfo,
@@ -10,55 +11,77 @@ import type {
   CertificateItem,
   NotificationItemData,
 } from '@/features/dashboard/types';
-import {
-  mockEnrolledCourses,
-  mockPriorityContinueCourse,
-  mockImminentLiveSession,
-  mockDashboardStats,
-  mockUpcomingEvents,
-  mockNotifications,
-  mockDashboardNotifications,
-  mockSavedScholarships,
-  mockFavoriteCourses,
-  mockCompetitions,
-  mockCertificates,
-} from '@/shared/mocks/dashboard';
 
-const COLD_LATENCY_MS = 400;
-
-function coldDelay<T>(value: T): Promise<T> {
-  return new Promise((resolve) => setTimeout(() => resolve(value), COLD_LATENCY_MS));
+/** The priority "continue learning" row carried by the dashboard summary. */
+export interface PriorityContinue {
+  id: string;
+  title: string;
+  levelDuration?: string;
+  instructorSubtitle?: string;
+  lessonStatus?: string;
+  progress: number;
+  thumbnail: string;
 }
 
+/** Shape of GET /dashboard (the summary endpoint). */
+interface DashboardSummary {
+  stats: DashboardStats | null;
+  priorityContinue: PriorityContinue | null;
+  imminentLiveSession: LiveSessionInfo | null;
+  upcomingEvents: UpcomingEvent[];
+}
+
+const fetchSummary = () => apiGet<DashboardSummary>('/dashboard');
+
 export const fetchEnrolledCourses = (): Promise<EnrolledCourse[]> =>
-  coldDelay(mockEnrolledCourses);
+  apiGet<EnrolledCourse[]>('/dashboard/enrolled');
 
-export const fetchPriorityContinue = (): Promise<(typeof mockPriorityContinueCourse)[]> =>
-  coldDelay([mockPriorityContinueCourse]);
+export const fetchPriorityContinue = async (): Promise<PriorityContinue[]> => {
+  const summary = await fetchSummary();
+  return summary.priorityContinue ? [summary.priorityContinue] : [];
+};
 
-export const fetchImminentLiveSession = (): Promise<LiveSessionInfo> =>
-  coldDelay(mockImminentLiveSession);
+export const fetchImminentLiveSession = async (): Promise<LiveSessionInfo | null> => {
+  const summary = await fetchSummary();
+  return summary.imminentLiveSession;
+};
 
-export const fetchDashboardStats = (): Promise<DashboardStats> =>
-  coldDelay(mockDashboardStats);
+export const fetchDashboardStats = async (): Promise<DashboardStats | null> => {
+  const summary = await fetchSummary();
+  return summary.stats;
+};
 
-export const fetchUpcomingEvents = (): Promise<UpcomingEvent[]> =>
-  coldDelay(mockUpcomingEvents);
+export const fetchUpcomingEvents = async (): Promise<UpcomingEvent[]> => {
+  const summary = await fetchSummary();
+  return summary.upcomingEvents;
+};
 
-export const fetchSavedScholarships = (): Promise<SavedScholarshipItem[]> =>
-  coldDelay(mockSavedScholarships);
+export const fetchSavedScholarships = async (): Promise<SavedScholarshipItem[]> => {
+  const data = await apiGet<{ scholarships: SavedScholarshipItem[] }>('/dashboard/saved');
+  return data.scholarships;
+};
 
-export const fetchFavoriteCourses = (): Promise<FavoriteCourseItem[]> =>
-  coldDelay(mockFavoriteCourses);
+export const fetchFavoriteCourses = async (): Promise<FavoriteCourseItem[]> => {
+  const data = await apiGet<{ courses: FavoriteCourseItem[] }>('/dashboard/saved');
+  return data.courses;
+};
 
-export const fetchCompetitions = (): Promise<CompetitionItem[]> =>
-  coldDelay(mockCompetitions);
+export const fetchCompetitions = async (): Promise<CompetitionItem[]> => {
+  const data = await apiGet<{ competitions: CompetitionItem[] }>('/dashboard/competitions');
+  return data.competitions;
+};
 
-export const fetchCertificates = (): Promise<CertificateItem[]> =>
-  coldDelay(mockCertificates);
+export const fetchCertificates = async (): Promise<CertificateItem[]> => {
+  const data = await apiGet<{ certificates: CertificateItem[] }>('/dashboard/competitions');
+  return data.certificates;
+};
 
-export const fetchDashboardNotifications = (): Promise<NotificationItemData[]> =>
-  coldDelay(mockDashboardNotifications);
+export const fetchDashboardNotifications = async (): Promise<NotificationItemData[]> => {
+  const data = await apiGet<{ items: NotificationItemData[] }>('/dashboard/notifications');
+  return data.items;
+};
 
-export const fetchDrawerNotifications = (): Promise<DashboardNotification[]> =>
-  coldDelay(mockNotifications);
+export const fetchDrawerNotifications = async (): Promise<DashboardNotification[]> => {
+  const data = await apiGet<{ drawer: DashboardNotification[] }>('/dashboard/notifications');
+  return data.drawer;
+};

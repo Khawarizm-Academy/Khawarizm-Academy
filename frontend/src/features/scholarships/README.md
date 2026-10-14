@@ -31,7 +31,7 @@ There is no feature state store, context, or component folder.
 ## How it works
 
 - Reads `slug` via `useParams`.
-- Loads the item with `useCachedData(['catalog-detail', slug], fetcher, { keepPreviousData, staleTime: 10min, cacheTime: 30min })`, matching on `type === 'scholarship'` inside `mockCatalogAll`. The fetcher simulates a 60ms delay.
+- Loads the item with `useCachedData(['catalog-detail', slug], fetcher, { keepPreviousData, staleTime: 10min, cacheTime: 30min })`. The fetcher (`fetchScholarshipDetail`) reads `GET /scholarships/:slug` and maps a 404 to the not-found panel.
 - Renders `PageSkeleton` (detail variant) while loading and `StatePanel` for the not-found state, then the shared `ItemDetailView` with `backPath="/catalog?type=scholarships"` and the primary CTA label.
 - Entered from `features/catalog/context/CatalogProvider.tsx` (`selectCard` navigates to `/scholarships/:id`), with hover prefetch warming the same cache key.
 
@@ -39,7 +39,8 @@ There is no feature state store, context, or component folder.
 
 | Source | Provides |
 | :--- | :--- |
-| `@/shared/mocks/catalog` | `mockCatalogAll`, `CatalogItem` |
+| `data/scholarshipFetchers.ts` | `fetchScholarshipDetail` — `GET /scholarships/:slug` (404 → null) |
+| `@/shared/types/entities` | `CatalogItem` |
 | `@/shared/hooks/useCachedData` | cached detail read |
 | `@/shared/components/Detail/ItemDetailView` | the detail layout (shared with courses pattern) |
 | `@/shared/components/State/StatePanel` | not-found / closed state |

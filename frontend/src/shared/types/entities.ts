@@ -4,7 +4,51 @@ import type {
   ScholarshipCoverageKey,
   DegreeLevelKey,
   EventFormatKey,
+  NavTabKey,
 } from '@/shared/lib/localization';
+
+/** A unified card record for both catalog pillars. */
+export interface CatalogItem {
+  id: string;
+  type: 'course' | 'scholarship';
+  title: string;
+  category: string;
+  categorySlug: 'ai' | 'programming' | 'cybersecurity' | 'space' | 'cs';
+  thumbnailUrl: string;
+  // Course specific
+  rating?: number;
+  duration?: string;
+  lessonsCount?: number;
+  instructor?: string;
+  courseLevel?: 'beginner' | 'intermediate' | 'advanced';
+  courseLevelAr?: string;
+  priceType?: 'free' | 'paid';
+  priceLabel?: string;
+  progressBadge?: string;
+  // Scholarship specific
+  country?: string;
+  countrySlug?: 'saudi' | 'usa' | 'turkey' | 'uk' | 'germany';
+  degreeLevel?: 'bachelor' | 'master' | 'phd';
+  degreeLabel?: string;
+  provider?: string;
+  coverageType?: 'fully_funded' | 'partial';
+  coverageLabel?: string;
+  daysRemaining?: number;
+  deadlineBadge?: string;
+  deadlineUrgency?: 'critical' | 'warning' | 'normal';
+  status?: 'open' | 'closing_soon' | 'closed';
+  language?: 'arabic' | 'english' | 'french';
+}
+
+/** A home shortcut into the dashboard or one of the catalog pillars. */
+export interface QuickLink {
+  id: string;
+  icon: string;
+  label: string;
+  subtitle: string;
+  tone: 'blue' | 'gold';
+  target: NavTabKey;
+}
 
 export interface Course {
   id: string;
@@ -56,6 +100,8 @@ export interface CourseModule {
 /** The full landing-page picture of one course, merged from base + seed data. */
 export interface CourseDetail {
   id: string;
+  /** Lesson the student left off at; lessons before it count as completed. */
+  startedLessonId?: string;
   title: string;
   category: string;
   categorySlug: string;

@@ -65,7 +65,8 @@ catalog/
 | Source | Provides |
 | :--- | :--- |
 | `@/shared/json/catalog.json` | tab/search-type maps, page titles, sort labels, filter group config |
-| `@/shared/mocks/catalog` | `mockCatalogAll`, `CatalogItem` |
+| `@/shared/types/entities` | `CatalogItem` |
+| `data/catalogFetcher.ts` | live `GET /catalog` (server-side filter/sort/paginate) |
 | `@/shared/hooks/useCachedData` | cached item queries |
 | `@/shared/lib/cacheManager` | `prefetch` for detail warm-up |
 | `data/catalogFilters.ts` | `getFilterGroups(surface, tab)` from the JSON config |

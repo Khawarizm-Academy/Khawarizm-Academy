@@ -5,7 +5,7 @@ import { dataCacheManager } from '@/shared/lib/cacheManager';
 import { CatalogCard } from '@/features/catalog/components/cards/CatalogCard';
 import { fetchCourseDetail, fetchRelatedCourses } from '@/features/courses/data/courseFetchers';
 import { courseCopy } from '@/features/courses/data/courseCopy';
-import type { CatalogItem } from '@/shared/mocks/catalog';
+import type { CatalogItem } from '@/shared/types/entities';
 
 interface RelatedCoursesRailProps {
   relatedIds: string[];
