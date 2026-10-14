@@ -1,6 +1,6 @@
-# Khawarizm Academy backend dependencies.
-# Install with: pip install -r requirements.txt
+asgiref==3.12.1
 Django==6.1.2
-djangorestframework==3.18.3
 django-cors-headers==4.9.0
+djangorestframework==3.18.3
 python-dotenv==1.2.4
+sqlparse==0.6.0
