@@ -10,6 +10,7 @@ import { Footer } from '@/shared/components/Footer/Footer';
 import { PageSkeleton } from '@/shared/components/Loading/PageSkeleton';
 import { NotificationsDrawer } from '@/features/dashboard/components/overlays/NotificationsDrawer';
 import { NAV_TARGETS } from '@/shared/lib/navigation';
+import { Analytics } from '@vercel/analytics/react';
 import type { NavTabKey } from '@/shared/lib/localization';
 
 /** Celestial atmosphere washes: geometry, tone and drift delay of each glow. */
@@ -97,6 +98,7 @@ export const RootLayout: React.FC = () => {
         onClose={() => setIsGlobalNotificationsOpen(false)}
         onNavigate={(path) => navigate(path)}
       />
+      <Analytics />
     </div>
   );
 };
