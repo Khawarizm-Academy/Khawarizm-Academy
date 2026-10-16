@@ -1,11 +1,15 @@
 """Verifies Firebase ID tokens and maps them onto our `User` table.
 
-Real verification uses the Firebase Admin SDK (project id + Google's public
-keys). In development, when no project is configured, a `dev:<email>[:role]`
-token is accepted so the SPA runs locally without a Firebase project.
+Real verification uses the Firebase Admin SDK: the project id names the project
+whose public keys signed the token, and a service account (when one is
+configured) unlocks the privileged calls. In development, when no project is
+configured, a `dev:<email>[:role]` token is accepted so the SPA runs locally
+without a Firebase project.
 """
 
 from __future__ import annotations
+
+import json
 
 from django.conf import settings
 
@@ -23,12 +27,26 @@ class FirebaseError(Exception):
     """Raised when an ID token cannot be trusted."""
 
 
+def _service_account():
+    """The configured service account, or None to use the ambient default."""
+    from firebase_admin import credentials
+
+    if settings.FIREBASE_CREDENTIALS_PATH:
+        return credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+    if settings.FIREBASE_CREDENTIALS:
+        return credentials.Certificate(json.loads(settings.FIREBASE_CREDENTIALS))
+    return None
+
+
 def _admin_auth():
     import firebase_admin
     from firebase_admin import auth as fb_auth
 
     if not firebase_admin._apps:
-        firebase_admin.initialize_app(options={"projectId": settings.FIREBASE_PROJECT_ID})
+        firebase_admin.initialize_app(
+            credential=_service_account(),
+            options={"projectId": settings.FIREBASE_PROJECT_ID},
+        )
     return fb_auth
 
 

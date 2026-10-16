@@ -183,10 +183,35 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "features.common.errors.api_exception_handler",
 }
 
-# Firebase web app config — the SPA reads this from `/api/auth/config`.
-# The project id is all the Admin SDK needs to verify ID tokens server-side.
+# Firebase. Two halves that must agree:
+#   • the WEB app config (public — it ships inside the browser bundle) is served
+#     to the SPA by `/api/auth/config`, which initializes `firebase/app`;
+#   • the ADMIN SDK (private) verifies the ID tokens the SPA sends back.
+# Copy the whole web config block from Firebase console → Project settings →
+# Your apps → SDK setup and configuration, so every key stays in one place.
 FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "")
 FIREBASE_AUTH_DOMAIN = os.environ.get("FIREBASE_AUTH_DOMAIN", "")
 FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "")
+FIREBASE_STORAGE_BUCKET = os.environ.get("FIREBASE_STORAGE_BUCKET", "")
+FIREBASE_MESSAGING_SENDER_ID = os.environ.get("FIREBASE_MESSAGING_SENDER_ID", "")
+FIREBASE_APP_ID = os.environ.get("FIREBASE_APP_ID", "")
+FIREBASE_MEASUREMENT_ID = os.environ.get("FIREBASE_MEASUREMENT_ID", "")
+
+# The Admin SDK service account, only needed for privileged calls (custom
+# claims, user management, revocation checks). Never commit it: pass a path or
+# the raw JSON through the host environment.
+FIREBASE_CREDENTIALS = os.environ.get("FIREBASE_CREDENTIALS", "")
+FIREBASE_CREDENTIALS_PATH = os.environ.get("FIREBASE_CREDENTIALS_PATH", "")
+
+# A project id is the switch: once it is set the API stops accepting `dev:` tokens.
 # Dev fallback: accept `dev:<email>[:<role>]` tokens while no Firebase project is set.
 FIREBASE_ALLOW_DEV_TOKENS = env_bool("FIREBASE_ALLOW_DEV_TOKENS", DEBUG)
+
+# Half a config is worse than none — it boots, then every sign-in fails in the
+# browser. Catch it here, where the message can say what to paste.
+if FIREBASE_PROJECT_ID and not (FIREBASE_API_KEY and FIREBASE_AUTH_DOMAIN):
+    raise ImproperlyConfigured(
+        "FIREBASE_PROJECT_ID is set but FIREBASE_API_KEY / FIREBASE_AUTH_DOMAIN are not. "
+        "Copy the entire web config block from Firebase console → Project settings → "
+        "Your apps, or clear FIREBASE_PROJECT_ID to keep using dev:<email> tokens."
+    )

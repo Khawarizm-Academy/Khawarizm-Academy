@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import admin
 from django.core.exceptions import FieldDoesNotExist
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from features.auth import services
+from features.auth import firebase, services
 from features.auth.models import AuthEvent, InstructorProfile, StudentProfile, User, UserSession
 from features.auth.serializers import session_payload, user_profile
-from features.common.choices import Role, SessionRevokeReason
+from features.common.choices import AuthProvider, Role, SessionRevokeReason
 from features.common.testing import ApiTestCase, FakeRequest, authenticate, make_admin, make_user
 
 IPHONE_UA = (
@@ -130,6 +133,62 @@ class AuthViewTests(ApiTestCase):
     def test_config_reports_whether_dev_tokens_are_accepted(self):
         body = self.client.get("/api/auth/config").json()
         self.assertEqual(body["devAuth"], settings.FIREBASE_ALLOW_DEV_TOKENS and not settings.FIREBASE_PROJECT_ID)
+
+    @override_settings(
+        FIREBASE_PROJECT_ID="demo-project",
+        FIREBASE_API_KEY="key-123",
+        FIREBASE_AUTH_DOMAIN="demo-project.firebaseapp.com",
+        FIREBASE_STORAGE_BUCKET="demo-project.firebasestorage.app",
+        FIREBASE_MESSAGING_SENDER_ID="123456789",
+        FIREBASE_APP_ID="1:123456789:web:abc",
+        FIREBASE_MEASUREMENT_ID="G-ABC",
+    )
+    def test_config_serves_the_whole_web_config_the_console_prints(self):
+        body = self.client.get("/api/auth/config").json()["firebase"]
+
+        self.assertEqual(
+            body,
+            {
+                "apiKey": "key-123",
+                "authDomain": "demo-project.firebaseapp.com",
+                "projectId": "demo-project",
+                "storageBucket": "demo-project.firebasestorage.app",
+                "messagingSenderId": "123456789",
+                "appId": "1:123456789:web:abc",
+                "measurementId": "G-ABC",
+            },
+        )
+
+    @override_settings(
+        FIREBASE_PROJECT_ID="demo-project",
+        FIREBASE_API_KEY="key-123",
+        FIREBASE_AUTH_DOMAIN="demo-project.firebaseapp.com",
+        FIREBASE_STORAGE_BUCKET="",
+        FIREBASE_MESSAGING_SENDER_ID="",
+        FIREBASE_APP_ID="",
+        FIREBASE_MEASUREMENT_ID="",
+    )
+    def test_config_omits_the_optional_keys_left_empty(self):
+        body = self.client.get("/api/auth/config").json()["firebase"]
+
+        self.assertEqual(sorted(body), ["apiKey", "authDomain", "projectId"])
+
+    @override_settings(FIREBASE_PROJECT_ID="demo-project", FIREBASE_ALLOW_DEV_TOKENS=True)
+    def test_a_configured_project_turns_the_dev_fallback_off(self):
+        # Both the fallback and the project id are on; the project id must win.
+        self.assertFalse(self.client.get("/api/auth/config").json()["devAuth"])
+
+    @override_settings(
+        FIREBASE_PROJECT_ID="",
+        FIREBASE_API_KEY="",
+        FIREBASE_AUTH_DOMAIN="",
+        FIREBASE_STORAGE_BUCKET="",
+        FIREBASE_MESSAGING_SENDER_ID="",
+        FIREBASE_APP_ID="",
+        FIREBASE_MEASUREMENT_ID="",
+    )
+    def test_config_ships_no_keys_until_a_project_is_pasted_in(self):
+        self.assertEqual(self.client.get("/api/auth/config").json()["firebase"], {})
 
     def test_dev_login_returns_tokens_for_a_new_user(self):
         body = self.client.post("/api/auth/firebase", {"idToken": "dev:new@example.com"}, format="json").json()
@@ -248,6 +307,79 @@ class AuthSessionLifecycleTests(ApiTestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json()["code"], "revoked_by_admin")
+
+
+class FirebaseVerificationTests(TestCase):
+    """The switch between a real project and the local `dev:` fallback."""
+
+    def tearDown(self):
+        # The Admin SDK caches one app per process; drop it so tests stay independent.
+        import firebase_admin
+
+        firebase_admin._apps.clear()
+
+    @override_settings(FIREBASE_PROJECT_ID="", FIREBASE_ALLOW_DEV_TOKENS=True)
+    def test_a_dev_token_is_accepted_while_no_project_is_configured(self):
+        identity = firebase.verify_id_token("dev:someone@example.com")
+
+        self.assertEqual(identity["email"], "someone@example.com")
+        self.assertEqual(identity["provider"], AuthProvider.DEV)
+
+    @override_settings(FIREBASE_PROJECT_ID="", FIREBASE_ALLOW_DEV_TOKENS=True)
+    def test_a_dev_token_can_carry_a_role(self):
+        identity = firebase.verify_id_token("dev:teach@example.com:instructor")
+
+        self.assertEqual(identity["role"], Role.INSTRUCTOR)
+
+    @override_settings(FIREBASE_PROJECT_ID="", FIREBASE_ALLOW_DEV_TOKENS=True)
+    def test_a_dev_token_without_an_email_is_refused(self):
+        with self.assertRaises(firebase.FirebaseError):
+            firebase.verify_id_token("dev:")
+
+    @override_settings(FIREBASE_PROJECT_ID="", FIREBASE_ALLOW_DEV_TOKENS=False)
+    def test_a_dev_token_is_refused_once_the_fallback_is_switched_off(self):
+        with self.assertRaises(firebase.FirebaseError):
+            firebase.verify_id_token("dev:someone@example.com")
+
+    @override_settings(FIREBASE_PROJECT_ID="demo-project", FIREBASE_ALLOW_DEV_TOKENS=True)
+    def test_a_dev_token_loses_to_a_configured_project(self):
+        # The project id wins, so the string goes to the Admin SDK and comes back refused.
+        with self.assertRaises(firebase.FirebaseError):
+            firebase.verify_id_token("dev:someone@example.com")
+
+
+class FirebaseSettingsGuardTests(TestCase):
+    """A half-filled Firebase config must stop the boot, not the browser."""
+
+    def _boot(self, **env_overrides) -> subprocess.CompletedProcess:
+        """Import the real settings in a clean process, exactly like `runserver`."""
+        return subprocess.run(
+            [sys.executable, "-c", "import django; django.setup()"],
+            cwd=settings.BASE_DIR,
+            env={
+                **os.environ,
+                "DJANGO_SETTINGS_MODULE": "config.settings",
+                "DJANGO_ENV": "development",
+                **env_overrides,
+            },
+            capture_output=True,
+            text=True,
+        )
+
+    def test_a_project_id_without_a_web_config_refuses_to_boot(self):
+        result = self._boot(FIREBASE_PROJECT_ID="demo-project", FIREBASE_API_KEY="", FIREBASE_AUTH_DOMAIN="")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("FIREBASE_API_KEY", result.stderr)
+
+    def test_a_complete_config_boots(self):
+        result = self._boot(
+            FIREBASE_PROJECT_ID="demo-project",
+            FIREBASE_API_KEY="key-123",
+            FIREBASE_AUTH_DOMAIN="demo-project.firebaseapp.com",
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 class AuthUrlTests(TestCase):

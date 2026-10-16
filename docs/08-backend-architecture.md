@@ -237,6 +237,23 @@ Development signs in with a synthetic `dev:<email>` token when
 `FIREBASE_ALLOW_DEV_TOKENS` is on and no `FIREBASE_PROJECT_ID` is set, so the
 whole flow is testable without a Firebase project.
 
+### Configuring Firebase
+
+One project, configured once, on the backend. The SPA never holds a key:
+`GET /api/auth/config` serves the web config and `AuthProvider` calls
+`initializeApp()` with it, so changing projects is an env edit and not a
+frontend rebuild.
+
+| Half | Where it lives | Secret? |
+| :--- | :--- | :--- |
+| Web config (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`, `measurementId`) | `FIREBASE_*` env vars → `/api/auth/config` → the browser | No — it ships in the bundle by design |
+| Admin SDK (`projectId`, plus an optional service account for privileged calls) | `FIREBASE_PROJECT_ID`, `FIREBASE_CREDENTIALS_PATH` / `FIREBASE_CREDENTIALS` | The service account **is** — keep it in the host environment |
+
+`settings.py` treats `FIREBASE_PROJECT_ID` as the switch: set it and `dev:`
+tokens stop being accepted, clear it and they come back. A project id without
+an `apiKey`/`authDomain` raises `ImproperlyConfigured` at boot — a half config
+would otherwise only surface as a failed sign-in in the browser.
+
 ---
 
 ## Related

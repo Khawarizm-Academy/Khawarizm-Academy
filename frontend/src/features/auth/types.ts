@@ -34,9 +34,20 @@ export interface AuthUser {
   lastSeenAt: string | null;
 }
 
+/** The Firebase web config the API hands the SPA — public, copied from the console. */
+export interface FirebaseWebConfig {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket?: string;
+  messagingSenderId?: string;
+  appId?: string;
+  measurementId?: string;
+}
+
 /** Firebase client config + which providers the API accepts. */
 export interface AuthConfig {
-  firebase: { apiKey: string; authDomain: string; projectId: string };
+  firebase: FirebaseWebConfig;
   providers: AuthProviderId[];
   /** True when the API accepts `dev:<email>` tokens (local development). */
   devAuth: boolean;

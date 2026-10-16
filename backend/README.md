@@ -104,9 +104,44 @@ exported by hand:
 | `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames the API answers on |
 | `DJANGO_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins allowed to call the API |
 | `DATABASE_URL` | Postgres connection string; falls back to SQLite when unset |
+| `FIREBASE_*` | The Firebase web config + Admin SDK credentials (see below) |
 
 The secret check **fails loudly**: a non-debug run refuses to boot while
 `DJANGO_SECRET_KEY` is still a placeholder.
+
+### Firebase
+
+Real sign-in needs one project, configured once, on the backend only — the SPA
+fetches the web config from `GET /api/auth/config` at boot, so there is nothing
+to paste into the frontend.
+
+1. Firebase console → **Project settings → Your apps** → add a **Web** app.
+2. Copy the config block into the `FIREBASE_*` values (both env files already
+   carry the skeleton, with a comment per key).
+3. Enable the providers you want under **Authentication → Sign-in method**
+   (Email/Password, Google, Facebook).
+4. Add `localhost` and the deployed origin under **Authentication → Settings →
+   Authorized domains**.
+5. Set `FIREBASE_ALLOW_DEV_TOKENS=false` in production.
+
+| Variable | Purpose |
+| :--- | :--- |
+| `FIREBASE_API_KEY` | Web config — public, ships in the browser bundle |
+| `FIREBASE_AUTH_DOMAIN` | Web config — `<project>.firebaseapp.com` |
+| `FIREBASE_PROJECT_ID` | Web config **and the on/off switch**: set it and the API stops accepting `dev:` tokens |
+| `FIREBASE_STORAGE_BUCKET` | Web config — `<project>.firebasestorage.app` |
+| `FIREBASE_MESSAGING_SENDER_ID` | Web config |
+| `FIREBASE_APP_ID` | Web config — `1:<number>:web:<hash>` |
+| `FIREBASE_MEASUREMENT_ID` | Web config — Analytics id, optional |
+| `FIREBASE_CREDENTIALS_PATH` / `FIREBASE_CREDENTIALS` | **Secret** service account (a path or the raw JSON) for privileged Admin SDK calls; never committed |
+| `FIREBASE_ALLOW_DEV_TOKENS` | Accept `dev:<email>[:<role>]` tokens; defaults to `DEBUG` |
+
+> A **half-filled** config stops the boot: with `FIREBASE_PROJECT_ID` set but no
+> `FIREBASE_API_KEY` / `FIREBASE_AUTH_DOMAIN`, `settings.py` raises
+> `ImproperlyConfigured` rather than letting every sign-in fail in the browser.
+>
+> Verifying ID tokens only needs the project id, so `dev:<email>` works with no
+> Firebase project at all — that is why the defaults ship empty.
 
 ### Commands
 
