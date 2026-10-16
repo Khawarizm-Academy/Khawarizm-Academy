@@ -65,8 +65,15 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "academy",
-    "api",
+    # Feature apps — one folder per product feature, mirroring the frontend.
+    "features.auth",
+    "features.catalog",
+    "features.courses",
+    "features.scholarships",
+    "features.dashboard",
+    "features.home",
+    "features.events",
+    "features.competitions",
 ]
 
 MIDDLEWARE = [
@@ -102,8 +109,8 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # Postgres when DATABASE_URL is provided (Vercel Postgres/Neon); SQLite otherwise.
-# On Vercel with no database, migrate + seed_data run at build time and the
-# generated SQLite file is bundled into the function (read-only at runtime).
+# On Vercel with no database, migrate runs at build time and the generated SQLite
+# file is bundled into the function (read-only at runtime).
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL:
     db = urllib.parse.urlparse(DATABASE_URL)
@@ -166,6 +173,6 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
-    "EXCEPTION_HANDLER": "api.errors.api_exception_handler",
+    "EXCEPTION_HANDLER": "features.common.errors.api_exception_handler",
     "UNAUTHENTICATED_USER": None,
 }

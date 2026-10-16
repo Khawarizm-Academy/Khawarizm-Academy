@@ -104,3 +104,26 @@ Features compose a shared layer. The components, hooks, and config used most oft
 | `useCachedData` / cache | `shared/hooks/useCachedData.ts`, `shared/lib/cacheManager.ts` | every data section |
 | `useCountdown` / digits | `shared/hooks/useCountdown.ts`, `shared/components/Banners/CountdownDigits.tsx` | home, dashboard |
 | Navigation / localization | `shared/lib/navigation.ts`, `shared/lib/localization.ts` | everywhere |
+
+---
+
+## Backend twins
+
+Each frontend feature has a matching backend app under `backend/features/`. The
+names line up one-for-one, so a feature's data lives in the app of the same name.
+
+| Feature | Backend app | Backend README |
+| :--- | :--- | :--- |
+| Home | `features/home` | [`home/README.md`](../../backend/features/home/README.md) |
+| Catalog | `features/catalog` | [`catalog/README.md`](../../backend/features/catalog/README.md) |
+| Courses | `features/courses` | [`courses/README.md`](../../backend/features/courses/README.md) |
+| Scholarships | `features/scholarships` | [`scholarships/README.md`](../../backend/features/scholarships/README.md) |
+| Dashboard | `features/dashboard` | [`dashboard/README.md`](../../backend/features/dashboard/README.md) |
+| Auth | `features/auth` (label `accounts`) | [`auth/README.md`](../../backend/features/auth/README.md) |
+| Profile | `features/profile` | [`profile/README.md`](../../backend/features/profile/README.md) |
+| Events | `features/events` | [`events/README.md`](../../backend/features/events/README.md) |
+| Competitions | `features/competitions` | [`competitions/README.md`](../../backend/features/competitions/README.md) |
+
+The full backend feature map and folder contract live in
+[`backend/features/README.md`](../../backend/features/README.md); the internal
+architecture is documented in [08 · Backend Architecture](08-backend-architecture.md).

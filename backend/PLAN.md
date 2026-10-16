@@ -51,21 +51,33 @@ link and a `/courses/:slug` request resolve to the same row.
 ## No auth yet
 
 A single demo learner (`ahmad.q@example.com`) is the current user, created on
-first request and resolved by `api/learners.py`. `auth/*` are stubs; swapping in
-real sessions later should only touch that module.
+first request and resolved by `features/auth/services.py`. `auth/*` are stubs;
+swapping in real sessions later should only touch that folder.
 
 ## Layout rule
 
-One feature = one view module + one serializer module. Views stay thin
-(resolve learner → query → serialize); serializers own the camelCase mapping.
-Models are split by group and star-imported into `academy/models.py` so Django
-registers them and `academy.models.<Name>` resolves.
+**One feature = one Django app = one folder** under `backend/features/`,
+mirroring `frontend/src/features/`. Each folder holds its own `models.py`,
+`serializers.py`, `views.py`, `urls.py`, `admin.py`, and `README.md`. Views stay
+thin (resolve learner → query → serialize); serializers own the camelCase
+mapping. `common/` holds shared choices and serializer helpers and owns no data.
+
+The auth feature uses the app **label `accounts`** (folder `features/auth`) so it
+never collides with `django.contrib.auth`.
+
+## Readability rule
+
+Code is written to be read: one-line comments that say *why*, data-driven
+filters instead of `if` chains (`catalog/filters.py`), grouped model fields with
+short comments, real `help_text` where a field name is unclear, and an
+`admin.py` per feature so the database is easy to inspect and edit.
 
 ## Build order
 
-1. Scaffold `config/` + `academy/models*` + migrations.
-2. Add `api/` serializers, then views, then `urls.py` — feature by feature.
-3. Smoke-test every endpoint and mutation with `curl`.
+1. Scaffold `config/` + one app per feature with its models + migrations.
+2. Add each feature's serializers, then views, then `urls.py`.
+3. Smoke-test every endpoint and mutation with `curl` (with an allowed Origin).
 4. Delete the frontend mocks and rewire every fetcher/consumer to the API;
    verify with `npm run build` + `npx eslint src`.
-5. Document (`docs/07-backend-contract.md`, this folder's README, root README).
+5. Document (`docs/07-backend-contract.md`, `docs/08-backend-architecture.md`,
+   `features/README.md`, this folder's README, root README).

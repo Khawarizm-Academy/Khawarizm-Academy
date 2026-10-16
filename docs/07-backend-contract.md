@@ -118,15 +118,17 @@ Dashboard-specific projections live in `frontend/src/features/dashboard/types.ts
 ## 4. REST surface
 
 A conventional resource layout that matches the frontend's reads and mutations.
-Every path below is implemented by `backend/api/urls.py` under `/api/`.
+Each path is owned by a feature app and mounted in `backend/config/urls.py`
+under `/api/`.
 
 **Response shapes.** Payloads use camelCase keys matching `entities.ts` and each
 feature's `types.ts`. Empty/`None` fields are omitted (the backend `compact` helper).
-Errors share one structured shape (`backend/api/errors.py`).
+Errors share one structured shape (`backend/features/common/errors.py`).
 
-**Current user.** There is no auth yet: `backend/api/learners.py` resolves a
-single demo learner (created on first request). The `auth/*` routes are stubs for
-a later flow.
+**Current user.** There is no auth yet: `backend/features/auth/services.py`
+resolves a single demo learner (created on first request). The `auth/*` routes
+are stubs for a later flow. See [08 · Backend Architecture](08-backend-architecture.md)
+for the feature layout.
 
 ### Auth
 

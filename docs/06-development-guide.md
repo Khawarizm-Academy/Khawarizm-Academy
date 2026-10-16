@@ -51,11 +51,28 @@ Each side uses **dev + production profiles** (no manual copying):
 
 `VITE_API_BASE_URL` is **required** — `shared/lib/apiClient.ts` throws at startup without it. `DJANGO_CORS_ALLOWED_ORIGINS` lists the frontend origins. Real environment variables override the profile files in deployment. The app is **fully API-driven** — a running backend is required. See [07 · Backend Contract](07-backend-contract.md).
 
+**Running the backend** (needed for any page to show data):
+
+```bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver 127.0.0.1:8000
+```
+
+The backend is organised as **one app per feature** under `backend/features/`.
+The feature map, folder contract, and code rules live in
+[`backend/features/README.md`](../backend/features/README.md); the internal
+architecture is in [08 · Backend Architecture](08-backend-architecture.md). The
+database ships empty, so add records through the Django admin (`/admin/`) — every
+model is registered there as a data editor.
+
 ---
 
 ## 4. Code style in one page
 
-These rules are enforced across every `.ts` / `.tsx` file. The long version is the `khawarizm-code-style` skill.
+These rules are enforced across every `.ts` / `.tsx` file — and the same ones (one-line comments, no clever code, no `if`/`else` chains, one source of truth, fail loudly) apply to backend `.py` files. The long version is the `khawarizm-code-style` skill.
 
 ### 4.1 Comments
 - **One line.** If it needs two, shorten it or delete it.
