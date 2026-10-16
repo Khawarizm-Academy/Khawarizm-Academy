@@ -253,8 +253,8 @@ COMPETITIONS = [
 ]
 
 QUICK_LINKS = [
-    ("link-1", "book-open", "الدورات", "تابع تعلّمك", "blue", "courses"),
-    ("link-2", "award", "المنح", "فرص مميزة", "gold", "scholarships"),
+    ("link-1", "BookOpen", "الدورات", "تابع تعلّمك", "blue", "courses"),
+    ("link-2", "Award", "المنح", "فرص مميزة", "gold", "scholarships"),
 ]
 
 
