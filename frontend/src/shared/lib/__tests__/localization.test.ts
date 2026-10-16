@@ -1,49 +1,93 @@
+import { describe, expect, it } from 'vitest';
 import {
+  convertArToKey,
+  convertKeyToAr,
   toArabic,
   toArabicNav,
   toEnglishNav,
-  convertKeyToAr,
-  convertArToKey,
 } from '@/shared/lib/localization';
 
-function assert(condition: boolean, message: string) {
-  if (!condition) {
-    throw new Error(`Assertion failed: ${message}`);
-  }
-}
+describe('localization', () => {
+  describe('nav tabs', () => {
+    it('converts English tab keys to their Arabic labels', () => {
+      expect(toArabicNav('home')).toBe('الرئيسية');
+      expect(toArabicNav('courses')).toBe('الدورات');
+      expect(toArabicNav('scholarships')).toBe('المنح والفرص');
+      expect(toArabicNav('dashboard')).toBe('لوحتي');
+    });
 
-export function runLocalizationTests(): boolean {
-  // 1. Nav tab English to Arabic conversion
-  assert(toArabicNav('home') === 'الرئيسية', 'home should convert to الرئيسية');
-  assert(toArabicNav('courses') === 'الدورات', 'courses should convert to الدورات');
-  assert(toArabicNav('scholarships') === 'المنح والفرص', 'scholarships should convert to المنح والفرص');
-  assert(toArabicNav('scholarships', true) === 'المنح', 'mobile scholarships should convert to المنح');
-  assert(toArabicNav('dashboard', true) === 'لوحتي', 'dashboard should convert to لوحتي');
-  assert(toArabicNav('profile', true) === 'حسابي', 'profile should convert to حسابي');
+    it('uses the shorter labels only where the bottom bar asks for them', () => {
+      expect(toArabicNav('scholarships', true)).toBe('المنح');
+      expect(toArabicNav('scholarships')).toBe('المنح والفرص');
+    });
 
-  // 2. Nav tab Arabic to English normalization
-  assert(toEnglishNav('الرئيسية') === 'home', 'الرئيسية should normalize to home');
-  assert(toEnglishNav('الدورات') === 'courses', 'الدورات should normalize to courses');
-  assert(toEnglishNav('المنح') === 'scholarships', 'المنح should normalize to scholarships');
-  assert(toEnglishNav('home') === 'home', 'home should remain home');
-  assert(toEnglishNav(undefined) === 'home', 'undefined should fallback to home');
+    it('normalizes Arabic labels back to English tab keys', () => {
+      expect(toEnglishNav('الرئيسية')).toBe('home');
+      expect(toEnglishNav('الدورات')).toBe('courses');
+      expect(toEnglishNav('المنح')).toBe('scholarships');
+      expect(toEnglishNav('لوحتي')).toBe('dashboard');
+      expect(toEnglishNav('حسابي')).toBe('profile');
+    });
 
-  // 3. Category specific lookups
-  assert(toArabic('search', 'course') === 'دورة', 'search course should be دورة');
-  assert(toArabic('search', 'scholarship') === 'منحة', 'search scholarship should be منحة');
-  assert(toArabic('actions', 'apply_now') === 'تقدم الآن', 'apply_now should be تقدم الآن');
-  assert(toArabic('actions', 'course_details') === 'تفاصيل الدورة', 'course_details should be تفاصيل الدورة');
-  assert(toArabic('actions', 'view_all') === 'عرض الكل', 'view_all should be عرض الكل');
-  assert(toArabic('courseLevels', 'beginner') === 'مبتدئ', 'beginner should be مبتدئ');
-  assert(toArabic('courseStatus', 'available') === 'متاح', 'available should be متاح');
-  assert(toArabic('coverage', 'fully_funded') === 'ممولة بالكامل', 'fully_funded should be ممولة بالكامل');
+    it('keeps an English key as-is', () => {
+      expect(toEnglishNav('courses')).toBe('courses');
+    });
 
-  // 4. Universal converter functions
-  assert(convertKeyToAr('available') === 'متاح', 'convertKeyToAr available should be متاح');
-  assert(convertKeyToAr('متاح') === 'متاح', 'convertKeyToAr متاح should remain متاح');
-  assert(convertKeyToAr('master', 'degreeLevels') === 'ماجستير', 'master should be ماجستير');
-  assert(convertArToKey('متاح') === 'available', 'convertArToKey متاح should be available');
-  assert(convertArToKey('تقدم الآن') === 'apply_now', 'convertArToKey تقدم الآن should be apply_now');
+    it('falls back to the home tab for a missing or unknown label', () => {
+      expect(toEnglishNav(undefined)).toBe('home');
+      expect(toEnglishNav(null)).toBe('home');
+      expect(toEnglishNav('صفحة غير معروفة')).toBe('home');
+    });
+  });
 
-  return true;
-}
+  describe('toArabic', () => {
+    it('labels a key inside a named category', () => {
+      expect(toArabic('courseStatus', 'available')).toBe('متاح');
+      expect(toArabic('courseLevels', 'advanced')).toBe('متقدم');
+      expect(toArabic('degreeLevels', 'master')).toBe('ماجستير');
+      expect(toArabic('coverage', 'fully_funded')).toBe('ممولة بالكامل');
+      expect(toArabic('eventFormats', 'live')).toBe('بث مباشر');
+    });
+
+    it('labels the nav and search groups too', () => {
+      expect(toArabic('nav', 'catalog')).toBe('الدورات والمنح');
+      expect(toArabic('search', 'scholarship')).toBe('منحة');
+    });
+  });
+
+  describe('convertKeyToAr', () => {
+    it('resolves a key from the flat map across every category', () => {
+      expect(convertKeyToAr('available')).toBe('متاح');
+      expect(convertKeyToAr('upcoming')).toBe('قريباً');
+      expect(convertKeyToAr('apply_now')).toBe('تقدم الآن');
+    });
+
+    it('lets a named category win over the flat map', () => {
+      expect(convertKeyToAr('master', 'degreeLevels')).toBe('ماجستير');
+      expect(convertKeyToAr('register', 'actions')).toBe('تسجيل');
+    });
+
+    it('passes Arabic and unknown text through untouched', () => {
+      expect(convertKeyToAr('متاح')).toBe('متاح');
+      expect(convertKeyToAr('نص حر')).toBe('نص حر');
+    });
+
+    it('answers empty for a missing value', () => {
+      expect(convertKeyToAr(undefined)).toBe('');
+      expect(convertKeyToAr(null)).toBe('');
+    });
+  });
+
+  describe('convertArToKey', () => {
+    it('maps an Arabic label back to its English key', () => {
+      expect(convertArToKey('متاح')).toBe('available');
+      expect(convertArToKey('تقدم الآن')).toBe('apply_now');
+      expect(convertArToKey('ماجستير')).toBe('master');
+    });
+
+    it('passes English and unknown text through untouched', () => {
+      expect(convertArToKey('available')).toBe('available');
+      expect(convertArToKey('نص حر')).toBe('نص حر');
+    });
+  });
+});

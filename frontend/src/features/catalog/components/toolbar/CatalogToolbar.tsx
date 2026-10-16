@@ -1,28 +1,28 @@
 import React, { useState } from 'react';
 import { ChevronDown, Filter } from 'lucide-react';
 import catalogJson from '@/shared/json/catalog.json';
-import type { SortOption } from '@/features/catalog/types';
+import type { SortOption, SortOptionItem } from '@/features/catalog/types';
 
 interface CatalogToolbarProps {
   totalCount: number;
   itemTypeLabel?: string;
   currentSort: SortOption;
+  sortOptions: SortOptionItem[];
   onChangeSort: (sort: SortOption) => void;
   onOpenMobileFilters?: () => void;
 }
-
-const SORT_OPTIONS = catalogJson.sortOptions as { id: SortOption; label: string }[];
 
 export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
   totalCount,
   itemTypeLabel = 'نتيجة',
   currentSort,
+  sortOptions,
   onChangeSort,
   onOpenMobileFilters,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const activeSortLabel = SORT_OPTIONS.find((s) => s.id === currentSort)?.label || 'الأحدث';
+  const activeSortLabel = sortOptions.find((s) => s.id === currentSort)?.label || 'الأحدث';
 
   return (
     <div className="catalog-toolbar">
@@ -59,7 +59,7 @@ export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
 
           {dropdownOpen && (
             <div className="catalog-sort-menu animate-fade-in-up">
-              {SORT_OPTIONS.map((opt) => (
+              {sortOptions.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"

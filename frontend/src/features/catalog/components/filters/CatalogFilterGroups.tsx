@@ -1,6 +1,7 @@
 import React from 'react';
-import { getFilterGroups, type Surface, type Tone } from '@/features/catalog/data/catalogFilters';
-import type { CatalogFiltersState, CatalogTab } from '@/features/catalog/types';
+import { useCatalog } from '@/features/catalog/context/catalogContext';
+import type { Surface, Tone } from '@/features/catalog/data/catalogFilters';
+import type { CatalogFiltersState } from '@/features/catalog/types';
 
 /** Active pill per tone and surface; the mobile surface drops a stronger background, glow groups add their ring. */
 const PILL_ACTIVE = {
@@ -24,12 +25,16 @@ const PILL_IDLE = {
 
 /** One labelled row of filter pills. The sidebar and the drawer both use it. */
 export const CatalogFilterGroups: React.FC<{
-  tab: CatalogTab;
   filters: CatalogFiltersState;
   surface: Surface;
   onChangeFilter: (key: keyof CatalogFiltersState, value: string) => void;
-}> = ({ tab, filters, surface, onChangeFilter }) => {
-  const groups = getFilterGroups(surface, tab);
+}> = ({ filters, surface, onChangeFilter }) => {
+  const { filterGroups, isFiltersLoading } = useCatalog();
+  const groups = filterGroups[surface];
+
+  if (isFiltersLoading) {
+    return <p className="catalog-group-label animate-pulse">جارٍ تحميل عوامل التصفية…</p>;
+  }
 
   return (
     <>

@@ -1,16 +1,22 @@
-import React from 'react';
-import { useAuthLogin } from '@/features/auth/context/authLoginContext';
+import React, { useEffect } from 'react';
+import { useAuth } from '@/features/auth/context/authContext';
 
-/** Auth success toast, shown once after a login completes. */
+/** Global auth notice: session lost, welcome, or an error. Auto-hides. */
 export const AuthToast: React.FC = () => {
-  const { toastMessage } = useAuthLogin();
+  const { notice, setNotice } = useAuth();
 
-  if (!toastMessage) return null;
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 5000);
+    return () => clearTimeout(timer);
+  }, [notice, setNotice]);
+
+  if (!notice) return null;
 
   return (
     <div className="auth-toast animate-fade-in">
       <span className="auth-toast-dot" />
-      <span>{toastMessage}</span>
+      <span>{notice}</span>
     </div>
   );
 };

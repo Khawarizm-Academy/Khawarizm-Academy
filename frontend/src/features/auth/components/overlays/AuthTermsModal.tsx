@@ -1,9 +1,9 @@
 import React from 'react';
-import { useAuthLogin } from '@/features/auth/context/authLoginContext';
+import { useLoginPage } from '@/features/auth/context/loginPageContext';
 
 /** Terms & privacy text modal, opened from either surface's legal notice. */
 export const AuthTermsModal: React.FC = () => {
-  const { showTermsModal, closeTerms } = useAuthLogin();
+  const { showTermsModal, closeTerms } = useLoginPage();
 
   if (!showTermsModal) return null;
 
@@ -20,9 +20,7 @@ export const AuthTermsModal: React.FC = () => {
           <p>3. يمكنك تعديل بياناتك أو حذف حسابك في أي وقت عبر إعدادات الملف الشخصي.</p>
         </div>
         <div className="auth-terms-actions">
-          <button type="button" onClick={closeTerms} className="btn-gold text-sm">
-            موافق
-          </button>
+          <button type="button" onClick={closeTerms} className="btn-gold text-sm">موافق</button>
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ import { CatalogFilterGroups } from '@/features/catalog/components/filters/Catal
 
 /** Mobile filter sheet; reads context and renders nothing when closed. */
 export const CatalogMobileFilterDrawer: React.FC = () => {
-  const { isFilterDrawerOpen, closeFilterDrawer, activeTab, filters, changeFilter, resetFilters } = useCatalog();
+  const { isFilterDrawerOpen, closeFilterDrawer, filters, changeFilter, resetFilters } = useCatalog();
 
   if (!isFilterDrawerOpen) return null;
 
@@ -33,7 +33,6 @@ export const CatalogMobileFilterDrawer: React.FC = () => {
         </div>
 
         <CatalogFilterGroups
-          tab={activeTab}
           filters={filters}
           surface="mobile"
           onChangeFilter={changeFilter}

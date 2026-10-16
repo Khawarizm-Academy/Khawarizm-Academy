@@ -8,7 +8,7 @@ import type { SortOption } from '@/features/catalog/types';
 
 /** Results column plus the desktop filter rail — one responsive grid. */
 export const CatalogResults: React.FC = () => {
-  const { activeTab, filters, changeFilter, resetFilters, selectCard, openFilterDrawer } = useCatalog();
+  const { activeTab, filters, changeFilter, resetFilters, selectCard, openFilterDrawer, sortOptions } = useCatalog();
   const pageTitles = catalogJson.pageTitles[activeTab];
 
   return (
@@ -19,6 +19,7 @@ export const CatalogResults: React.FC = () => {
           totalCount={0}
           itemTypeLabel={pageTitles.countLabel}
           currentSort={filters.sortBy}
+          sortOptions={sortOptions}
           onChangeSort={(sort: SortOption) => changeFilter('sortBy', sort)}
           onOpenMobileFilters={openFilterDrawer}
         />
@@ -34,7 +35,6 @@ export const CatalogResults: React.FC = () => {
 
       <aside className="catalog-results-aside">
         <CatalogFilterSidebar
-          type={activeTab}
           filters={filters}
           onChangeFilter={changeFilter}
           onReset={resetFilters}

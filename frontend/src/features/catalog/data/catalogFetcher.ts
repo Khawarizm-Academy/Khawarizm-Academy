@@ -1,6 +1,7 @@
 import { apiGet, buildQuery } from '@/shared/lib/apiClient';
 import type { CatalogItem } from '@/shared/types/entities';
-import type { CatalogFiltersState, CatalogTab } from '@/features/catalog/types';
+import type { CatalogFiltersState, CatalogTab, SortOptionItem } from '@/features/catalog/types';
+import type { ResolvedFilterGroup, Surface } from '@/features/catalog/data/catalogFilters';
 
 /** The paged result the catalog section renders. */
 export interface CatalogPage {
@@ -37,4 +38,14 @@ export async function fetchCatalogPage(filters: CatalogFiltersState, activeTab: 
     totalPages: data.totalPages,
     currentPage: data.currentPage,
   };
+}
+
+/** The filter + sort metadata for one surface and tab, straight from the database. */
+export async function fetchCatalogFilters(
+  surface: Surface,
+  tab: CatalogTab
+): Promise<{ groups: ResolvedFilterGroup[]; sortOptions: SortOptionItem[] }> {
+  return apiGet<{ groups: ResolvedFilterGroup[]; sortOptions: SortOptionItem[] }>(
+    `/catalog/filters${buildQuery({ surface, tab })}`
+  );
 }

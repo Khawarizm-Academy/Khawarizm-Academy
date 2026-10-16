@@ -4,7 +4,14 @@
  * The app is fully API-driven — there are no mocks. Every feature fetcher goes
  * through these helpers against `VITE_API_BASE_URL` (set in frontend/.env.development
  * and frontend/.env.production).
+ *
+ * Every request carries the stored access token. On a 401 the client silently
+ * rotates the refresh token once and replays the call; when that also fails it
+ * clears the tokens and reports the session loss to the auth provider, which
+ * signs the reader out and tells them why (for example, signed in elsewhere).
  */
+
+import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/shared/lib/authStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -13,28 +20,102 @@ if (!API_BASE_URL) {
   throw new Error('VITE_API_BASE_URL is not set. Add it to frontend/.env.development or frontend/.env.production.');
 }
 
-/** Error carrying the HTTP status, so callers can special-case a 404. */
+/** Error carrying the HTTP status and the API error code, so callers can react. */
 export class ApiError extends Error {
   status: number;
+  code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
+  }
+}
+
+/** Called once when the session can no longer be recovered, with the reason code. */
+type AuthLostHandler = (code: string) => void;
+let authLostHandler: AuthLostHandler | null = null;
+
+export function setAuthLostHandler(handler: AuthLostHandler | null): void {
+  authLostHandler = handler;
+}
+
+// These endpoints must never trigger the refresh-and-replay dance.
+const AUTH_FREE_PATHS = ['/auth/config', '/auth/firebase', '/auth/refresh'];
+
+let refreshInFlight: Promise<boolean> | null = null;
+
+/** Rotate the refresh token once, collapsing concurrent 401s onto one call. */
+function refreshTokens(): Promise<boolean> {
+  refreshInFlight ??= (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return false;
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) return false;
+      const data = (await response.json()) as { accessToken: string; refreshToken: string };
+      setTokens(data.accessToken, data.refreshToken);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+/** Read an error body without throwing when it is empty or not JSON. */
+async function readErrorBody(response: Response): Promise<{ detail?: string; code?: string }> {
+  try {
+    return (await response.json()) as { detail?: string; code?: string };
+  } catch {
+    return {};
   }
 }
 
 /** One request helper every feature fetcher shares. */
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-  });
+  const isAuthFree = AUTH_FREE_PATHS.some((prefix) => path.startsWith(prefix));
 
-  if (!response.ok) {
-    throw new ApiError(response.status, `API ${response.status}: ${response.statusText}`);
+  const send = () => {
+    const token = getAccessToken();
+    return fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init?.headers ?? {}),
+      },
+    });
+  };
+
+  let response = await send();
+
+  if (response.status === 401 && !isAuthFree) {
+    const original = await readErrorBody(response.clone());
+    const refreshed = await refreshTokens();
+    if (refreshed) {
+      response = await send();
+    } else {
+      clearTokens();
+      const code = original.code ?? 'session_expired';
+      authLostHandler?.(code);
+      throw new ApiError(401, original.detail ?? 'انتهت الجلسة.', code);
+    }
   }
 
+  if (!response.ok) {
+    const payload = await readErrorBody(response);
+    throw new ApiError(response.status, payload.detail ?? `API ${response.status}: ${response.statusText}`, payload.code);
+  }
+
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 

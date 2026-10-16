@@ -16,111 +16,12 @@
       "countLabel": "منحة دراسية"
     }
   },
-  "sortOptions": [
-    { "id": "newest", "label": "الأحدث" },
-    { "id": "rating", "label": "التقييم" },
-    { "id": "deadline", "label": "الأقرب انتهاءً" },
-    { "id": "popular", "label": "الأكثر شيوعًا" }
-  ],
   "searchTypeByTab": { "all": "all", "courses": "course", "scholarships": "scholarship" },
   "tabBySearchType": { "all": "all", "course": "courses", "scholarship": "scholarships" },
   "statusLabels": { "open": "مفتوح", "closing_soon": "يغلق قريبًا", "closed": "مغلق" },
   "filters": {
     "header": "تصفية النتائج",
     "resetLabel": "إعادة ضبط",
-    "applyLabel": "تطبيق النتائج",
-    "groups": [
-      {
-        "key": "field",
-        "label": "المجال",
-        "tone": "gold",
-        "glow": true,
-        "surfaces": ["desktop", "mobile"],
-        "options": [
-          { "id": "all", "label": "الكل" },
-          { "id": "ai", "label": "ذكاء اصطناعي" },
-          { "id": "programming", "label": "برمجة" },
-          { "id": "cybersecurity", "label": "أمن سيبراني" },
-          { "id": "space", "label": "فضاء" }
-        ]
-      },
-      {
-        "key": "level",
-        "label": "المستوى التعليمي",
-        "tone": "gold",
-        "glow": true,
-        "mobileTone": "sky",
-        "surfaces": ["desktop", "mobile"],
-        "options": [
-          { "id": "all", "label": "الكل" },
-          { "id": "bachelor", "label": "بكالوريوس" },
-          { "id": "master", "label": "ماجستير" },
-          { "id": "phd", "label": "دكتوراه" }
-        ],
-        "variants": {
-          "courses": {
-            "label": "المستوى التدريبي",
-            "tone": "sky",
-            "options": [
-              { "id": "all", "label": "الكل" },
-              { "id": "beginner", "label": "مبتدئ" },
-              { "id": "intermediate", "label": "متوسط" },
-              { "id": "advanced", "label": "متقدم" }
-            ]
-          },
-          "all": {
-            "extraOptions": [{ "id": "bootcamp", "label": "دورات تدريبية" }]
-          }
-        }
-      },
-      {
-        "key": "language",
-        "label": "اللغة",
-        "tone": "sky",
-        "surfaces": ["desktop"],
-        "options": [
-          { "id": "all", "label": "الكل" },
-          { "id": "arabic", "label": "العربية" },
-          { "id": "english", "label": "الإنجليزية" },
-          { "id": "french", "label": "الفرنسية" }
-        ]
-      },
-      {
-        "key": "cost",
-        "label": "التكلفة",
-        "tone": "sky",
-        "surfaces": ["desktop", "mobile"],
-        "options": [
-          { "id": "all", "label": "الكل" },
-          { "id": "free", "label": "مجانية" },
-          { "id": "paid", "label": "مدفوعة" }
-        ]
-      },
-      {
-        "key": "country",
-        "label": "البلد المتاح",
-        "tone": "gold",
-        "surfaces": ["desktop", "mobile"],
-        "options": [
-          { "id": "all", "label": "الكل" },
-          { "id": "saudi", "label": "السعودية" },
-          { "id": "usa", "label": "أمريكا" },
-          { "id": "turkey", "label": "تركيا" },
-          { "id": "uk", "label": "بريطانيا" }
-        ]
-      },
-      {
-        "key": "status",
-        "label": "حالة التقديم",
-        "tone": "gold",
-        "surfaces": ["desktop"],
-        "options": [
-          { "id": "all", "label": "الكل" },
-          { "id": "open", "label": "مفتوح الآن" },
-          { "id": "closing_soon", "label": "ينتهي قريباً" },
-          { "id": "closed", "label": "مغلق" }
-        ]
-      }
-    ]
+    "applyLabel": "تطبيق النتائج"
   }
 }

@@ -1,7 +1,8 @@
 import { createContext, useContext } from 'react';
 import catalogJson from '@/shared/json/catalog.json';
 import type { CatalogItem } from '@/shared/types/entities';
-import type { CatalogFiltersState, CatalogTab, SearchType } from '@/features/catalog/types';
+import type { CatalogFiltersState, CatalogTab, SearchType, SortOptionItem } from '@/features/catalog/types';
+import type { ResolvedFilterGroup, Surface } from '@/features/catalog/data/catalogFilters';
 
 // Non-pillar filters live in local state; `type` and `q` are URL-derived.
 export type PersistentFilters = Omit<CatalogFiltersState, 'type' | 'searchQuery'>;
@@ -32,6 +33,12 @@ export interface SearchBoxProps {
 export interface CatalogContextValue {
   activeTab: CatalogTab;
   filters: CatalogFiltersState;
+  /** Filter groups per surface, fetched from the database for the active tab. */
+  filterGroups: Record<Surface, ResolvedFilterGroup[]>;
+  /** Sort options, fetched from the database. */
+  sortOptions: SortOptionItem[];
+  /** True while the filter metadata for the active tab loads. */
+  isFiltersLoading: boolean;
   isFilterDrawerOpen: boolean;
   searchProps: SearchBoxProps;
   changeTab: (tab: CatalogTab) => void;

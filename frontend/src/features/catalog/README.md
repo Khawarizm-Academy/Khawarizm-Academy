@@ -45,7 +45,8 @@ catalog/
 │   ├── catalogContext.ts                  context + useCatalog() + filter types + maps
 │   └── CatalogProvider.tsx                owns URL-derived and local filter state
 ├── data/
-│   └── catalogFilters.ts                  builds per-surface/per-tab filter groups
+│   ├── catalogFetcher.ts                  live GET /catalog + fetchCatalogFilters()
+│   └── catalogFilters.ts                  ResolvedFilterGroup / FilterOption types
 ├── types.ts                               feature view types
 ├── catalog.css                            feature concept classes
 └── README.md
@@ -54,6 +55,7 @@ catalog/
 ## How it works
 
 - **URL owns the view:** `CatalogProvider` derives `activeTab` from `?type=` and the query from `?q=` at render. It never copies them into `useState`.
+- **Filters come from the API:** at boot, and on every tab change, the provider fetches `GET /api/catalog/filters` for desktop and mobile (`data/catalogFetcher.ts` → `fetchCatalogFilters(surface, tab)`), typed as `ResolvedFilterGroup[]` / `SortOptionItem[]`, and exposes `filterGroups`, `sortOptions`, and `isFiltersLoading`. `shared/json/catalog.json` no longer holds filter config — only page titles, search-type maps, status labels, and filter-chrome copy.
 - **Local state:** `persistentFilters` (`field`, `level`, `language`, `cost`, `country`, `status`, `sortBy`, `page`) and `isFilterDrawerOpen`. The merged `filters` object combines both.
 - **Actions:** `changeTab` (resets page + level), `search`, `changeFilter`, `resetFilters`, `selectCard` (navigates to `/courses/:id` or `/scholarships/:id`), plus drawer open/close and prebuilt `searchProps` for both search surfaces.
 - **One data section:** `CatalogDataSection` is the only component that re-renders on filter/data change. It runs the filter → sort → paginate pipeline (`ITEMS_PER_PAGE = 6`) behind `useCachedData` with a deterministic composite key and `keepPreviousData`, so changing filters never flashes the skeleton.
@@ -64,12 +66,12 @@ catalog/
 
 | Source | Provides |
 | :--- | :--- |
-| `@/shared/json/catalog.json` | tab/search-type maps, page titles, sort labels, filter group config |
+| `@/shared/json/catalog.json` | page titles, search-type maps, status labels, filter-chrome copy (no filter groups) |
 | `@/shared/types/entities` | `CatalogItem` |
-| `data/catalogFetcher.ts` | live `GET /catalog` (server-side filter/sort/paginate) |
+| `data/catalogFetcher.ts` | live `GET /catalog` (server-side filter/sort/paginate) + `fetchCatalogFilters(surface, tab)` → `GET /catalog/filters` |
+| `data/catalogFilters.ts` | `ResolvedFilterGroup` / `FilterOption` types for the fetched groups |
 | `@/shared/hooks/useCachedData` | cached item queries |
 | `@/shared/lib/cacheManager` | `prefetch` for detail warm-up |
-| `data/catalogFilters.ts` | `getFilterGroups(surface, tab)` from the JSON config |
 
 ## Reused components
 

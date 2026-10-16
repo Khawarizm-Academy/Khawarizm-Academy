@@ -70,6 +70,7 @@
     "activeTab": "dashboard",
     "tabsByQuery": { "profile": "profile" },
     "immersive": true,
+    "requiresAuth": true,
     "skeletonVariant": "dashboard"
   },
   {
@@ -83,7 +84,16 @@
     "path": "/profile",
     "title": "الملف الشخصي — أكاديمية خوارزم",
     "activeTab": "profile",
+    "requiresAuth": true,
     "skeletonVariant": "default"
+  },
+  {
+    "path": "/admin",
+    "title": "لوحة الإدارة — أكاديمية خوارزم",
+    "description": "إدارة المستخدمين والأجهزة وتحليلات الدخول.",
+    "hideShell": true,
+    "requiresAdmin": true,
+    "skeletonVariant": "dashboard"
   },
   {
     "path": "/login",

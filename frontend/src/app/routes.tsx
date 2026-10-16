@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import {
+  AdminPage,
   CatalogPage,
   CompetitionsPage,
   CourseCertificatePage,
@@ -26,6 +27,8 @@ export interface RouteMeta {
   tabsByQuery?: Record<string, NavTabKey>;
   hideShell?: boolean; // no navbar, no footer, no bottom bar
   immersive?: boolean; // page owns its own nav, so no navbar and no footer
+  requiresAuth?: boolean; // signed-in readers only
+  requiresAdmin?: boolean; // admin readers only
 }
 
 /** Raw (unhydrated) shape of a `routes.json` entry. */
@@ -38,6 +41,8 @@ interface RawRoute {
   tabsByQuery?: Record<string, NavTabKey>;
   hideShell?: boolean;
   immersive?: boolean;
+  requiresAuth?: boolean;
+  requiresAdmin?: boolean;
   skeletonVariant: SkeletonVariant;
 }
 
@@ -68,14 +73,15 @@ const PAGE_BY_PATH: Record<string, ComponentType> = {
   '/competitions': CompetitionsPage,
   '/dashboard': DashboardPage,
   '/profile': ProfilePage,
+  '/admin': AdminPage,
   '/login': LoginPage,
   '*': NotFoundPage,
 };
 
 /** Every route, from routes.json plus its page. Order comes from the JSON. */
 export const routes: RouteDefinition[] = (routesJson as RawRoute[]).map((route) => {
-  const { title, description, activeTab, tabsByQuery, hideShell, immersive } = route;
-  const meta: RouteMeta = { title, description, activeTab, tabsByQuery, hideShell, immersive };
+  const { title, description, activeTab, tabsByQuery, hideShell, immersive, requiresAuth, requiresAdmin } = route;
+  const meta: RouteMeta = { title, description, activeTab, tabsByQuery, hideShell, immersive, requiresAuth, requiresAdmin };
   const page = PAGE_BY_PATH[route.path];
 
   if (route.redirect) {
