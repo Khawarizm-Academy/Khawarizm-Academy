@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from datetime import timedelta
+from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.contrib import admin
@@ -322,6 +323,75 @@ class FirebaseVerificationTests(TestCase):
         # The project id wins, so the string goes to the Admin SDK and comes back refused.
         with self.assertRaises(firebase.FirebaseError):
             firebase.verify_id_token("dev:someone@example.com")
+
+
+class FirebaseCredentialTests(TestCase):
+    """Verifying a token must never depend on Application Default Credentials."""
+
+    def tearDown(self):
+        # The Admin SDK caches one app per process; drop it so tests stay independent.
+        import firebase_admin
+
+        firebase_admin._apps.clear()
+
+    @override_settings(FIREBASE_PROJECT_ID="demo-project", FIREBASE_CREDENTIALS_PATH="", FIREBASE_CREDENTIALS="")
+    def test_the_sdk_initializes_without_application_default_credentials(self):
+        # The regression: `credential=None` made the SDK reach for Application
+        # Default Credentials, so every real sign-in 401'd on a machine that has
+        # none — after a slow probe of the GCE metadata endpoint.
+        import firebase_admin
+
+        firebase_admin._apps.clear()
+
+        firebase._admin_auth()
+
+        self.assertTrue(firebase_admin._apps)
+
+    @override_settings(FIREBASE_CREDENTIALS_PATH="", FIREBASE_CREDENTIALS="")
+    def test_a_secret_free_credential_is_used_when_no_service_account_is_set(self):
+        from google.auth.credentials import AnonymousCredentials
+
+        self.assertIsInstance(firebase._credential(), AnonymousCredentials)
+
+    @override_settings(FIREBASE_CREDENTIALS_PATH="/tmp/serviceAccount.json", FIREBASE_CREDENTIALS="")
+    def test_a_configured_service_account_file_takes_precedence(self):
+        with patch("firebase_admin.credentials.Certificate") as certificate:
+            firebase._credential()
+
+        certificate.assert_called_once_with("/tmp/serviceAccount.json")
+
+    @override_settings(FIREBASE_CREDENTIALS_PATH="", FIREBASE_CREDENTIALS='{"type": "service_account"}')
+    def test_an_inline_service_account_json_is_parsed(self):
+        with patch("firebase_admin.credentials.Certificate") as certificate:
+            firebase._credential()
+
+        certificate.assert_called_once_with({"type": "service_account"})
+
+    @override_settings(FIREBASE_PROJECT_ID="demo-project", FIREBASE_CLOCK_SKEW_SECONDS=60)
+    def test_verification_passes_the_configured_clock_skew(self):
+        # A lagging clock ("Token used too early") must be tolerated, so the
+        # setting has to reach the SDK rather than staying at its 0 default.
+        verifier = MagicMock()
+        verifier.verify_id_token.return_value = {"uid": "u", "firebase": {"sign_in_provider": "google.com"}}
+
+        with patch.object(firebase, "_admin_auth", return_value=verifier):
+            firebase.verify_id_token("a.real.token")
+
+        verifier.verify_id_token.assert_called_once_with("a.real.token", check_revoked=False, clock_skew_seconds=60)
+
+    def test_the_configured_clock_skew_stays_within_the_sdk_range(self):
+        # The SDK rejects any value outside 0..60, which would turn every sign-in
+        # into a 401, so the setting is clamped instead of passed through.
+        self.assertLessEqual(0, settings.FIREBASE_CLOCK_SKEW_SECONDS)
+        self.assertLessEqual(settings.FIREBASE_CLOCK_SKEW_SECONDS, 60)
+
+    def test_env_int_falls_back_when_the_value_is_not_a_number(self):
+        from config.settings import env_int
+
+        with patch.dict(os.environ, {"PROBE_INT": "not-a-number"}):
+            self.assertEqual(env_int("PROBE_INT", 7), 7)
+        with patch.dict(os.environ, {"PROBE_INT": "12"}):
+            self.assertEqual(env_int("PROBE_INT", 7), 12)
 
 
 class FirebaseSettingsGuardTests(TestCase):

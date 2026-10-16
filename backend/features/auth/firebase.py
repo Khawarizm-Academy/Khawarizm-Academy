@@ -1,8 +1,9 @@
 """Verifies Firebase ID tokens and maps them onto our `User` table.
 
 Real verification uses the Firebase Admin SDK: the project id names the project
-whose public keys signed the token, and a service account (when one is
-configured) unlocks the privileged calls. In development, when no project is
+whose public keys signed the token, and no service account is required — the SDK
+only needs Google's public certs. A service account (when configured) unlocks the
+privileged calls, like revocation checks. In development, when no project is
 configured, a `dev:<email>[:role]` token is accepted so the SPA runs locally
 without a Firebase project.
 """
@@ -27,15 +28,24 @@ class FirebaseError(Exception):
     """Raised when an ID token cannot be trusted."""
 
 
-def _service_account():
-    """The configured service account, or None to use the ambient default."""
+def _credential():
+    """The credential the Admin SDK is initialized with.
+
+    A service account is only needed for *privileged* calls (revocation checks,
+    custom claims). Verifying an ID token just needs the project id plus Google's
+    public certs, so when no service account is configured we hand the SDK a
+    credential that carries no secret. The alternative — letting it fall back to
+    Application Default Credentials — makes every sign-in fail on a machine that
+    has none, after a slow probe of the GCE metadata endpoint.
+    """
     from firebase_admin import credentials
+    from google.auth.credentials import AnonymousCredentials
 
     if settings.FIREBASE_CREDENTIALS_PATH:
         return credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
     if settings.FIREBASE_CREDENTIALS:
         return credentials.Certificate(json.loads(settings.FIREBASE_CREDENTIALS))
-    return None
+    return AnonymousCredentials()
 
 
 def _admin_auth():
@@ -44,7 +54,7 @@ def _admin_auth():
 
     if not firebase_admin._apps:
         firebase_admin.initialize_app(
-            credential=_service_account(),
+            credential=_credential(),
             options={"projectId": settings.FIREBASE_PROJECT_ID},
         )
     return fb_auth
@@ -61,7 +71,11 @@ def verify_id_token(id_token: str) -> dict:
 
 def _verify_with_firebase(id_token: str) -> dict:
     try:
-        decoded = _admin_auth().verify_id_token(id_token, check_revoked=False)
+        decoded = _admin_auth().verify_id_token(
+            id_token,
+            check_revoked=False,
+            clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS,
+        )
     except Exception as exc:  # firebase_admin raises several subclasses
         raise FirebaseError(str(exc)) from exc
     provider_name = decoded.get("firebase", {}).get("sign_in_provider", "password")

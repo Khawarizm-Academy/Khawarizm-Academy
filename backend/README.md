@@ -142,6 +142,16 @@ them for Auth.
 | `FIREBASE_PROJECT_ID` | Web config **and the on/off switch**: set it and the API stops accepting `dev:` tokens |
 | `FIREBASE_CREDENTIALS_PATH` / `FIREBASE_CREDENTIALS` | **Secret** service account (a path or the raw JSON) for privileged Admin SDK calls; never committed |
 | `FIREBASE_ALLOW_DEV_TOKENS` | Accept `dev:<email>[:<role>]` tokens; defaults to `DEBUG` |
+| `FIREBASE_CLOCK_SKEW_SECONDS` | Seconds of clock drift the token verifier tolerates (0–60, default 60) |
+
+> A service account is **not** required to verify ID tokens — that needs only the
+> project id and Google's public certs. It is only needed for privileged calls
+> like revocation checks.
+>
+> The clock-skew allowance exists because ID tokens carry the issuer's timestamp:
+> a machine whose clock lags rejects every sign-in with `Token used too early`.
+> WSL drifts like this after a suspend. Sync the clock for a real fix — the
+> setting is the safety margin, and the SDK caps it at 60 seconds.
 
 > A **half-filled** config stops the boot: with `FIREBASE_PROJECT_ID` set but no
 > `FIREBASE_API_KEY` / `FIREBASE_AUTH_DOMAIN`, `settings.py` raises

@@ -39,13 +39,23 @@ def env_list(name: str, default: list[str]) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if not raw:
+        return default
+    try:
+        return int(raw.strip())
+    except ValueError:
+        return default
+
+
 # Placeholder secrets that must never reach a non-debug run.
 _PLACEHOLDER_SECRETS = {"dev-only-insecure-secret-key", "dev-only-change-me", "replace-with-a-real-secret"}
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-secret-key")
 DEBUG = env_bool("DJANGO_DEBUG", DJANGO_ENV == "development" and not IS_VERCEL)
 
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["localhost", "127.0.0.1"])
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["localhost", "127.0.0.1", "khawarizm-academy.firebaseapp.com"])
 if IS_VERCEL:
     # Accept the project domain, this deployment, and every preview URL.
     ALLOWED_HOSTS = [*ALLOWED_HOSTS, ".vercel.app"]
@@ -204,6 +214,11 @@ FIREBASE_CREDENTIALS_PATH = os.environ.get("FIREBASE_CREDENTIALS_PATH", "")
 # A project id is the switch: once it is set the API stops accepting `dev:` tokens.
 # Dev fallback: accept `dev:<email>[:<role>]` tokens while no Firebase project is set.
 FIREBASE_ALLOW_DEV_TOKENS = env_bool("FIREBASE_ALLOW_DEV_TOKENS", DEBUG)
+# How far the verifier lets the machine clock drift from Google's. ID tokens are
+# stamped with the issuer's time, so a box whose clock lags rejects every sign-in
+# with "Token used too early" — WSL drifts like this after a suspend. The SDK
+# caps this at 60; clamping keeps a typo from breaking every login.
+FIREBASE_CLOCK_SKEW_SECONDS = max(0, min(60, env_int("FIREBASE_CLOCK_SKEW_SECONDS", 60)))
 
 # Half a config is worse than none — it boots, then every sign-in fails in the
 # browser. Catch it here, where the message can say what to paste.
