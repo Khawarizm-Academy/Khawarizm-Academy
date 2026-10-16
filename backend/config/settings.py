@@ -187,15 +187,13 @@ REST_FRAMEWORK = {
 #   • the WEB app config (public — it ships inside the browser bundle) is served
 #     to the SPA by `/api/auth/config`, which initializes `firebase/app`;
 #   • the ADMIN SDK (private) verifies the ID tokens the SPA sends back.
-# Copy the whole web config block from Firebase console → Project settings →
-# Your apps → SDK setup and configuration, so every key stays in one place.
+# Only Auth is used, so these three values are the whole web config: copy them
+# from Firebase console → Project settings → Your apps → SDK setup and
+# configuration. (Storage, Messaging, and Analytics keys are not needed and are
+# deliberately not read.)
 FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "")
 FIREBASE_AUTH_DOMAIN = os.environ.get("FIREBASE_AUTH_DOMAIN", "")
 FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "")
-FIREBASE_STORAGE_BUCKET = os.environ.get("FIREBASE_STORAGE_BUCKET", "")
-FIREBASE_MESSAGING_SENDER_ID = os.environ.get("FIREBASE_MESSAGING_SENDER_ID", "")
-FIREBASE_APP_ID = os.environ.get("FIREBASE_APP_ID", "")
-FIREBASE_MEASUREMENT_ID = os.environ.get("FIREBASE_MEASUREMENT_ID", "")
 
 # The Admin SDK service account, only needed for privileged calls (custom
 # claims, user management, revocation checks). Never commit it: pass a path or

@@ -244,9 +244,14 @@ One project, configured once, on the backend. The SPA never holds a key:
 `initializeApp()` with it, so changing projects is an env edit and not a
 frontend rebuild.
 
+Only Auth is wired, so the web config is the minimal three values — the
+`storageBucket` / `messagingSenderId` / `appId` / `measurementId` keys the
+console also prints are ignored (Auth does not need them; `appId` only feeds an
+Analytics header).
+
 | Half | Where it lives | Secret? |
 | :--- | :--- | :--- |
-| Web config (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`, `measurementId`) | `FIREBASE_*` env vars → `/api/auth/config` → the browser | No — it ships in the bundle by design |
+| Web config (`apiKey`, `authDomain`, `projectId`) | `FIREBASE_*` env vars → `/api/auth/config` → the browser | No — it ships in the bundle by design |
 | Admin SDK (`projectId`, plus an optional service account for privileged calls) | `FIREBASE_PROJECT_ID`, `FIREBASE_CREDENTIALS_PATH` / `FIREBASE_CREDENTIALS` | The service account **is** — keep it in the host environment |
 
 `settings.py` treats `FIREBASE_PROJECT_ID` as the switch: set it and `dev:`

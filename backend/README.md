@@ -116,23 +116,24 @@ fetches the web config from `GET /api/auth/config` at boot, so there is nothing
 to paste into the frontend.
 
 1. Firebase console → **Project settings → Your apps** → add a **Web** app.
-2. Copy the config block into the `FIREBASE_*` values (both env files already
-   carry the skeleton, with a comment per key).
+2. Copy the three Auth values into `FIREBASE_*` (both env files already carry the
+   skeleton, with a comment per key).
 3. Enable the providers you want under **Authentication → Sign-in method**
    (Email/Password, Google, Facebook).
 4. Add `localhost` and the deployed origin under **Authentication → Settings →
    Authorized domains**.
 5. Set `FIREBASE_ALLOW_DEV_TOKENS=false` in production.
 
+Only **Auth** is read. The web config the console prints also carries Storage,
+Messaging, and Analytics keys (`storageBucket`, `messagingSenderId`, `appId`,
+`measurementId`); this project ignores them, and `initializeApp()` does not need
+them for Auth.
+
 | Variable | Purpose |
 | :--- | :--- |
 | `FIREBASE_API_KEY` | Web config — public, ships in the browser bundle |
 | `FIREBASE_AUTH_DOMAIN` | Web config — `<project>.firebaseapp.com` |
 | `FIREBASE_PROJECT_ID` | Web config **and the on/off switch**: set it and the API stops accepting `dev:` tokens |
-| `FIREBASE_STORAGE_BUCKET` | Web config — `<project>.firebasestorage.app` |
-| `FIREBASE_MESSAGING_SENDER_ID` | Web config |
-| `FIREBASE_APP_ID` | Web config — `1:<number>:web:<hash>` |
-| `FIREBASE_MEASUREMENT_ID` | Web config — Analytics id, optional |
 | `FIREBASE_CREDENTIALS_PATH` / `FIREBASE_CREDENTIALS` | **Secret** service account (a path or the raw JSON) for privileged Admin SDK calls; never committed |
 | `FIREBASE_ALLOW_DEV_TOKENS` | Accept `dev:<email>[:<role>]` tokens; defaults to `DEBUG` |
 

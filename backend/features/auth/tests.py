@@ -138,12 +138,8 @@ class AuthViewTests(ApiTestCase):
         FIREBASE_PROJECT_ID="demo-project",
         FIREBASE_API_KEY="key-123",
         FIREBASE_AUTH_DOMAIN="demo-project.firebaseapp.com",
-        FIREBASE_STORAGE_BUCKET="demo-project.firebasestorage.app",
-        FIREBASE_MESSAGING_SENDER_ID="123456789",
-        FIREBASE_APP_ID="1:123456789:web:abc",
-        FIREBASE_MEASUREMENT_ID="G-ABC",
     )
-    def test_config_serves_the_whole_web_config_the_console_prints(self):
+    def test_config_serves_the_web_config_the_console_prints(self):
         body = self.client.get("/api/auth/config").json()["firebase"]
 
         self.assertEqual(
@@ -152,41 +148,15 @@ class AuthViewTests(ApiTestCase):
                 "apiKey": "key-123",
                 "authDomain": "demo-project.firebaseapp.com",
                 "projectId": "demo-project",
-                "storageBucket": "demo-project.firebasestorage.app",
-                "messagingSenderId": "123456789",
-                "appId": "1:123456789:web:abc",
-                "measurementId": "G-ABC",
             },
         )
-
-    @override_settings(
-        FIREBASE_PROJECT_ID="demo-project",
-        FIREBASE_API_KEY="key-123",
-        FIREBASE_AUTH_DOMAIN="demo-project.firebaseapp.com",
-        FIREBASE_STORAGE_BUCKET="",
-        FIREBASE_MESSAGING_SENDER_ID="",
-        FIREBASE_APP_ID="",
-        FIREBASE_MEASUREMENT_ID="",
-    )
-    def test_config_omits_the_optional_keys_left_empty(self):
-        body = self.client.get("/api/auth/config").json()["firebase"]
-
-        self.assertEqual(sorted(body), ["apiKey", "authDomain", "projectId"])
 
     @override_settings(FIREBASE_PROJECT_ID="demo-project", FIREBASE_ALLOW_DEV_TOKENS=True)
     def test_a_configured_project_turns_the_dev_fallback_off(self):
         # Both the fallback and the project id are on; the project id must win.
         self.assertFalse(self.client.get("/api/auth/config").json()["devAuth"])
 
-    @override_settings(
-        FIREBASE_PROJECT_ID="",
-        FIREBASE_API_KEY="",
-        FIREBASE_AUTH_DOMAIN="",
-        FIREBASE_STORAGE_BUCKET="",
-        FIREBASE_MESSAGING_SENDER_ID="",
-        FIREBASE_APP_ID="",
-        FIREBASE_MEASUREMENT_ID="",
-    )
+    @override_settings(FIREBASE_PROJECT_ID="", FIREBASE_API_KEY="", FIREBASE_AUTH_DOMAIN="")
     def test_config_ships_no_keys_until_a_project_is_pasted_in(self):
         self.assertEqual(self.client.get("/api/auth/config").json()["firebase"], {})
 

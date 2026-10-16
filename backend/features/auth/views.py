@@ -23,15 +23,11 @@ def auth_config(request):
     """Everything the SPA needs to initialize its Firebase client."""
     return Response(
         {
-            # The exact web config `initializeApp()` takes, minus the empty keys.
+            # The web config `initializeApp()` takes; Auth needs exactly these three.
             "firebase": compact(
                 apiKey=settings.FIREBASE_API_KEY,
                 authDomain=settings.FIREBASE_AUTH_DOMAIN,
                 projectId=settings.FIREBASE_PROJECT_ID,
-                storageBucket=settings.FIREBASE_STORAGE_BUCKET,
-                messagingSenderId=settings.FIREBASE_MESSAGING_SENDER_ID,
-                appId=settings.FIREBASE_APP_ID,
-                measurementId=settings.FIREBASE_MEASUREMENT_ID,
             ),
             "providers": ["password", "google", "facebook"],
             "devAuth": settings.FIREBASE_ALLOW_DEV_TOKENS and not settings.FIREBASE_PROJECT_ID,
