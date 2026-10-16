@@ -35,11 +35,15 @@ contract: the backend returns those exact camelCase keys, so the UI never casts.
 
 ### Stack
 Django 6.1 · DRF 3.18 (function-based views) · django-cors-headers · SQLite
-locally / Postgres via `DATABASE_URL` · no auth yet (one demo learner).
+locally / Postgres via `DATABASE_URL` · Firebase-verified accounts with HS256
+access tokens and rotating refresh tokens.
 
 ### The two invariants
-1. **Slug = id.** `slug` equals the frontend id and is the primary key and route
-   param, so a catalog link and `/courses/:slug` resolve to the same row.
+1. **UUID ids, slug as the business key.** Every table inherits `UUIDModel`
+   from `features/common/models.py`. Catalog rows additionally keep `slug` — it
+   equals the frontend id and the route param, so a catalog link and
+   `/courses/:slug` resolve to the same row, and the serializer emits it as
+   `id`.
 2. **camelCase at the boundary only.** snake_case is the model; camelCase is the
    serializer output. Nothing else converts.
 
@@ -61,8 +65,10 @@ backend/features/<feature>/
 ```
 
 Create only the files a feature needs. `profile` owns no models → no `models.py`
-or `migrations/`. `common` is a **plain package** (no models) holding shared
-choices + serializer helpers, and is **not** in `INSTALLED_APPS`.
+or `migrations/`. `common` **is** in `INSTALLED_APPS`: it holds the shared
+abstract models (`UUIDModel`, `TimeStampedModel`), the choice enums, and
+`management/commands/seed_demo.py`. `adminconsole` owns no tables — it reads
+across features.
 
 ### AppConfig — the label rule
 ```python
@@ -74,7 +80,7 @@ class CoursesConfig(AppConfig):
 ```
 `auth` is the exception: the **folder** is `features/auth` but the **label** is
 `accounts`, because Django reserves `auth` for `django.contrib.auth`. Foreign
-keys then use `"accounts.Learner"`.
+keys then use `"accounts.User"`.
 
 ### Wiring checklist
 | Step | File |
@@ -96,13 +102,15 @@ keys then use `"accounts.Learner"`.
 ## 3. models.py — readable and editable
 
 Group fields with a **one-line comment**, give a `help_text` when a name is not
-self-explanatory, use `unique_together` for natural keys, and make slugs the PK.
+self-explanatory, inherit the shared `UUIDModel` for the primary key, and use
+`unique_together` for natural keys.
 
 ```python
-class Course(models.Model):
+class Course(UUIDModel):
     """One course: the card summary and the full detail record share this row."""
 
-    slug = models.CharField(max_length=80, primary_key=True, unique=True)
+    # Business key — equals the frontend id and the /courses/:slug route param.
+    slug = models.CharField(max_length=80, unique=True, help_text="Public id used in URLs, e.g. course-1")
 
     # Summary fields — the CatalogItem and course card.
     title = models.CharField(max_length=200)
@@ -114,13 +122,18 @@ class Course(models.Model):
 ```
 
 Rules:
+- **Every table gets a UUID primary key** from `features/common/models.py`
+  (`UUIDModel`, plus `TimeStampedModel` when the row needs audit timestamps).
+  Never an integer id, and never a slug as the PK.
+- **Catalog rows keep `slug` as the business key** — it equals the frontend id
+  and the route param, and the serializer emits it as `id`.
 - **Group fields** (summary/detail, eligibility/deadline) with a `#` line.
 - **`help_text`** for enums-as-strings and anything ambiguous (`key = "mobile or desktop"`).
-- **`unique_together`** for `("learner", "course_id")` so duplicates are impossible.
+- **`unique_together`** for natural keys like `("user", "course_id")` so duplicates are impossible.
 - **Choice fields import from `features.common.choices`** — never literals.
 - **Frozen enums** as plain lists are fine when tiny (e.g. `LEARNING_LEVELS`).
 - **`__str__`** on every model — it makes the admin usable.
-- **Cross-app FKs** use the label string: `ForeignKey("accounts.Learner", ...)`.
+- **Cross-app FKs** use the label string: `ForeignKey("accounts.User", ...)`.
 
 ---
 
@@ -152,15 +165,15 @@ def course_catalog_item(course: Course) -> dict[str, Any]:
   contract.
 - **Shared shapes live with their owner** and are imported: the event shape in
   `features/events/serializers.py`, the competition shape in
-  `features/competitions/serializers.py`, the learner shape in
-  `features/auth/serializers.py::user_profile`.
+  `features/competitions/serializers.py`, the account and device shapes in
+  `features/auth/serializers.py::user_profile` / `session_payload`.
 
 ---
 
 ## 5. views.py — thin, data-driven
 
-A view resolves the learner (when needed), queries the feature's models, and
-serializes. Nothing else.
+A view resolves the signed-in user (when needed), queries the feature's models,
+and serializes. Nothing else.
 
 ```python
 NOT_FOUND = {"detail": "الدورة غير موجودة"}
@@ -259,9 +272,9 @@ Build on the shared kit in `features/common/testing.py`:
 | Helper | Use |
 | :--- | :--- |
 | `ApiTestCase` | base `TestCase` whose client passes the origin middleware |
-| `api_client()` | DRF client that always sends an allowed `Origin` |
-| `demo_learner()` | the learner every request acts as |
-| `make_learner()` · `make_course()` · `make_scholarship()` | rows with every required field filled |
+| `api_client()` · `FakeRequest()` | DRF client and a stand-in request with a realistic user agent + IP |
+| `authenticate(client, user)` | opens a real session and authorizes the client with its access token |
+| `make_user()` · `make_admin()` · `make_course()` · `make_scholarship()` | rows with every required field filled |
 
 ```bash
 python manage.py test                 # every feature

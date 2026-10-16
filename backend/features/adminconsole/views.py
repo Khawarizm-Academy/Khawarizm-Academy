@@ -9,6 +9,7 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -19,6 +20,23 @@ from features.auth.serializers import session_payload, session_with_user, user_p
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
 
 PAGE_SIZE = 20
+
+
+class InvalidParameter(APIException):
+    """A malformed query parameter; carries the same `detail` shape as every other error."""
+
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_code = "invalid_parameter"
+
+
+def _int_param(request, name: str, default: int, low: int) -> int:
+    """Floored int query param; a non-numeric value is a 400 instead of a 500."""
+    raw = request.query_params.get(name, str(default))
+    try:
+        value = int(raw)
+    except ValueError:
+        raise InvalidParameter(f"قيمة غير رقمية في «{name}»: {raw}") from None
+    return max(value, low)
 
 
 def _user_row(user: User) -> dict:
@@ -83,7 +101,7 @@ def users(request):
     query = request.query_params.get("q")
     if query:
         queryset = queryset.filter(Q(email__icontains=query) | Q(full_name__icontains=query))
-    page = max(int(request.query_params.get("page", 1)), 1)
+    page = _int_param(request, "page", 1, 1)
     total = queryset.count()
     rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
     return Response({"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [_user_row(u) for u in rows]})
@@ -101,7 +119,7 @@ def user_detail(request, user_id):
     return Response(
         {
             "profile": user_profile(user),
-            "sessions": [session_payload(s) for s in sessions],
+            "sessions": [session_payload(s, request.auth.id) for s in sessions],
             "events": [
                 {
                     "id": str(e.id),
@@ -150,7 +168,7 @@ def sessions(request):
     query = request.query_params.get("q")
     if query:
         queryset = queryset.filter(Q(user__email__icontains=query) | Q(ip_address__icontains=query))
-    page = max(int(request.query_params.get("page", 1)), 1)
+    page = _int_param(request, "page", 1, 1)
     total = queryset.count()
     rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
     return Response({"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [session_with_user(s, request.auth.id) for s in rows]})
@@ -172,7 +190,7 @@ def revoke_session(request, session_id):
 @permission_classes([IsAuthenticated, IsAdminRole])
 def logins_series(request):
     """Daily login counts for the activity chart."""
-    days = min(max(int(request.query_params.get("days", 14)), 1), 90)
+    days = min(_int_param(request, "days", 14, 1), 90)
     start = timezone.now() - timedelta(days=days)
     rows = (
         AuthEvent.objects.filter(kind=AuthEventKind.LOGIN, created_at__gte=start)

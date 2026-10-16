@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
+from django.conf import settings
 from django.contrib import admin
 from django.core.exceptions import FieldDoesNotExist
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from features.auth import services
 from features.auth.models import AuthEvent, InstructorProfile, StudentProfile, User, UserSession
@@ -123,6 +127,10 @@ class AuthViewTests(ApiTestCase):
         body = self.client.get("/api/auth/config").json()
         self.assertEqual(body["providers"], ["password", "google", "facebook"])
 
+    def test_config_reports_whether_dev_tokens_are_accepted(self):
+        body = self.client.get("/api/auth/config").json()
+        self.assertEqual(body["devAuth"], settings.FIREBASE_ALLOW_DEV_TOKENS and not settings.FIREBASE_PROJECT_ID)
+
     def test_dev_login_returns_tokens_for_a_new_user(self):
         body = self.client.post("/api/auth/firebase", {"idToken": "dev:new@example.com"}, format="json").json()
         self.assertIn("accessToken", body)
@@ -161,6 +169,85 @@ class AuthViewTests(ApiTestCase):
         response = self.client.get("/api/auth/me")
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json()["code"], "signed_in_elsewhere")
+
+
+class AuthSessionLifecycleTests(ApiTestCase):
+    """A refresh token is single-use, and a revoked session dies instantly."""
+
+    def _login(self, email: str) -> dict:
+        return self.client.post("/api/auth/firebase", {"idToken": f"dev:{email}"}, format="json").json()
+
+    def test_a_refresh_token_cannot_be_replayed(self):
+        first = self._login("once@example.com")
+        self.client.post("/api/auth/refresh", {"refreshToken": first["refreshToken"]}, format="json")
+
+        replay = self.client.post("/api/auth/refresh", {"refreshToken": first["refreshToken"]}, format="json")
+
+        self.assertEqual(replay.status_code, 401)
+        self.assertEqual(replay.json()["code"], "session_invalid")
+
+    def test_an_unknown_refresh_token_is_rejected(self):
+        response = self.client.post("/api/auth/refresh", {"refreshToken": "not-a-real-token"}, format="json")
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["code"], "session_invalid")
+
+    def test_refresh_without_a_token_is_a_bad_request(self):
+        self.assertEqual(self.client.post("/api/auth/refresh", {}, format="json").status_code, 400)
+
+    def test_a_session_past_its_window_cannot_be_refreshed(self):
+        body = self._login("old@example.com")
+        UserSession.objects.update(expires_at=timezone.now() - timedelta(days=1))
+
+        response = self.client.post("/api/auth/refresh", {"refreshToken": body["refreshToken"]}, format="json")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["code"], "expired")
+
+    def test_a_logged_out_token_dies_before_it_expires(self):
+        authenticate(self.client, make_user())
+        self.client.post("/api/auth/logout", {}, format="json")
+
+        response = self.client.get("/api/auth/me")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["code"], "logout")
+
+    def test_the_refresh_token_dies_with_the_session_it_belonged_to(self):
+        body = self._login("gone@example.com")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {body['accessToken']}")
+        self.client.post("/api/auth/logout", {}, format="json")
+
+        response = self.client.post("/api/auth/refresh", {"refreshToken": body["refreshToken"]}, format="json")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_the_device_list_only_shows_your_own_devices(self):
+        make_user(email="theirs@example.com")
+        _, own_session = authenticate(self.client, make_user(email="mine@example.com"))
+
+        body = self.client.get("/api/auth/sessions").json()
+
+        self.assertEqual([row["id"] for row in body["sessions"]], [str(own_session.id)])
+
+    def test_you_can_only_revoke_your_own_devices(self):
+        victim_session, _, _ = services.open_session(make_user(email="victim@example.com"), FakeRequest(), "password")
+        authenticate(self.client, make_user(email="bystander@example.com"))
+
+        response = self.client.post(f"/api/auth/sessions/{victim_session.id}/revoke", {}, format="json")
+
+        self.assertEqual(response.status_code, 404)
+        victim_session.refresh_from_db()
+        self.assertTrue(victim_session.is_active)
+
+    def test_a_deactivated_account_loses_its_session(self):
+        user = make_user()
+        authenticate(self.client, user)
+        User.objects.filter(pk=user.pk).update(is_active=False)
+
+        response = self.client.get("/api/auth/me")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["code"], "revoked_by_admin")
 
 
 class AuthUrlTests(TestCase):
