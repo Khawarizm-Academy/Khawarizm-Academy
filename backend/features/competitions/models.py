@@ -1,11 +1,13 @@
-"""Competition model — a global competition/challenge row."""
+"""Competition model — a global competition/challenge row (home rails reuse it)."""
 
 from __future__ import annotations
 
 from django.db import models
 
+from features.common.models import UUIDModel
 
-class Competition(models.Model):
+
+class Competition(UUIDModel):
     competition_id = models.CharField(max_length=80, unique=True)
     title = models.CharField(max_length=160)
     badge = models.CharField(max_length=80, blank=True)

@@ -1,37 +1,43 @@
-"""Profile read/update endpoint."""
+"""Profile read/update endpoint — acts on the signed-in user."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from features.auth.models import StudentProfile
 from features.auth.serializers import user_profile
-from features.auth.services import get_demo_learner
 
 
 @api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated])
 def profile_view(request: Any) -> Response:
-    """Read or update the demo learner's profile/preferences."""
-    learner = get_demo_learner()
+    """Read or update the signed-in user's profile and preferences."""
+    user = request.user
 
     if request.method == "PATCH":
         data = request.data
         if "fullName" in data:
-            learner.full_name = data["fullName"]
+            user.full_name = data["fullName"]
         if "phone" in data:
-            learner.phone = data["phone"]
-        if "learningLevel" in data:
-            learner.learning_level = data["learningLevel"]
-        if "interests" in data:
-            learner.interests = data["interests"]
-        if "notifications" in data:
-            learner.notifications_preferences = data["notifications"]
+            user.phone = data["phone"]
         if "language" in data:
-            learner.language = data["language"]
+            user.language = data["language"]
         if "timezone" in data:
-            learner.timezone = data["timezone"]
-        learner.save()
+            user.timezone = data["timezone"]
+        user.save()
 
-    return Response(user_profile(learner))
+        # Preferences live on the student profile so the account row stays lean.
+        profile, _ = StudentProfile.objects.get_or_create(user=user)
+        if "learningLevel" in data:
+            profile.learning_level = data["learningLevel"]
+        if "interests" in data:
+            profile.interests = data["interests"]
+        if "notifications" in data:
+            profile.notifications = data["notifications"]
+        profile.save()
+
+    return Response(user_profile(user))

@@ -121,3 +121,53 @@ class CourseTrackIcon(models.TextChoices):
 class QuickLinkTone(models.TextChoices):
     BLUE = "blue", "blue"
     GOLD = "gold", "gold"
+
+
+class Role(models.TextChoices):
+    """The three account types; admin also gets Django's staff flags."""
+
+    STUDENT = "student", "student"
+    INSTRUCTOR = "instructor", "instructor"
+    ADMIN = "admin", "admin"
+
+
+class AuthProvider(models.TextChoices):
+    """Where a login came from — Firebase reports this on the ID token."""
+
+    PASSWORD = "password", "password"
+    GOOGLE = "google", "google"
+    FACEBOOK = "facebook", "facebook"
+    DEV = "dev", "dev"
+
+
+class DeviceType(models.TextChoices):
+    DESKTOP = "desktop", "desktop"
+    MOBILE = "mobile", "mobile"
+    TABLET = "tablet", "tablet"
+    UNKNOWN = "unknown", "unknown"
+
+
+class SessionRevokeReason(models.TextChoices):
+    """Why a session stopped being valid — surfaced to the device."""
+
+    LOGOUT = "logout", "logout"
+    SIGNED_IN_ELSEWHERE = "signed_in_elsewhere", "signed_in_elsewhere"
+    EXPIRED = "expired", "expired"
+    REVOKED_BY_ADMIN = "revoked_by_admin", "revoked_by_admin"
+
+
+class AuthEventKind(models.TextChoices):
+    """One audit row per auth action, for the admin analytics dashboard."""
+
+    LOGIN = "login", "login"
+    LOGOUT = "logout", "logout"
+    REFRESH = "refresh", "refresh"
+    REVOKED = "revoked", "revoked"
+    REJECTED = "rejected", "rejected"
+
+
+class FilterGroupKind(models.TextChoices):
+    """How a filter group is rendered: exclusive buttons or a free input."""
+
+    CHOICE = "choice", "choice"
+    SEARCH = "search", "search"

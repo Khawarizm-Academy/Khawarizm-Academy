@@ -1,4 +1,4 @@
-"""Django admin registration for the scholarships feature."""
+"""Django admin for scholarships."""
 
 from __future__ import annotations
 
@@ -9,6 +9,6 @@ from features.scholarships.models import Scholarship
 
 @admin.register(Scholarship)
 class ScholarshipAdmin(admin.ModelAdmin):
-    list_display = ("slug", "title", "country", "degree_level", "coverage_type", "status", "days_remaining")
-    list_filter = ("status", "degree_level", "coverage_type", "country_slug")
+    list_display = ("slug", "title", "provider", "country", "degree_level", "status")
+    list_filter = ("category_slug", "country_slug", "degree_level", "status", "deadline_urgency")
     search_fields = ("slug", "title", "provider")

@@ -65,6 +65,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    # Shared, non-feature code (abstract models + management commands).
+    "features.common",
     # Feature apps — one folder per product feature, mirroring the frontend.
     "features.auth",
     "features.catalog",
@@ -74,7 +76,11 @@ INSTALLED_APPS = [
     "features.home",
     "features.events",
     "features.competitions",
+    "features.adminconsole",
 ]
+
+# Every account (student / instructor / admin) lives in the auth feature app.
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -173,6 +179,14 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["features.auth.authentication.AccessTokenAuthentication"],
     "EXCEPTION_HANDLER": "features.common.errors.api_exception_handler",
-    "UNAUTHENTICATED_USER": None,
 }
+
+# Firebase web app config — the SPA reads this from `/api/auth/config`.
+# The project id is all the Admin SDK needs to verify ID tokens server-side.
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "")
+FIREBASE_AUTH_DOMAIN = os.environ.get("FIREBASE_AUTH_DOMAIN", "")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "")
+# Dev fallback: accept `dev:<email>[:<role>]` tokens while no Firebase project is set.
+FIREBASE_ALLOW_DEV_TOKENS = env_bool("FIREBASE_ALLOW_DEV_TOKENS", DEBUG)

@@ -1,98 +1,86 @@
-"""Home content models — curated rails shown on the landing page."""
+"""Home content models — placements that point at the real feature rows.
+
+The home rails never copy a course/scholarship/event/competition: each row here
+stores only the presentation extras and a foreign key to the owning table.
+"""
 
 from __future__ import annotations
 
 from django.db import models
 
-from features.common.choices import EventFormat, QuickLinkTone, ThumbnailType
-
-LEVELS = [("beginner", "beginner"), ("intermediate", "intermediate"), ("advanced", "advanced")]
-ICON_TYPES = [("university", "university"), ("globe", "globe"), ("briefcase", "briefcase")]
-URGENCIES = [("critical", "critical"), ("warning", "warning"), ("normal", "normal")]
-COVERAGES = [("fully_funded", "fully_funded"), ("partial", "partial")]
+from features.common.choices import QuickLinkTone, ThumbnailType
+from features.common.models import UUIDModel
 
 
-class HomeFeaturedCourse(models.Model):
-    course_id = models.CharField(max_length=80, unique=True)
-    title = models.CharField(max_length=160)
-    category = models.CharField(max_length=80, blank=True)
-    level = models.CharField(max_length=20, blank=True)
-    duration = models.CharField(max_length=40, blank=True)
+class HomeFeaturedCourse(UUIDModel):
+    """Pins a real Course onto the home featured rail."""
+
+    course = models.OneToOneField("courses.Course", related_name="home_featured", on_delete=models.CASCADE)
     students_count = models.CharField(max_length=40, blank=True)
     status = models.CharField(max_length=40, blank=True)
     thumbnail_type = models.CharField(max_length=30, choices=ThumbnailType.choices, blank=True)
+    order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["course_id"]
+        ordering = ["order"]
 
     def __str__(self) -> str:
-        return self.title
+        return f"home-course:{self.course.slug}"
 
 
-class HomeFeaturedScholarship(models.Model):
-    scholarship_id = models.CharField(max_length=80, unique=True)
-    title = models.CharField(max_length=160)
-    provider = models.CharField(max_length=120, blank=True)
-    location = models.CharField(max_length=80, blank=True)
+class HomeFeaturedScholarship(UUIDModel):
+    """Pins a real Scholarship onto the home featured rail."""
+
+    scholarship = models.OneToOneField("scholarships.Scholarship", related_name="home_featured", on_delete=models.CASCADE)
     deadline_text = models.CharField(max_length=60, blank=True)
-    deadline_urgency = models.CharField(max_length=10, blank=True)
-    coverage = models.CharField(max_length=80, blank=True)
-    degree_level = models.CharField(max_length=40, blank=True)
-    icon_type = models.CharField(max_length=20, choices=ICON_TYPES, blank=True)
+    icon_type = models.CharField(max_length=20, blank=True, help_text="university, globe, or briefcase")
     thumbnail_type = models.CharField(max_length=30, choices=ThumbnailType.choices, blank=True)
+    order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["scholarship_id"]
+        ordering = ["order"]
 
     def __str__(self) -> str:
-        return self.title
+        return f"home-scholarship:{self.scholarship.slug}"
 
 
-class HomeCompetition(models.Model):
+class HomeCompetitionSpot(UUIDModel):
+    """Places a real Competition at a named home slot (mobile / desktop)."""
+
     key = models.CharField(max_length=40, unique=True, help_text="mobile or desktop")
-    competition_id = models.CharField(max_length=80)
-    title = models.CharField(max_length=160)
-    badge = models.CharField(max_length=80, blank=True)
-    description = models.TextField(blank=True)
-    days_remaining = models.CharField(max_length=10, blank=True)
-    hours_remaining = models.CharField(max_length=10, blank=True)
-    action_text = models.CharField(max_length=60, blank=True)
+    competition = models.ForeignKey("competitions.Competition", related_name="home_spots", on_delete=models.CASCADE)
 
     class Meta:
         ordering = ["key"]
 
     def __str__(self) -> str:
-        return f"{self.key}:{self.competition_id}"
+        return f"home-competition:{self.key}"
 
 
-class HomeEvent(models.Model):
+class HomeEventSpot(UUIDModel):
+    """Places a real EventItem at a named home slot."""
+
     key = models.CharField(max_length=40, unique=True, help_text="mobile, desktopFeatured, or desktopWorkshop")
-    event_id = models.CharField(max_length=80)
-    title = models.CharField(max_length=160)
-    description = models.TextField(blank=True)
-    badge = models.CharField(max_length=80, blank=True)
-    date = models.CharField(max_length=80, blank=True)
-    format = models.CharField(max_length=40, choices=EventFormat.choices, blank=True)
-    is_featured = models.BooleanField(default=False)
-    thumbnail_type = models.CharField(max_length=30, choices=ThumbnailType.choices, blank=True)
+    event = models.ForeignKey("events.EventItem", related_name="home_spots", on_delete=models.CASCADE)
 
     class Meta:
         ordering = ["key"]
 
     def __str__(self) -> str:
-        return f"{self.key}:{self.event_id}"
+        return f"home-event:{self.key}"
 
 
-class HomeQuickLink(models.Model):
+class HomeQuickLink(UUIDModel):
     link_id = models.CharField(max_length=40, unique=True)
     icon = models.CharField(max_length=40, blank=True)
     label = models.CharField(max_length=60, blank=True)
     subtitle = models.CharField(max_length=80, blank=True)
     tone = models.CharField(max_length=10, choices=QuickLinkTone.choices, default=QuickLinkTone.BLUE)
     target = models.CharField(max_length=20, blank=True)
+    order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["link_id"]
+        ordering = ["order", "link_id"]
 
     def __str__(self) -> str:
         return self.label or self.link_id

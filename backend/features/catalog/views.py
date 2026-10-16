@@ -12,11 +12,19 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from features.catalog.filters import matches, sort_key
-from features.catalog.serializers import catalog_item_for
+from features.catalog.serializers import catalog_filters, catalog_item_for
 from features.courses.models import Course
 from features.scholarships.models import Scholarship
 
 ITEMS_PER_PAGE = 6
+
+
+@api_view(["GET"])
+def catalog_filters_view(request: Any) -> Response:
+    """The filter + sort groups the sidebar renders, straight from the database."""
+    surface = request.query_params.get("surface", "desktop")
+    tab = request.query_params.get("tab", "all")
+    return Response(catalog_filters(surface, tab))
 
 
 def _interleaved_items() -> list[dict[str, Any]]:

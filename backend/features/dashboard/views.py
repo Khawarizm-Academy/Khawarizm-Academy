@@ -1,24 +1,24 @@
-"""Dashboard endpoints: summary, sections and notifications."""
+"""Dashboard endpoints: summary, sections and notifications (per signed-in user)."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from features.auth.services import get_demo_learner
 from features.dashboard.models import (
-    CertificateItem,
-    CompetitionItem,
+    Certificate,
     DashboardNotification,
     DashboardStat,
-    EnrolledCourse,
-    FavoriteCourseItem,
+    Enrollment,
+    FavoriteCourse,
     ImminentLiveSession,
     NotificationItemData,
     PriorityContinue,
-    SavedScholarshipItem,
+    SavedCompetition,
+    SavedScholarship,
     UpcomingEvent,
 )
 from features.dashboard.serializers import (
@@ -37,66 +37,74 @@ from features.dashboard.serializers import (
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def dashboard_summary(request: Any) -> Response:
     """Everything the dashboard header/main view needs in one call."""
-    learner = get_demo_learner()
-    priority = PriorityContinue.objects.filter(learner=learner).first()
-    live = ImminentLiveSession.objects.filter(learner=learner).first()
-    stats = DashboardStat.objects.filter(learner=learner).first()
+    user = request.user
+    priority = PriorityContinue.objects.filter(user=user).select_related("course").first()
+    live = ImminentLiveSession.objects.filter(user=user).select_related("session__course").first()
+    stats = DashboardStat.objects.filter(user=user).first()
     return Response(
         {
             "stats": dashboard_stats(stats) if stats else None,
             "priorityContinue": priority_continue(priority) if priority else None,
             "imminentLiveSession": live_session_info(live) if live else None,
-            "upcomingEvents": [upcoming_event(row) for row in UpcomingEvent.objects.filter(learner=learner)],
+            "upcomingEvents": [upcoming_event(row) for row in UpcomingEvent.objects.filter(user=user)],
         }
     )
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def dashboard_enrolled(request: Any) -> Response:
-    learner = get_demo_learner()
-    return Response([enrolled_course(row) for row in EnrolledCourse.objects.filter(learner=learner)])
+    rows = Enrollment.objects.filter(user=request.user).select_related("course")
+    return Response([enrolled_course(row) for row in rows])
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def dashboard_saved(request: Any) -> Response:
-    learner = get_demo_learner()
+    scholarships = SavedScholarship.objects.filter(user=request.user).select_related("scholarship")
+    favorites = FavoriteCourse.objects.filter(user=request.user).select_related("course")
     return Response(
         {
-            "scholarships": [saved_scholarship(row) for row in SavedScholarshipItem.objects.filter(learner=learner)],
-            "courses": [favorite_course(row) for row in FavoriteCourseItem.objects.filter(learner=learner)],
+            "scholarships": [saved_scholarship(row) for row in scholarships],
+            "courses": [favorite_course(row) for row in favorites],
         }
     )
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def dashboard_competitions(request: Any) -> Response:
-    learner = get_demo_learner()
+    competitions = SavedCompetition.objects.filter(user=request.user).select_related("competition")
+    certificates = Certificate.objects.filter(user=request.user).select_related("course")
     return Response(
         {
-            "competitions": [competition_item(row) for row in CompetitionItem.objects.filter(learner=learner)],
-            "certificates": [certificate_item(row) for row in CertificateItem.objects.filter(learner=learner)],
+            "competitions": [competition_item(row) for row in competitions],
+            "certificates": [certificate_item(row) for row in certificates],
         }
     )
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def dashboard_notifications(request: Any) -> Response:
     """Both notification shapes, so the view and the drawer share one call."""
-    learner = get_demo_learner()
+    user = request.user
     return Response(
         {
-            "items": [view_notification(row) for row in NotificationItemData.objects.filter(learner=learner)],
-            "drawer": [drawer_notification(row) for row in DashboardNotification.objects.filter(learner=learner)],
+            "items": [view_notification(row) for row in NotificationItemData.objects.filter(user=user)],
+            "drawer": [drawer_notification(row) for row in DashboardNotification.objects.filter(user=user)],
         }
     )
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def dashboard_notification_read(request: Any, notification_id: str) -> Response:
     """Mark one notification as read (both representations)."""
-    learner = get_demo_learner()
-    DashboardNotification.objects.filter(learner=learner, notification_id=notification_id).update(is_read=True)
-    NotificationItemData.objects.filter(learner=learner, notification_id=notification_id).update(is_unread=False)
+    user = request.user
+    DashboardNotification.objects.filter(user=user, notification_id=notification_id).update(is_read=True)
+    NotificationItemData.objects.filter(user=user, notification_id=notification_id).update(is_unread=False)
     return Response({"read": True, "id": notification_id})

@@ -39,8 +39,9 @@ class CourseModelTests(TestCase):
     def test_str_returns_the_title(self):
         self.assertEqual(str(make_course(title="Python")), "Python")
 
-    def test_slug_is_the_primary_key(self):
-        self.assertEqual(Course._meta.pk.name, "slug")
+    def test_slug_is_a_unique_business_key(self):
+        self.assertEqual(Course._meta.pk.name, "id")
+        self.assertTrue(Course._meta.get_field("slug").unique)
 
     def test_exam_defaults(self):
         course = make_course()
@@ -64,10 +65,11 @@ class CourseModelTests(TestCase):
         session = CourseLiveSession.objects.create(course=course, session_id="s1", title="Live", date_label="d", time_label="t")
         self.assertEqual(session.state, "upcoming")
 
-    def test_problem_str_and_primary_key(self):
+    def test_problem_str_and_unique_business_key(self):
         problem = CourseProblem.objects.create(problem_id="p1", prompt="Prompt", correct_option_id="a")
         self.assertEqual(str(problem), "p1")
-        self.assertEqual(CourseProblem._meta.pk.name, "problem_id")
+        self.assertEqual(CourseProblem._meta.pk.name, "id")
+        self.assertTrue(CourseProblem._meta.get_field("problem_id").unique)
 
     def test_problem_option_str(self):
         problem = CourseProblem.objects.create(problem_id="p1", prompt="Prompt", correct_option_id="a")

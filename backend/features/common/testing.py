@@ -10,14 +10,24 @@ from typing import Any
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from features.auth.models import Learner
-from features.auth.services import DEMO_EMAIL, get_demo_learner
-from features.common.choices import CourseLevel
+from features.auth import services
+from features.auth.models import User
+from features.common.choices import CourseLevel, Role
 from features.courses.models import Course
 from features.scholarships.models import Scholarship
 
 # The API middleware only lets /api/ through when the origin is allow-listed.
 ALLOWED_ORIGIN = "http://localhost:5173"
+TEST_EMAIL = "test.learner@example.com"
+TEST_PASSWORD = "test-pass-123"
+TEST_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+
+
+class FakeRequest:
+    """The tiny slice of a request the session service reads."""
+
+    def __init__(self, user_agent: str = TEST_UA, ip: str = "127.0.0.1") -> None:
+        self.META = {"HTTP_USER_AGENT": user_agent, "REMOTE_ADDR": ip}
 
 
 def api_client() -> APIClient:
@@ -36,16 +46,26 @@ class ApiTestCase(TestCase):
         self.client = api_client()
 
 
-def demo_learner() -> Learner:
-    """The learner every request acts as; created on first call."""
-    return get_demo_learner()
-
-
-def make_learner(**overrides: Any) -> Learner:
-    """A learner row; defaults to the demo identity."""
-    fields: dict[str, Any] = {"email": DEMO_EMAIL, "full_name": "Test Learner"}
+def make_user(email: str = TEST_EMAIL, role: str = Role.STUDENT, **overrides: Any) -> User:
+    """A user row with a usable password."""
+    fields: dict[str, Any] = {"email": email, "full_name": "Test Learner", "role": role, "password": TEST_PASSWORD}
     fields.update(overrides)
-    return Learner.objects.create(**fields)
+    return User.objects.create_user(**fields)
+
+
+def make_admin(email: str = "admin@example.com", **overrides: Any) -> User:
+    """A staff/admin user for the console endpoints."""
+    fields: dict[str, Any] = {"role": Role.ADMIN, "is_staff": True, "is_superuser": True}
+    fields.update(overrides)
+    return make_user(email=email, **fields)
+
+
+def authenticate(client: APIClient, user: User | None = None, user_agent: str = TEST_UA):
+    """Open a real session and authorize the client with its access token."""
+    user = user or make_user()
+    session, access, _refresh = services.open_session(user, FakeRequest(user_agent), "dev")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+    return user, session
 
 
 def make_course(**overrides: Any) -> Course:

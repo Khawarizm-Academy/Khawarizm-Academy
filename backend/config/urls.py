@@ -18,4 +18,5 @@ urlpatterns = [
     path("api/", include("features.events.urls")),
     path("api/", include("features.competitions.urls")),
     path("api/", include("features.profile.urls")),
+    path("api/", include("features.adminconsole.urls")),
 ]
