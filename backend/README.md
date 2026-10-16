@@ -88,11 +88,16 @@ exported by hand:
 
 | File | Loaded when | Use for |
 | :--- | :--- | :--- |
-| `.env.development` | `DJANGO_ENV` is unset or `development` | Local dev |
-| `.env.production` | `DJANGO_ENV=production` | Self-hosted production |
+| `.env.development` | `DJANGO_ENV` is unset or `development` | Local dev — committed |
+| `.env.production` | `DJANGO_ENV=production` | Self-hosted production — **gitignored**, create it from `.env.production.example` |
 
 > **On Vercel the profile files are skipped** (Vercel sets `VERCEL=1`).
 > Configuration comes from the project's **Environment Variables**.
+>
+> `.env.production` is deliberately **not in git**: it holds real keys and the
+> Django secret. Copy `.env.production.example` to `.env.production` on the box
+> that runs the API and fill it in. On Vercel, set the same names as Project
+> Environment Variables instead.
 
 **Real environment variables always win over the file**:
 
@@ -116,8 +121,10 @@ fetches the web config from `GET /api/auth/config` at boot, so there is nothing
 to paste into the frontend.
 
 1. Firebase console → **Project settings → Your apps** → add a **Web** app.
-2. Copy the three Auth values into `FIREBASE_*` (both env files already carry the
-   skeleton, with a comment per key).
+2. Copy the three Auth values into `FIREBASE_*`. `.env.development` already
+   carries the development project; for production copy
+   `.env.production.example` to `.env.production` (or set the variables in the
+   host) and fill it in.
 3. Enable the providers you want under **Authentication → Sign-in method**
    (Email/Password, Google, Facebook).
 4. Add `localhost` and the deployed origin under **Authentication → Settings →

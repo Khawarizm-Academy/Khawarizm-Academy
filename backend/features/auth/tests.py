@@ -115,6 +115,10 @@ class SessionSerializerTests(TestCase):
         self.assertEqual(payload["id"], str(session.id))
 
 
+# The dev fallback is what these two classes exercise, so they pin the local
+# profile instead of inheriting a developer's real Firebase project from
+# `.env.development`.
+@override_settings(FIREBASE_PROJECT_ID="", FIREBASE_ALLOW_DEV_TOKENS=True)
 class AuthViewTests(ApiTestCase):
     def test_me_requires_auth(self):
         self.assertIn(self.client.get("/api/auth/me").status_code, (401, 403))
@@ -130,6 +134,7 @@ class AuthViewTests(ApiTestCase):
         body = self.client.get("/api/auth/config").json()
         self.assertEqual(body["providers"], ["password", "google", "facebook"])
 
+    @override_settings(FIREBASE_PROJECT_ID="", FIREBASE_ALLOW_DEV_TOKENS=True)
     def test_config_reports_whether_dev_tokens_are_accepted(self):
         body = self.client.get("/api/auth/config").json()
         self.assertEqual(body["devAuth"], settings.FIREBASE_ALLOW_DEV_TOKENS and not settings.FIREBASE_PROJECT_ID)
@@ -200,6 +205,7 @@ class AuthViewTests(ApiTestCase):
         self.assertEqual(response.json()["code"], "signed_in_elsewhere")
 
 
+@override_settings(FIREBASE_PROJECT_ID="", FIREBASE_ALLOW_DEV_TOKENS=True)
 class AuthSessionLifecycleTests(ApiTestCase):
     """A refresh token is single-use, and a revoked session dies instantly."""
 
