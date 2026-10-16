@@ -14,7 +14,7 @@ and edit. Read this before adding a feature or changing a model.
 
 The backend mirrors `frontend/src/features/`. Every product feature is a Django
 app under `backend/features/<feature>/`, and it owns its own models,
-serializers, views, routes, admin, migrations, and README.
+serializers, views, routes, admin, migrations, tests, and README.
 
 ```text
 backend/features/<feature>/
@@ -24,6 +24,7 @@ backend/features/<feature>/
 ├── views.py          thin function views (resolve → query → serialize)
 ├── urls.py           the feature's routes
 ├── admin.py          admin registration (the data editor)
+├── tests.py          tests — models, serializers, routes
 ├── migrations/       schema history
 └── README.md         what it does, routes, data, how it works
 ```
@@ -146,7 +147,8 @@ Wiring a new feature:
 8.  config/urls.py → include the feature's urls under "api/"
 9.  admin.py   → register the models
 10. makemigrations + migrate
-11. README.md  → document the feature
+11. tests.py   → ApiTestCase + factories (models/serializers/routes)
+12. README.md  → document the feature
 ```
 
 Verification gate:
@@ -157,6 +159,7 @@ source .venv/bin/activate
 python manage.py check            # framework sanity
 python manage.py makemigrations   # must say "No changes detected"
 python manage.py migrate
+python manage.py test             # every feature's tests must pass
 python manage.py runserver 127.0.0.1:8000
 curl -H "Origin: http://localhost:5173" http://127.0.0.1:8000/api/<route>
 ```

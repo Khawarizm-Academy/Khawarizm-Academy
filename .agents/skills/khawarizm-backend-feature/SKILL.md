@@ -1,12 +1,12 @@
 ---
 name: khawarizm-backend-feature
-description: End-to-end protocol for adding a new backend feature to Khawarizm Academy (Django + DRF). Use whenever creating a new feature app, adding a new backend domain or route group, or porting a frontend feature to the API. Covers the 12-step scaffold, app-label rules, models/serializers/views/urls/admin, settings and URL mounting, migrations, the feature README, and the verification gate.
+description: End-to-end protocol for adding a new backend feature to Khawarizm Academy (Django + DRF). Use whenever creating a new feature app, adding a new backend domain or route group, or porting a frontend feature to the API. Covers the 13-step scaffold, app-label rules, models/serializers/views/urls/admin, settings and URL mounting, migrations, per-feature tests, the feature README, and the verification gate.
 ---
 
 # Khawarizm Academy — Master Backend Feature Creation Blueprint
 
 The **authoritative, self-contained workflow** for adding a new backend feature
-from start to finish. Follow this 12-step protocol whenever creating a feature
+from start to finish. Follow this 13-step protocol whenever creating a feature
 app or a new backend domain.
 
 > Human-facing twins: [`backend/features/README.md`](../../../backend/features/README.md)
@@ -31,7 +31,7 @@ If nothing is stored, the feature still gets a folder, `views.py`, `urls.py`,
 
 ---
 
-## 2. The 12-step universal feature creation protocol
+## 2. The 13-step universal feature creation protocol
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -48,7 +48,8 @@ If nothing is stored, the feature still gets a folder, `views.py`, `urls.py`,
 │  9.  Mount in config/urls.py (include under "api/")                         │
 │ 10.  Write admin.py (every model + inlines — the data editor)               │
 │ 11.  makemigrations <feature> + migrate                                     │
-│ 12.  Write README.md + add the row to backend/features/README.md           │
+│ 12.  Write tests.py (ApiTestCase + factories; models/serializers/routes)   │
+│ 13.  Write README.md + add the row to backend/features/README.md           │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -299,7 +300,35 @@ python manage.py migrate
 
 ---
 
-### Step 12 — README + the index row
+### Step 12 — tests.py
+Cover the feature's **models, serializers, and routes** using the shared kit in
+`features/common/testing.py` — never hand-roll a client or an unseeded row.
+
+```python
+"""Tests for the <feature> feature."""
+
+from features.common.testing import ApiTestCase, make_course
+
+
+class ThingModelTests(TestCase):          # str, ordering, unique_together, defaults
+    ...
+
+
+class ThingSerializerTests(TestCase):     # camelCase keys, compact() drops empties
+    ...
+
+
+class ThingViewTests(ApiTestCase):        # status codes, payload shape, 404 in Arabic
+    ...
+```
+
+```bash
+python manage.py test features.<feature>
+```
+
+---
+
+### Step 13 — README + the index row
 Every feature owns a `README.md` with these sections, then a new row in the
 `backend/features/README.md` table.
 
@@ -337,6 +366,7 @@ backend/features/<feature>/
 ├── urls.py                # the routes
 ├── admin.py               # registration + inlines (skip if no models)
 ├── migrations/__init__.py # skip if no models
+├── tests.py               # ApiTestCase + factories (models/serializers/routes)
 └── README.md              # what/why/routes/data
 ```
 
@@ -355,6 +385,8 @@ backend/features/<feature>/
 | **Unregistered model** | No way to add data (DB ships empty) | Register every model in `admin.py` with inlines. |
 | **Auto-increment public id** | A catalog link and `/courses/:slug` disagree | `slug` is the primary key and the route param. |
 | **Duplicated enum literals** | Values drift between apps | Import from `features.common.choices`. |
+| **Hand-rolled test client** | Every `/api/` call 403s without an `Origin` | Use `features.common.testing.ApiTestCase` / `api_client()`. |
+| **Hand-seeded test rows** | Required-field omissions break the suite | Use the `make_*` factories in `features.common.testing`. |
 | **Forgetting `INSTALLED_APPS`** | `makemigrations <feature>` finds nothing | Add `"features.<feature>"`, then mount its urls. |
 | **Multi-line comments / banners** | Noise the next reader has to skip | One line per comment, say **why**. |
 
@@ -368,6 +400,7 @@ source .venv/bin/activate
 python manage.py check            # framework sanity
 python manage.py makemigrations   # must print "No changes detected"
 python manage.py migrate
+python manage.py test             # the feature's tests must pass
 python manage.py runserver 127.0.0.1:8000
 ```
 
@@ -384,6 +417,7 @@ curl -H "Origin: http://localhost:5173" http://127.0.0.1:8000/api/<feature>
 - [ ] Every route returns the camelCase keys the frontend types declare.
 - [ ] A missing slug returns **404** with the Arabic message.
 - [ ] Every model is registered in `admin.py`, children inline.
+- [ ] `python manage.py test features.<feature>` passes.
 - [ ] The feature folder has a `README.md` and a row in `features/README.md`.
 - [ ] No raw enum literal, no duplicated shape, no `if`/`else` chain.
 - [ ] Every comment is one line and says **why**.

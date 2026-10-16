@@ -1,6 +1,6 @@
 ---
 name: khawarizm-backend
-description: Master engineering playbook for the Khawarizm Academy backend (Django + DRF). Use whenever creating, reading, refactoring, or extending any backend feature app, model, serializer, view, route, admin, or migration. Covers the one-app-per-feature layout that mirrors the frontend, the camelCase JSON contract, thin views, data-over-branches filters, one-line comments, readable/editable models, the admin data editor, and the verification gate.
+description: Master engineering playbook for the Khawarizm Academy backend (Django + DRF). Use whenever creating, reading, refactoring, testing, or extending any backend feature app, model, serializer, view, route, admin, migration, or test. Covers the one-app-per-feature layout that mirrors the frontend, the camelCase JSON contract, thin views, data-over-branches filters, one-line comments, readable/editable models, the admin data editor, the shared testing kit, and the verification gate.
 ---
 
 # Khawarizm Academy — Master Backend Engineering Skill
@@ -55,6 +55,7 @@ backend/features/<feature>/
 ├── views.py          thin function views (resolve → query → serialize)
 ├── urls.py           the feature's routes
 ├── admin.py          admin registration (the data editor)
+├── tests.py          tests — models, serializers, routes
 ├── migrations/       schema history
 └── README.md         what it does, routes, data, how it works
 ```
@@ -86,8 +87,9 @@ keys then use `"accounts.Learner"`.
 | 6 | `config/settings.py` → add `"features.<feature>"` to `INSTALLED_APPS` |
 | 7 | `config/urls.py` → `path("api/", include("features.<feature>.urls"))` |
 | 8 | `features/<feature>/admin.py` |
-| 9 | `manage.py makemigrations <feature>` + `migrate` |
-| 10 | `features/<feature>/README.md` + the table in `features/README.md` |
+| 9 | `features/<feature>/tests.py` (uses `features.common.testing`) |
+| 10 | `manage.py makemigrations <feature>` + `migrate` |
+| 11 | `features/<feature>/README.md` + the table in `features/README.md` |
 
 ---
 
@@ -249,7 +251,30 @@ python manage.py runserver
 
 ---
 
-## 8. Verification gate — always run it
+## 8. Testing — a `tests.py` per feature
+
+Every feature ships `tests.py` covering its **models, serializers, and routes**.
+Build on the shared kit in `features/common/testing.py`:
+
+| Helper | Use |
+| :--- | :--- |
+| `ApiTestCase` | base `TestCase` whose client passes the origin middleware |
+| `api_client()` | DRF client that always sends an allowed `Origin` |
+| `demo_learner()` | the learner every request acts as |
+| `make_learner()` · `make_course()` · `make_scholarship()` | rows with every required field filled |
+
+```bash
+python manage.py test                 # every feature
+python manage.py test features.<feature>
+```
+
+Tests run on **in-memory SQLite**, so they never touch `db.sqlite3`. Never
+hand-roll a client (it 403s without an `Origin`) or a row with a required field
+left blank — use the kit.
+
+---
+
+## 9. Verification gate — always run it
 
 ```bash
 cd backend
@@ -257,6 +282,7 @@ source .venv/bin/activate
 python manage.py check            # framework sanity
 python manage.py makemigrations   # must print "No changes detected"
 python manage.py migrate
+python manage.py test             # every feature's tests must pass
 python manage.py runserver 127.0.0.1:8000
 ```
 
@@ -273,7 +299,7 @@ returns 404 with the Arabic message.
 
 ---
 
-## 9. Do / Don't
+## 10. Do / Don't
 
 | Do | Don't |
 | :--- | :--- |
@@ -283,6 +309,7 @@ returns 404 with the Arabic message.
 | Data-driven filters (`FILTERS`) | Long `if param == ...` chains |
 | Slugs as PKs and route params | Auto-increment id as the public id |
 | Register every model in `admin.py` | Leave models unregistered |
+| Ship a `tests.py` built on the shared kit | Hand-roll clients or unseeded rows |
 | One-line comments with a reason | Multi-line essays, `====` banners |
 | 404 with the Arabic message | Empty 200 for a missing row |
 

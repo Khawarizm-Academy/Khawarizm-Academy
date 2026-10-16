@@ -13,8 +13,8 @@ Eleven skills. Read the one that matches what you are doing.
 | **[khawarizm-page-builder](khawarizm-page-builder/SKILL.md)** | Building a **new page or feature end to end** — the 10-step protocol. |
 | **[khawarizm-motion](khawarizm-motion/SKILL.md)** | **Animations & micro-interactions** — the Celestial Motion System: entrance cascades, hover lifts/tilts, sliding-puck switches (`SlidingSegmentedControl`), shine sweeps, `btn-attention` halos, countdowns, and their fill-mode caveats. |
 | **[khawarizm-layout-edit](khawarizm-layout-edit/SKILL.md)** | **Fixing/editing existing pages** — content hugging one side, centering (`mx-auto`), two-column grids + sticky asides, actions pushed down by a taller column, slim top navigators, sticky offsets, CTA hierarchy, filling gaps. |
-| **[khawarizm-backend](khawarizm-backend/SKILL.md)** | **Anything in the Django + DRF backend** — one app per feature, the camelCase JSON contract, thin views, data-over-branches filters, readable/editable models, the admin data editor, one-line comments, and the verification gate. |
-| **[khawarizm-backend-feature](khawarizm-backend-feature/SKILL.md)** | **Adding a new backend feature end to end** — the 12-step scaffold: apps, models → serializers → views → urls → admin, settings + URL mounting, migrations, README, and the verification gate. |
+| **[khawarizm-backend](khawarizm-backend/SKILL.md)** | **Anything in the Django + DRF backend** — one app per feature, the camelCase JSON contract, thin views, data-over-branches filters, readable/editable models, the admin data editor, the shared testing kit, one-line comments, and the verification gate. |
+| **[khawarizm-backend-feature](khawarizm-backend-feature/SKILL.md)** | **Adding a new backend feature end to end** — the 13-step scaffold: apps, models → serializers → views → urls → admin → settings + URL mounting → migrations → tests → README, and the verification gate. |
 
 ## The rules that cause most rework
 
@@ -24,7 +24,7 @@ Eleven skills. Read the one that matches what you are doing.
 4. **A class string you repeat is a missing concept class.** Extract it into the owning CSS file — `src/features/<feature>/<feature>.css` (e.g. `auth.css`, `catalog.css`, `courses.css`, `dashboard.css`, `home.css`, `profile.css`) for one-feature classes, `src/styles/globals.css` for shared ones — inside `@layer components` (so JSX utilities can still override it), use `var(--shadow-elev-2)` / `var(--color-overlay-scrim)` / `var(--shadow-glow-gold)` instead of literals, and check the class actually exists. `@apply` accepts real utilities only — plain global helpers (`animate-fade-in-up`, `animation-delay-100`, `group`) stay in the JSX `className`.
 5. **Motion comes from the Celestial Motion System only** (`khawarizm-motion`): `animate-pop-in` + staggered `animationDelay` for entrances, `SlidingSegmentedControl` for every side-by-side switch, `btn-attention` on at most one hero CTA per screen, and never hand-roll keyframes for shared motion.
 6. **Center wide content wrappers** (`khawarizm-layout-edit`): a `w-full max-w-[1280px]` wrapper inside an `items-start` flex column needs `mx-auto`, or the whole page hugs the RTL start edge and leaves the far side empty — and trailing action rows follow the *tallest* column, so anchor them in the primary column with `hidden lg:flex` / `lg:hidden` mounts.
-7. **One backend app per feature** (`khawarizm-backend`): the folder mirrors `frontend/src/features/<name>/`, camelCase happens **only** in `serializers.py`, views stay thin, filters are data (`features/catalog/filters.py`), and every model is registered in `admin.py` because the database ships empty.
+7. **One backend app per feature** (`khawarizm-backend`): the folder mirrors `frontend/src/features/<name>/`, camelCase happens **only** in `serializers.py`, views stay thin, filters are data (`features/catalog/filters.py`), every model is registered in `admin.py` because the database ships empty, and every feature ships a `tests.py` built on the shared kit (`features/common/testing.py`).
 
 ## Before you finish
 
@@ -44,6 +44,7 @@ source .venv/bin/activate
 python manage.py check            # framework sanity
 python manage.py makemigrations   # must print "No changes detected"
 python manage.py migrate
+python manage.py test             # every feature's tests must pass
 ```
 
 Then verify **behavior**, not just types — print the old and new output for anything you refactored and confirm they match.

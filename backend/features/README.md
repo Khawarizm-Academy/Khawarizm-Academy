@@ -40,6 +40,7 @@ features/<feature>/
 ├── views.py          thin function views
 ├── urls.py           the feature's routes
 ├── admin.py          admin registration (data editor)
+├── tests.py          tests for the feature's models, serializers, and routes
 ├── migrations/       schema history
 └── README.md         what it does, routes, data, how it works
 ```
@@ -140,6 +141,21 @@ A missing row returns a 404 with the Arabic message (`الدورة غير موج
 an empty 200. A missing `VITE_API_BASE_URL` throws on the frontend. Bad config
 should surface, not render wrong.
 
+### 10. Every feature ships tests
+`tests.py` covers the feature's models, serializers, and routes. Build on the
+shared kit in `features/common/testing.py` — never hand-roll an API client or a
+row with required fields left blank:
+
+- `ApiTestCase` — a `TestCase` whose client passes the origin middleware.
+- `api_client()` — a DRF client that always sends an allowed `Origin`.
+- `demo_learner()`, `make_learner()`, `make_course()`, `make_scholarship()` —
+  ready rows with every required field filled.
+
+```bash
+python manage.py test              # every feature
+python manage.py test features.<feature>
+```
+
 ---
 
 ## Wiring a new feature
@@ -155,7 +171,7 @@ should surface, not render wrong.
 8.  Mount in config/urls.py:  path("api/", include("features.<feature>.urls"))
 9.  Register in admin:        admin.py
 10. Generate migrations:      python manage.py makemigrations <feature>
-11. Verify:                   python manage.py check + migrate + curl the routes
+11. Verify:                   check + makemigrations + migrate + test + curl
 12. Document:                 the feature's README.md and this table
 ```
 
@@ -169,6 +185,7 @@ source .venv/bin/activate
 python manage.py check           # framework sanity
 python manage.py makemigrations  # must report "No changes detected"
 python manage.py migrate
+python manage.py test            # every feature's tests must pass
 ```
 
 Then start the server and curl the feature's routes **with an allowed Origin**

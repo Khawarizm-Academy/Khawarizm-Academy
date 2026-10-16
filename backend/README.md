@@ -116,11 +116,39 @@ The secret check **fails loudly**: a non-debug run refuses to boot while
 | `python manage.py makemigrations` | Generate migrations after a model change |
 | `python manage.py runserver` | Dev server |
 | `python manage.py check` | Framework sanity check |
+| `python manage.py test` | Run the backend test suite |
 
 > The database starts **empty** — the API ships no seed data. Add records through
 > the Django admin (`/admin/`) or the ORM; every frontend page renders an empty
 > state until then. The admin registers every model with useful list columns, so
 > it doubles as a data editor.
+
+---
+
+## Testing
+
+Every feature ships a `tests.py`; the shared kit lives in
+[`features/common/testing.py`](features/common/testing.py).
+
+```bash
+cd backend
+source .venv/bin/activate
+python manage.py test                    # every feature
+python manage.py test features.courses   # one feature
+```
+
+`features/common/testing.py` provides:
+
+| Helper | Provides |
+| :--- | :--- |
+| `ApiTestCase` | a `TestCase` whose client passes the API origin middleware |
+| `api_client()` | a DRF client that always sends an allowed `Origin` |
+| `demo_learner()` | the single learner every request acts as |
+| `make_learner()` · `make_course()` · `make_scholarship()` | rows with every required field filled |
+
+Tests run against an **in-memory SQLite** database, so they never touch
+`db.sqlite3`. Because `config/middleware.py` rejects any `/api/` call without an
+allowed `Origin`, the shared client sets one for every request.
 
 ---
 

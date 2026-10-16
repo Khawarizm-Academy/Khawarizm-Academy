@@ -8,9 +8,11 @@ __pycache__/
 venv/
 env/
 
-# Local database (seeded per machine)
-db.sqlite3
-db.sqlite3-journal
+# Local database (created by migrate; never commit it)
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
 
 # Static collected by collectstatic
 /staticfiles/
