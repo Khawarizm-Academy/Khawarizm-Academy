@@ -51,6 +51,7 @@ In one sentence: **the JSON says what a path is, the TSX says what renders it, t
 | `/dashboard` | page (Dashboard) | `dashboard` (+ `tabsByQuery`) | `immersive` | `dashboard` |
 | `/dashboard/enrolled` | redirect → `/dashboard?view=enrolled` | `dashboard` | — | `dashboard` |
 | `/profile` | page (redirects to `/dashboard?view=profile`) | `profile` | standard | `default` |
+| `/admin` | page (Admin console) | — | `hideShell` | `dashboard` |
 | `/login` | page (Login) | — | `hideShell` | `default` |
 | `/auth` | redirect → `/login` | — | `hideShell` | `default` |
 | `*` | page (NotFound) | — | standard | `default` |

@@ -9,7 +9,7 @@ The scholarship domain. Catalog owns the list union; this feature owns the
 | :--- | :--- |
 | **App label** | `scholarships` |
 | **Routes** | `GET /api/scholarships/:slug`, `POST /api/scholarships/:slug/apply`, `POST /api/scholarships/:slug/save` |
-| **Owns** | `Scholarship` |
+| **Owns** | `Scholarship`, `ScholarshipApplication` |
 | **Frontend twin** | `frontend/src/features/scholarships/` |
 
 ## Purpose
@@ -23,11 +23,11 @@ for the scholarship detail page.
 ```text
 scholarships/
 ├── apps.py           AppConfig (label "scholarships")
-├── models.py         Scholarship
+├── models.py         Scholarship, ScholarshipApplication
 ├── serializers.py    scholarship_catalog_item
 ├── views.py          scholarship_detail_view, scholarship_apply_view, scholarship_save_view
 ├── urls.py           /api/scholarships/*
-├── admin.py          Scholarship admin
+├── admin.py          Scholarship + ScholarshipApplication admin
 ├── migrations/       schema history
 └── README.md
 ```
@@ -40,15 +40,19 @@ scholarships/
   it via `catalog_item_for()`.
 - **Detail:** returns the same `CatalogItem` shape by slug; a missing
   scholarship returns `المنحة غير موجودة` (404).
-- **Actions:** `apply` and `save` are acknowledgement-only (no persistence/auth
-  yet). `save` accepts an optional `saved` flag from the request body and
-  echoes it back.
+- **Actions persist for a signed-in learner:** `apply` creates a
+  `ScholarshipApplication` row via `get_or_create`, so re-submitting never
+  duplicates it; `save` toggles a `dashboard.SavedScholarship` row and answers
+  with the resulting state. A visitor keeps the old acknowledgement — `apply`
+  echoes `{applied, scholarshipId}` and `save` echoes the `saved` flag it was
+  sent. Both start with a 404 for a missing scholarship.
 
 ## Data
 
 | Source | Provides |
 | :--- | :--- |
 | `Scholarship` | title, category, thumbnail, country, degree level/label, provider, coverage type/label, days remaining, deadline badge/urgency, status |
+| `ScholarshipApplication` | one row per (learner, scholarship) — what a learner has applied to |
 
 ## Related
 

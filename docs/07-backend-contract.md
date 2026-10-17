@@ -151,6 +151,7 @@ for the feature layout.
 | `GET` | `/courses/:slug/related` | Related-course rail. |
 | `POST` | `/courses/:slug/enroll` | Enroll the learner. |
 | `POST` | `/courses/:slug/progress` | Sync completed lessons / progress. |
+| `POST` | `/courses/:slug/favorite` | Toggle a course in favorites. |
 | `GET` | `/courses/:slug/certificate` | Certificate metadata. |
 
 ### Scholarships
@@ -181,6 +182,24 @@ for the feature layout.
 | `GET` | `/competitions` | Competitions list. |
 | `GET` | `/profile` | Profile preferences. |
 | `PATCH` | `/profile` | Update profile / preferences / reminders. |
+
+### Admin
+
+Staff-only (`IsAdminRole`), under `/admin`:
+
+| Method | Path | Purpose |
+| :--- | :--- | :--- |
+| `GET` | `/admin/overview` | Headline counts + content counts. |
+| `GET` · `POST` | `/admin/users` | Paged accounts / create one. |
+| `GET` · `PATCH` · `DELETE` | `/admin/users/:id` | One account: detail, edit a subset, delete. |
+| `POST` | `/admin/users/:id/role` | Change role (keeps `is_staff` in sync). |
+| `GET` | `/admin/sessions` | Device sessions fleet-wide. |
+| `POST` | `/admin/sessions/:id/revoke` | Force-logout one device. |
+| `GET` | `/admin/analytics/logins` · `/devices` | Login series, os/browser/device breakdown. |
+| `GET` | `/admin/events` | Recent audit trail. |
+| `GET` | `/admin/content/schema` | `{types, userFields}` — drives every admin form. |
+| `GET` · `POST` | `/admin/content/:type` | Paged rows / create (`courses`, `scholarships`, `events`, `competitions`). |
+| `PATCH` · `DELETE` | `/admin/content/:type/:id` | Edit / remove one content row. |
 
 ---
 
