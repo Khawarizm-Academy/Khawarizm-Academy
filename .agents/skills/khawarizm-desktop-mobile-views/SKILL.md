@@ -91,20 +91,20 @@ src/features/<feature>/context/
 **Why two files — the fast-refresh rule:** `react-refresh/only-export-components` fails when one file exports both a component (the provider) and a hook. Keep the hook in the plain `.ts` (like `src/app/routerContext.ts` does) and the component in the `.tsx`. No circular import: the provider imports the context from the `.ts`; the hook file imports only types.
 
 ```ts
-// context/authLoginContext.ts
-export interface AuthLoginContextValue { /* mode, user, handlers */ }
-export const AuthLoginContext = createContext<AuthLoginContextValue | null>(null);
+// context/loginPageContext.ts
+export interface LoginPageContextValue { /* screen, terms modal, handlers */ }
+export const LoginPageContext = createContext<LoginPageContextValue | null>(null);
 
-export function useAuthLogin(): AuthLoginContextValue {
-  const value = useContext(AuthLoginContext);
-  if (!value) throw new Error('[auth] useAuthLogin must be used inside AuthLoginProvider.');
+export function useLoginPage(): LoginPageContextValue {
+  const value = useContext(LoginPageContext);
+  if (!value) throw new Error('[auth] useLoginPage must be used inside LoginPageProvider.');
   return value;
 }
 ```
 
 ```tsx
-// context/AuthLoginProvider.tsx — owns all page state, passes it via value
-export const AuthLoginProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => { … };
+// context/LoginPageProvider.tsx — owns all page state, passes it via value
+export const LoginPageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => { … };
 ```
 
 **Fail loudly:** the hook throws outside the provider ([`khawarizm-code-style`](../khawarizm-code-style/SKILL.md) §9).
@@ -127,17 +127,17 @@ const TOP_BAR: Record<AuthSurface, { className: string; backLabel: string }> = {
 };
 ```
 
-- **Which card / pill / panel is active** → a lookup keyed by the state discriminator (a `Record<Mode, ReactNode>`), not a ternary chain.
-- **Genuinely different login-mode content with real markup differences** → an early return in one shared component (allowed: "genuinely different work"), or a record of render functions per surface.
+- **Which view / panel is active** → a lookup keyed by the state discriminator (a `Record<Screen, ReactNode>`), not a ternary chain.
+- **Genuinely different screen content with real markup differences** → an early return in one shared component (allowed: "genuinely different work"), or a record of render functions per surface.
 - The two surfaces share **one** top bar, **one** legal notice, **one** toast, **one** modal — never two copies.
 
 ---
 
 ## 6. Step-by-step — split a page into views
 
-1. **Find the shared state** (mode, toggles, modal open, toast, URL sync) and the shared handlers.
+1. **Find the shared state** (screen, toggles, modal open, toast, URL sync) and the shared handlers.
 2. **Create the context** (`.ts`) + provider (`.tsx`) under `features/<feature>/context/` and move the state + handlers into the provider.
-3. **Extract shared chrome** into flat components beside the views folder: top bar, legal notice, footer, active-card selector. Use a `Surface` record for surface-varying labels/classes.
+3. **Extract shared chrome** into flat components beside the views folder: top bar, legal notice, footer, the content card. Use a `Surface` record for surface-varying labels/classes.
 4. **Create the folder** `components/views/<ComponentName>/` and move the existing desktop JSX → `Desktop<ComponentName>View.tsx`, mobile JSX → `Mobile<ComponentName>View.tsx`. Each reads context; each passes `surface` to shared chrome.
 5. **Slim the page** to: provider → shell div → toast → both views → modal.
 6. **Verify** (§8).
@@ -146,18 +146,19 @@ const TOP_BAR: Record<AuthSurface, { className: string; backLabel: string }> = {
 
 ## 7. Auth — the reference split
 
-`features/auth/` after this skill:
+`features/auth/` is the canonical example. It has **two** contexts: an app-wide
+session (`AuthProvider`) and the login page's own UI state (`LoginPageProvider`).
 
 ```
 features/auth/
 ├── context/
-│   ├── authLoginContext.ts          # AuthLoginContext + useAuthLogin() hook
-│   └── AuthLoginProvider.tsx        # owns mode, toast, terms modal, navigation
+│   ├── authContext.ts               # AuthContext + useAuth() — the app-wide session
+│   ├── AuthProvider.tsx             # boots /auth/config + /auth/me, owns signIn/signOut
+│   ├── loginPageContext.ts          # LoginPageContext + useLoginPage() — page-only state
+│   └── LoginPageProvider.tsx        # owns screen ('sign-in'|'register') + terms modal
 ├── components/
 │   ├── cards/
-│   │   ├── ActiveAuthCard.tsx       # card-by-mode lookup, rendered by both views
-│   │   ├── DefaultLoginCard.tsx     # single-surface API via variant prop
-│   │   └── WelcomeBackCard.tsx
+│   │   └── LoginCard.tsx            # the form; reads useLoginPage()/useAuth(), variant prop
 │   ├── hero/
 │   │   ├── AuthHeroPanel.tsx        # desktop-only, stays flat (single surface)
 │   │   └── BrandSeal.tsx            # shared by hero header + mobile brand
@@ -165,16 +166,15 @@ features/auth/
 │   │   ├── AuthLegalNotice.tsx      # one component, LOGIN_NOTICE per surface
 │   │   └── AuthTopBar.tsx           # one top bar, TOP_BAR record per surface
 │   ├── controls/
-│   │   ├── AuthModeSwitch.tsx       # one pill for desktop and mobile
 │   │   └── AuthSocialButton.tsx     # PROVIDERS record (class + brand mark)
 │   ├── overlays/
 │   │   ├── AuthTermsModal.tsx       # shared overlay, null when closed
-│   │   └── AuthToast.tsx            # shared overlay, null when hidden
+│   │   └── AuthToast.tsx            # shared overlay, mounted once in RootLayout
 │   └── views/LoginView/
-│       ├── DesktopLoginView.tsx     # split-screen chamber
+│       ├── DesktopLoginView.tsx     # hero + top bar + card + legal notice
 │       └── MobileLoginView.tsx      # one-column brand + body
 └── pages/
-    └── LoginPage.tsx                # provider + toast + 2 views + modal only
+    └── LoginPage.tsx                # provider → .auth-shell → 2 views + modal
 ```
 
 `features/courses/` reuses the same pattern for `views/CourseLandingView/` and `views/CoursePlayerView/`.

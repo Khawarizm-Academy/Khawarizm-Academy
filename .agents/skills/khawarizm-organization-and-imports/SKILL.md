@@ -26,11 +26,11 @@ import { toArabic } from '@/shared/lib/localization';
 ```
 
 Rules:
-1. **Direct file paths, no barrels.** Import a component from its exact file (`@/features/catalog/components/cards/CatalogCard`). One exception: `@/shared/mocks` keeps its `index.ts` barrel (`export * from './…'`).
+1. **Direct file paths, no barrels.** Import a component from its exact file (`@/features/catalog/components/cards/CatalogCard`).
 2. **`.ts` / `.tsx` are extensionless** in the specifier. **`.json` and `.css` keep their extension** (`@/shared/json/catalog.json`).
 3. **Types use `import type`** (the repo runs `verbatimModuleSyntax`):
    ```ts
-   import type { CatalogItem } from '@/shared/mocks/catalog';
+   import type { CatalogItem } from '@/shared/types/entities';
    import { CatalogCard, type CatalogCardProps } from '@/features/catalog/components/cards/CatalogCard';
    ```
 4. **External packages stay bare** (`import { Trophy } from 'lucide-react'`).
@@ -47,10 +47,10 @@ Every file under `features/<feature>/components/` sits in **one lowercase plural
 | `layout/` | Page composition roots & shells, data-boundary sections | `DashboardShell`, `DashboardMain`, `CatalogResults`, `CatalogDataSection`, `HomeContent`, `TwinPillarRails`, `CourseAbout`, `CourseCurriculum`, `PlayerStage`, `PlayerPanels` |
 | `views/` | Render-complete page surfaces; surface-pair folders go inside | `EnrolledCoursesView`, `SavedScholarshipsView`, `CertificateView`, `views/LoginView/`, `views/CourseLandingView/` |
 | `chrome/` | Navigation & page furniture — bars, sidebars, sub-nav, rails, legal, breadcrumbs | `AuthTopBar`, `DesktopDashboardSidebar`, `DashboardTopBar`, `MobileDashboardTopBar`, `DashboardSubNavigation`, `DashboardStatsHeader`, `DashboardStatsSidebar`, `PlayerTopBar`, `LessonTabBar`, `CoursePathSidebar`, `CourseBreadcrumb` |
-| `cards/` | Cards, card rows, list items, and their sub-visuals | `ActiveAuthCard`, `DefaultLoginCard`, `WelcomeBackCard`, `CatalogCard`, `PriorityContinueCard`, `EnrolledCourseCard`, `EnrolledCourseRow`, `NotificationListItem`, `RadialProgressRing`, `CurriculumModuleCard`, `InstructorCard`, `LiveSessionCard`, `ExamCalloutCard`, `CertificatePreview` |
+| `cards/` | Cards, card rows, list items, and their sub-visuals | `LoginCard`, `CatalogCard`, `PriorityContinueCard`, `EnrolledCourseCard`, `EnrolledCourseRow`, `NotificationListItem`, `RadialProgressRing`, `CurriculumModuleCard`, `InstructorCard`, `LiveSessionCard`, `ExamCalloutCard`, `CertificatePreview` |
 | `hero/` | Hero banners & decorative artwork panels | `AuthHeroPanel`, `BrandSeal`, `CatalogHero`, `CourseHeaderBlock`, `HeroSection`, `ProfileHero` |
 | `overlays/` | Modals, drawers, toasts — things that escape the flow | `AuthTermsModal`, `AuthToast`, `CourseWorkspaceModal`, `LiveClassroomModal`, `CompetitionArenaModal`, `ScholarshipApplicationModal`, `CertificatePreviewModal`, `NotificationsDrawer`, `ProfileToast`, `PlayerMiniPlayer`, `PlayerSyllabusDrawer`, `CourseToast` |
-| `controls/` | Inputs, buttons, switches, toggles, action rows | `AuthModeSwitch`, `AuthSocialButton`, `CourseActionPanel`, `CoursePrimaryCta`, `CourseStickyCta`, `PlayerSettingsMenu`, `FieldText`, `ToggleSwitch`, `ProfileSaveActions` |
+| `controls/` | Inputs, buttons, switches, toggles, action rows | `AuthSocialButton`, `CourseActionPanel`, `CoursePrimaryCta`, `CourseStickyCta`, `PlayerSettingsMenu`, `FieldText`, `ToggleSwitch`, `ProfileSaveActions` |
 | `states/` | Skeletons, loading, empty/error states | `CatalogGridSkeleton`, `EmptyDashboardState`, `CourseLandingSkeleton`, `CoursePlayerSkeleton`, `CourseNotFound` |
 | `filters/` | Filter & sort panels (any surface) | `CatalogFilterSidebar`, `CatalogFilterGroups`, `CatalogMobileFilterDrawer` |
 | `toolbar/` | Toolbar & pagination strips | `CatalogToolbar`, `CatalogPagination` |
@@ -113,7 +113,7 @@ import { MobileLoginView } from '@/features/auth/components/views/LoginView/Mobi
 | Shared component (2+ features) | `src/shared/components/<Category>/` | `Cards/CourseCard.tsx`, `Search/SmartSearchBox.tsx`, `State/StatePanel.tsx` |
 | Feature component | `src/features/<feature>/components/<category>/` | `@/features/dashboard/components/cards/PriorityContinueCard` |
 | Component with 2 surfaces | `…/components/views/<Component>/` | `views/LoginView/`, `views/CoursePlayerView/` |
-| Page state shared per surface | `src/features/<feature>/context/` | `authLoginContext.ts` + `AuthLoginProvider.tsx` |
+| Page state shared per surface | `src/features/<feature>/context/` | `loginPageContext.ts` + `LoginPageProvider.tsx` |
 | Page view | `src/features/<feature>/pages/` | `<Feature>Page.tsx` |
 | Shared entity types | `src/shared/types/entities.ts` | `Course`, `Scholarship` |
 | Feature view types | `src/features/<feature>/types.ts` | `LearningLevel`, `EnrolledCourse` |
@@ -122,8 +122,7 @@ import { MobileLoginView } from '@/features/auth/components/views/LoginView/Mobi
 | Feature data (non-JSON) | `src/features/<feature>/data/` | `dashboardFetchers.ts`, `radialRingColors.ts` |
 | Feature styles | `src/features/<feature>/<feature>.css` | `auth.css` — imported by `globals.css` only |
 | Static data | `src/shared/json/` | `routes.json`, `catalog.json` |
-| **Hydrated mock modules** | **`src/shared/mocks/`** | `shared/mocks/catalog.ts` (types + JSON casts), barrel `index.ts` |
-| Shared lib/helpers | `src/shared/lib/` | `navigation.ts`, `localization.ts`, `cacheManager.ts` |
+| Shared lib/helpers | `src/shared/lib/` | `navigation.ts`, `localization.ts`, `cacheManager.ts`, `apiClient.ts`, `authStorage.ts` |
 | Tokens + shared styles | `src/styles/` | `tokens.css`, `globals.css` |
 | Routes & root app | `src/app/` | `router.tsx`, `routes.tsx`, `pageLoads.ts`, `layouts/`, `pages/` |
 | Brand assets | `src/assets/brand/` | `source/`, `generated/` |

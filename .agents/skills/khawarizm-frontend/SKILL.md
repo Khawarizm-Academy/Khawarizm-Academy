@@ -25,7 +25,7 @@ Two core educational pillars share one geometric design grammar:
 
 ### 1.2 Core technology stack
 - **Framework:** React 19 + TypeScript (strict) + Vite.
-- **Styling engine:** Tailwind CSS v4 (`@import "tailwindcss"`) + `@import "./tokens.css"` + concept-oriented `@apply` classes in `src/styles/globals.css`, which also imports each per-feature CSS file (`features/auth/auth.css`, `features/catalog/catalog.css`, `features/courses/courses.css`, `features/dashboard/dashboard.css`, `features/home/home.css`, `features/profile/profile.css`).
+- **Styling engine:** Tailwind CSS v4 (`@import "tailwindcss"`) + `@import "./tokens.css"` + concept-oriented `@apply` classes in `src/styles/globals.css`, which also imports each per-feature CSS file (`features/admin/admin.css`, `features/auth/auth.css`, `features/catalog/catalog.css`, `features/courses/courses.css`, `features/dashboard/dashboard.css`, `features/home/home.css`, `features/profile/profile.css`).
 - **Localization engine:** English domain keys internally + `toArabic(category, key)` / `toArabicNav(key, isMobile?)` in `src/shared/lib/localization.ts`.
 - **Master branding:** official logo `src/assets/brand/source/KhawarizmLogo.jpg`; run `npm run brand:generate` to regenerate app icons and favicons.
 - **Routing & data:** a hand-rolled data-driven router (`routes.json` + `routes.tsx` + `router.tsx`) with an in-memory SWR cache (`useCachedData` + `dataCacheManager`).
@@ -50,13 +50,14 @@ Always follow this mapping when creating or moving files.
 | **Feature data (non-JSON)** | `src/features/<feature>/data/` | `<name>.ts` (`dashboardFetchers.ts`, `radialRingColors.ts`) |
 | **Feature styles (one feature)** | `src/features/<feature>/` | `<feature>.css` — imported by `globals.css` only |
 | **Static data (any kind)** | `src/shared/json/` | `<name>.json` |
-| **Hydrated mock modules** | `src/shared/mocks/` | `<name>.ts` + `index.ts` barrel |
-| **Shared utility / helpers** | `src/shared/lib/` | `<name>.ts` (`localization.ts`, `navigation.ts`, `cacheManager.ts`) |
+| **Shared utility / helpers** | `src/shared/lib/` | `<name>.ts` (`localization.ts`, `navigation.ts`, `cacheManager.ts`, `apiClient.ts`, `authStorage.ts`) |
 | **Shared styles & tokens (2+ features)** | `src/styles/` | `tokens.css`, `globals.css` |
 | **Routes & root app** | `src/app/` | `router.tsx`, `routes.tsx`, `App.tsx`, `pageLoads.ts`, `layouts/` |
 
 > 📖 **Routing & URLs:** [`khawarizm-routing`](../khawarizm-routing/SKILL.md).
 > 📖 **Code style:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md).
+> 📖 **Auth & sessions:** [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md).
+> 📖 **Env & deploy:** [`khawarizm-environment-and-deploy`](../khawarizm-environment-and-deploy/SKILL.md).
 > 📖 **Full directory rules & flowchart:** [`references/code-reuse-and-directory-rules.md`](references/code-reuse-and-directory-rules.md).
 
 ---
@@ -101,7 +102,7 @@ Always follow this mapping when creating or moving files.
 ### 3.7 Repeated class strings → concept class
 **The same run of utilities twice for the same kind of element is a missing concept class, not styling.** Extract it and use the short name in JSX.
 
-- **Used by one feature only** → that feature's CSS: `src/features/<feature>/<feature>.css` (`auth.css`, `catalog.css`, `courses.css`, `dashboard.css`, `home.css`, `profile.css`).
+- **Used by one feature only** → that feature's CSS: `src/features/<feature>/<feature>.css` (`admin.css`, `auth.css`, `catalog.css`, `courses.css`, `dashboard.css`, `home.css`, `profile.css`).
 - **Used by 2+ features** → `src/styles/globals.css`.
 - Each feature CSS is `@import`ed at the top of `globals.css` (`index.css → globals.css → features/*/*.css`), so there is still **one** stylesheet entry point — never import a feature CSS from a `.tsx`.
 
@@ -114,33 +115,43 @@ Rules:
 
 > 📖 **Full catalog & prop APIs:** [`references/component-catalog.md`](references/component-catalog.md).
 
-### 3.8 Authentication (login & welcome-back)
-- **Page:** `<LoginPage />` (`features/auth/pages/LoginPage.tsx`, `hideShell: true`) — thin orchestrator: provider → shell → toast → both views → terms modal.
-- **Surfaces:** `components/views/LoginView/DesktopLoginView.tsx` + `MobileLoginView.tsx`; shared state from `useAuthLogin()` (`context/authLoginContext.ts`) owned by `AuthLoginProvider.tsx`. Surface-varying chrome is one component with a data record: `<AuthTopBar surface />`, `<AuthLegalNotice surface />`, `<ActiveAuthCard surface />` (`Record<AuthMode, …>`).
-- **Controls:** `<AuthModeSwitch />` (one pill for desktop and mobile), `<AuthSocialButton provider="google" | "facebook" />` (`PROVIDERS` record).
-- **Overlays:** `<AuthToast />`, `<AuthTermsModal />` (flat shared, `null` when hidden).
-- **Styling:** every element sits on an `.auth-*` class in `src/features/auth/auth.css` (imported by `globals.css`).
+### 3.8 Authentication (login, register & session)
+- **App-wide session:** `<AuthProvider>` + `useAuth()` (`features/auth/context/AuthProvider.tsx` / `authContext.ts`) wrap `<RootLayout>` in `App.tsx`. They boot from `GET /auth/config` + `/auth/me`, expose `{user, config, isReady, isSubmitting, notice, signIn, signOut, setNotice}`, and register the auth-lost handler. **Never** put Firebase keys in the frontend env — they come from the API.
+- **Page state:** `<LoginPageProvider>` + `useLoginPage()` (`context/LoginPageProvider.tsx` / `loginPageContext.ts`) own `screen` and the terms-modal flag.
+- **Page:** `<LoginPage />` (`features/auth/pages/LoginPage.tsx`, `hideShell: true`) — thin orchestrator: provider → `.auth-shell` → `DesktopLoginView` + `MobileLoginView` + terms modal (`<AuthToast />` mounts once in `RootLayout`).
+- **Surfaces:** `components/views/LoginView/DesktopLoginView.tsx` + `MobileLoginView.tsx`. Surface-varying chrome is one component with a data record: `<AuthTopBar surface />`, `<AuthLegalNotice surface />` (`Record<AuthSurface, …>`).
+- **Form & controls:** `<LoginCard variant />` owns the form + validation; `<AuthSocialButton provider="google" | "facebook" />` (`PROVIDERS` record) is disabled under `config.devAuth`.
+- **Styling:** every element sits on an `.auth-*` / `brand-seal*` class in `src/features/auth/auth.css` (imported by `globals.css`).
 - **Full layout pattern:** [`khawarizm-desktop-mobile-views`](../khawarizm-desktop-mobile-views/SKILL.md).
+- **Rules, tokens, sessions, the `/api/auth` contract:** [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md).
 
-### 3.9 Catalog (explorer & filters)
+### 3.9 Admin console (staff analytics)
+- **Page:** `<AdminPage />` (`features/admin/pages/AdminPage.tsx`) on route `/admin` (`hideShell: true`, `requiresAdmin: true`). Single responsive surface — **no** Desktop/Mobile split.
+- **State:** `<AdminProvider>` + `useAdmin()` (`context/AdminProvider.tsx` / `adminContext.ts`) load every section via `useCachedData` (keys `['admin', …]`) and hold the search/page/filter state.
+- **Sections:** `ADMIN_SECTION_KEYS = ['overview','users','sessions','analytics','activity']`, driven by `?tab=`; `AdminShell` maps `SECTION_VIEWS` to `OverviewView` / `UsersView` / `SessionsView` / `AnalyticsView` / `ActivityView`, plus `UserDetailPanel`.
+- **Chrome/cards/tables:** `AdminHeader`, `AdminSectionNav` (+ `AdminMobileTabs`), `AdminNotice`, `AdminPagination`; `UsersTable`, `SessionsTable`, `EventList`; `StatCard`, `LoginSeriesChart`, `DeviceBreakdownLists`, `UserProfileCard`; `RoleBadge`/`EventKindBadge`/`SessionStatusBadge`.
+- **Styling:** every element sits on an `.admin-*` class in `src/features/admin/admin.css` (imported by `globals.css`).
+- **Endpoints & payloads:** [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md).
+
+### 3.10 Catalog (explorer & filters)
 - **Page:** `<CatalogPage />` (`features/catalog/pages/CatalogPage.tsx`). `type` and `q` are URL-derived; the two `<SmartSearchBox />` slots share one `searchProps`.
 - **Filters:** `<CatalogFilterSidebar />` + `<CatalogMobileFilterDrawer />` both render `<CatalogFilterGroups surface tab … />`; `PILL_ACTIVE` / `PILL_IDLE` pick the `.catalog-pill*` classes.
 - **Data boundary:** `<CatalogDataSection />` — the only section that re-renders on filter/data change; empty and error states use `<StatePanel />` + `.catalog-state`.
 - **Card & chrome:** `<CatalogCard />`, `<CatalogToolbar />`, `<CatalogPagination />`, `<CatalogGridSkeleton />`.
 - **Styling:** every element sits on a `.catalog-*` class in `src/features/catalog/catalog.css`.
 
-### 3.10 Courses (landing & player)
+### 3.11 Courses (landing & player)
 - **Pages:** `CourseLandingPage`, `CoursePlayerPage`, `CourseCertificatePage` (`features/courses/pages/`).
 - **Views:** `views/CourseLandingView/` and `views/CoursePlayerView/` are Desktop/Mobile pairs; `views/CertificateView.tsx`.
 - **CTA:** `CoursePrimaryCta`, `CourseStickyCta`, `CourseActionPanel`; **player chrome:** `PlayerTopBar`, `LessonTabBar`, `CoursePathSidebar`, `PlayerStage`, `PlayerPanels`, `PlayerSyllabusDrawer`, `PlayerMiniPlayer`.
-- **Data:** reads via `shared/mocks/courses.ts` + `useCachedData` (`['course-detail', slug]`, `['course-problems', slug]`).
+- **Data:** API-backed via `features/courses/data/courseFetchers.ts` + `useCachedData` (`['course-detail', slug]`, `['course-problems', slug]`, `['course-related', …]`).
 - **Styling:** `.course-*` / `.player-*` / `.cert-*` classes in `src/features/courses/courses.css`.
 
-### 3.11 Dashboard (learning workspace)
+### 3.12 Dashboard (learning workspace)
 - **Page:** `<DashboardPage />` — self-contained layout: right sidebar + top bar, RTL grid with the sidebar as **Child #1** (§6.1). `?view=` drives the active view through `getDashboardNavItem`; `?state=live|empty` are demo modes.
 - **Shell & stats:** `<DesktopDashboardSidebar />` (Child #1; its bottom row pairs the saved bookmark + notification bell), `<DashboardTopBar />`, `<MobileDashboardTopBar />`, `<DashboardStatsHeader />`, `<DashboardStatsSidebar />`, `<DashboardSubNavigation />` (mobile/tablet-only, `.dash-subnav` is `lg:hidden`).
 - **Priority cards:** `<PriorityContinueCard />` (cyan) and `<LiveSessionPriorityCard />` (red live countdown) share `.dash-hero*` and `<RadialProgressRing />` (`RING_COLORS` in `features/dashboard/data/radialRingColors.ts`).
-- **Views:** `<EnrolledCoursesView />`, `<CompetitionsCertificatesView />`, `<SavedScholarshipsView />`, `<NotificationsView />`, `<NotificationsDrawer />`, `<EmptyDashboardState />` — data-driven from `dashboardViews.json` / `dashboardChambers.json`.
+- **Views:** `<EnrolledCoursesView />`, `<CompetitionsCertificatesView />`, `<SavedScholarshipsView />`, `<NotificationsView />`, `<NotificationsDrawer />`, `<EmptyDashboardState />` — data-driven from `dashboardContent.json`.
 - **Chambers (§6.2):** `<CourseWorkspaceModal />`, `<LiveClassroomModal />`, `<CompetitionArenaModal />`, `<ScholarshipApplicationModal />`, `<CertificatePreviewModal />` — all share `.dash-modal-*` chrome.
 - **Styling:** every element sits on a `.dash-*` class in `src/features/dashboard/dashboard.css`. Canvas, elevation and accent rules live in §6.7.
 
@@ -169,6 +180,9 @@ Rules:
 - **Page & feature creation:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md)
 - **Motion & animations:** [`khawarizm-motion`](../khawarizm-motion/SKILL.md)
 - **Editing & fixing pages:** [`khawarizm-layout-edit`](../khawarizm-layout-edit/SKILL.md)
+- **Auth, sessions & roles:** [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md)
+- **Env, secrets & deploy:** [`khawarizm-environment-and-deploy`](../khawarizm-environment-and-deploy/SKILL.md)
+- **Starting a similar app:** [`khawarizm-app-blueprint`](../khawarizm-app-blueprint/SKILL.md)
 
 **References:**
 - [Directory placement & anti-duplication](references/code-reuse-and-directory-rules.md)

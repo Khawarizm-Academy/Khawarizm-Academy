@@ -99,7 +99,7 @@ frontend/src/features/<feature>/
                               #   imported by src/styles/globals.css (never by a .tsx)
 ```
 
-If a piece is used across 2+ features, it moves to `src/shared/components/<Category>/`. Static data goes to `src/shared/json/`; a typed mock module goes to `src/shared/mocks/`.
+If a piece is used across 2+ features, it moves to `src/shared/components/<Category>/`. Static UI data goes to `src/shared/json/`; **record data comes from the API** through a `data/<feature>Fetchers.ts` module read with `useCachedData`.
 
 ---
 
@@ -134,7 +134,8 @@ Declare the shell mode in the route entry. `RootLayout` reads it — never check
 
 ```json
 { "path": "/my-page",   "title": "…", "skeletonVariant": "default" }
-{ "path": "/dashboard", "title": "…", "immersive": true, "skeletonVariant": "dashboard" }
+{ "path": "/dashboard", "title": "…", "immersive": true, "requiresAuth": true, "skeletonVariant": "dashboard" }
+{ "path": "/admin",     "title": "…", "hideShell": true, "requiresAdmin": true, "skeletonVariant": "dashboard" }
 { "path": "/login",     "title": "…", "hideShell": true, "skeletonVariant": "default" }
 ```
 
@@ -143,6 +144,10 @@ Declare the shell mode in the route entry. `RootLayout` reads it — never check
 | neither | ✅ | ✅ | ✅ | Normal pages |
 | `immersive: true` | ❌ | ❌ | ✅ | Pages that own their own nav (dashboard) |
 | `hideShell: true` | ❌ | ❌ | ❌ | Login, full-screen player, exam |
+
+**Access control is a flag.** Add `requiresAuth: true` (signed-in only) or
+`requiresAdmin: true` (staff only) and let `RouteGuard` redirect — never branch on
+`user` inside the page. Details: [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md).
 
 - **Standard (no flags):** the page renders centered content only:
   ```tsx
@@ -327,4 +332,4 @@ export const MyFeaturePage: React.FC = () => {
 
 ---
 
-> 📖 **Sibling skills:** [`khawarizm-motion`](../khawarizm-motion/SKILL.md) for every animation/micro-interaction, and [`khawarizm-layout-edit`](../khawarizm-layout-edit/SKILL.md) for fixing alignment, centering, column gaps, stray action buttons and sticky offsets on existing pages.
+> 📖 **Sibling skills:** [`khawarizm-motion`](../khawarizm-motion/SKILL.md) for every animation/micro-interaction, [`khawarizm-layout-edit`](../khawarizm-layout-edit/SKILL.md) for fixing alignment, centering, column gaps, stray action buttons and sticky offsets on existing pages, and [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md) when the page is signed-in or staff-only. Starting a brand-new app instead? [`khawarizm-app-blueprint`](../khawarizm-app-blueprint/SKILL.md).

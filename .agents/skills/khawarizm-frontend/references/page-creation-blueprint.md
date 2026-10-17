@@ -34,7 +34,7 @@ export type EducationLevel = 'all' | 'bachelor' | 'master' | 'phd' | 'bootcamp';
 
 **Localization:** register new labels in `src/shared/json/localization.json` and read them through `toArabic(category, key)` / `toArabicNav(key, isMobile?)` from `src/shared/lib/localization.ts`. Never store Arabic in state or in a URL.
 
-**Mock data:** the records go in `src/shared/json/mock<Feature>.json`; a typed module under `src/shared/mocks/<feature>.ts` casts the JSON (and holds only types, never data). Reuse existing shared entities (`Course`, `Scholarship`, `Event`) from `src/shared/types/entities.ts`.
+**Record data:** comes from the API. Add a `src/features/<feature>/data/<feature>Fetchers.ts` module (calls through `apiClient`) and read it with `useCachedData`. Reuse the shared entities (`Course`, `Scholarship`, `Event`, `CatalogItem`) from `src/shared/types/entities.ts`; feature-only shapes live in the feature's `types.ts`. There are no mock modules — static UI config stays in `src/shared/json/`.
 
 ---
 

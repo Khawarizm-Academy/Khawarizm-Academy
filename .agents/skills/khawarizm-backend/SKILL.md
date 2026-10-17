@@ -38,6 +38,11 @@ Django 6.1 · DRF 3.18 (function-based views) · django-cors-headers · SQLite
 locally / Postgres via `DATABASE_URL` · Firebase-verified accounts with HS256
 access tokens and rotating refresh tokens.
 
+> Auth, roles, sessions, devices, and the admin console:
+> [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md).
+> Env profiles, secrets, and deploy:
+> [`khawarizm-environment-and-deploy`](../khawarizm-environment-and-deploy/SKILL.md).
+
 ### The two invariants
 1. **UUID ids, slug as the business key.** Every table inherits `UUIDModel`
    from `features/common/models.py`. Catalog rows additionally keep `slug` — it
@@ -331,6 +336,8 @@ returns 404 with the Arabic message.
 ## Related
 
 - New feature protocol: [`khawarizm-backend-feature`](../khawarizm-backend-feature/SKILL.md)
+- Auth, sessions, roles, admin console: [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md)
+- Env, secrets, deploy: [`khawarizm-environment-and-deploy`](../khawarizm-environment-and-deploy/SKILL.md)
 - Code style (applies to Python too): [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md)
 - Frontend playbook (the shapes you serve): [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md)
 - Human docs: [`docs/08-backend-architecture.md`](../../../docs/08-backend-architecture.md), [`docs/07-backend-contract.md`](../../../docs/07-backend-contract.md)

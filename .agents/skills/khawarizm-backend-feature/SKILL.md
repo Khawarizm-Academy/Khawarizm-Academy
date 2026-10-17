@@ -41,7 +41,7 @@ If nothing is stored, the feature still gets a folder, `views.py`, `urls.py`,
 │  1.  Read the frontend twin (features/<name>/ + entities.ts + types.ts)     │
 │  2.  Decide ownership (which models this app owns vs imports)               │
 │  3.  Scaffold the folder: __init__.py + apps.py                            │
-│  4.  Write models.py (grouped fields, slugs as PK, choices from common)     │
+│  4.  Write models.py (grouped fields, UUIDModel PK, slug business key, choices) │
 │  5.  Write serializers.py (the only camelCase boundary, compact)            │
 │  6.  Write views.py (thin: resolve → query → serialize; 404 in Arabic)      │
 │  7.  Write urls.py (mounted under /api/)                                    │
@@ -217,6 +217,12 @@ No `if`/`else` chains — alternatives are a record or a list of rows (see
 `features/catalog/filters.py`). Allowed `if`s: early returns and missing-row
 guards.
 
+**Scoped to the caller?** When the rows belong to the signed-in user, read
+`request.user` (never a `user_id` from the body) and decorate with
+`@permission_classes([IsAuthenticated])` — or `IsAdminRole` for staff-only
+routes. The token/session/permissions contract lives in
+[`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md).
+
 ---
 
 ### Step 7 — urls.py
@@ -243,6 +249,7 @@ Add the app to `INSTALLED_APPS`, keeping the group alphabetical / beside sibling
 ```python
 INSTALLED_APPS = [
     # … django + third-party …
+    "features.common",        # shared foundation (loaded first)
     "features.auth",
     "features.catalog",
     "features.courses",
@@ -250,7 +257,9 @@ INSTALLED_APPS = [
     # …
 ]
 ```
-`features.common` is **not** listed — it is a plain package.
+
+`features.common` **is** listed — it is an installed app because it owns the
+`seed_demo` management command (and the shared abstract models every app imports).
 
 ---
 
@@ -388,7 +397,7 @@ backend/features/<feature>/
 | **`if param == …` ladders** | Unreadable and diff-heavy | Put alternatives in a `FILTERS` record (`catalog/filters.py`). |
 | **Empty 200 for a missing row** | The frontend renders a blank screen | 404 with the Arabic message (`{"detail": "… غير موجودة"}`). |
 | **Unregistered model** | No way to add data (DB ships empty) | Register every model in `admin.py` with inlines. |
-| **Auto-increment public id** | A catalog link and `/courses/:slug` disagree | `slug` is the primary key and the route param. |
+| **Integer public id** | The public id diverges from the route param | Every table gets `UUIDModel`; catalog rows keep a unique `slug` as the business key and route param (`id` in JSON). |
 | **Duplicated enum literals** | Values drift between apps | Import from `features.common.choices`. |
 | **Hand-rolled test client** | Every `/api/` call 403s without an `Origin` | Use `features.common.testing.ApiTestCase` / `api_client()`. |
 | **Hand-seeded test rows** | Required-field omissions break the suite | Use the `make_*` factories in `features.common.testing`. |
@@ -430,5 +439,7 @@ curl -H "Origin: http://localhost:5173" http://127.0.0.1:8000/api/<feature>
 ---
 
 > 📖 **Sibling skills:** [`khawarizm-backend`](../khawarizm-backend/SKILL.md) for the
-> rules every file follows, and [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md)
-> (applies to Python too) for the one-line comment and no-clever-code standard.
+> rules every file follows, [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md)
+> (applies to Python too) for the one-line comment and no-clever-code standard, and
+> [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md) when the
+> feature is scoped to the signed-in user or staff-only.

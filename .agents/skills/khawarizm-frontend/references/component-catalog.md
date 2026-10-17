@@ -191,13 +191,16 @@ The one shared spring-glide puck switch (same motion as the home search bar). Us
 
 `hideShell: true` login route. All styling lives on the `.auth-*` concept classes in **`src/features/auth/auth.css`** (imported by `globals.css`) — see the Authentication index in `design-tokens-and-classes.md`.
 
-- **Page:** `src/features/auth/pages/LoginPage.tsx` — thin orchestrator: provider → shell → toast → both views → terms modal. `mode: 'login' | 'welcome-back'` is derived from `?mode=` (`AUTH_MODE_OPTIONS`, labels in `shared/json/auth.json`).
-- **Views:** `components/views/LoginView/DesktopLoginView.tsx` + `MobileLoginView.tsx`; shared state via `useAuthLogin()` (`context/authLoginContext.ts`) owned by `AuthLoginProvider.tsx`.
-- **Cards:** `components/cards/ActiveAuthCard.tsx` (picks the card by a `Record<AuthMode, …>`), `DefaultLoginCard.tsx`, `WelcomeBackCard.tsx`.
+- **Page:** `src/features/auth/pages/LoginPage.tsx` — thin orchestrator: provider → `.auth-shell` → `DesktopLoginView` + `MobileLoginView` + `AuthTermsModal`. A signed-in user is redirected to `?next=` (or the dashboard).
+- **Session context (app-wide):** `context/AuthProvider.tsx` + `context/authContext.ts` (`useAuth()`) — boots from `/auth/config` + `/auth/me`, owns `signIn`/`signOut` and the auth-lost handler.
+- **Page context:** `context/LoginPageProvider.tsx` + `context/loginPageContext.ts` (`useLoginPage()`) — `screen: 'sign-in' | 'register'` (`AuthScreen`) + the terms modal.
+- **Views:** `components/views/LoginView/DesktopLoginView.tsx` + `MobileLoginView.tsx`.
+- **Card:** `components/cards/LoginCard.tsx` — the form; `variant={'desktop'|'mobile'}`; reads `useAuth()` + `useLoginPage()`; renders `AuthSocialButton`.
 - **Hero:** `components/hero/AuthHeroPanel.tsx` (desktop split pane, `.auth-orbit-*`), `BrandSeal.tsx` (shared by hero header + mobile brand).
-- **Chrome:** `components/chrome/AuthTopBar.tsx`, `AuthLegalNotice.tsx` — one component each, with a `Record<AuthSurface, …>` for surface-varying labels/classes. Import like `@/features/auth/components/chrome/AuthTopBar`.
-- **Controls:** `components/controls/AuthModeSwitch.tsx` (one pill for desktop **and** mobile; `lg:` breakpoints + short/long labels from `auth.json`; active class from a record), `AuthSocialButton.tsx` (`PROVIDERS` record holds surface class + brand mark — no provider branch).
-- **Overlays:** `components/overlays/AuthTermsModal.tsx`, `AuthToast.tsx` — flat shared components that return `null` when hidden.
+- **Chrome:** `components/chrome/AuthTopBar.tsx`, `AuthLegalNotice.tsx` — one component each, with a `Record<AuthSurface, …>` for surface-varying labels/classes.
+- **Controls:** `components/controls/AuthSocialButton.tsx` (`PROVIDERS` record holds surface class + brand mark — no provider branch).
+- **Overlays:** `components/overlays/AuthTermsModal.tsx`, `AuthToast.tsx` — flat shared components that return `null` when hidden (`AuthToast` mounts once in `RootLayout`).
+- **Data:** `data/firebaseClient.ts` (lazy `import('firebase/auth')` — never loaded until a real sign-in), `data/authFetchers.ts` (the `/auth/*` calls).
 
 ---
 
@@ -217,7 +220,7 @@ The one shared spring-glide puck switch (same motion as the home search bar). Us
 
 ## 11. Courses (`src/features/courses/`)
 
-Course landing + player + certificate. Styling lives on `.course-*` / player classes in **`src/features/courses/courses.css`**. Static content lives in `shared/json/mockCourses.json` / `courseSystem.json` (`mockCourseProblems.json` for the problems panel).
+Course landing + player + certificate. Styling lives on `.course-*` / player classes in **`src/features/courses/courses.css`**. Static content lives in `shared/json/courseSystem.json`; API record data comes via `features/courses/data/courseFetchers.ts`.
 
 - **Pages:** `pages/CourseLandingPage.tsx`, `pages/CoursePlayerPage.tsx`, `pages/CourseCertificatePage.tsx`.
 - **Views (Desktop/Mobile pairs):** `components/views/CourseLandingView/` (`DesktopCourseLandingView` + `MobileCourseLandingView`), `components/views/CoursePlayerView/` (`DesktopCoursePlayerView` + `MobileCoursePlayerView`), and `components/views/CertificateView.tsx`.
@@ -227,13 +230,13 @@ Course landing + player + certificate. Styling lives on `.course-*` / player cla
 - **Player chrome:** `components/chrome/PlayerTopBar.tsx`, `LessonTabBar.tsx`, `CoursePathSidebar.tsx`; `components/layout/PlayerStage.tsx`, `PlayerPanels.tsx` (`LessonPanel`, `LiveSessionPanel`, `ExamPanel`, `ProblemsPanel`); `components/overlays/PlayerMiniPlayer.tsx`, `PlayerSyllabusDrawer.tsx`, `CourseToast.tsx`; `components/controls/PlayerSettingsMenu.tsx`.
 - **Cards:** `components/cards/CurriculumModuleCard.tsx`, `PathLessonRow.tsx`, `InstructorCard.tsx`, `LiveSessionCard.tsx`, `LiveSessionPlayerCard.tsx`, `ExamCalloutCard.tsx`, `CertificatePreview.tsx`.
 - **States:** `components/states/CourseLandingSkeleton.tsx`, `CoursePlayerSkeleton.tsx`, `CourseNotFound.tsx`.
-- **Data:** `data/` holds the non-JSON modules; reads go through `shared/mocks/courses.ts` + `@/shared/hooks/useCachedData` with keys such as `['course-detail', slug]` and `['course-problems', slug]`.
+- **Data:** API-backed — `data/courseFetchers.ts` + `@/shared/hooks/useCachedData` with keys such as `['course-detail', slug]`, `['course-problems', slug]` and `['course-related', …]`; other `data/` modules are pure config (`courseCopy.ts`, `playerPanels.ts`).
 
 ---
 
 ## 12. Dashboard workspace (`src/features/dashboard/`)
 
-`/dashboard` learning workspace. Styling lives on `.dash-*` classes in **`src/features/dashboard/dashboard.css`** (imported by `globals.css`). Static content: `shared/json/dashboardViews.json` / `dashboardChambers.json` / `dashboardNav.json` / `dashboardNotifications.json`; `RING_COLORS` in `features/dashboard/data/radialRingColors.ts` (hex required for the `$(color)80` glow alpha); fetchers in `features/dashboard/data/dashboardFetchers.ts`.
+`/dashboard` learning workspace. Styling lives on `.dash-*` classes in **`src/features/dashboard/dashboard.css`** (imported by `globals.css`). Static content: `shared/json/dashboardContent.json` / `dashboardNav.json`; `RING_COLORS` in `features/dashboard/data/radialRingColors.ts` (hex required for the `$(color)80` glow alpha); API record data via `features/dashboard/data/dashboardFetchers.ts`.
 
 - **Page:** `pages/DashboardPage.tsx` — `?view=` from the URL (`getDashboardNavItem`, aliases resolve); `?state=live|empty` demo modes. RTL grid `.dash-grid` with `<DesktopDashboardSidebar />` as Child #1.
 - **Layout:** `components/layout/DashboardShell.tsx`, `DashboardMain.tsx`.
@@ -241,5 +244,5 @@ Course landing + player + certificate. Styling lives on `.course-*` / player cla
 - **Hero cards:** `components/cards/PriorityContinueCard.tsx` (cyan) / `LiveSessionPriorityCard.tsx` (red live countdown) — share `.dash-hero*`, `.dash-progress*`, `RadialProgressRing.tsx`.
 - **Views:** `components/views/EnrolledCoursesView.tsx`, `CompetitionsCertificatesView.tsx`, `SavedScholarshipsView.tsx`, `NotificationsView.tsx`; `components/cards/EnrolledCourseCard.tsx`, `EnrolledCourseRow.tsx`, `NotificationListItem.tsx`, `ChallengeSpotlightCard.tsx`.
 - **States:** `components/states/EmptyDashboardState.tsx` (brand-new account hero, `.dash-compass` + `.animate-orbit-slow`).
-- **Overlays (chambers):** `components/overlays/CourseWorkspaceModal.tsx`, `LiveClassroomModal.tsx`, `CompetitionArenaModal.tsx`, `ScholarshipApplicationModal.tsx`, `CertificatePreviewModal.tsx`, `NotificationsDrawer.tsx` — all share `.dash-modal-overlay` + `.dash-modal-shell`; internals driven by `dashboardChambers.json`.
+- **Overlays (chambers):** `components/overlays/CourseWorkspaceModal.tsx`, `LiveClassroomModal.tsx`, `CompetitionArenaModal.tsx`, `ScholarshipApplicationModal.tsx`, `CertificatePreviewModal.tsx`, `NotificationsDrawer.tsx` — all share `.dash-modal-overlay` + `.dash-modal-shell`; internals driven by `dashboardContent.json`.
 - **Notifications** is a `fullPageViews` entry: the page-level stats header hides and `<NotificationsView />` renders its own header + `btn-pill-subtle` mark-all-read action.

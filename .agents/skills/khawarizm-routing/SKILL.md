@@ -1,6 +1,6 @@
 ---
 name: khawarizm-routing
-description: How to add, change, and debug routes and URLs in Khawarizm Academy. Use whenever adding a page or route, changing a path, adding a redirect, wiring a nav tab, reading or writing a query param, deciding what the navbar highlights, or debugging a URL that renders the wrong page. Covers the routes.json table, PAGE_BY_PATH, NAV_TARGETS, tabsByQuery, shell flags, and the lookup helpers.
+description: How to add, change, and debug routes and URLs in Khawarizm Academy. Use whenever adding a page or route, changing a path, adding a redirect, wiring a nav tab, reading or writing a query param, deciding what the navbar highlights, protecting a route (requiresAuth/requiresAdmin), or debugging a URL that renders the wrong page. Covers the routes.json table, PAGE_BY_PATH, NAV_TARGETS, tabsByQuery, shell flags, guards, and the lookup helpers.
 ---
 
 # Khawarizm Academy — Routing & URL Handling
@@ -106,6 +106,8 @@ Current canonical redirects:
 | `hideShell` | — | No navbar, no footer, **no** bottom bar. Full-screen pages. |
 | `immersive` | — | Page owns its own nav. No navbar, no footer; bottom bar stays. |
 | `skeletonVariant` | ✅ | `home` \| `catalog` \| `detail` \| `dashboard` \| `default`. |
+| `requiresAuth` | — | Signed-in only. Guests are sent to `/login?next=<encoded path>`. |
+| `requiresAdmin` | — | Staff only (`user.isAdmin`). Implies `requiresAuth`; non-admins bounce to `/`. |
 
 **`hideShell` vs `immersive`** — the only confusing pair:
 
@@ -119,6 +121,20 @@ Current canonical redirects:
 ```ts
 const showHeaderAndFooter = !hideShell && !activeRoute?.meta?.immersive;
 ```
+
+### Guards — `requiresAuth` / `requiresAdmin`
+
+Access control is a **route flag**, enforced in one place (`src/app/RouteGuard.tsx`), never a `if (user)` inside a page:
+
+```json
+{ "path": "/dashboard", "requiresAuth": true, "immersive": true, "skeletonVariant": "dashboard" }
+{ "path": "/admin", "requiresAdmin": true, "hideShell": true, "skeletonVariant": "dashboard" }
+{ "path": "/login", "hideShell": true, "skeletonVariant": "default" }
+```
+
+- `RouteGuard` waits for `isReady` (so a signed-in reader never flashes the login page), sends guests to `/login?next=<encoded>`, and bounces signed-in non-admins off `/admin` to `/`.
+- `requiresAdmin` implies auth — set both only if you want to be explicit; `isAdmin` is the single check.
+- Rules, tokens, and the `/api/auth` contract: [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md).
 
 ---
 
@@ -260,7 +276,7 @@ const navItem = getDashboardNavItem(view);   // null for views outside the sideb
 
 **Modes are not aliases.** `?view=live` and `?state=empty` are modes, not navigation targets, so they stay explicit booleans in `DashboardPage` (`isLive`, `isEmpty`) rather than becoming aliases.
 
-**A mode the URL must survive is a query param.** `/login?mode=welcome-back` reopens the returning-user card: `LoginPage` reads `mode` at render, writes it back via `setSearchParams({ mode })`, and `AuthModeSwitch` only calls the setter. Shareable view state belongs in the URL, not in `useState` alone.
+**A mode the URL must survive is a query param.** `/dashboard?view=live` and `/admin?tab=users` are read at render and written back with `setSearchParams`, so a refresh, a bookmark, and the back button all work. Shareable view state belongs in the URL, not in `useState` alone.
 
 ---
 
@@ -311,7 +327,8 @@ console.log(hit?.route.path, hit?.params, resolveActiveTab(pathname, search), hi
 5. **`*` goes last** and renders `NotFoundPage`, never `null`.
 6. **Never branch on a route or view.** Use `resolveActiveTab`, `findRoute`, `getDashboardNavItem`.
 7. **Verify every URL you touch** — route, redirect, active tab, skeleton variant, params.
-8. **Shareable view state lives in the query** (`?mode=welcome-back`, `?type=courses`), derived at render, never kept only in `useState`.
+8. **Shareable view state lives in the query** (`?view=profile`, `?tab=users`, `?type=courses`), derived at render, never kept only in `useState`.
+9. **Access control is a flag, not a page branch.** Mark the route `requiresAuth` / `requiresAdmin` and let `RouteGuard` redirect; never `if (user)` inside the page.
 
 ---
 
@@ -319,6 +336,7 @@ console.log(hit?.route.path, hit?.params, resolveActiveTab(pathname, search), hi
 
 - **Style for the code you write here:** [`khawarizm-code-style`](../khawarizm-code-style/SKILL.md)
 - **Skeletons, caching, page transitions:** [`khawarizm-navigation-cache`](../khawarizm-navigation-cache/SKILL.md)
+- **Auth, sessions, guards & roles:** [`khawarizm-auth-and-sessions`](../khawarizm-auth-and-sessions/SKILL.md)
 - **Design system and component reuse:** [`khawarizm-frontend`](../khawarizm-frontend/SKILL.md)
 - **Full page creation flow:** [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md)
 - **Human-facing docs:** [`docs/03-routing-and-navigation.md`](../../../docs/03-routing-and-navigation.md)

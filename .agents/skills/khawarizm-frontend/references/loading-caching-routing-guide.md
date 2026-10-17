@@ -26,7 +26,7 @@ src/
 │   │   ├── Placeholder/FeaturePlaceholder.tsx
 │   │   └── Detail/ItemDetailView.tsx          # Shared course/scholarship detail layout
 │   ├── hooks/useCachedData.ts      # Universal SWR hook (useSyncExternalStore + keepPreviousData)
-│   ├── json/                       # All static data: routes.json, shellNav.json, catalog.json, mocks…
+│   ├── json/                       # All static UI data: routes.json, shellNav.json, …
 │   └── lib/cacheManager.ts         # In-memory SWR data cache engine
 └── features/
     ├── catalog/

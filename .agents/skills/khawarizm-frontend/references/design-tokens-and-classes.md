@@ -143,17 +143,27 @@ Non-utility CSS variables live in a `:root` block in the same file (consumed via
 - `.no-scrollbar` and `[data-no-scrollbar]` → `scrollbar-width: none !important; -ms-overflow-style: none !important; ::-webkit-scrollbar { display: none !important; width: 0 !important; }`.
 
 ### Authentication (`.auth-*`, `features/auth/auth.css`)
-Declared in `@layer components`. Full-screen login / welcome-back chamber.
+Declared in `@layer components`. Full-screen login chamber.
 - **Shells:** `.auth-shell`, `.auth-split-screen`, `.auth-chamber`, `.auth-mobile`.
 - **Toast & terms:** `.auth-toast`, `.auth-toast-dot`, `.auth-terms-scrim` (`var(--color-overlay-scrim)`), `.auth-terms-panel`, `.auth-terms-title`, `.auth-terms-body`, `.auth-terms-actions`.
-- **Top bar & mode switch:** `.auth-top-bar`, `.auth-back-link`, `.auth-mode-switch`, `.auth-mode-option`, `.auth-mode-option-login`, `.auth-mode-option-returning`.
+- **Top bar & screen toggle:** `.auth-top-bar`, `.auth-back-link`; the sign-in ⇆ register link in `LoginCard` uses `.auth-link-slot` + `.auth-link-gold`. (Legacy `.auth-mode-switch*` classes remain in the file but are unused.)
 - **Card:** `.auth-card-slot`, `.auth-body`, `.auth-card` (`var(--shadow-elev-2)`), `.auth-card-head`, `.auth-card-title`, `.auth-card-subtitle`.
 - **Social & divider:** `.auth-social-stack`, `.auth-social-btn`, `.auth-social-google`, `.auth-social-facebook`, `.auth-divider`, `.auth-divider-line`, `.auth-divider-label`.
 - **Form:** `.auth-form`, `.auth-field`, `.auth-label`, `.auth-input-wrap` (+ `-error`), `.auth-input-icon`, `.auth-input`, `.auth-error`.
 - **Links & legal:** `.auth-link-slot`, `.auth-link-gold`, `.auth-link-muted`, `.auth-legal`, `.auth-legal-text`, `.auth-legal-link`.
-- **Welcome-back:** `.auth-avatar`, `.auth-avatar-inner`, `.auth-avatar-img`, `.auth-avatar-fallback`, `.auth-user-name`, `.auth-user-badge`, `.auth-stats-bar`, `.auth-stat`, `.auth-stat-value`, `.auth-stat-label`, `.auth-stat-divider`.
+- **Legacy (unused after the single-card login):** `.auth-avatar*`, `.auth-user-name`, `.auth-user-badge`, `.auth-stats-bar`, `.auth-stat*` remain in `auth.css` but no component renders them.
 - **Mobile header:** `.auth-mobile-brand`, `.auth-mobile-heading`, `.auth-mobile-title`, `.auth-mobile-subtitle`.
 - **Hero:** `.auth-hero`, `.auth-glow-gold`, `.auth-glow-cyan`, `.auth-glow-mobile`, `.auth-brand`, `.auth-brand-name`, `.auth-brand-tag`, `.auth-orbit-stage`, `.auth-orbit-canvas`, `.auth-orbit-ring-outer` (+ `.animate-orbit-slow` in JSX), `.auth-orbit-ring-inner`, `.auth-orbit-line`, `.auth-orbit-core`, `.auth-orbit-core-glow`, `.auth-orbit-core-star`, `.auth-hero-foot`, `.auth-hero-group`, `.auth-hero-title`, `.auth-hero-text`, `.auth-trust`, `.auth-trust-text`, `.auth-hero-stats`.
+
+### Admin console (`.admin-*`, `features/admin/admin.css`)
+Declared in `@layer components`. Single responsive surface (`/admin`, `hideShell`, `requiresAdmin`).
+- **Shell:** `.admin-page`, `.admin-container`, `.admin-main`, `.admin-view`, `.admin-view-section`, `.admin-topbar` (+ `.admin-topbar-mark/-head/-title/-sub/-lead/-actions`), `.admin-side` (+ `.admin-side-brand*`), `.admin-nav-item` (+ `-active` / `-idle`), `.admin-pill` (+ `-active` / `-idle`).
+- **Stats:** `.admin-stat-grid`, `.admin-stat`, `.admin-stat-sky|gold|emerald|danger`, `.admin-stat-icon`, `.admin-stat-label`, `.admin-stat-value`.
+- **Tables & cells:** `.admin-table`, `.admin-table-head`, `.admin-table-row` (+ `-static`), `.admin-row-open`, `.admin-cell`, `.admin-cell-label`, `.admin-cell-value`, `.admin-cell-sub`, `.admin-cell-user`, `.admin-user`, `.admin-user-avatar`, `.admin-user-text`, `.admin-user-name`, `.admin-user-email`, `.admin-mono`, `.admin-num`.
+- **Toolbar & pagination:** `.admin-toolbar`, `.admin-search` (+ `.admin-search-icon/-input/-clear`), `.admin-select` (the role dropdown), `.admin-pagination`, `.admin-page-btn`, `.admin-page-info`.
+- **Chart & breakdowns:** `.admin-chart`, `.admin-chart-bars`, `.admin-chart-col`, `.admin-chart-bar`, `.admin-chart-track`, `.admin-chart-count`, `.admin-chart-day`; `.admin-breakdown-grid`, `.admin-breakdown`, `.admin-breakdown-row`, `.admin-breakdown-track`, `.admin-breakdown-fill`, `.admin-breakdown-label`, `.admin-breakdown-count`, `.admin-breakdown-meta`, `.admin-breakdown-title`, `.admin-breakdown-empty`.
+- **Detail, activity & badges:** `.admin-detail-*`, `.admin-feed`, `.admin-event*`, `.admin-mini-*`, `.admin-badge` (+ `-admin/-instructor/-student/-active/-inactive/-current/-login/-logout/-refresh/-rejected/-revoked`).
+- **Buttons, modal & states:** `.admin-ghost-btn`, `.admin-danger-btn`, `.admin-revoke-btn`, `.admin-retry-btn`, `.admin-icon-btn`, `.admin-actions`, `.admin-mini-actions`; `.admin-modal` (+ `.admin-modal-overlay/-head/-icon/-title/-sub/-lead/-text/-body`); `.admin-notice` (+ `.admin-notice-close`), `.admin-empty` (+ `.admin-empty-icon/-title/-hint`), `.admin-detail-empty`.
 
 ### Catalog (`.catalog-*`, `features/catalog/catalog.css`)
 - **Page:** `.catalog-hero`, `.catalog-hero-title`, `.catalog-hero-subtitle`, `.catalog-search-slot`, `.catalog-results`, `.catalog-results-main`, `.catalog-results-aside`.

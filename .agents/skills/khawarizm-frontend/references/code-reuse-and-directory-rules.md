@@ -22,8 +22,7 @@ Use this decision table whenever you create, move, or import any file.
 | **Feature data (non-JSON)** | `src/features/<feature>/data/` | `camelCase.ts` | Modules a JSON file cannot carry (e.g. `dashboardFetchers.ts`, `radialRingColors.ts`). |
 | **Feature styles** | `src/features/<feature>/` | `<feature>.css` | Concept classes used by **one** feature (`auth.css`, `catalog.css`, `dashboard.css`, `courses.css`, `home.css`, `profile.css`). Imported by `globals.css` — never from a `.tsx`. |
 | **Static data (any kind)** | `src/shared/json/` | `<camelCase>.json` | Every list, label, record and config map. A `.ts` beside it may only add types or hydrate names. |
-| **Hydrated mock modules** | `src/shared/mocks/` | `<name>.ts` + `index.ts` barrel | JSON casts plus the types JSON cannot hold (`catalog.ts`, `courses.ts`, `dashboard.ts`, `homepage.ts`). |
-| **Shared utility / lib** | `src/shared/lib/` | `camelCase.ts` | `localization.ts`, `navigation.ts`, `cacheManager.ts`. |
+| **Shared utility / lib** | `src/shared/lib/` | `camelCase.ts` | `localization.ts`, `navigation.ts`, `cacheManager.ts`, `apiClient.ts`, `authStorage.ts`. |
 | **Design tokens & shared styles** | `src/styles/` | `tokens.css`, `globals.css` | Variables + concept classes shared by **2+ features**; `globals.css` imports every feature `*.css`. |
 | **Master brand assets** | `src/assets/brand/source/` | `KhawarizmLogo.jpg` | Single source of truth. Output generated to `generated/` and `public/` via `npm run brand:generate`. |
 | **App routing & shell** | `src/app/` | `router.tsx`, `routes.tsx`, `App.tsx`, `pageLoads.ts`, `layouts/RootLayout.tsx` | Root frame, route table and per-page lazy chunks. |
@@ -140,7 +139,7 @@ Extract it into the owning CSS file inside `@layer components` (JSX utilities ca
 | **Side-by-side toggle switch** | `<SlidingSegmentedControl options value onChange tone="blue" \| "gold" />` |
 | **Competition banner** | `<CompetitionBanner competition={data} />` |
 | **Upcoming events section** | `<EventSection featuredEvent={e1} workshopEvent={e2} />` |
-| **Auth mode pill (desktop + mobile)** | `<AuthModeSwitch mode={mode} onChange={setMode} />` — one pill, `lg:` breakpoints pick label/size |
+| **Login form (sign-in + register)** | `<LoginCard variant="desktop" \| "mobile" />` — reads `useLoginPage()` (screen + changeScreen); one component for both surfaces |
 | **Google / Facebook sign-in** | `<AuthSocialButton provider="google" label={…} />` — `PROVIDERS` record, no branch |
 | **Catalog filter pills (sidebar + drawer)** | `<CatalogFilterGroups surface tab filters onChangeFilter />` — pill rows written once |
 | **Catalog result card / grid / states** | `<CatalogCard item={…} />` inside `.catalog-grid`; empty & error states share `StatePanel` + `.catalog-state` |
