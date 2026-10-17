@@ -6,8 +6,8 @@ from django.contrib import admin
 from django.test import TestCase
 from django.urls import reverse
 
-from features.common.testing import ApiTestCase, make_scholarship
-from features.scholarships.models import Scholarship
+from features.common.testing import ApiTestCase, authenticate, make_scholarship, make_user
+from features.scholarships.models import Scholarship, ScholarshipApplication
 from features.scholarships.serializers import scholarship_catalog_item
 
 
@@ -66,6 +66,24 @@ class ScholarshipViewTests(ApiTestCase):
         self.assertEqual(self.client.post("/api/scholarships/missing/apply", {}, format="json").status_code, 404)
 
 
+class ScholarshipPersistenceTests(ApiTestCase):
+    def test_save_toggles_for_the_signed_in_learner(self):
+        make_scholarship()
+        authenticate(self.client, make_user())
+        first = self.client.post("/api/scholarships/scholarship-1/save", {}, format="json").json()
+        second = self.client.post("/api/scholarships/scholarship-1/save", {}, format="json").json()
+        self.assertTrue(first["saved"])
+        self.assertFalse(second["saved"])
+
+    def test_apply_creates_the_application_once(self):
+        make_scholarship()
+        user = make_user()
+        authenticate(self.client, user)
+        self.client.post("/api/scholarships/scholarship-1/apply", {}, format="json")
+        self.client.post("/api/scholarships/scholarship-1/apply", {}, format="json")
+        self.assertEqual(ScholarshipApplication.objects.filter(user=user).count(), 1)
+
+
 class ScholarshipUrlTests(TestCase):
     def test_routes_resolve(self):
         self.assertEqual(reverse("scholarship-detail", args=["s"]), "/api/scholarships/s")
@@ -76,3 +94,6 @@ class ScholarshipUrlTests(TestCase):
 class ScholarshipAdminTests(TestCase):
     def test_scholarship_is_registered(self):
         self.assertTrue(admin.site.is_registered(Scholarship))
+
+    def test_application_is_registered(self):
+        self.assertTrue(admin.site.is_registered(ScholarshipApplication))

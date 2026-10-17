@@ -7,6 +7,7 @@ import {
   COURSE_PLAYER_ROUTE,
 } from '@/shared/lib/navigation';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
+import { useAuth } from '@/features/auth/context/authContext';
 import type { EnrolledCourse } from '@/features/dashboard/types';
 import { SUB_NAV_VIEWS, useDashboard } from '@/features/dashboard/context/dashboardContext';
 import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
@@ -45,6 +46,7 @@ const MobileTitle = ({
 /** The single responsive dash-main body: headers, mobile chrome, and view sections. */
 export const DashboardMain: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { content } = useDashboardContent();
   const { fullPageViews, singleColumnViews } = content.views;
   const {
@@ -66,23 +68,18 @@ export const DashboardMain: React.FC = () => {
     handleNotificationAction,
   } = useDashboard();
 
-  /** Resume jumps straight into the real Course Player; mock-only rows keep the workspace chamber. */
+  // The real signed-in learner's first name and monogram, so no chrome invents one.
+  const firstName = user?.fullName.trim().split(/\s+/)[0] ?? '';
+  const userInitials = user?.avatarInitials ?? '';
+
+  /** Resume jumps straight into the real Course Player. */
   const resumeCourse = (course: EnrolledCourse) => {
-    if (course.slug) navigate(COURSE_PLAYER_ROUTE(course.slug));
-    else openWorkspace(course.title);
+    navigate(COURSE_PLAYER_ROUTE(course.slug));
   };
 
-  /** Completed courses open the real certificate page; mock-only ones use the preview chamber. */
+  /** Completed courses open the real certificate page. */
   const viewCourseCertificate = (course: EnrolledCourse) => {
-    if (course.slug) navigate(COURSE_CERTIFICATE_ROUTE(course.slug));
-    else
-      previewCertificate({
-        id: `cert-${course.id}`,
-        title: `شهادة إتمام: ${course.title}`,
-        issueDate: course.completionDate || '14 سبتمبر 2026',
-        credentialId: `KHW-${course.id.toUpperCase()}-2026`,
-        isOfficial: true,
-      });
+    navigate(COURSE_CERTIFICATE_ROUTE(course.slug));
   };
 
   return (
@@ -100,7 +97,8 @@ export const DashboardMain: React.FC = () => {
               title={header.title}
               subtitle={header.subtitle}
               chips={statChips}
-              studentName="أحمد"
+              studentName={firstName}
+              greeting={header.greeting}
               unreadNotificationsCount={unreadCount}
               onNotificationsClick={() => selectView('notifications')}
               onAvatarClick={() => selectView('profile')}
@@ -125,7 +123,7 @@ export const DashboardMain: React.FC = () => {
           <MobileDashboardTopBar
             title={
               <MobileTitle
-                label="مرحبًا، سارة"
+                label={`مرحبًا، ${firstName}`}
                 avatar={<User size={18} className="text-blue-400" />}
               />
             }
@@ -140,7 +138,7 @@ export const DashboardMain: React.FC = () => {
             title={
               <MobileTitle
                 label="الملف الشخصي"
-                avatar={<span className="text-gold-400 text-xs font-bold font-display">أق</span>}
+                avatar={<span className="text-gold-400 text-xs font-bold font-display">{userInitials}</span>}
                 avatarClassName="size-8.5 border-gold-400"
                 labelClassName="text-white text-base"
               />
@@ -178,7 +176,7 @@ export const DashboardMain: React.FC = () => {
         {/* Empty state view */}
         {isEmpty && (
           <div className="w-full py-2 md:py-6 animate-fade-in-up animation-delay-100">
-            <EmptyDashboardState userName="سارة" />
+            <EmptyDashboardState userName={firstName} />
           </div>
         )}
 

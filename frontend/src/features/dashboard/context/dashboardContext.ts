@@ -21,6 +21,8 @@ export interface ViewChip {
 export interface ViewHeader {
   title: string;
   subtitle: string;
+  /** True when the title is a greeting placeholder that must be filled with the real name. */
+  greeting?: boolean;
   chips?: ViewChip[];
 }
 
@@ -28,6 +30,7 @@ export interface ViewHeader {
 export interface RawViewHeader {
   title: string;
   subtitle: string;
+  greeting?: boolean;
   chips?: Array<Omit<ViewChip, 'icon'> & { icon: string }>;
 }
 
@@ -52,13 +55,14 @@ export interface DashboardContextValue {
   coursesData: EnrolledCourse[];
   isLoadingCourses: boolean;
   activeWorkspaceCourse: string | null;
-  isLiveClassroomOpen: boolean;
+  /** The course a live chamber was opened for, or null when none is open. */
+  activeLiveSession: { courseTitle: string; instructorName: string } | null;
   selectedScholarship: SavedScholarshipItem | null;
   selectedCompetition: CompetitionItem | null;
   previewCertificateItem: CertificateItem | null;
   selectView: (viewId: string) => void;
   openWorkspace: (courseTitle: string) => void;
-  openLiveClassroom: () => void;
+  openLiveClassroom: (course: EnrolledCourse) => void;
   selectScholarship: (scholarship: SavedScholarshipItem) => void;
   selectCompetition: (competition: CompetitionItem) => void;
   previewCertificate: (certificate: CertificateItem) => void;

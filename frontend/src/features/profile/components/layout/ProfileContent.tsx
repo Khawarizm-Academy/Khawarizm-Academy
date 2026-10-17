@@ -22,7 +22,6 @@ import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSeg
 import { ProfileHero } from '@/features/profile/components/hero/ProfileHero';
 import { ProfileSaveActions } from '@/features/profile/components/controls/ProfileSaveActions';
 import { ProfileToast } from '@/features/profile/components/overlays/ProfileToast';
-import { SecurityCard } from '@/features/profile/components/cards/SecurityCard';
 
 /** Skill levels for the sliding academic-level switcher. */
 const LEARNING_LEVELS = [
@@ -204,9 +203,6 @@ export const ProfileContent: React.FC = () => {
                 </div>
               </div>
             </SettingsCard>
-
-            {/* Device footprint: every signed-in session + single-device revoke */}
-            <SecurityCard />
           </div>
         </div>
 

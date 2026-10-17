@@ -1,0 +1,59 @@
+/* ==========================================================================
+   Events Feature — page hero, featured keynote overlay & event grid cards.
+   Feature-owned concept classes. Imported by styles/globals.css, which keeps
+   only classes shared by 2+ features. Declared in @layer components so JSX
+   utilities can still override them.
+   ========================================================================== */
+@layer components {
+  /* --- Page hero --- */
+  .events-hero {
+    @apply w-full flex flex-col items-center justify-center text-center gap-3 pt-6 pb-2;
+  }
+
+  .events-hero-title {
+    @apply text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white font-display tracking-tight;
+  }
+
+  .events-hero-subtitle {
+    @apply max-w-2xl text-slate-400 text-sm sm:text-base font-body leading-relaxed;
+  }
+
+  /* --- Sections: featured keynote, then the remaining-events grid --- */
+  .events-data {
+    @apply w-full flex flex-col gap-10 md:gap-14;
+  }
+
+  .events-section {
+    @apply w-full flex flex-col gap-6;
+  }
+
+  .events-section-title {
+    @apply text-xl sm:text-2xl font-bold text-white font-display;
+  }
+
+  .events-grid {
+    @apply w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch;
+  }
+
+  /* --- Featured keynote: the shared .event-feature overlay plus a description --- */
+  .event-feature-desc {
+    @apply text-sm sm:text-base text-slate-300 font-body leading-relaxed mb-3 max-w-2xl line-clamp-2;
+  }
+
+  /* --- Grid cards --- */
+  .event-card-media {
+    @apply relative w-full h-44 bg-navy-800/60 overflow-hidden;
+  }
+
+  .event-card-badge {
+    @apply absolute top-3 right-3 z-10;
+  }
+
+  .event-card-body {
+    @apply flex flex-col gap-3 p-5 flex-1;
+  }
+
+  .event-card-desc {
+    @apply text-sm text-slate-400 font-body leading-relaxed line-clamp-3;
+  }
+}

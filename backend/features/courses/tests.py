@@ -8,7 +8,7 @@ from django.contrib import admin
 from django.test import TestCase
 from django.urls import reverse
 
-from features.common.testing import ApiTestCase, make_course
+from features.common.testing import ApiTestCase, authenticate, make_course, make_user
 from features.courses.models import (
     Course,
     CourseLesson,
@@ -176,6 +176,39 @@ class CourseViewTests(ApiTestCase):
     def test_enroll_rejects_get(self):
         make_course()
         self.assertEqual(self.client.get("/api/courses/course-1/enroll").status_code, 405)
+
+
+class CoursePersistenceTests(ApiTestCase):
+    def test_enroll_persists_for_the_signed_in_learner(self):
+        make_course()
+        user = make_user()
+        authenticate(self.client, user)
+        self.client.post("/api/courses/course-1/enroll", {}, format="json")
+        self.assertEqual(user.enrollments.count(), 1)
+
+    def test_progress_persists_for_the_signed_in_learner(self):
+        make_course()
+        user = make_user()
+        authenticate(self.client, user)
+        self.client.post("/api/courses/course-1/progress", {"progress": 40, "lastLesson": "l2"}, format="json")
+        enrollment = user.enrollments.get()
+        self.assertEqual((enrollment.progress, enrollment.last_lesson), (40, "l2"))
+
+    def test_favorite_hints_a_visitor_to_sign_in(self):
+        make_course()
+        body = self.client.post("/api/courses/course-1/favorite", {}, format="json").json()
+        self.assertTrue(body["requiresAuth"])
+
+    def test_favorite_toggles_for_the_signed_in_learner(self):
+        make_course()
+        authenticate(self.client, make_user())
+        first = self.client.post("/api/courses/course-1/favorite", {}, format="json").json()
+        second = self.client.post("/api/courses/course-1/favorite", {}, format="json").json()
+        self.assertTrue(first["favorited"])
+        self.assertFalse(second["favorited"])
+
+    def test_favorite_missing_course_is_a_404(self):
+        self.assertEqual(self.client.post("/api/courses/missing/favorite", {}, format="json").status_code, 404)
 
 
 class CourseUrlTests(TestCase):

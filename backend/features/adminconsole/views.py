@@ -1,9 +1,11 @@
-"""Staff-only analytics and control endpoints backing the admin console."""
+"""Staff-only analytics, account control, and content management endpoints."""
 
 from __future__ import annotations
 
+import json
 from datetime import timedelta
 
+from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -13,13 +15,22 @@ from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from features.adminconsole import serializers
+from features.adminconsole.serializers import CONTENT_TYPES, USER_FIELDS
 from features.auth import services
 from features.auth.models import AuthEvent, User, UserSession
 from features.auth.permissions import IsAdminRole
-from features.auth.serializers import session_payload, session_with_user, user_profile
+from features.auth.serializers import session_with_user, user_profile
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
+from features.competitions.models import Competition
+from features.courses.models import Course
+from features.events.models import EventItem
+from features.scholarships.models import Scholarship
 
 PAGE_SIZE = 20
+
+# The content types the console manages, and where their headline counts come from.
+CONTENT_COUNTS = {"courses": Course, "scholarships": Scholarship, "events": EventItem, "competitions": Competition}
 
 
 class InvalidParameter(APIException):
@@ -39,31 +50,65 @@ def _int_param(request, name: str, default: int, low: int) -> int:
     return max(value, low)
 
 
-def _user_row(user: User) -> dict:
-    """A compact user row for the users table."""
-    return {
-        "id": str(user.id),
-        "email": user.email,
-        "fullName": user.full_name,
-        "role": user.role,
-        "isActive": user.is_active,
-        "isStaff": user.is_staff,
-        "activeSessions": user.sessions.filter(is_active=True).count(),
-        "joinedAt": user.date_joined.isoformat(),
-        "lastSeenAt": user.last_seen_at.isoformat() if user.last_seen_at else None,
-    }
-
-
 def _breakdown(field: str) -> list[dict]:
     """Group sessions by a footprint field, biggest first."""
     rows = UserSession.objects.values(field).annotate(count=Count("id")).order_by("-count")
     return [{"key": row[field] or "unknown", "count": row["count"]} for row in rows]
 
 
+def _require_content_type(type_key: str) -> dict:
+    """Resolve a managed content type or 404 with the standard envelope."""
+    spec = CONTENT_TYPES.get(type_key)
+    if spec is None:
+        raise InvalidParameter(f"نوع محتوى غير معروف: {type_key}")
+    return spec
+
+
+def _coerce(field: dict, value):
+    """Turn a submitted JSON value into the Python type the column expects."""
+    kind = field["kind"]
+    if kind == "number":
+        return int(value)
+    if kind == "decimal":
+        return float(value)
+    if kind == "bool":
+        return value in (True, "true", "1", 1)
+    if kind == "json":
+        return value if not isinstance(value, str) else json.loads(value)
+    return str(value)
+
+
+def _values_for(spec: dict, data: dict, create: bool) -> dict:
+    """Validate and coerce the submitted fields into model kwargs."""
+    values: dict = {}
+    errors: list[str] = []
+    for field in spec["fields"]:
+        if field["name"] not in data:
+            if create and field.get("required"):
+                errors.append(f"الحقل «{field['label']}» مطلوب.")
+            continue
+        value = data[field["name"]]
+        is_empty = value is None or value == ""
+        if is_empty:
+            # Clearing a text column is fine; a numeric one keeps its current value.
+            if create and field.get("required"):
+                errors.append(f"الحقل «{field['label']}» مطلوب.")
+            elif not create and field["kind"] in ("text", "textarea", "url", "select"):
+                values[field["attr"]] = ""
+            continue
+        try:
+            values[field["attr"]] = _coerce(field, value)
+        except (TypeError, ValueError):
+            errors.append(f"قيمة غير صالحة في «{field['label']}».")
+    if errors:
+        raise InvalidParameter(" ".join(errors))
+    return values
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def overview(request):
-    """Headline numbers for the console home."""
+    """Headline numbers for the console home, including content totals."""
     now = timezone.now()
     day_ago = now - timedelta(days=1)
     week_ago = now - timedelta(days=7)
@@ -86,14 +131,17 @@ def overview(request):
                 "rejectedLast7d": AuthEvent.objects.filter(kind=AuthEventKind.REJECTED, created_at__gte=week_ago).count(),
                 "revocationsLast7d": AuthEvent.objects.filter(kind=AuthEventKind.REVOKED, created_at__gte=week_ago).count(),
             },
+            "content": {key: model.objects.count() for key, model in CONTENT_COUNTS.items()},
         }
     )
 
 
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def users(request):
-    """Paged, filterable user list."""
+    """Paged, filterable user list (GET) or a new account (POST)."""
+    if request.method == "POST":
+        return _create_user(request)
     queryset = User.objects.all()
     role = request.query_params.get("role")
     if role in Role.values:
@@ -104,38 +152,63 @@ def users(request):
     page = _int_param(request, "page", 1, 1)
     total = queryset.count()
     rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
-    return Response({"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [_user_row(u) for u in rows]})
+    return Response({"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [serializers.user_row(u) for u in rows]})
 
 
-@api_view(["GET"])
+def _create_user(request) -> Response:
+    """Create an account from the console's user form."""
+    data = request.data or {}
+    values = _values_for({"fields": USER_FIELDS}, data, create=True)
+    email = str(values.get("email", "")).strip().lower()
+    if not email:
+        return Response({"detail": "البريد الإلكتروني مطلوب."}, status=status.HTTP_400_BAD_REQUEST)
+    if User.objects.filter(email=email).exists():
+        return Response({"detail": "البريد الإلكتروني مستخدم بالفعل."}, status=status.HTTP_400_BAD_REQUEST)
+    password = data.get("password") or None
+    user = User.objects.create_user(email=email, password=password, **{k: v for k, v in values.items() if k != "email"})
+    user.is_staff = user.role == Role.ADMIN
+    user.save(update_fields=["is_staff"])
+    services.ensure_profile(user)
+    return Response(serializers.user_row(user), status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def user_detail(request, user_id):
-    """One user with their full profile, sessions, and recent audit trail."""
+    """One user's detail (GET), an account edit (PATCH), or removal (DELETE)."""
     user = User.objects.filter(pk=user_id).first()
     if user is None:
         return Response({"detail": "المستخدم غير موجود."}, status=status.HTTP_404_NOT_FOUND)
-    sessions = user.sessions.all()[:50]
-    events = user.auth_events.all()[:50]
-    return Response(
-        {
-            "profile": user_profile(user),
-            "sessions": [session_payload(s, request.auth.id) for s in sessions],
-            "events": [
-                {
-                    "id": str(e.id),
-                    "kind": e.kind,
-                    "provider": e.provider,
-                    "deviceType": e.device_type,
-                    "os": e.os,
-                    "browser": e.browser,
-                    "ipAddress": e.ip_address or "",
-                    "detail": e.detail,
-                    "createdAt": e.created_at.isoformat(),
-                }
-                for e in events
-            ],
-        }
-    )
+    if request.method == "PATCH":
+        return _update_user(request, user)
+    if request.method == "DELETE":
+        if str(request.user.id) == str(user.id):
+            return Response({"detail": "لا يمكنك حذف حسابك الخاص."}, status=status.HTTP_400_BAD_REQUEST)
+        user.delete()
+        return Response({"deleted": True, "id": str(user_id)})
+    return Response(serializers.admin_user_detail(user, request.auth.id))
+
+
+def _update_user(request, user: User) -> Response:
+    """Apply the console's account edits, keeping Django staff rights in sync."""
+    values = _values_for({"fields": USER_FIELDS}, request.data or {}, create=False)
+    if "email" in values:
+        email = str(values["email"]).strip().lower()
+        if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+            return Response({"detail": "البريد الإلكتروني مستخدم بالفعل."}, status=status.HTTP_400_BAD_REQUEST)
+        values["email"] = email
+    for attr, value in values.items():
+        setattr(user, attr, value)
+    if "role" in values:
+        if str(request.user.id) == str(user.id) and values["role"] != Role.ADMIN:
+            return Response({"detail": "لا يمكنك خفض دورك الخاص."}, status=status.HTTP_400_BAD_REQUEST)
+        user.is_staff = values["role"] == Role.ADMIN
+    try:
+        user.save()
+    except IntegrityError:
+        return Response({"detail": "تعذّر حفظ التعديلات: قيمة مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
+    services.ensure_profile(user)
+    return Response(serializers.user_row(user))
 
 
 @api_view(["POST"])
@@ -217,23 +290,57 @@ def events(request):
     kind = request.query_params.get("kind")
     if kind in AuthEventKind.values:
         queryset = queryset.filter(kind=kind)
-    rows = queryset[:100]
-    return Response(
-        {
-            "results": [
-                {
-                    "id": str(e.id),
-                    "kind": e.kind,
-                    "provider": e.provider,
-                    "email": e.email,
-                    "deviceType": e.device_type,
-                    "os": e.os,
-                    "browser": e.browser,
-                    "ipAddress": e.ip_address or "",
-                    "detail": e.detail,
-                    "createdAt": e.created_at.isoformat(),
-                }
-                for e in rows
-            ]
-        }
-    )
+    return Response({"results": [serializers.event_row(e, include_email=True) for e in queryset[:100]]})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def content_schema(request):
+    """The managed content types and their editable fields."""
+    return Response({"types": serializers.content_types_payload(), "userFields": list(USER_FIELDS)})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def content_items(request, type_key):
+    """Paged content rows (GET) or a new row (POST) for one managed type."""
+    spec = _require_content_type(type_key)
+    if request.method == "POST":
+        values = _values_for(spec, request.data or {}, create=True)
+        try:
+            row = spec["model"].objects.create(**values)
+        except (IntegrityError, ValueError):
+            return Response({"detail": "تعذّر الإنشاء: بيانات غير صالحة أو مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializers.content_row(spec, row), status=status.HTTP_201_CREATED)
+    queryset = spec["model"].objects.all()
+    query = request.query_params.get("q")
+    if query:
+        conditions = Q()
+        for field in spec["search"]:
+            conditions |= Q(**{f"{field}__icontains": query})
+        queryset = queryset.filter(conditions)
+    page = _int_param(request, "page", 1, 1)
+    total = queryset.count()
+    rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
+    return Response({"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [serializers.content_row(spec, r) for r in rows]})
+
+
+@api_view(["PATCH", "DELETE"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def content_detail(request, type_key, pk):
+    """Edit (PATCH) or delete (DELETE) one content row."""
+    spec = _require_content_type(type_key)
+    row = spec["model"].objects.filter(pk=pk).first()
+    if row is None:
+        return Response({"detail": "العنصر غير موجود."}, status=status.HTTP_404_NOT_FOUND)
+    if request.method == "DELETE":
+        row.delete()
+        return Response({"deleted": True, "id": str(pk)})
+    values = _values_for(spec, request.data or {}, create=False)
+    for attr, value in values.items():
+        setattr(row, attr, value)
+    try:
+        row.save()
+    except (IntegrityError, ValueError):
+        return Response({"detail": "تعذّر الحفظ: بيانات غير صالحة أو مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializers.content_row(spec, row))

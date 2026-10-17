@@ -1,11 +1,28 @@
 import React, { useState } from 'react';
-import { Radio, Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Users, X, Send } from 'lucide-react';
+import {
+  Radio,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  Hand,
+  MessageSquare,
+  Users,
+  User,
+  X,
+  Send,
+} from 'lucide-react';
+import { useAuth } from '@/features/auth/context/authContext';
 
 interface LiveClassroomModalProps {
   isOpen: boolean;
   onClose: () => void;
-  courseTitle?: string;
-  instructorName?: string;
+  /** The course the learner joined; the chamber never invents one. */
+  courseTitle: string;
+  /** The course instructor, possibly empty when the course carries none. */
+  instructorName: string;
+  /** Live headcount from the API; no count is shown when it is unknown. */
+  attendanceCount?: number;
 }
 
 interface ChatMessage {
@@ -45,9 +62,11 @@ const CODE_INDENT = ['', 'pr-4', 'pr-8'];
 export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
   isOpen,
   onClose,
-  courseTitle = 'برمجة بايثون للمبتدئين',
-  instructorName = 'م. خالد الشمري',
+  courseTitle,
+  instructorName,
+  attendanceCount,
 }) => {
+  const { user } = useAuth();
   const [isMicOn, setIsMicOn] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
@@ -61,7 +80,7 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
     if (!inputMessage.trim()) return;
     const newMsg: ChatMessage = {
       id: `m-${Date.now()}`,
-      sender: 'أحمد الغامدي (أنت)',
+      sender: `${user?.fullName ?? ''} (أنت)`,
       text: inputMessage.trim(),
       time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
     };
@@ -85,7 +104,8 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
                 <h2 className="dash-modal-title">{courseTitle}</h2>
               </div>
               <span className="dash-modal-sub">
-                المحاضر: {instructorName} • الحضور: 84 طالباً
+                المحاضر: {instructorName}
+                {attendanceCount !== undefined && ` • الحضور: ${attendanceCount} طالباً`}
               </span>
             </div>
           </div>
@@ -107,8 +127,8 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
                   <span>{instructorName}</span>
                   <span className="size-1.5 rounded-full bg-emerald-400" />
                 </div>
-                <div className="size-10 rounded-full bg-navy-600/80 self-center flex items-center justify-center text-sky-300 text-xs font-bold">
-                  م.خ
+                <div className="size-10 rounded-full bg-navy-600/80 self-center flex items-center justify-center text-sky-300">
+                  <User size={18} />
                 </div>
                 <span className="text-[9px] text-slate-400 text-center font-mono">1080p 60fps</span>
               </div>
@@ -172,10 +192,12 @@ export const LiveClassroomModal: React.FC<LiveClassroomModalProps> = ({
                   <MessageSquare size={16} className="text-blue-400" />
                   <span>المحادثة التفاعلية</span>
                 </div>
-                <div className="flex items-center gap-1 text-slate-400 text-xs">
-                  <Users size={14} />
-                  <span>84</span>
-                </div>
+                {attendanceCount !== undefined && (
+                  <div className="flex items-center gap-1 text-slate-400 text-xs">
+                    <Users size={14} />
+                    <span>{attendanceCount.toLocaleString('en-US')}</span>
+                  </div>
+                )}
               </div>
 
               {/* Message list, or its empty state */}

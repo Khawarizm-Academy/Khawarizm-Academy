@@ -8,6 +8,14 @@ import {
   fetchUsers,
   revokeAdminSession,
   updateUserRole,
+  createAdminUser,
+  updateAdminUser,
+  deleteAdminUser,
+  fetchContentSchema,
+  fetchContent,
+  createContent,
+  updateContent,
+  deleteContent,
 } from '@/features/admin/data/adminFetchers';
 
 const API_BASE = 'http://localhost:8000/api';
@@ -102,5 +110,50 @@ describe('admin fetchers', () => {
 
     expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/sessions/session-1/revoke`);
     expect(lastCall().method).toBe('POST');
+  });
+
+  it('creates and updates and deletes a user through the admin endpoints', async () => {
+    await createAdminUser({ email: 'a@b.com', fullName: 'Ahmad', role: 'admin', isActive: true });
+    const callCreate = fetchMock.mock.calls.at(-1) ?? [];
+    expect(String(callCreate[0])).toBe(`${API_BASE}/admin/users`);
+    expect(lastCall()).toEqual({
+      method: 'POST',
+      body: { email: 'a@b.com', fullName: 'Ahmad', role: 'admin', isActive: true },
+    });
+
+    await updateAdminUser('u-1', { phone: '123', isActive: false });
+    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/users/u-1`);
+    expect(lastCall().method).toBe('PATCH');
+    expect(lastCall().body).toEqual({ phone: '123', isActive: false });
+
+    await deleteAdminUser('u-1');
+    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/users/u-1`);
+    expect(lastCall().method).toBe('DELETE');
+  });
+
+  it('reads and writes content collections from the API', async () => {
+    await fetchContentSchema();
+    expect(lastUrl()).toBe('/admin/content/schema');
+
+    await fetchContent('courses', { q: 'ai', page: 2 });
+    expect(lastUrl()).toBe('/admin/content/courses?q=ai&page=2');
+
+    await fetchContent('events');
+    expect(lastUrl()).toBe('/admin/content/events');
+
+    await createContent('courses', { slug: 'intro', title: 'Intro' });
+    const callCreateContent = fetchMock.mock.calls.at(-1) ?? [];
+    expect(String(callCreateContent[0])).toBe(`${API_BASE}/admin/content/courses`);
+    expect(lastCall().method).toBe('POST');
+    expect(lastCall().body).toEqual({ slug: 'intro', title: 'Intro' });
+
+    await updateContent('courses', 'row-1', { title: 'Updated' });
+    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/content/courses/row-1`);
+    expect(lastCall().method).toBe('PATCH');
+    expect(lastCall().body).toEqual({ title: 'Updated' });
+
+    await deleteContent('events', 'e-1');
+    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/content/events/e-1`);
+    expect(lastCall().method).toBe('DELETE');
   });
 });

@@ -1,6 +1,6 @@
 # Events — الفعاليات والندوات
 
-The events & seminars destination. Currently a staged placeholder so the tab never renders empty.
+The events & seminars destination: a featured keynote plus a grid of every upcoming event, served by the API.
 
 ## At a glance
 
@@ -11,38 +11,51 @@ The events & seminars destination. Currently a staged placeholder so the tab nev
 | **Skeleton variant** | `default` |
 | **Active tab** | `events` |
 | **Entry** | `pages/EventsPage.tsx` |
-| **Styles** | shared only (no feature CSS) |
+| **Data source** | `GET /events` via `data/eventFetchers.ts` |
+| **Styles** | `events.css` (concept classes `events-*`, `event-card-*`, `event-feature-desc`) |
 
 ## Purpose
 
-Guarantees the **Events** navbar tab resolves to a branded, localized "coming soon" screen instead of a blank page or a broken route. It announces the intended content — the annual Khawarizm conference, technology workshops, and specialized scientific seminars.
+Presents all academy events and seminars. The featured event (the one flagged `isFeatured`, else the first) is drawn with the shared `EventSection` overlay treatment; the remaining events render as a responsive card grid with badge, title, description, date, and format.
 
 ## Structure
 
 ```text
 events/
 ├── pages/
-│   └── EventsPage.tsx        renders <FeaturePlaceholder/>
+│   └── EventsPage.tsx                 thin <main className="content-container">
+├── components/
+│   ├── hero/EventsHero.tsx            page header: badge, title, subtitle
+│   ├── layout/EventsDataSection.tsx   useCachedData boundary + skeleton/empty/error states
+│   └── cards/
+│       ├── FeaturedEventCard.tsx      shared .event-feature overlay treatment
+│       └── EventCard.tsx              grid card (artwork, badge, meta)
+├── data/
+│   └── eventFetchers.ts               GET /events → EventItem[]
+├── events.css
 └── README.md
 ```
 
-There is no feature state, data, or component folder yet.
-
 ## How it works
 
-- `EventsPage` renders the shared `FeaturePlaceholder` with an events-specific icon (`CalendarDays`), title, and description.
-- `FeaturePlaceholder` draws the orbital emblem and starfield stage (shared `Placeholder` components).
+- `EventsDataSection` loads `['events-list']` with `useCachedData` (5 min stale, 30 min cache), then renders `DataSectionSkeleton` while loading and `StatePanel` on empty/error (with a retry action).
+- `EventSection`'s visual grammar is reused through the shared `.event-feature` / `.event-overlay` concept classes and `EventArtwork` from `@/shared/components/Artwork/BrandVisuals` — no markup is duplicated.
+- The hero and the section titles stay outside the data boundary, so only the data section re-renders.
 
-## Status & next steps
+## Data
 
-This is a **thin placeholder**, not a built feature. A full implementation would add:
-- an events listing (upcoming/past) and an event detail view,
-- registration/RSVP,
-- data sources under `data/` (API fetchers),
-- its own `EventsPage` view components and `events.css` concept classes.
+| Source | Provides |
+| :--- | :--- |
+| `@/shared/types/entities` | `EventItem` |
+| `data/eventFetchers.ts` | `GET /events` |
+| `@/shared/components/Artwork/BrandVisuals` | `EventArtwork` |
+| `@/shared/components/Loading/DataSectionSkeleton` | Tier 2 grid skeleton |
+| `@/shared/components/State/StatePanel` | empty / error chamber |
+
+There are no mocks — the page renders only real API data.
 
 ## Related
 
-- Placeholder component: `src/shared/components/Placeholder/FeaturePlaceholder.tsx`
+- Reused section: `src/shared/components/Events/EventSection.tsx`
+- Home events rail: `src/features/home/components/layout/HomeContent.tsx`
 - Routing: [`docs/03-routing-and-navigation.md`](../../../../docs/03-routing-and-navigation.md)
-- Home already surfaces events via `shared/components/Events/EventSection.tsx`.

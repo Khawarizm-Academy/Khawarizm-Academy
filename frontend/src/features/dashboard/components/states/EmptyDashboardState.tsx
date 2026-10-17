@@ -4,13 +4,14 @@ import { useNavigate } from '@/app/routerContext';
 import { CATALOG_COURSES_ROUTE, CATALOG_SCHOLARSHIPS_ROUTE } from '@/shared/lib/navigation';
 
 interface EmptyDashboardStateProps {
-  userName?: string;
+  /** The real signed-in learner's first name, so the welcome never invents one. */
+  userName: string;
   onExploreCourses?: () => void;
   onExploreScholarships?: () => void;
 }
 
 export const EmptyDashboardState: React.FC<EmptyDashboardStateProps> = ({
-  userName = 'سارة',
+  userName,
   onExploreCourses,
   onExploreScholarships,
 }) => {

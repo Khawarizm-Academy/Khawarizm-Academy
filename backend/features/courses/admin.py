@@ -69,3 +69,9 @@ class CourseProblemAdmin(admin.ModelAdmin):
     list_display = ("problem_id", "prompt")
     search_fields = ("problem_id", "prompt")
     inlines = [CourseProblemOptionInline]
+
+
+@admin.register(CourseProblemOption)
+class CourseProblemOptionAdmin(admin.ModelAdmin):
+    list_display = ("problem", "option_id", "label")
+    search_fields = ("problem__problem_id", "option_id", "label")

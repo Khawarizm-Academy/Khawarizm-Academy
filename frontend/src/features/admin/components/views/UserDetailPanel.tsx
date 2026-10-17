@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
-import { Ban, Loader2, UserRound, X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Ban, Loader2, Save, Trash2, UserRound, X } from 'lucide-react';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
+import { useAuth } from '@/features/auth/context/authContext';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { UserProfileCard } from '@/features/admin/components/cards/UserProfileCard';
 import { SessionStatusBadge } from '@/features/admin/components/cards/Badges';
@@ -8,9 +9,67 @@ import { EventList } from '@/features/admin/components/layout/EventList';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
 import { DEVICE_LABELS } from '@/features/admin/types';
 import { formatLastSeen } from '@/features/admin/data/adminFormatters';
+import { AdminFieldInput, type AdminFormValue } from '@/features/admin/components/controls/AdminFieldInput';
+import { ConfirmAction } from '@/features/admin/components/controls/ConfirmAction';
+import { toFormValues, toPayloadValues } from '@/features/admin/data/adminContentForm';
+import type { AdminField, AdminUserInput } from '@/features/admin/types';
+
+interface UserEditFormProps {
+  userId: string;
+  profile: Record<string, unknown>;
+  fields: AdminField[];
+  onSave: (userId: string, input: Partial<AdminUserInput>) => Promise<boolean>;
+}
+
+/** Editable account fields seeded from the profile; remounted per account through `key`. */
+const UserEditForm: React.FC<UserEditFormProps> = ({ userId, profile, fields, onSave }) => {
+  const [values, setValues] = useState<Record<string, AdminFormValue>>(() => toFormValues(fields, profile));
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    const { payload, error } = toPayloadValues(fields, values, false);
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    setIsSaving(true);
+    const ok = await onSave(userId, payload as Partial<AdminUserInput>);
+    setIsSaving(false);
+    if (ok) setFormError(null);
+  };
+
+  return (
+    <>
+      <div className="admin-form-grid">
+        {fields.map((field) => (
+          <AdminFieldInput
+            key={field.name}
+            field={field}
+            value={values[field.name]}
+            disabled={isSaving}
+            onChange={(value) => setValues((prev) => ({ ...prev, [field.name]: value }))}
+          />
+        ))}
+      </div>
+      {formError && (
+        <p className="admin-form-error" role="alert">
+          {formError}
+        </p>
+      )}
+      <div className="admin-form-footer">
+        <button type="button" className="admin-primary-btn" disabled={isSaving} onClick={handleSave}>
+          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          <span>حفظ التعديلات</span>
+        </button>
+      </div>
+    </>
+  );
+};
 
 /** One account's profile, devices, and audit trail, opened from the users table. */
 export const UserDetailPanel: React.FC = () => {
+  const { user: currentUser } = useAuth();
   const {
     selectedUserId,
     selectedUser,
@@ -19,7 +78,13 @@ export const UserDetailPanel: React.FC = () => {
     revokingSessionId,
     revokeSession,
     refresh,
+    contentSchema,
+    updateUser,
+    deleteUser,
+    deletingUserId,
   } = useAdmin();
+
+  const fields = useMemo(() => contentSchema?.userFields ?? [], [contentSchema]);
 
   // Escape mirrors the backdrop: both close the panel through one action.
   useEffect(() => {
@@ -35,6 +100,12 @@ export const UserDetailPanel: React.FC = () => {
 
   const close = () => selectUser(null);
   const detail = selectedUser;
+
+  const handleDelete = async () => {
+    if (!detail) return;
+    const ok = await deleteUser(detail.profile.id);
+    if (ok) selectUser(null);
+  };
 
   return (
     <div className="admin-modal-overlay" onClick={close}>
@@ -72,6 +143,36 @@ export const UserDetailPanel: React.FC = () => {
           ) : (
             <>
               <UserProfileCard profile={detail.profile} />
+
+              <section className="admin-detail-section">
+                <h3 className="admin-detail-section-title">تعديل البيانات</h3>
+                {fields.length === 0 ? (
+                  <DataSectionSkeleton variant="list" count={2} />
+                ) : (
+                  <UserEditForm
+                    key={detail.profile.id}
+                    userId={detail.profile.id}
+                    profile={detail.profile as unknown as Record<string, unknown>}
+                    fields={fields}
+                    onSave={updateUser}
+                  />
+                )}
+              </section>
+
+              <section className="admin-detail-section">
+                <h3 className="admin-detail-section-title">منطقة الخطر</h3>
+                <ConfirmAction
+                  label="حذف الحساب"
+                  confirmLabel="تأكيد الحذف"
+                  icon={Trash2}
+                  busy={deletingUserId === detail.profile.id}
+                  disabled={detail.profile.id === currentUser?.id}
+                  onConfirm={handleDelete}
+                />
+                {detail.profile.id === currentUser?.id && (
+                  <p className="admin-detail-empty">لا يمكنك حذف حسابك الخاص.</p>
+                )}
+              </section>
 
               <section className="admin-detail-section">
                 <h3 className="admin-detail-section-title">الأجهزة والجلسات</h3>

@@ -1,6 +1,6 @@
 /** Every call the admin console makes, each one matching an adminconsole route. */
 
-import { apiGet, apiPost, buildQuery } from '@/shared/lib/apiClient';
+import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from '@/shared/lib/apiClient';
 import type { AuthRole, AuthUser } from '@/features/auth/types';
 import type {
   AdminActiveFilter,
@@ -11,7 +11,12 @@ import type {
   AdminRoleFilter,
   AdminSessionWithUser,
   AdminUserDetail,
+  AdminUserInput,
   AdminUserRow,
+  AdminContentSchema,
+  AdminContentTypeKey,
+  AdminContentPage,
+  AdminContentRow,
   DeviceBreakdown,
   LoginSeries,
   Paged,
@@ -52,3 +57,26 @@ export const updateUserRole = (userId: string, role: AuthRole) =>
 /** Force-logout one device anywhere in the fleet. */
 export const revokeAdminSession = (sessionId: string) =>
   apiPost<AdminSessionWithUser>(`/admin/sessions/${sessionId}/revoke`);
+
+export const createAdminUser = (input: AdminUserInput) =>
+  apiPost<AdminUserRow>('/admin/users', input);
+
+export const updateAdminUser = (userId: string, input: Partial<AdminUserInput>) =>
+  apiPatch<AdminUserRow>(`/admin/users/${userId}`, input);
+
+export const deleteAdminUser = (userId: string) =>
+  apiDelete<{ deleted: boolean; id: string }>(`/admin/users/${userId}`);
+
+export const fetchContentSchema = () => apiGet<AdminContentSchema>('/admin/content/schema');
+
+export const fetchContent = (type: AdminContentTypeKey, params: { q?: string; page?: number } = {}) =>
+  apiGet<AdminContentPage>(`/admin/content/${type}${buildQuery(params)}`);
+
+export const createContent = (type: AdminContentTypeKey, values: Record<string, unknown>) =>
+  apiPost<AdminContentRow>(`/admin/content/${type}`, values);
+
+export const updateContent = (type: AdminContentTypeKey, id: string, values: Record<string, unknown>) =>
+  apiPatch<AdminContentRow>(`/admin/content/${type}/${id}`, values);
+
+export const deleteContent = (type: AdminContentTypeKey, id: string) =>
+  apiDelete<{ deleted: boolean; id: string }>(`/admin/content/${type}/${id}`);

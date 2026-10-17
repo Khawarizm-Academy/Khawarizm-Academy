@@ -2,6 +2,8 @@ import React from 'react';
 import { Bell, Bookmark } from 'lucide-react';
 import { useNavigate } from '@/app/routerContext';
 import { DASHBOARD_NAV, NAV_TARGETS } from '@/shared/lib/navigation';
+import { useAuth } from '@/features/auth/context/authContext';
+import { ROLE_LABELS } from '@/features/auth/types';
 
 interface DesktopDashboardSidebarProps {
   currentView: string;
@@ -12,9 +14,10 @@ interface DesktopDashboardSidebarProps {
 export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = ({
   currentView,
   onSelectView,
-  unreadNotificationsCount = 5,
+  unreadNotificationsCount = 0,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <aside dir="rtl" className="dash-sidebar">
@@ -65,11 +68,13 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
             className="dash-side-row group"
           >
             <div className="dash-avatar size-10">
-              <span className="text-sky-300 font-bold text-sm font-display">أغ</span>
+              <span className="text-sky-300 font-bold text-sm font-display">
+                {user?.avatarInitials}
+              </span>
             </div>
             <div className="dash-user-names">
-              <span className="dash-user-name">أحمد الغامدي</span>
-              <span className="dash-user-role">طالب متميز</span>
+              <span className="dash-user-name">{user?.fullName}</span>
+              <span className="dash-user-role">{user ? ROLE_LABELS[user.role] : ''}</span>
             </div>
           </button>
 

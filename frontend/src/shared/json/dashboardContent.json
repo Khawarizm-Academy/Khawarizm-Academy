@@ -2,7 +2,8 @@
   "views": {
     "headers": {
       "main": {
-        "title": "مرحبًا، أحمد",
+        "title": "مرحبًا",
+        "greeting": true,
         "subtitle": "تابع تقدمك الدراسي ومساراتك التعليمية من هنا.",
         "chips": [
           { "icon": "Trophy", "label": "تحدياتك ومسابقاتك", "iconColor": "text-gold-400", "view": "achievements" },

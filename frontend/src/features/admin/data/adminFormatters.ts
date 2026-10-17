@@ -1,12 +1,13 @@
 /** Display helpers shared by every console view: timestamps, counts, initials. */
 
-import { Activity, CalendarDays, Globe, LayoutDashboard, LogIn, LogOut, MonitorSmartphone, ShieldCheck, TrendingUp, UserPlus, Users, type LucideIcon } from 'lucide-react';
+import { Activity, BookOpen, CalendarDays, Globe, GraduationCap, LayoutDashboard, LayoutList, LogIn, LogOut, MonitorSmartphone, ShieldCheck, TrendingUp, Trophy, UserPlus, Users, type LucideIcon } from 'lucide-react';
 import type { AdminSectionKey } from '@/features/admin/types';
 
 /** One icon per section; the rail, the pills, and the header all read this map. */
 export const SECTION_ICONS: Record<AdminSectionKey, LucideIcon> = {
   overview: LayoutDashboard,
   users: Users,
+  content: LayoutList,
   sessions: MonitorSmartphone,
   analytics: TrendingUp,
   activity: Activity,
@@ -25,6 +26,10 @@ export const METRIC_ICONS: Record<string, LucideIcon> = {
   loginsLast7d: CalendarDays,
   rejectedLast7d: TrendingUp,
   revocationsLast7d: LogOut,
+  courses: BookOpen,
+  scholarships: GraduationCap,
+  events: CalendarDays,
+  competitions: Trophy,
 };
 
 /** Arabic-grouped integer so console counters match the rest of the app. */

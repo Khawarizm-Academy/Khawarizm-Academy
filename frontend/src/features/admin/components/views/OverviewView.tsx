@@ -38,6 +38,13 @@ export const OverviewView: React.FC = () => {
     { metric: 'rejectedLast7d', label: 'محاولات مرفوضة', value: overview.activity.rejectedLast7d, tone: 'danger' },
   ];
 
+  const contentStats: StatDescriptor[] = [
+    { metric: 'courses', label: 'الدورات', value: overview.content.courses, tone: 'sky' },
+    { metric: 'scholarships', label: 'المنح', value: overview.content.scholarships, tone: 'gold' },
+    { metric: 'events', label: 'الفعاليات', value: overview.content.events, tone: 'emerald' },
+    { metric: 'competitions', label: 'المسابقات', value: overview.content.competitions, tone: 'gold' },
+  ];
+
   return (
     <div className="admin-view">
       <section className="admin-view-section">
@@ -53,6 +60,11 @@ export const OverviewView: React.FC = () => {
       <section className="admin-view-section">
         <h2 className="admin-section-title">نشاط المصادقة</h2>
         <OverviewStatsGrid stats={activityStats} />
+      </section>
+
+      <section className="admin-view-section">
+        <h2 className="admin-section-title">المحتوى</h2>
+        <OverviewStatsGrid stats={contentStats} />
       </section>
     </div>
   );

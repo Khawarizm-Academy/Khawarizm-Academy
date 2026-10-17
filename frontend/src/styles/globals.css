@@ -3,8 +3,10 @@
 @import "../features/admin/admin.css";
 @import "../features/auth/auth.css";
 @import "../features/catalog/catalog.css";
+@import "../features/competitions/competitions.css";
 @import "../features/courses/courses.css";
 @import "../features/dashboard/dashboard.css";
+@import "../features/events/events.css";
 @import "../features/home/home.css";
 @import "../features/profile/profile.css";
 

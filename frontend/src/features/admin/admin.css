@@ -130,8 +130,12 @@
     @apply h-9 px-3 inline-flex items-center gap-1.5 rounded-lg border border-navy-600/70 bg-navy-900/70 text-[12px] font-bold font-display text-slate-300 transition-colors hover:text-white hover:border-blue-400/50 cursor-pointer;
   }
 
-  .admin-danger-btn {
-    @apply h-9 px-3 inline-flex items-center gap-1.5 rounded-lg border border-danger-500/40 bg-danger-500/10 text-[12px] font-bold font-display text-danger-500 transition-colors hover:bg-danger-500/20 cursor-pointer;
+  .admin-primary-btn {
+    @apply h-9 px-4 inline-flex items-center gap-1.5 rounded-lg border border-gold-400/50 bg-gold-400/10 text-[12px] font-bold font-display text-gold-400 transition-colors hover:bg-gold-400/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .admin-toolbar-actions {
+    @apply flex flex-wrap items-center gap-2;
   }
 
   .admin-btn-label {
@@ -229,8 +233,24 @@
     @apply size-6 grid place-items-center rounded-md text-slate-400 transition-colors hover:text-slate-100 cursor-pointer shrink-0;
   }
 
-  .admin-select {
-    @apply h-9 max-w-full px-2.5 rounded-lg border border-navy-600/70 bg-navy-950/70 text-[12px] text-slate-100 font-body outline-none cursor-pointer transition-colors hover:border-blue-400/50 disabled:opacity-50 disabled:cursor-not-allowed;
+  .admin-input {
+    @apply h-10 w-full px-3 rounded-lg border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-colors focus:border-blue-400/60 disabled:opacity-50;
+  }
+
+  .admin-input::placeholder {
+    color: var(--color-slate-500);
+  }
+
+  .admin-textarea {
+    @apply w-full min-h-[88px] px-3 py-2 rounded-lg border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-colors focus:border-blue-400/60 resize-y disabled:opacity-50;
+  }
+
+  .admin-textarea-code {
+    @apply font-mono text-[12px] leading-relaxed;
+  }
+
+  .admin-select-full {
+    @apply w-full h-10 text-[13px];
   }
 
   .admin-pagination {
@@ -249,6 +269,10 @@
   .admin-table {
     @apply flex flex-col gap-2.5;
     --admin-cols: 2.2fr 1.3fr 1.1fr 1.1fr 1.15fr 1.15fr;
+  }
+
+  .admin-table-content {
+    --admin-cols: 1.6fr 2fr auto;
   }
 
   .admin-table-head {
@@ -504,6 +528,10 @@
     @apply mt-2 h-9 px-4 rounded-xl inline-flex items-center gap-2 border border-gold-400/50 bg-gold-400/10 text-xs font-bold font-display text-gold-400 transition-colors hover:bg-gold-400/20 cursor-pointer;
   }
 
+  .admin-toolbar-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
   /* --- User detail modal --- */
   .admin-modal-overlay {
     @apply fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 backdrop-blur-sm;
@@ -544,13 +572,72 @@
     @apply flex flex-col gap-5 p-5 overflow-y-auto;
   }
 
-  /* --- Detail sections --- */
-  .admin-detail-section {
-    @apply flex flex-col gap-3;
+  .admin-form-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
   }
 
-  .admin-detail-section-title {
-    @apply text-xs font-bold text-gold-400 font-display;
+  .admin-form-footer {
+    @apply flex items-center justify-end gap-2 pt-2;
+  }
+
+  .admin-form-error {
+    @apply text-xs text-danger-500 font-body;
+  }
+
+  .admin-field {
+    @apply flex flex-col gap-1.5 min-w-0;
+  }
+
+  .admin-field-wide {
+    @apply sm:col-span-2;
+  }
+
+  .admin-field-label {
+    @apply text-[12px] font-bold text-slate-300 font-display;
+  }
+
+  .admin-required {
+    @apply text-gold-400;
+  }
+
+  .admin-toggle-row {
+    @apply flex items-center justify-between gap-3;
+  }
+
+  .admin-toggle-label {
+    @apply text-slate-200 text-xs sm:text-sm font-body select-none;
+  }
+
+  .admin-toggle-track {
+    @apply w-11 h-6 rounded-full transition-all duration-300 relative cursor-pointer shrink-0 p-0.5 outline-none focus:ring-2 focus:ring-sky-400/40 active:scale-95;
+  }
+
+  .admin-toggle-track-on {
+    @apply bg-blue-400 shadow-[0_0_10px_rgba(41,169,255,0.5)];
+  }
+
+  .admin-toggle-track-off {
+    @apply bg-navy-600;
+  }
+
+  .admin-toggle-knob {
+    @apply block size-5 bg-white rounded-full shadow-md transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)];
+  }
+
+  .admin-toggle-knob-on {
+    @apply -translate-x-5;
+  }
+
+  .admin-toggle-knob-off {
+    @apply translate-x-0;
+  }
+
+  .admin-confirm {
+    @apply inline-flex items-center gap-2;
+  }
+
+  .admin-content-tabs {
+    @apply flex items-center gap-2 overflow-x-auto;
   }
 
   .admin-detail-identity {

@@ -13,6 +13,10 @@ import type {
   AdminSessionWithUser,
   AdminUserDetail,
   AdminUserRow,
+  AdminUserInput,
+  AdminContentSchema,
+  AdminContentTypeKey,
+  AdminContentPage,
   DeviceBreakdown,
   LoginSeries,
   Paged,
@@ -49,6 +53,20 @@ export interface AdminContextValue {
   eventKind: AdminEventKind | 'all';
   setEventKind: (kind: AdminEventKind | 'all') => void;
 
+  /** Content management state, rendered from the generic schema. */
+  contentSchema: AdminContentSchema | null;
+  contentType: AdminContentTypeKey | null;
+  setContentType: (type: AdminContentTypeKey) => void;
+  content: AdminContentPage | null;
+  contentSearch: string;
+  contentPage: number;
+  setContentSearch: (value: string) => void;
+  setContentPage: (page: number) => void;
+
+  /** Per-row busy state for destructive or per-row actions. */
+  deletingUserId: string | null;
+  deletingContentId: string | null;
+
   /** The open user detail panel, or null when it is closed. */
   selectedUserId: string | null;
   selectedUser: AdminUserDetail | null;
@@ -69,6 +87,12 @@ export interface AdminContextValue {
   refresh: () => Promise<void>;
   changeRole: (userId: string, role: AuthRole) => Promise<void>;
   revokeSession: (sessionId: string) => Promise<void>;
+  createUser: (input: AdminUserInput) => Promise<boolean>;
+  updateUser: (userId: string, input: Partial<AdminUserInput>) => Promise<boolean>;
+  deleteUser: (userId: string) => Promise<boolean>;
+  createContent: (values: Record<string, unknown>) => Promise<boolean>;
+  updateContent: (id: string, values: Record<string, unknown>) => Promise<boolean>;
+  deleteContent: (id: string) => Promise<boolean>;
 }
 
 export const AdminContext = createContext<AdminContextValue | null>(null);

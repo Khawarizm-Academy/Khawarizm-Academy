@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "features.home",
     "features.events",
     "features.competitions",
+    "features.profile",
     "features.adminconsole",
 ]
 
