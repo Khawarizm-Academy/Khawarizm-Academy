@@ -4,7 +4,8 @@ A small **Django + Django REST Framework + SQLite** service that owns all the
 data the frontend renders. It is organised as **one app per product feature**,
 mirroring `frontend/src/features/`.
 
-The API speaks the **exact camelCase shapes** the UI already expects
+Identity is Firebase; this API owns the **session, roles, and the admin
+console**. The API speaks the **exact camelCase shapes** the UI already expects
 (`frontend/src/shared/types/entities.ts` and each feature's `types.ts`), so a
 feature reads from the API without any shape-casting.
 
@@ -18,7 +19,8 @@ feature reads from the API without any shape-casting.
 | API layer | Django REST Framework 3.18 (function-based views) |
 | CORS | `django-cors-headers` (frontend origin allow-list) |
 | Database | SQLite locally · Postgres on Vercel when `DATABASE_URL` is set |
-| Auth | none yet — a single demo learner is created on first request |
+| Auth | Firebase ID tokens → our own HS256 access + rotating refresh session (`features/auth`, app label `accounts`) |
+| Firebase | `firebase-admin` verifies ID tokens; the web config is served to the SPA from `GET /api/auth/config` |
 
 ---
 
@@ -29,19 +31,20 @@ backend/
 ├── config/                     project wiring
 │   ├── settings.py             SQLite/Postgres, DRF, CORS, env-driven secrets
 │   ├── urls.py                 mounts every feature's URLs under /api/
-│   ├── middleware.py
+│   ├── middleware.py           rejects origin-less /api/ calls
 │   └── asgi.py · wsgi.py
 ├── features/                   one app per feature (see features/README.md)
-│   ├── common/                 shared choices + serializers (no models)
-│   ├── auth/                   learner identity + login stubs (label: accounts)
-│   ├── catalog/                browse union + taxonomy
+│   ├── common/                 shared abstract models + choices + seed_demo
+│   ├── auth/                   accounts, roles, sessions, Firebase login (label: accounts)
+│   ├── catalog/                browse union + DB-driven filter taxonomy
 │   ├── courses/                course entity + curriculum + problems
 │   ├── scholarships/           scholarship entity + apply/save
 │   ├── dashboard/              learner workspace projections
 │   ├── home/                   curated landing rails
 │   ├── events/                 events + workshops
 │   ├── competitions/           competitions + challenges
-│   └── profile/                profile read/update
+│   ├── profile/                profile read/update (mounts the account row)
+│   └── adminconsole/           staff-only analytics + session control (no tables)
 ├── requirements.txt
 ├── .env.development            dev profile (loaded by default)
 ├── .env.production             prod profile (loaded when DJANGO_ENV=production)
@@ -74,6 +77,7 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 python manage.py migrate
+python manage.py seed_demo          # optional: demo catalog + learner + admin
 python manage.py runserver 127.0.0.1:8000
 ```
 
@@ -146,12 +150,14 @@ them for Auth.
 
 > A service account is **not** required to verify ID tokens — that needs only the
 > project id and Google's public certs. It is only needed for privileged calls
-> like revocation checks.
+> like revocation checks. With no service account the SDK is given
+> `AnonymousCredentials`, never Application Default Credentials, so a missing
+> `gcloud` login cannot turn a sign-in into a 401.
 >
 > The clock-skew allowance exists because ID tokens carry the issuer's timestamp:
 > a machine whose clock lags rejects every sign-in with `Token used too early`.
-> WSL drifts like this after a suspend. Sync the clock for a real fix — the
-> setting is the safety margin, and the SDK caps it at 60 seconds.
+> Sync the clock for a real fix — the setting is the safety margin, and the SDK
+> caps it at 60 seconds.
 
 > A **half-filled** config stops the boot: with `FIREBASE_PROJECT_ID` set but no
 > `FIREBASE_API_KEY` / `FIREBASE_AUTH_DOMAIN`, `settings.py` raises
@@ -166,14 +172,16 @@ them for Auth.
 | :--- | :--- |
 | `python manage.py migrate` | Create/update the SQLite schema |
 | `python manage.py makemigrations` | Generate migrations after a model change |
+| `python manage.py seed_demo` | Fill a development database with the demo catalog, learner, and admin |
 | `python manage.py runserver` | Dev server |
 | `python manage.py check` | Framework sanity check |
 | `python manage.py test` | Run the backend test suite |
 
-> The database starts **empty** — the API ships no seed data. Add records through
-> the Django admin (`/admin/`) or the ORM; every frontend page renders an empty
-> state until then. The admin registers every model with useful list columns, so
-> it doubles as a data editor.
+> `python manage.py seed_demo` fills a **development** database with the demo
+> catalog, the demo learner, and the seeded admin. A production database ships
+> **empty** — add records through the Django admin (`/admin/`) or the ORM; every
+> frontend page renders an empty state until then. The admin registers every
+> model with useful list columns, so it doubles as a data editor.
 
 ---
 
@@ -194,9 +202,9 @@ python manage.py test features.courses   # one feature
 | Helper | Provides |
 | :--- | :--- |
 | `ApiTestCase` | a `TestCase` whose client passes the API origin middleware |
-| `api_client()` | a DRF client that always sends an allowed `Origin` |
-| `demo_learner()` | the single learner every request acts as |
-| `make_learner()` · `make_course()` · `make_scholarship()` | rows with every required field filled |
+| `api_client()` · `FakeRequest()` | a DRF client and a stand-in request that carry a realistic user agent and IP |
+| `authenticate(client, user)` | opens a real session and authorizes a client with its access token |
+| `make_user()` · `make_admin()` · `make_course()` · `make_scholarship()` | rows with every required field filled |
 
 Tests run against an **in-memory SQLite** database, so they never touch
 `db.sqlite3`. Because `config/middleware.py` rejects any `/api/` call without an
@@ -220,6 +228,7 @@ Function.
    | :--- | :--- |
    | `DJANGO_SECRET_KEY` | a long random string (required) |
    | `DATABASE_URL` | set by the database integration |
+   | `FIREBASE_*` | the production Firebase project (see above) |
 
    Hosts and CORS need no manual value on Vercel: the app adds `.vercel.app` and
    the deployment host to `ALLOWED_HOSTS`, and allows `*.vercel.app` origins.
@@ -241,6 +250,7 @@ the last column.
 | Method | Path | Feature |
 | :--- | :--- | :--- |
 | `GET` | `/catalog` — paged, filterable list (`type`, `q`, `field`, `level`, `cost`, `country`, `status`, `sort`, `page`, `ids`) | catalog |
+| `GET` | `/catalog/filters?surface=&tab=` — the filter/sort taxonomy for a surface | catalog |
 | `GET` | `/catalog/:slug` — one course or scholarship summary | catalog |
 | `GET` | `/courses/:slug` — course detail (modules, lessons, live sessions, exam) | courses |
 | `GET` | `/courses/:slug/problems`, `/problems` — practice set | courses |
@@ -254,12 +264,22 @@ the last column.
 | `GET` | `/home` — featured courses/scholarships, competition, events, quick links | home |
 | `GET` | `/events` — events & seminars | events |
 | `GET` | `/competitions` — competitions & challenges | competitions |
-| `GET` · `PATCH` | `/profile` — learner profile & preferences | profile |
-| `GET` | `/auth/me` — current learner (demo) | auth |
-| `POST` | `/auth/login` · `/auth/oauth/:provider` · `/auth/logout` | auth |
+| `GET` · `PATCH` | `/profile` — account identity & preferences | profile |
+| `GET` | `/auth/config` — public Firebase web config + the `devAuth` flag | auth |
+| `POST` | `/auth/firebase` — exchange a Firebase ID token for our session | auth |
+| `POST` | `/auth/refresh` — rotate the refresh token (single-use) | auth |
+| `GET` | `/auth/me` — the signed-in user | auth |
+| `POST` | `/auth/logout` — revoke the current session | auth |
+| `GET` | `/auth/sessions` · `POST /auth/sessions/:id/revoke` | auth |
+| `GET` | `/admin/overview` · `/admin/users` · `/admin/users/:id` · `POST /admin/users/:id/role` | adminconsole |
+| `GET` | `/admin/sessions` · `POST /admin/sessions/:id/revoke` | adminconsole |
+| `GET` | `/admin/analytics/logins` · `/admin/analytics/devices` · `/admin/events` | adminconsole |
 
 Errors use one structured shape (see `features/common/errors.py`) so the
-frontend's data-section error state can render a message and a retry.
+frontend's data-section error state can render a message and a retry. Every
+authentication failure also carries a `code` (`token_expired`, `token_invalid`,
+`signed_in_elsewhere`, `logout`, `expired`, `revoked_by_admin`, `session_missing`)
+alongside `detail`.
 
 ---
 
@@ -283,3 +303,4 @@ Start the backend first (`python manage.py runserver`), then `npm run dev`.
 - Frontend entry point: [`../frontend/README.md`](../frontend/README.md)
 - Contract & entity shapes: [`../docs/07-backend-contract.md`](../docs/07-backend-contract.md)
 - Backend architecture guide: [`../docs/08-backend-architecture.md`](../docs/08-backend-architecture.md)
+- Auth, roles & sessions playbook: [`../.agents/skills/khawarizm-auth-and-sessions/SKILL.md`](../.agents/skills/khawarizm-auth-and-sessions/SKILL.md)

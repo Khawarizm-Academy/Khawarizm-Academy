@@ -11,7 +11,7 @@ The React + TypeScript + Vite application for Khawarizm Academy: an Arabic-first
 | Concern | Choice |
 | :--- | :--- |
 | Framework | React 19 (React Compiler enabled) |
-| Language | TypeScript — strict, `verbatimModuleSyntax` |
+| Language | TypeScript — `verbatimModuleSyntax`, `noUnusedLocals`/`noUnusedParameters`/`erasableSyntaxOnly` on; `strict` off |
 | Build | Vite |
 | Styling | Tailwind CSS v4 (`@theme` tokens) + plain-CSS concept classes |
 | Routing | A custom, data-driven router in `src/app/` (no router library) |
@@ -35,6 +35,7 @@ npm run dev        # http://localhost:5173
 | `npm run preview` | Preview the production build |
 | `npm run lint` | Run ESLint |
 | `npm run brand:generate` | Regenerate brand icons, favicons, and OG image from the source logo |
+| `npm test` | Run frontend tests (vitest run) |
 
 ### Environment
 
@@ -76,7 +77,7 @@ src/
 - **Data over branches.** Configuration lives in `src/shared/json/`; components look it up rather than chaining `if`/`else`.
 - **Concept classes.** A utility run repeated twice for the same kind of element becomes a short CSS class — feature-owned for one feature, `globals.css` for two or more.
 - **RTL-native.** Logical properties everywhere; in RTL flex, child #1 renders on the right.
-- **URL is the source of truth** for view state (`?type=`, `?q=`, `?view=`, `?mode=`).
+- **URL is the source of truth** for view state (`?type=`, `?q=`, `?view=`, `?tab=`, `?next=`).
 
 ---
 

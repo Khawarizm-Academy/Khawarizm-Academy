@@ -27,6 +27,7 @@ events/
 ├── views.py          events_list
 ├── urls.py           /api/events
 ├── admin.py          EventItem admin
+├── tests.py          models, serializers, and routes
 ├── migrations/
 └── README.md
 ```

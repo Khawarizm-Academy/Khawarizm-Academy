@@ -28,6 +28,7 @@ scholarships/
 ├── views.py          scholarship_detail_view, scholarship_apply_view, scholarship_save_view
 ├── urls.py           /api/scholarships/*
 ├── admin.py          Scholarship admin
+├── tests.py          models, serializers, and routes
 ├── migrations/       schema history
 └── README.md
 ```
@@ -40,9 +41,9 @@ scholarships/
   it via `catalog_item_for()`.
 - **Detail:** returns the same `CatalogItem` shape by slug; a missing
   scholarship returns `المنحة غير موجودة` (404).
-- **Actions:** `apply` and `save` are acknowledgement-only (no persistence/auth
-  yet). `save` accepts an optional `saved` flag from the request body and
-  echoes it back.
+- **Actions:** `apply` and `save` are acknowledgement-only — they validate the
+  scholarship and echo the result, with no persistence yet. `save` accepts an
+  optional `saved` flag from the request body and echoes it back.
 
 ## Data
 

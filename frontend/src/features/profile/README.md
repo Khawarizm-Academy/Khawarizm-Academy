@@ -63,8 +63,9 @@ profile/
 | `@/shared/lib/navigation` | `NAV_TARGETS.profile` (via `ProfilePage`) |
 
 Edits live in provider state until saved; `saveChanges` PATCHes `/profile` and the
-provider loads the saved row on mount. The backend has no auth yet — it targets
-the demo learner (created on first request).
+provider loads the saved row on mount. The `/profile` route requires an
+authenticated user — identity lives in `accounts.User` and preferences in
+`accounts.StudentProfile`.
 
 ## Notes
 

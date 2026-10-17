@@ -29,6 +29,7 @@ home/
 ├── views.py          home_view
 ├── urls.py           /api/home
 ├── admin.py          all home models registered
+├── tests.py          models, serializers, and routes
 ├── migrations/
 └── README.md
 ```

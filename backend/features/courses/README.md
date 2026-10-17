@@ -29,6 +29,7 @@ courses/
 ├── views.py          course detail/problems/related/enroll/progress/certificate; problems_list
 ├── urls.py           /api/courses/* and /api/problems
 ├── admin.py          Course/Module/Problem with inlines
+├── tests.py          models, serializers, and routes
 ├── migrations/       schema history
 └── README.md
 ```
@@ -46,9 +47,9 @@ courses/
 - **Problems are shared:** `problems_list` and `course_problems_view` both
   return the same `CourseProblem` set with prefetched options. The related rail
   filters `Course` by `slug__in(course.related_ids)`.
-- **Mutations are acknowledgements:** `enroll` and `progress` accept the demo
-  learner context and return small payloads; persistence lands when auth/session
-  is implemented.
+- **Mutations are acknowledgements:** `enroll` and `progress` validate the
+  course and echo a small payload; neither persists yet. The durable record is a
+  dashboard `Enrollment` row (written through the Django admin or `seed_demo`).
 
 ## Data
 

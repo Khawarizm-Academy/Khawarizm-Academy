@@ -26,6 +26,7 @@ competitions/
 ├── views.py          competitions_list
 ├── urls.py           /api/competitions
 ├── admin.py          Competition admin
+├── tests.py          models, serializers, and routes
 ├── migrations/
 └── README.md
 ```
