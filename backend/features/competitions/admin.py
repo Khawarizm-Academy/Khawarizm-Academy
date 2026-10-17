@@ -1,4 +1,4 @@
-"""Django admin registration for the competitions feature."""
+"""Django admin for competitions."""
 
 from __future__ import annotations
 
@@ -9,5 +9,5 @@ from features.competitions.models import Competition
 
 @admin.register(Competition)
 class CompetitionAdmin(admin.ModelAdmin):
-    list_display = ("competition_id", "title", "days_remaining", "hours_remaining")
+    list_display = ("competition_id", "title", "badge", "days_remaining")
     search_fields = ("competition_id", "title")

@@ -1,13 +1,14 @@
 import React from 'react';
-import { useAuthLogin } from '@/features/auth/context/authLoginContext';
+import { useRouter } from '@/app/routerContext';
+import { NAV_TARGETS } from '@/shared/lib/navigation';
 import { AuthTopBar } from '@/features/auth/components/chrome/AuthTopBar';
 import { AuthLegalNotice } from '@/features/auth/components/chrome/AuthLegalNotice';
-import { ActiveAuthCard } from '@/features/auth/components/cards/ActiveAuthCard';
+import { LoginCard } from '@/features/auth/components/cards/LoginCard';
 import { BrandSeal } from '@/features/auth/components/hero/BrandSeal';
 
 /** One-column mobile surface: brand seal header on top, auth card below. */
 export const MobileLoginView: React.FC = () => {
-  const { authMode, goHome } = useAuthLogin();
+  const { navigate } = useRouter();
 
   return (
     <div className="auth-mobile">
@@ -18,7 +19,7 @@ export const MobileLoginView: React.FC = () => {
 
       {/* Centered Mobile Brand Seal & Headline */}
       <div className="auth-mobile-brand">
-        <BrandSeal onClick={goHome} />
+        <BrandSeal onClick={() => navigate(NAV_TARGETS.home)} />
 
         <div className="auth-mobile-heading">
           <h1 className="auth-mobile-title">أكاديمية خوارزم</h1>
@@ -27,8 +28,8 @@ export const MobileLoginView: React.FC = () => {
       </div>
 
       {/* Mobile Auth Body */}
-      <div key={`mobile-${authMode}`} className="auth-body animate-pop-in">
-        <ActiveAuthCard surface="mobile" />
+      <div className="auth-body animate-pop-in">
+        <LoginCard variant="mobile" />
         <AuthLegalNotice surface="mobile" />
       </div>
     </div>

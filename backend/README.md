@@ -88,11 +88,16 @@ exported by hand:
 
 | File | Loaded when | Use for |
 | :--- | :--- | :--- |
-| `.env.development` | `DJANGO_ENV` is unset or `development` | Local dev |
-| `.env.production` | `DJANGO_ENV=production` | Self-hosted production |
+| `.env.development` | `DJANGO_ENV` is unset or `development` | Local dev — committed |
+| `.env.production` | `DJANGO_ENV=production` | Self-hosted production — **gitignored**, create it on the box |
 
 > **On Vercel the profile files are skipped** (Vercel sets `VERCEL=1`).
 > Configuration comes from the project's **Environment Variables**.
+>
+> `.env.production` is deliberately **not in git**: it holds real keys and the
+> Django secret. Create it on the box that runs the API, using the variable names
+> in the table below. On Vercel, set the same names as Project Environment
+> Variables instead.
 
 **Real environment variables always win over the file**:
 
@@ -104,9 +109,56 @@ exported by hand:
 | `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames the API answers on |
 | `DJANGO_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins allowed to call the API |
 | `DATABASE_URL` | Postgres connection string; falls back to SQLite when unset |
+| `FIREBASE_*` | The Firebase web config + Admin SDK credentials (see below) |
 
 The secret check **fails loudly**: a non-debug run refuses to boot while
 `DJANGO_SECRET_KEY` is still a placeholder.
+
+### Firebase
+
+Real sign-in needs one project, configured once, on the backend only — the SPA
+fetches the web config from `GET /api/auth/config` at boot, so there is nothing
+to paste into the frontend.
+
+1. Firebase console → **Project settings → Your apps** → add a **Web** app.
+2. Copy the three Auth values into `FIREBASE_*`. `.env.development` already
+   carries the development project; for production create `.env.production` on
+   the host (gitignored) or set the same variables in the host environment.
+3. Enable the providers you want under **Authentication → Sign-in method**
+   (Email/Password, Google, Facebook).
+4. Add `localhost` and the deployed origin under **Authentication → Settings →
+   Authorized domains**.
+5. Set `FIREBASE_ALLOW_DEV_TOKENS=false` in production.
+
+Only **Auth** is read. The web config the console prints also carries Storage,
+Messaging, and Analytics keys (`storageBucket`, `messagingSenderId`, `appId`,
+`measurementId`); this project ignores them, and `initializeApp()` does not need
+them for Auth.
+
+| Variable | Purpose |
+| :--- | :--- |
+| `FIREBASE_API_KEY` | Web config — public, ships in the browser bundle |
+| `FIREBASE_AUTH_DOMAIN` | Web config — `<project>.firebaseapp.com` |
+| `FIREBASE_PROJECT_ID` | Web config **and the on/off switch**: set it and the API stops accepting `dev:` tokens |
+| `FIREBASE_CREDENTIALS_PATH` / `FIREBASE_CREDENTIALS` | **Secret** service account (a path or the raw JSON) for privileged Admin SDK calls; never committed |
+| `FIREBASE_ALLOW_DEV_TOKENS` | Accept `dev:<email>[:<role>]` tokens; defaults to `DEBUG` |
+| `FIREBASE_CLOCK_SKEW_SECONDS` | Seconds of clock drift the token verifier tolerates (0–60, default 60) |
+
+> A service account is **not** required to verify ID tokens — that needs only the
+> project id and Google's public certs. It is only needed for privileged calls
+> like revocation checks.
+>
+> The clock-skew allowance exists because ID tokens carry the issuer's timestamp:
+> a machine whose clock lags rejects every sign-in with `Token used too early`.
+> WSL drifts like this after a suspend. Sync the clock for a real fix — the
+> setting is the safety margin, and the SDK caps it at 60 seconds.
+
+> A **half-filled** config stops the boot: with `FIREBASE_PROJECT_ID` set but no
+> `FIREBASE_API_KEY` / `FIREBASE_AUTH_DOMAIN`, `settings.py` raises
+> `ImproperlyConfigured` rather than letting every sign-in fail in the browser.
+>
+> Verifying ID tokens only needs the project id, so `dev:<email>` works with no
+> Firebase project at all — that is why the defaults ship empty.
 
 ### Commands
 

@@ -30,24 +30,40 @@ backend/features/<feature>/
 ```
 
 A feature creates only what it needs. `profile` owns no models, so it has no
-`models.py` or `migrations/`. `common` is a plain Python package (not an app)
-holding shared choices and serializer helpers.
+`models.py` or `migrations/`. `common` **is** an installed app: it holds the
+shared abstract models (`UUIDModel`, `TimeStampedModel`), the choice enums, and
+`management/commands/seed_demo.py`. `adminconsole` owns no tables either — it
+reads across the other features.
 
 | Feature | App label | Owns |
 | :--- | :--- | :--- |
-| `auth` | `accounts` | `Learner` |
-| `catalog` | `catalog` | `Category` |
+| `auth` | `accounts` | `User`, `StudentProfile`, `InstructorProfile`, `UserSession`, `AuthEvent` |
+| `catalog` | `catalog` | `Category`, `FilterGroup`, `FilterOption` |
 | `courses` | `courses` | `Course`, `CourseModule`, `CourseLesson`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` |
 | `scholarships` | `scholarships` | `Scholarship` |
 | `dashboard` | `dashboard` | learner-scoped projections |
 | `home` | `home` | `HomeFeaturedCourse`, `HomeFeaturedScholarship`, `HomeCompetition`, `HomeEvent`, `HomeQuickLink` |
 | `events` | `events` | `EventItem` |
 | `competitions` | `competitions` | `Competition` |
-| `profile` | `profile` | — (edits `accounts.Learner`) |
+| `profile` | — | — (edits `accounts.User`; mounted, not installed) |
+| `adminconsole` | `adminconsole` | — (staff analytics across features) |
 
 **Why `accounts`?** The auth folder keeps the product name (`auth`) but the app
 label cannot be `auth` — Django reserves that label for `django.contrib.auth`.
-`apps.py` sets `label = "accounts"` and foreign keys use `"accounts.Learner"`.
+`apps.py` sets `label = "accounts"` and foreign keys use `"accounts.User"`.
+
+### Identity
+
+Two rules, and every table obeys one of them:
+
+- **UUID primary keys.** New tables inherit `UUIDModel` / `TimeStampedModel`
+  from `features/common/models.py`, so ids are opaque, unguessable, and no two
+  features invent their own scheme. Users, sessions, auth events, filter
+  groups/options, and the home/dashboard projections all work this way.
+- **Catalog rows keep `slug` as their business key.** It equals the frontend id
+  and the route param, so a catalog link and a `/courses/:slug` request resolve
+  to the same row; the serializer emits it as `id` and the frontend ids never
+  changed.
 
 ---
 
@@ -55,14 +71,15 @@ label cannot be `auth` — Django reserves that label for `django.contrib.auth`.
 
 ### models.py — the data, grouped and commented
 Fields are grouped with a one-line comment (summary vs detail, eligibility vs
-deadline), slugs are primary keys and equal the frontend id, and natural keys
-use `unique_together`. A `help_text` explains a non-obvious field.
+deadline), primary keys are UUIDs from `features/common/models.py`, natural
+keys use `unique_together`, and a `help_text` explains a non-obvious field.
 
 ```python
-class Course(models.Model):
+class Course(UUIDModel):
     """One course: the card summary and the full detail record share this row."""
 
-    slug = models.CharField(max_length=80, primary_key=True, unique=True)
+    # Business key — equals the frontend id and the /courses/:slug route param.
+    slug = models.CharField(max_length=80, unique=True)
 
     # Summary fields — the CatalogItem and course card.
     title = models.CharField(max_length=200)
@@ -123,8 +140,10 @@ branches that cannot be expressed as data.
 
 - Enum-style values live in `features/common/choices.py` and are imported, never
   re-typed as literals.
-- The learner shape lives in `features/auth/serializers.py::user_profile`; both
-  `auth` and `profile` reuse it.
+- The account shape lives in `features/auth/serializers.py::user_profile`; the
+  device shape in `session_payload` / `session_with_user`. `auth`, `profile`,
+  `dashboard`, and `adminconsole` all import them — the console renders the
+  same row the learner sees.
 - The event and competition shapes live in `features/events` and
   `features/competitions`; `home` imports them for its curated rows instead of
   re-declaring the keys.
@@ -171,16 +190,74 @@ requests, so a bare `curl` returns 403.
 
 ## 6. Editing the data
 
-The database ships empty, and the Django admin is the data editor. Every model
-is registered in its feature's `admin.py` with `list_display`, `list_filter`,
-`search_fields`, and inlines for children (modules under a course, options under
-a problem). Create a superuser once:
+A development database is filled by one command, and the Django admin is the
+data editor for everything else. Every model is registered in its feature's
+`admin.py` with `list_display`, `list_filter`, `search_fields`, and inlines for
+children (modules under a course, options under a problem, filter options under
+a group).
 
 ```bash
+python manage.py seed_demo      # demo catalog + the demo learner + the admin
 python manage.py createsuperuser
 python manage.py runserver
 # http://127.0.0.1:8000/admin/
 ```
+
+`seed_demo` is idempotent and development-only in spirit — a production
+database starts empty and is filled through the admin.
+
+---
+
+## 7. Accounts and sessions
+
+Authentication is layered so each file has exactly one job:
+
+| File | Job |
+| :--- | :--- |
+| `auth/firebase.py` | verify a Firebase ID token → an identity dict |
+| `auth/tokens.py` | mint/decode the HS256 access token; hash the refresh token |
+| `auth/services.py` | `open_session` / `rotate_session` / `upsert_firebase_user` / `record_event` |
+| `auth/authentication.py` | Bearer header → a live `UserSession`, or a coded 401 |
+| `auth/permissions.py` | `IsAdminRole` |
+| `auth/serializers.py` | the payloads every other feature imports |
+
+Three behaviours are worth knowing before you touch any of them:
+
+- **One device at a time.** `open_session` revokes every other active session
+  for that user with reason `signed_in_elsewhere` before opening the new one.
+- **Refresh tokens are single-use.** `/api/auth/refresh` rotates both tokens, so
+  a replayed token is rejected with `session_invalid`.
+- **A 401 explains itself.** `AccessTokenAuthentication.authenticate_header`
+  returns `"Bearer"` so DRF keeps 401 (not 403), and `SessionAuthError` renders
+  `{"code": ..., "detail": ...}` — the SPA maps `code` to its sign-out copy.
+  Admin rights are Django's `is_staff`, so the built-in admin site and
+  `ModelBackend` permissions keep working unchanged.
+
+Development signs in with a synthetic `dev:<email>` token when
+`FIREBASE_ALLOW_DEV_TOKENS` is on and no `FIREBASE_PROJECT_ID` is set, so the
+whole flow is testable without a Firebase project.
+
+### Configuring Firebase
+
+One project, configured once, on the backend. The SPA never holds a key:
+`GET /api/auth/config` serves the web config and `AuthProvider` calls
+`initializeApp()` with it, so changing projects is an env edit and not a
+frontend rebuild.
+
+Only Auth is wired, so the web config is the minimal three values — the
+`storageBucket` / `messagingSenderId` / `appId` / `measurementId` keys the
+console also prints are ignored (Auth does not need them; `appId` only feeds an
+Analytics header).
+
+| Half | Where it lives | Secret? |
+| :--- | :--- | :--- |
+| Web config (`apiKey`, `authDomain`, `projectId`) | `FIREBASE_*` env vars → `/api/auth/config` → the browser | No — it ships in the bundle by design |
+| Admin SDK (`projectId`, plus an optional service account for privileged calls) | `FIREBASE_PROJECT_ID`, `FIREBASE_CREDENTIALS_PATH` / `FIREBASE_CREDENTIALS` | The service account **is** — keep it in the host environment |
+
+`settings.py` treats `FIREBASE_PROJECT_ID` as the switch: set it and `dev:`
+tokens stop being accepted, clear it and they come back. A project id without
+an `apiKey`/`authDomain` raises `ImproperlyConfigured` at boot — a half config
+would otherwise only surface as a failed sign-in in the browser.
 
 ---
 

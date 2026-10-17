@@ -1,4 +1,4 @@
-"""Home serializers."""
+"""Home serializers — read the presentation extras through to the real rows."""
 
 from __future__ import annotations
 
@@ -8,12 +8,14 @@ from features.common.serializers import compact
 
 
 def featured_course(row: Any) -> dict[str, Any]:
+    """A home course card, sourced from the linked Course."""
+    course = row.course
     return {
-        "id": row.course_id,
-        "title": row.title,
-        "category": row.category,
-        "level": row.level,
-        "duration": row.duration,
+        "id": course.slug,
+        "title": course.title,
+        "category": course.category_label,
+        "level": course.course_level,
+        "duration": course.duration,
         "studentsCount": row.students_count,
         "status": row.status,
         "thumbnailType": row.thumbnail_type,
@@ -21,15 +23,17 @@ def featured_course(row: Any) -> dict[str, Any]:
 
 
 def featured_scholarship(row: Any) -> dict[str, Any]:
+    """A home scholarship card, sourced from the linked Scholarship."""
+    scholarship = row.scholarship
     return compact(
-        id=row.scholarship_id,
-        title=row.title,
-        provider=row.provider,
-        location=row.location,
-        deadlineText=row.deadline_text,
-        deadlineUrgency=row.deadline_urgency,
-        coverage=row.coverage,
-        degreeLevel=row.degree_level,
+        id=scholarship.slug,
+        title=scholarship.title,
+        provider=scholarship.provider,
+        location=scholarship.country,
+        deadlineText=row.deadline_text or scholarship.deadline_badge,
+        deadlineUrgency=scholarship.deadline_urgency,
+        coverage=scholarship.coverage_label,
+        degreeLevel=scholarship.degree_label,
         iconType=row.icon_type,
         thumbnailType=row.thumbnail_type,
     )

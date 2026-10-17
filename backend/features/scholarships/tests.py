@@ -15,8 +15,9 @@ class ScholarshipModelTests(TestCase):
     def test_str_returns_the_title(self):
         self.assertEqual(str(make_scholarship(title="Global")), "Global")
 
-    def test_slug_is_the_primary_key(self):
-        self.assertEqual(Scholarship._meta.pk.name, "slug")
+    def test_slug_is_a_unique_business_key(self):
+        self.assertEqual(Scholarship._meta.pk.name, "id")
+        self.assertTrue(Scholarship._meta.get_field("slug").unique)
 
     def test_days_remaining_is_optional(self):
         self.assertIsNone(make_scholarship().days_remaining)

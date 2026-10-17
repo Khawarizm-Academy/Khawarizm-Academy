@@ -40,9 +40,22 @@ const ICONS = {
 /** Icon names allowed inside any JSON config. */
 export type IconName = keyof typeof ICONS;
 
-/** Turns an icon name from JSON into a component. */
+/**
+ * Content and config do not always spell an icon the same way: the JSON configs
+ * use the PascalCase export name (`BookOpen`), while rows seeded into the
+ * database use lucide's own kebab-case id (`book-open`). Both name the same
+ * icon, so normalise to the PascalCase key before the lookup.
+ */
+function iconKey(name: string): string {
+  return name
+    .split(/[-_\s]+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+}
+
+/** Turns an icon name from JSON or the database into a component. */
 export function resolveIcon(name: string): LucideIcon {
-  const icon = (ICONS as Record<string, LucideIcon | undefined>)[name];
+  const icon = (ICONS as Record<string, LucideIcon | undefined>)[iconKey(name)];
   if (!icon) {
     throw new Error(`[navigation] Unknown icon "${name}". Add it to ICONS in navigation.ts.`);
   }

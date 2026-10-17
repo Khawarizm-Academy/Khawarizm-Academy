@@ -1,13 +1,14 @@
-"""Event model — one event/workshop row."""
+"""Event model — one event/workshop row (the single source for home rails too)."""
 
 from __future__ import annotations
 
 from django.db import models
 
 from features.common.choices import EventFormat, ThumbnailType
+from features.common.models import UUIDModel
 
 
-class EventItem(models.Model):
+class EventItem(UUIDModel):
     event_id = models.CharField(max_length=80, unique=True)
     title = models.CharField(max_length=160)
     description = models.TextField(blank=True)

@@ -21,10 +21,11 @@ app or a new backend domain.
 | Feature kind | Owns models? | Migrations? | Server state? | Examples |
 | :--- | :---: | :---: | :---: | :--- |
 | **Domain owner** | ✅ | ✅ | ✅ | `courses`, `scholarships`, `events`, `competitions` |
-| **Taxonomy / reader** | ✅ (small) | ✅ | ✅ | `catalog` (owns `Category`, reads courses/scholarships) |
+| **Taxonomy / reader** | ✅ (small) | ✅ | ✅ | `catalog` (owns `Category` + `FilterGroup`/`FilterOption`, reads courses/scholarships) |
 | **Projection / scoped views** | ✅ | ✅ | ✅ | `dashboard` (learner-scoped rows), `home`, `auth` |
-| **Mutation-only facade** | ❌ | ❌ | ❌ | `profile` (edits `accounts.Learner`, owns no table) |
-| **Shared helpers** | ❌ | ❌ | ❌ | `common` (plain package, **not** an installed app) |
+| **Mutation-only facade** | ❌ | ❌ | ❌ | `profile` (edits `accounts.User`, owns no table) |
+| **Cross-feature reader** | ❌ | ❌ | ✅ | `adminconsole` (staff analytics across every feature) |
+| **Shared foundation** | abstract only | ✅ | ❌ | `common` (abstract models, choices, `seed_demo` — **is** an installed app) |
 
 If nothing is stored, the feature still gets a folder, `views.py`, `urls.py`,
 `admin.py` is skipped, and it imports the model it mutates from its owner.
@@ -78,9 +79,11 @@ model and serializer; they never duplicate the table.
 | Your domain's tables | A referenced model: `from features.courses.models import Course` |
 | Your entity's serializer | A shared shape from its owner: `features.events.serializers.event` |
 
-- `auth` owns `Learner` → everyone FKs `"accounts.Learner"`.
+- `auth` owns `User` → everyone FKs `"accounts.User"`.
 - `courses` owns `Course` → `catalog`, `dashboard`, `home` import it.
 - `events`/`competitions` own their shapes → `home` imports them.
+- `auth` owns the session/event shapes → `adminconsole` imports them instead of
+  re-declaring a session row.
 
 ---
 
@@ -106,13 +109,13 @@ class <Feature>Config(AppConfig):
 ```
 **App-label exception:** the folder `features/auth` uses `label = "accounts"`,
 because Django reserves `auth` for `django.contrib.auth`. FKs then use
-`"accounts.Learner"`.
+`"accounts.User"`.
 
 ---
 
 ### Step 4 — models.py
-Group fields with a one-line comment, make slugs the primary key, and import
-enums from `features.common.choices` (never literals).
+Group fields with a one-line comment, inherit `UUIDModel` for the primary key,
+and import enums from `features.common.choices` (never literals).
 
 ```python
 """<Feature> models — one line on what the feature stores."""
@@ -122,12 +125,14 @@ from __future__ import annotations
 from django.db import models
 
 from features.common.choices import SomeEnum
+from features.common.models import TimeStampedModel, UUIDModel
 
 
-class Thing(models.Model):
+class Thing(UUIDModel, TimeStampedModel):
     """One line describing the row."""
 
-    slug = models.CharField(max_length=80, primary_key=True, unique=True, help_text="Matches the frontend id")
+    # Business key — equals the frontend id and the /<feature>/:slug route param.
+    slug = models.CharField(max_length=80, unique=True, help_text="Matches the frontend id")
 
     # Summary fields — the card/rail.
     title = models.CharField(max_length=200)
@@ -142,7 +147,7 @@ class Thing(models.Model):
         return self.title
 ```
 Child rows use a FK with `related_name` + `unique_together` for the natural key
-(`("learner", "course_id")`) so duplicates are impossible.
+(`("user", "course_id")`) so duplicates are impossible.
 
 ---
 
@@ -175,7 +180,7 @@ their owner and are imported.
 ---
 
 ### Step 6 — views.py
-A view resolves the learner (when needed), queries, and serializes. Nothing else.
+A view resolves the signed-in user (when needed), queries, and serializes. Nothing else.
 Define the Arabic not-found message once.
 
 ```python

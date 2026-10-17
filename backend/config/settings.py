@@ -39,13 +39,23 @@ def env_list(name: str, default: list[str]) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if not raw:
+        return default
+    try:
+        return int(raw.strip())
+    except ValueError:
+        return default
+
+
 # Placeholder secrets that must never reach a non-debug run.
 _PLACEHOLDER_SECRETS = {"dev-only-insecure-secret-key", "dev-only-change-me", "replace-with-a-real-secret"}
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-secret-key")
 DEBUG = env_bool("DJANGO_DEBUG", DJANGO_ENV == "development" and not IS_VERCEL)
 
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["localhost", "127.0.0.1"])
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["localhost", "127.0.0.1", "khawarizm-academy.firebaseapp.com"])
 if IS_VERCEL:
     # Accept the project domain, this deployment, and every preview URL.
     ALLOWED_HOSTS = [*ALLOWED_HOSTS, ".vercel.app"]
@@ -65,6 +75,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    # Shared, non-feature code (abstract models + management commands).
+    "features.common",
     # Feature apps — one folder per product feature, mirroring the frontend.
     "features.auth",
     "features.catalog",
@@ -74,7 +86,11 @@ INSTALLED_APPS = [
     "features.home",
     "features.events",
     "features.competitions",
+    "features.adminconsole",
 ]
+
+# Every account (student / instructor / admin) lives in the auth feature app.
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -173,6 +189,42 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["features.auth.authentication.AccessTokenAuthentication"],
     "EXCEPTION_HANDLER": "features.common.errors.api_exception_handler",
-    "UNAUTHENTICATED_USER": None,
 }
+
+# Firebase. Two halves that must agree:
+#   • the WEB app config (public — it ships inside the browser bundle) is served
+#     to the SPA by `/api/auth/config`, which initializes `firebase/app`;
+#   • the ADMIN SDK (private) verifies the ID tokens the SPA sends back.
+# Only Auth is used, so these three values are the whole web config: copy them
+# from Firebase console → Project settings → Your apps → SDK setup and
+# configuration. (Storage, Messaging, and Analytics keys are not needed and are
+# deliberately not read.)
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "")
+FIREBASE_AUTH_DOMAIN = os.environ.get("FIREBASE_AUTH_DOMAIN", "")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "")
+
+# The Admin SDK service account, only needed for privileged calls (custom
+# claims, user management, revocation checks). Never commit it: pass a path or
+# the raw JSON through the host environment.
+FIREBASE_CREDENTIALS = os.environ.get("FIREBASE_CREDENTIALS", "")
+FIREBASE_CREDENTIALS_PATH = os.environ.get("FIREBASE_CREDENTIALS_PATH", "")
+
+# A project id is the switch: once it is set the API stops accepting `dev:` tokens.
+# Dev fallback: accept `dev:<email>[:<role>]` tokens while no Firebase project is set.
+FIREBASE_ALLOW_DEV_TOKENS = env_bool("FIREBASE_ALLOW_DEV_TOKENS", DEBUG)
+# How far the verifier lets the machine clock drift from Google's. ID tokens are
+# stamped with the issuer's time, so a box whose clock lags rejects every sign-in
+# with "Token used too early" — WSL drifts like this after a suspend. The SDK
+# caps this at 60; clamping keeps a typo from breaking every login.
+FIREBASE_CLOCK_SKEW_SECONDS = max(0, min(60, env_int("FIREBASE_CLOCK_SKEW_SECONDS", 60)))
+
+# Half a config is worse than none — it boots, then every sign-in fails in the
+# browser. Catch it here, where the message can say what to paste.
+if FIREBASE_PROJECT_ID and not (FIREBASE_API_KEY and FIREBASE_AUTH_DOMAIN):
+    raise ImproperlyConfigured(
+        "FIREBASE_PROJECT_ID is set but FIREBASE_API_KEY / FIREBASE_AUTH_DOMAIN are not. "
+        "Copy the entire web config block from Firebase console → Project settings → "
+        "Your apps, or clear FIREBASE_PROJECT_ID to keep using dev:<email> tokens."
+    )

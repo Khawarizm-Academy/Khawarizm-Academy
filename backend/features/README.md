@@ -11,20 +11,21 @@ which routes it serves, and the rules every feature follows — mirroring
 
 | Feature | App label | Routes | Owns | README |
 | :--- | :--- | :--- | :--- | :--- |
-| **common** | — | — | shared choices + serializers | [`common/README.md`](common/README.md) |
-| **Auth** | `accounts` | `/api/auth/*` | `Learner` | [`auth/README.md`](auth/README.md) |
-| **Catalog** | `catalog` | `/api/catalog*` | `Category` | [`catalog/README.md`](catalog/README.md) |
+| **common** | `common` | — | shared abstract models, choices, `seed_demo` | [`common/README.md`](common/README.md) |
+| **Auth** | `accounts` | `/api/auth/*` | `User`, `StudentProfile`, `InstructorProfile`, `UserSession`, `AuthEvent` | [`auth/README.md`](auth/README.md) |
+| **Catalog** | `catalog` | `/api/catalog*` | `Category`, `FilterGroup`, `FilterOption` | [`catalog/README.md`](catalog/README.md) |
 | **Courses** | `courses` | `/api/courses/*`, `/api/problems` | `Course`, `CourseModule`, `CourseLesson`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` | [`courses/README.md`](courses/README.md) |
 | **Scholarships** | `scholarships` | `/api/scholarships/*` | `Scholarship` | [`scholarships/README.md`](scholarships/README.md) |
 | **Dashboard** | `dashboard` | `/api/dashboard/*` | learner-scoped projections | [`dashboard/README.md`](dashboard/README.md) |
 | **Home** | `home` | `/api/home` | `Home*` rails | [`home/README.md`](home/README.md) |
 | **Events** | `events` | `/api/events` | `EventItem` | [`events/README.md`](events/README.md) |
 | **Competitions** | `competitions` | `/api/competitions` | `Competition` | [`competitions/README.md`](competitions/README.md) |
-| **Profile** | `profile` | `/api/profile` | — (edits `accounts.Learner`) | [`profile/README.md`](profile/README.md) |
+| **Profile** | — | `/api/profile` | — (edits `accounts.User`) | [`profile/README.md`](profile/README.md) |
+| **Admin console** | `adminconsole` | `/api/admin/*` | — (reads across features) | [`adminconsole/README.md`](adminconsole/README.md) |
 
-`common` is a plain Python package (no models, not in `INSTALLED_APPS`). Every
-other folder is a Django app added to `INSTALLED_APPS` and mounted in
-`config/urls.py`.
+`common` and `adminconsole` are installed apps. `profile` is model-less and is
+mounted in `config/urls.py` without being installed. Every other folder is a
+Django app added to `INSTALLED_APPS` and mounted in `config/urls.py`.
 
 ---
 
@@ -122,8 +123,12 @@ This serializer converts a Course model instance into a dictionary...
 ### 7. Models stay readable — and editable
 - **Group fields with a one-line comment:** summary vs detail, eligibility vs
   deadline. A reader should find a field in seconds.
-- **Slugs are the identity.** `slug` equals the frontend id and is the primary
-  key, so a catalog link and `/courses/:slug` resolve to the same row.
+- **New tables get a UUID primary key** from `features/common/models.py`
+  (`UUIDModel` / `TimeStampedModel`), so ids are opaque and unguessable and no
+  two features invent their own id scheme.
+- **Catalog rows keep `slug` as their business key.** It equals the frontend id
+  and the route param, so a catalog link and `/courses/:slug` resolve to the
+  same row; the serializer emits it as `id`.
 - **`unique_together` for natural keys** (`("learner", "course_id")`) so a row
   is impossible to duplicate.
 - **A `help_text` when a field name is not obvious** (e.g. `key = "mobile or
@@ -147,9 +152,12 @@ shared kit in `features/common/testing.py` — never hand-roll an API client or 
 row with required fields left blank:
 
 - `ApiTestCase` — a `TestCase` whose client passes the origin middleware.
-- `api_client()` — a DRF client that always sends an allowed `Origin`.
-- `demo_learner()`, `make_learner()`, `make_course()`, `make_scholarship()` —
-  ready rows with every required field filled.
+- `api_client()` / `FakeRequest()` — a DRF client and a stand-in request that
+  carry a realistic user agent and IP.
+- `make_user()`, `make_admin()`, `make_course()`, `make_scholarship()` — ready
+  rows with every required field filled.
+- `authenticate(client, user)` — opens a real session and authorizes a client
+  with its access token.
 
 ```bash
 python manage.py test              # every feature

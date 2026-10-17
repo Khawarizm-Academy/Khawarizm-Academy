@@ -9,8 +9,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from features.catalog.filters import matches, sort_key
-from features.catalog.models import Category
-from features.catalog.serializers import catalog_item_for
+from features.catalog.models import Category, FilterGroup, FilterOption
+from features.catalog.serializers import catalog_filters, catalog_item_for
 from features.common.testing import ApiTestCase, make_course, make_scholarship
 from features.courses.serializers import course_catalog_item
 from features.scholarships.serializers import scholarship_catalog_item
@@ -154,9 +154,55 @@ class CatalogDetailViewTests(ApiTestCase):
 class CatalogUrlTests(TestCase):
     def test_routes_resolve(self):
         self.assertEqual(reverse("catalog-list"), "/api/catalog")
+        self.assertEqual(reverse("catalog-filters"), "/api/catalog/filters")
         self.assertEqual(reverse("catalog-detail", args=["slug"]), "/api/catalog/slug")
 
 
+class CatalogFilterGroupTests(ApiTestCase):
+    def setUp(self):
+        super().setUp()
+        self.group = FilterGroup.objects.create(key="field", label="المجال", tone="gold", glow=True, surfaces=["desktop", "mobile"], order=0)
+        FilterOption.objects.create(group=self.group, value="all", label="الكل", order=0)
+        FilterOption.objects.create(group=self.group, value="ai", label="ذكاء اصطناعي", order=1)
+
+    def test_filter_group_str(self):
+        self.assertEqual(str(self.group), "field")
+
+    def test_filter_option_str(self):
+        self.assertEqual(str(self.group.options.first()), "field:all")
+
+    def test_filters_endpoint_returns_groups_from_the_database(self):
+        body = self.client.get("/api/catalog/filters").json()
+        self.assertEqual(body["groups"][0]["key"], "field")
+        self.assertEqual([option["id"] for option in body["groups"][0]["options"]], ["all", "ai"])
+
+    def test_mobile_surface_can_override_the_tone(self):
+        self.group.mobile_tone = "sky"
+        self.group.save()
+        body = self.client.get("/api/catalog/filters?surface=mobile").json()
+        self.assertEqual(body["groups"][0]["tone"], "sky")
+
+    def test_surface_without_the_group_omits_it(self):
+        self.group.surfaces = ["desktop"]
+        self.group.save()
+        body = self.client.get("/api/catalog/filters?surface=mobile").json()
+        self.assertEqual(body["groups"], [])
+
+    def test_tab_scoped_options_are_filtered(self):
+        FilterOption.objects.create(group=self.group, value="beginner", label="مبتدئ", tabs=["courses"], order=2)
+        courses = self.client.get("/api/catalog/filters?tab=courses").json()
+        self.assertIn("beginner", [option["id"] for option in courses["groups"][0]["options"]])
+        all_tab = self.client.get("/api/catalog/filters?tab=all").json()
+        self.assertNotIn("beginner", [option["id"] for option in all_tab["groups"][0]["options"]])
+
+    def test_sort_groups_are_returned_as_sort_options(self):
+        FilterGroup.objects.create(key="sort", label="الترتيب", kind="sort", surfaces=["desktop"], order=1)
+        body = self.client.get("/api/catalog/filters").json()
+        self.assertNotIn("sort", [group["key"] for group in body["groups"]])
+
+
 class CatalogAdminTests(TestCase):
-    def test_category_is_registered(self):
+    def test_catalog_models_are_registered(self):
         self.assertTrue(admin.site.is_registered(Category))
+        self.assertTrue(admin.site.is_registered(FilterGroup))
+        self.assertTrue(admin.site.is_registered(FilterOption))

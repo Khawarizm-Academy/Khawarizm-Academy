@@ -3,6 +3,9 @@ import { Outlet } from '@/app/router';
 import { useRouter } from '@/app/routerContext';
 import { resolveActiveTab } from '@/app/routes';
 import { RouteErrorBoundary } from '@/app/RouteErrorBoundary';
+import { RouteGuard } from '@/app/RouteGuard';
+import { AuthToast } from '@/features/auth/components/overlays/AuthToast';
+import { useAuth } from '@/features/auth/context/authContext';
 import { DesktopNavbar } from '@/shared/components/Navbar/DesktopNavbar';
 import { MobileHeader } from '@/shared/components/Navbar/MobileHeader';
 import { MobileBottomBar } from '@/shared/components/BottomNav/MobileBottomBar';
@@ -23,6 +26,7 @@ const ATMOSPHERE_WASHES = [
 
 export const RootLayout: React.FC = () => {
   const { pathname, search, activeRoute, navigate } = useRouter();
+  const { user, signOut } = useAuth();
   const [isGlobalNotificationsOpen, setIsGlobalNotificationsOpen] = useState(false);
 
   const hideShell = !!activeRoute?.meta?.hideShell;
@@ -33,6 +37,11 @@ export const RootLayout: React.FC = () => {
     (tab: NavTabKey) => navigate(NAV_TARGETS[tab]),
     [navigate]
   );
+
+  const handleLogout = useCallback(async () => {
+    await signOut();
+    navigate(NAV_TARGETS.home);
+  }, [signOut, navigate]);
 
   return (
     <div className="page-wrapper">
@@ -55,6 +64,11 @@ export const RootLayout: React.FC = () => {
               activeTab={activeTab}
               onSelectTab={selectTab}
               onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
+              isAuthenticated={Boolean(user)}
+              isAdmin={Boolean(user?.isAdmin)}
+              onLoginClick={() => navigate(NAV_TARGETS.login)}
+              onAdminClick={() => navigate('/admin')}
+              onLogout={handleLogout}
             />
           </div>
           <div className="shell-chrome block md:hidden">
@@ -62,6 +76,8 @@ export const RootLayout: React.FC = () => {
               onLogoClick={() => navigate(NAV_TARGETS.home)}
               onLoginClick={() => navigate(NAV_TARGETS.login)}
               onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
+              isAuthenticated={Boolean(user)}
+              onLogout={handleLogout}
             />
           </div>
         </>
@@ -70,9 +86,11 @@ export const RootLayout: React.FC = () => {
       {/* Page area: full-page skeleton while the route chunk loads */}
       <div key={pathname} className="page-transition-wrapper animate-page-enter">
         <RouteErrorBoundary>
-          <Suspense fallback={<PageSkeleton variant={activeRoute?.skeletonVariant ?? 'default'} />}>
-            <Outlet />
-          </Suspense>
+          <RouteGuard>
+            <Suspense fallback={<PageSkeleton variant={activeRoute?.skeletonVariant ?? 'default'} />}>
+              <Outlet />
+            </Suspense>
+          </RouteGuard>
         </RouteErrorBoundary>
       </div>
 
@@ -98,6 +116,7 @@ export const RootLayout: React.FC = () => {
         onClose={() => setIsGlobalNotificationsOpen(false)}
         onNavigate={(path) => navigate(path)}
       />
+      <AuthToast />
       <Analytics />
     </div>
   );

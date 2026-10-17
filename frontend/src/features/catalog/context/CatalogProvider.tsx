@@ -1,9 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from '@/app/routerContext';
 import { CatalogContext, DEFAULT_FILTERS, SEARCH_TYPE_BY_TAB, TAB_BY_SEARCH_TYPE } from '@/features/catalog/context/catalogContext';
+import { fetchCatalogFilters } from '@/features/catalog/data/catalogFetcher';
 import type { CatalogItem } from '@/shared/types/entities';
 import type { CatalogContextValue, PersistentFilters, SearchBoxProps } from '@/features/catalog/context/catalogContext';
-import type { CatalogFiltersState, CatalogTab, SearchType } from '@/features/catalog/types';
+import type { CatalogFiltersState, CatalogTab, SearchType, SortOptionItem } from '@/features/catalog/types';
+import type { ResolvedFilterGroup, Surface } from '@/features/catalog/data/catalogFilters';
+
+/** Filter metadata for the tab it was fetched for. */
+interface FilterBundle {
+  tab: CatalogTab;
+  groups: Record<Surface, ResolvedFilterGroup[]>;
+  sortOptions: SortOptionItem[];
+}
+
+const EMPTY_GROUPS: Record<Surface, ResolvedFilterGroup[]> = { desktop: [], mobile: [] };
 
 /** Owns every piece of catalog page state so all sections read one source. */
 export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -16,6 +27,34 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [persistentFilters, setPersistentFilters] = useState<PersistentFilters>(DEFAULT_FILTERS);
+  const [filterBundle, setFilterBundle] = useState<FilterBundle | null>(null);
+
+  // The sidebar and the drawer each get their own resolved groups for the active
+  // tab. Loading is derived from the bundle's tab rather than set inside the
+  // effect, so a tab switch stays a render-time computation.
+  useEffect(() => {
+    let active = true;
+    Promise.all([fetchCatalogFilters('desktop', activeTab), fetchCatalogFilters('mobile', activeTab)])
+      .then(([desktop, mobile]) => {
+        if (!active) return;
+        setFilterBundle({
+          tab: activeTab,
+          groups: { desktop: desktop.groups, mobile: mobile.groups },
+          sortOptions: desktop.sortOptions,
+        });
+      })
+      .catch(() => {
+        if (active) setFilterBundle({ tab: activeTab, groups: EMPTY_GROUPS, sortOptions: [] });
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeTab]);
+
+  const loadedBundle = filterBundle?.tab === activeTab ? filterBundle : null;
+  const filterGroups = loadedBundle?.groups ?? EMPTY_GROUPS;
+  const sortOptions = loadedBundle?.sortOptions ?? [];
+  const isFiltersLoading = loadedBundle === null;
 
   // Merged view-state handed to the data section (reacts only when it changes).
   const filters: CatalogFiltersState = {
@@ -69,6 +108,9 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const value: CatalogContextValue = {
     activeTab,
     filters,
+    filterGroups,
+    sortOptions,
+    isFiltersLoading,
     isFilterDrawerOpen,
     searchProps,
     changeTab,

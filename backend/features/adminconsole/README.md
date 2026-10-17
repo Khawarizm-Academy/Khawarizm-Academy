@@ -1,0 +1,81 @@
+# Admin Console — لوحة الإدارة
+
+The staff-only surface that watches and controls the whole platform: every
+account, every device session, the login series, and the recent audit trail.
+
+This feature **owns no tables.** It reads across `accounts` (users, sessions,
+events) and answers with the same payload shapes `features/auth/serializers.py`
+already defines, so there is one definition of "a session row" in the codebase.
+
+## At a glance
+
+| | |
+| :--- | :--- |
+| **App label** | `adminconsole` |
+| **Routes** | `GET /api/admin/overview`, `GET /api/admin/users`, `GET /api/admin/users/:id`, `POST /api/admin/users/:id/role`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events` |
+| **Owns** | — (reads across features) |
+| **Imports** | `User`, `UserSession`, `AuthEvent` (accounts); `user_profile`, `session_payload`, `session_with_user` |
+| **Frontend twin** | `frontend/src/features/admin/` |
+
+## Purpose
+
+Answers the three questions an administrator has: *who is here*, *from where*,
+and *what just happened* — plus the one action they need: **force-logout a
+device anywhere in the fleet.**
+
+## Structure
+
+```text
+adminconsole/
+├── apps.py           AppConfig (label "adminconsole")
+├── views.py          thin staff-only views + the two label maps
+├── urls.py           /api/admin routes
+├── admin.py          (none — it owns no models)
+├── tests.py          permissions, filters, the current-session flag, the 400s
+└── README.md
+```
+
+## How it works
+
+- **Every view is double-gated:** `IsAuthenticated` then `IsAdminRole`
+  (`features/auth/permissions.py`), which reads `user.is_staff` — so a Django
+  staff member is an admin even without the `admin` role, and a learner gets a
+  403 with the console's `Bearer` scheme advertised (not a 401).
+- **The current session is marked, not guessed:** `session_payload(s,
+  request.auth.id)` is passed the caller's session id, so `isCurrent` is true
+  only for the device the admin is browsing from. This is the same helper the
+  learner's own `/api/auth/sessions` uses.
+- **Filters are data, not branches:** the user list filters on `role` and a
+  `q` that matches email *or* full name; the session list filters on `active`
+  (`true`/`false`, anything else means "no filter") and a `q` that matches
+  email *or* IP; the event stream filters on `kind`. An unknown `role` or
+  `kind` value simply matches nothing rather than raising.
+- **Int query params fail with a 400, not a 500:** `_int_param` floors the
+  value and raises `InvalidParameter`, which renders the same
+  `{"detail": ...}` shape as everything else.
+- **Role changes keep Django in sync:** setting a role to `admin` sets
+  `is_staff`, and any other role clears it, then `ensure_profile` creates the
+  matching profile row. An admin cannot change their own role.
+
+## Data
+
+| Source | Provides |
+| :--- | :--- |
+| `accounts.User` | user rows, role counts, the users table |
+| `accounts.UserSession` | device rows, the active/total counts, the os/browser/device breakdown |
+| `accounts.AuthEvent` | the daily login series and the recent-activity stream |
+| `accounts.serializers` | the payload shapes, shared with `/api/auth/*` |
+
+## Payload notes
+
+- `/api/admin/users/:id` returns `events` **without** an `email` key — the
+  user is already identified by the surrounding profile. The global
+  `/api/admin/events` stream *does* carry `email`, because there the question
+  is "who acted".
+- Both list endpoints return `{total, page, pageSize, results}`.
+
+## Related
+
+- Auth & accounts (the models and serializers this reads): [`../auth/README.md`](../auth/README.md)
+- Backend architecture: [`../../../docs/08-backend-architecture.md`](../../../docs/08-backend-architecture.md)
+- Frontend twin: [`../../../frontend/src/features/admin/README.md`](../../../frontend/src/features/admin/README.md)

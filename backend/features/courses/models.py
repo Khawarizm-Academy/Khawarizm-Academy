@@ -1,18 +1,22 @@
-"""Course models — the catalog summary plus the landing/player curriculum."""
+"""Course models — the catalog summary plus the landing/player curriculum.
+
+`slug` stays the public business key used in URLs; the primary key is a UUID.
+"""
 
 from __future__ import annotations
 
 from django.db import models
 
 from features.common.choices import CourseLevel, CoursePriceType, LiveSessionState
+from features.common.models import UUIDModel
 
 LANGUAGES = [("arabic", "arabic"), ("english", "english"), ("french", "french")]
 
 
-class Course(models.Model):
+class Course(UUIDModel):
     """One course: the card summary and the full detail record share this row."""
 
-    slug = models.CharField(max_length=80, primary_key=True, unique=True, help_text="Matches the frontend id like course-1")
+    slug = models.CharField(max_length=80, unique=True, help_text="Public id used in URLs, e.g. course-1")
     title = models.CharField(max_length=200)
 
     # Summary fields — the CatalogItem and course card.
@@ -54,7 +58,7 @@ class Course(models.Model):
         return self.title
 
 
-class CourseModule(models.Model):
+class CourseModule(UUIDModel):
     """A curriculum module grouping ordered lessons."""
 
     course = models.ForeignKey(Course, related_name="modules", on_delete=models.CASCADE)
@@ -63,14 +67,14 @@ class CourseModule(models.Model):
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["course", "order", "id"]
+        ordering = ["course", "order", "module_id"]
         unique_together = ("course", "module_id")
 
     def __str__(self) -> str:
         return f"{self.course.slug}:{self.module_id}"
 
 
-class CourseLesson(models.Model):
+class CourseLesson(UUIDModel):
     """One lesson inside a module (title, duration, summary only)."""
 
     module = models.ForeignKey(CourseModule, related_name="lessons", on_delete=models.CASCADE)
@@ -81,14 +85,14 @@ class CourseLesson(models.Model):
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["module", "order", "id"]
+        ordering = ["module", "order", "lesson_id"]
         unique_together = ("module", "lesson_id")
 
     def __str__(self) -> str:
         return f"{self.module.module_id}:{self.lesson_id}"
 
 
-class CourseLiveSession(models.Model):
+class CourseLiveSession(UUIDModel):
     """A scheduled weekly review session — a launchpad, never an embedded call."""
 
     course = models.ForeignKey(Course, related_name="live_sessions", on_delete=models.CASCADE)
@@ -97,34 +101,36 @@ class CourseLiveSession(models.Model):
     state = models.CharField(max_length=12, choices=LiveSessionState.choices, default=LiveSessionState.UPCOMING)
     date_label = models.CharField(max_length=60)
     time_label = models.CharField(max_length=60)
+    meet_url = models.URLField(max_length=400, blank=True)
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["course", "order", "id"]
+        ordering = ["course", "order", "session_id"]
         unique_together = ("course", "session_id")
 
     def __str__(self) -> str:
         return f"{self.course.slug}:{self.session_id}"
 
 
-class CourseProblem(models.Model):
+class CourseProblem(UUIDModel):
     """One practice problem, shared across courses today."""
 
-    problem_id = models.CharField(max_length=40, primary_key=True, unique=True)
+    problem_id = models.CharField(max_length=40, unique=True)
     prompt = models.CharField(max_length=240)
     code = models.TextField(blank=True)
     correct_option_id = models.CharField(max_length=10)
     explanation = models.TextField(blank=True)
     hint = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["problem_id"]
+        ordering = ["order", "problem_id"]
 
     def __str__(self) -> str:
         return self.problem_id
 
 
-class CourseProblemOption(models.Model):
+class CourseProblemOption(UUIDModel):
     """One answer option belonging to a practice problem."""
 
     problem = models.ForeignKey(CourseProblem, related_name="options", on_delete=models.CASCADE)
@@ -133,6 +139,7 @@ class CourseProblemOption(models.Model):
 
     class Meta:
         ordering = ["problem", "option_id"]
+        unique_together = ("problem", "option_id")
 
     def __str__(self) -> str:
         return f"{self.problem.problem_id}:{self.option_id}"

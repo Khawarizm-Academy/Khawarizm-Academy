@@ -1,4 +1,7 @@
-"""Scholarship model — the catalog summary and detail record share this row."""
+"""Scholarship model — the catalog summary and detail record share this row.
+
+`slug` stays the public business key used in URLs; the primary key is a UUID.
+"""
 
 from __future__ import annotations
 
@@ -12,10 +15,11 @@ from features.common.choices import (
     ScholarshipDegreeLevel,
     ScholarshipStatus,
 )
+from features.common.models import UUIDModel
 
 
-class Scholarship(models.Model):
-    slug = models.CharField(max_length=80, primary_key=True, unique=True)
+class Scholarship(UUIDModel):
+    slug = models.CharField(max_length=80, unique=True)
     title = models.CharField(max_length=200)
     category = models.CharField(max_length=120, blank=True)
     category_slug = models.CharField(max_length=40, choices=CategorySlug.choices, blank=True)

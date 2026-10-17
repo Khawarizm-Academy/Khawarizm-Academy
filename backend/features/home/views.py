@@ -1,4 +1,4 @@
-"""Home page endpoint."""
+"""Home page endpoint — rails assembled from the real feature rows."""
 
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ from rest_framework.response import Response
 from features.competitions.serializers import competition
 from features.events.serializers import event
 from features.home.models import (
-    HomeCompetition,
-    HomeEvent,
+    HomeCompetitionSpot,
+    HomeEventSpot,
     HomeFeaturedCourse,
     HomeFeaturedScholarship,
     HomeQuickLink,
@@ -22,13 +22,13 @@ from features.home.serializers import featured_course, featured_scholarship, qui
 @api_view(["GET"])
 def home_view(request: Any) -> Response:
     """All home rails in one payload, keyed like the original mocks."""
-    competitions = {row.key: competition(row) for row in HomeCompetition.objects.all()}
-    events = {row.key: event(row) for row in HomeEvent.objects.all()}
+    competitions = {row.key: competition(row.competition) for row in HomeCompetitionSpot.objects.select_related("competition")}
+    events = {row.key: event(row.event) for row in HomeEventSpot.objects.select_related("event")}
 
     return Response(
         {
-            "courses": [featured_course(row) for row in HomeFeaturedCourse.objects.all()],
-            "scholarships": [featured_scholarship(row) for row in HomeFeaturedScholarship.objects.all()],
+            "courses": [featured_course(row) for row in HomeFeaturedCourse.objects.select_related("course")],
+            "scholarships": [featured_scholarship(row) for row in HomeFeaturedScholarship.objects.select_related("scholarship")],
             "competitionMobile": competitions.get("mobile"),
             "competitionDesktop": competitions.get("desktop"),
             "eventMobile": events.get("mobile"),

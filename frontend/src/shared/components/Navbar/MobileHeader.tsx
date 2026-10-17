@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { BrandLogo } from '@/shared/components/Artwork/BrandVisuals';
 
 export interface MobileHeaderProps {
@@ -7,6 +7,9 @@ export interface MobileHeaderProps {
   onLoginClick?: () => void;
   onNotificationsClick?: () => void;
   unreadCount?: number;
+  /** Signed-in account state, fed by the app layer so shared chrome stays dumb. */
+  isAuthenticated?: boolean;
+  onLogout?: () => void;
 }
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
@@ -14,6 +17,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   onLoginClick,
   onNotificationsClick,
   unreadCount = 3,
+  isAuthenticated = false,
+  onLogout,
 }) => {
   return (
     <header className="glass-mobile-header flex-between px-4">
@@ -32,14 +37,24 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           </button>
         )}
 
-        {/* Login CTA */}
-        {onLoginClick && (
+        {/* Login CTA for guests, sign-out for signed-in readers */}
+        {isAuthenticated ? (
           <button
-            onClick={onLoginClick}
-            className="btn-gold py-1 px-3 text-xs font-bold cursor-pointer"
+            onClick={onLogout}
+            aria-label="تسجيل الخروج"
+            className="btn-icon-box group cursor-pointer"
           >
-            دخول
+            <LogOut size={18} className="text-slate-200 group-hover:text-danger-500 transition-colors" />
           </button>
+        ) : (
+          onLoginClick && (
+            <button
+              onClick={onLoginClick}
+              className="btn-gold py-1 px-3 text-xs font-bold cursor-pointer"
+            >
+              دخول
+            </button>
+          )
         )}
       </div>
     </header>

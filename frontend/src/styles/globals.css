@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./tokens.css";
+@import "../features/admin/admin.css";
 @import "../features/auth/auth.css";
 @import "../features/catalog/catalog.css";
 @import "../features/courses/courses.css";
