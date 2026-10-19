@@ -162,8 +162,9 @@ CONTENT_TYPES: dict[str, dict[str, Any]] = {
 }
 
 # Editable account fields — every one maps to a `User` column.
+# Email is the account's stable identity, so it is set once at creation and read-only afterwards.
 USER_FIELDS: tuple[dict[str, Any], ...] = (
-    _field("email", "email", "البريد الإلكتروني", required=True),
+    _field("email", "email", "البريد الإلكتروني", required=True, readonly=True),
     _field("fullName", "full_name", "الاسم الكامل"),
     _field("phone", "phone", "رقم الجوال"),
     _field("role", "role", "الدور", "select", options=_select(Role.choices, {"student": "طالب", "instructor": "مدرّب", "admin": "مشرف"})),

@@ -134,6 +134,10 @@
     @apply h-9 px-4 inline-flex items-center gap-1.5 rounded-lg border border-gold-400/50 bg-gold-400/10 text-[12px] font-bold font-display text-gold-400 transition-colors hover:bg-gold-400/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
+  .admin-danger-btn {
+    @apply h-9 px-4 inline-flex items-center gap-1.5 rounded-lg border border-danger-500/50 bg-danger-500/10 text-[12px] font-bold font-display text-danger-500 transition-colors hover:bg-danger-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
   .admin-toolbar-actions {
     @apply flex flex-wrap items-center gap-2;
   }
@@ -234,19 +238,27 @@
   }
 
   .admin-input {
-    @apply h-10 w-full px-3 rounded-lg border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-colors focus:border-blue-400/60 disabled:opacity-50;
+    @apply h-10 w-full px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:shadow-[0_0_0_3px_rgba(41,169,255,0.14)] disabled:opacity-50;
   }
 
   .admin-input::placeholder {
     color: var(--color-slate-500);
   }
 
+  .admin-input-readonly {
+    @apply cursor-not-allowed border-navy-700/50 bg-navy-950/40 text-slate-400 shadow-none hover:border-navy-700/50;
+  }
+
   .admin-textarea {
-    @apply w-full min-h-[88px] px-3 py-2 rounded-lg border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-colors focus:border-blue-400/60 resize-y disabled:opacity-50;
+    @apply w-full min-h-[88px] px-3 py-2 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:shadow-[0_0_0_3px_rgba(41,169,255,0.14)] resize-y disabled:opacity-50;
   }
 
   .admin-textarea-code {
     @apply font-mono text-[12px] leading-relaxed;
+  }
+
+  .admin-select {
+    @apply h-10 w-full px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all cursor-pointer hover:border-navy-600 focus:border-blue-400/70 focus:shadow-[0_0_0_3px_rgba(41,169,255,0.14)] disabled:opacity-50;
   }
 
   .admin-select-full {
@@ -351,6 +363,14 @@
 
   .admin-mono {
     @apply font-mono;
+  }
+
+  .admin-key {
+    @apply max-w-[180px] truncate text-slate-300 font-mono text-[12px];
+  }
+
+  .admin-content-title {
+    @apply font-bold text-slate-100 truncate;
   }
 
   .admin-revoke-btn {
@@ -544,6 +564,10 @@
     animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
+  .admin-modal-wide {
+    @apply max-w-4xl;
+  }
+
   .admin-modal-head {
     @apply shrink-0 flex items-center justify-between gap-3 px-5 py-4 border-b border-navy-600/60 bg-navy-950/60;
   }
@@ -674,6 +698,14 @@
 
   .admin-detail-empty {
     @apply text-[12px] text-slate-400 font-body;
+  }
+
+  .admin-detail-section {
+    @apply flex flex-col gap-3 p-4 rounded-2xl border border-navy-600/50 bg-navy-950/40;
+  }
+
+  .admin-detail-section-title {
+    @apply text-xs font-bold font-display text-gold-400;
   }
 
   .admin-mini-list {

@@ -15,7 +15,7 @@ const DEVICE_ICONS: Record<string, LucideIcon> = {
   unknown: MonitorSmartphone,
 };
 
-/** One signed-in device the reader can force out. */
+/** Localized "last seen" stamp; blank when the API value is unparseable. */
 function formatLastSeen(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
@@ -45,30 +45,38 @@ export const ActiveSessionsCard: React.FC = () => {
   );
 
   return (
-    <SettingsCard icon={ShieldCheck} title="الأجهزة والجلسات النشطة" iconClassName="text-blue-400" index={5}>
+    <SettingsCard icon={ShieldCheck} title="الأجهزة والجلسات النشطة" iconClassName="text-blue-400" index={2}>
       {isLoading ? (
-        <p className="profile-session-empty">جارٍ تحميل الأجهزة…</p>
+        <p className="profile-hint">جارٍ تحميل الأجهزة…</p>
       ) : data.length === 0 ? (
-        <p className="profile-session-empty">لا توجد جلسات نشطة مسجّلة.</p>
+        <p className="profile-hint">لا توجد جلسات نشطة مسجّلة.</p>
       ) : (
-        <div className="profile-sessions">
+        <div className="profile-devices">
           {data.map((session) => {
             const DeviceIcon = DEVICE_ICONS[session.deviceType] ?? MonitorSmartphone;
+            const stateClass = session.isActive ? 'profile-device-live' : 'profile-device-dead';
             return (
-              <div key={session.id} className="profile-session">
-                <span className="profile-session-icon">
+              <div key={session.id} className={`profile-device ${stateClass}`}>
+                <span
+                  className={`profile-device-icon ${
+                    session.isActive ? 'profile-device-icon-live' : 'profile-device-icon-dead'
+                  }`}
+                >
                   <DeviceIcon size={16} strokeWidth={2} />
                 </span>
 
-                <div className="profile-session-info">
-                  <span className="profile-session-name">
-                    {session.deviceLabel || DEVICE_LABELS[session.deviceType] || DEVICE_LABELS.unknown}
-                    {session.isCurrent && <span className="profile-session-current">هذا الجهاز</span>}
+                <div className="profile-device-meta">
+                  <span className="profile-device-label">
+                    <span className="truncate">
+                      {session.deviceLabel || DEVICE_LABELS[session.deviceType] || DEVICE_LABELS.unknown}
+                    </span>
+                    {session.isCurrent && <span className="profile-device-badge">هذا الجهاز</span>}
                   </span>
-                  <span className="profile-session-meta">
-                    {[session.os, session.browser, session.ipAddress].filter(Boolean).join(' · ')}
+                  <span className="profile-device-time">
+                    {[session.os, session.browser].filter(Boolean).join(' · ')}
+                    {session.ipAddress && <span className="profile-device-ip"> · {session.ipAddress}</span>}
                   </span>
-                  <span className="profile-session-time">{formatLastSeen(session.lastSeenAt)}</span>
+                  <span className="profile-device-time">{formatLastSeen(session.lastSeenAt)}</span>
                 </div>
 
                 {!session.isCurrent && session.isActive && (
@@ -77,9 +85,10 @@ export const ActiveSessionsCard: React.FC = () => {
                     onClick={() => revoke(session.id)}
                     disabled={revokingId === session.id}
                     title="إنهاء الجلسة"
-                    className="profile-session-revoke"
+                    className="profile-device-revoke"
                   >
-                    <X size={14} strokeWidth={2.4} />
+                    <X size={13} strokeWidth={2.4} />
+                    <span>إنهاء</span>
                   </button>
                 )}
               </div>

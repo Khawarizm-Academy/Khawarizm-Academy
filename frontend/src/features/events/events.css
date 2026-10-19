@@ -41,6 +41,10 @@
   }
 
   /* --- Grid cards --- */
+  .event-card {
+    @apply flex flex-col h-full overflow-hidden;
+  }
+
   .event-card-media {
     @apply relative w-full h-44 bg-navy-800/60 overflow-hidden;
   }

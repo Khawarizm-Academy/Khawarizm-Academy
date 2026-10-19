@@ -8,6 +8,8 @@ interface AdminFieldInputProps {
   field: AdminField;
   value: AdminFormValue | undefined;
   disabled?: boolean;
+  /** Blocks editing a field the server marks read-only (never sent back). */
+  readOnly?: boolean;
   onChange: (value: AdminFormValue) => void;
 }
 
@@ -29,15 +31,16 @@ const FieldShell: React.FC<{ field: AdminField; children: React.ReactNode }> = (
   </div>
 );
 
-const textField = (type: 'text' | 'url'): FieldRender => ({ field, value, disabled, onChange }) => (
+const textField = (type: 'text' | 'url'): FieldRender => ({ field, value, disabled, readOnly, onChange }) => (
   <FieldShell field={field}>
     <input
       id={fieldId(field)}
       type={type}
       dir={type === 'url' ? 'ltr' : undefined}
-      className="admin-input"
+      className={readOnly ? 'admin-input admin-input-readonly' : 'admin-input'}
       value={String(value ?? '')}
       disabled={disabled}
+      readOnly={readOnly}
       onChange={(event) => onChange(event.target.value)}
     />
   </FieldShell>

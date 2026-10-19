@@ -264,6 +264,18 @@ class AdminConsoleUserMutationTests(ApiTestCase):
         response = self.client.patch(f"/api/admin/users/{self.admin.id}", {"role": Role.STUDENT}, format="json")
         self.assertEqual(response.status_code, 400)
 
+    def test_patch_never_changes_the_email_identity(self):
+        target = make_user(email="identity@example.com")
+        response = self.client.patch(
+            f"/api/admin/users/{target.id}",
+            {"email": "hijacked@example.com", "fullName": "Renamed"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        target.refresh_from_db()
+        self.assertEqual(target.email, "identity@example.com")
+        self.assertEqual(target.full_name, "Renamed")
+
     def test_delete_removes_the_account(self):
         target = make_user(email="remove@example.com")
         response = self.client.delete(f"/api/admin/users/{target.id}")
@@ -290,6 +302,9 @@ class AdminConsoleContentTests(ApiTestCase):
         self.assertEqual(keys, ["courses", "scholarships", "events", "competitions"])
         self.assertTrue(body["types"][0]["fields"])
         self.assertTrue(body["userFields"])
+        # Email is the account identity: exposed to the form but read-only.
+        email_field = next(field for field in body["userFields"] if field["name"] == "email")
+        self.assertTrue(email_field["readonly"])
 
     def test_events_can_be_listed_created_updated_and_deleted(self):
         created = self.client.post(

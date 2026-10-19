@@ -32,6 +32,8 @@ export interface AdminField {
   label: string;
   kind: AdminFieldKind;
   required?: boolean;
+  /** Set once at creation and never editable again (the account email). */
+  readonly?: boolean;
   options?: AdminFieldOption[];
 }
 

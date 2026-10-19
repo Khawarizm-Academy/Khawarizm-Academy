@@ -6,6 +6,9 @@ import { ProfileContext } from '@/features/profile/context/profileContext';
 import type { ProfileContextValue } from '@/features/profile/context/profileContext';
 import { fetchProfile, saveProfile } from '@/features/profile/data/profileFetchers';
 
+/** Keep the save spinner up for at least this long so a fast save still reads as "working". */
+const MIN_SAVE_MS = 1000;
+
 /** Owns the editable profile state so every section reads one source. */
 export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfileData>(EMPTY_PROFILE);
@@ -67,9 +70,11 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTimeout(() => setShowToast(false), 3500);
   };
 
+  /** Keep the spinner up for at least this long so a fast save still feels deliberate. */
   const saveChanges = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    const startedAt = Date.now();
     saveProfile(profile)
       .then((saved) => {
         setProfile(saved);
@@ -77,8 +82,12 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })
       .catch(() => undefined)
       .finally(() => {
-        setIsSaving(false);
-        flashToast();
+        // Wait out the remainder of the minimum so the loading state is always perceptible.
+        const remaining = Math.max(0, MIN_SAVE_MS - (Date.now() - startedAt));
+        window.setTimeout(() => {
+          setIsSaving(false);
+          flashToast();
+        }, remaining);
       });
   };
 

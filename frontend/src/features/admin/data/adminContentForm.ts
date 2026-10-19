@@ -28,6 +28,8 @@ export function toPayloadValues(
 ): PayloadResult {
   const payload: Record<string, unknown> = {};
   for (const field of fields) {
+    // Read-only fields (the account email) are set once and never sent back.
+    if (field.readonly && !isCreate) continue;
     const value = formValues[field.name];
     if (field.kind === 'bool') {
       payload[field.name] = Boolean(value);

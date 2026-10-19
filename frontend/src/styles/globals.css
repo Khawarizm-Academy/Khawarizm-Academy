@@ -198,7 +198,20 @@
 }
 
 .input-field {
-  @apply w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl outline outline-1 outline-blue-900/80 focus:outline-sky-400 focus:outline-2 text-slate-100 text-sm font-normal font-body transition-all;
+  @apply w-full px-4 py-3 bg-navy-950/70 rounded-2xl border border-navy-600/70 text-slate-100 text-sm font-normal font-body placeholder:text-slate-500 shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)] transition-all outline-none;
+}
+
+.input-field:hover:not(:disabled) {
+  @apply border-navy-600;
+}
+
+.input-field:focus {
+  @apply border-blue-400/70 bg-navy-950 shadow-[0_0_0_3px_rgba(41,169,255,0.16)];
+}
+
+/* Locked identity field (the account email): dimmed and non-interactive. */
+.input-field-locked {
+  @apply cursor-not-allowed border-navy-700/50 bg-navy-950/40 text-slate-400 shadow-none;
 }
 
 /* ==========================================================================
@@ -834,7 +847,8 @@
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    /* `none` (not translateY(0)) — any lingering transform would trap fixed toasts */
+    transform: none;
   }
 }
 

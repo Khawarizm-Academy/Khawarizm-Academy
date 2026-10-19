@@ -48,6 +48,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({ userId, profile, fields, on
             field={field}
             value={values[field.name]}
             disabled={isSaving}
+            readOnly={field.readonly}
             onChange={(value) => setValues((prev) => ({ ...prev, [field.name]: value }))}
           />
         ))}

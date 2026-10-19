@@ -136,7 +136,7 @@
   }
 
   .profile-device-label {
-    @apply text-xs font-bold text-slate-100 font-body truncate;
+    @apply flex items-center gap-2 text-xs font-bold text-slate-100 font-body min-w-0;
   }
 
   .profile-device-os {
@@ -144,7 +144,7 @@
   }
 
   .profile-device-badge {
-    @apply mr-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border border-sky-400/30 bg-sky-400/10 text-sky-300;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 border border-sky-400/30 bg-sky-400/10 text-sky-300;
   }
 
   .profile-device-time {
@@ -194,7 +194,7 @@
   }
 
   .profile-toast {
-    @apply fixed bottom-20 sm:bottom-8 right-1/2 translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3.5 bg-navy-900/95 border border-emerald-500/60 rounded-full shadow-[0_8px_32px_rgba(16,185,129,0.25)] text-emerald-300 backdrop-blur-md select-none;
+    @apply fixed bottom-24 sm:bottom-8 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-6 py-3.5 bg-navy-900/95 border border-emerald-500/60 rounded-full shadow-[0_8px_32px_rgba(16,185,129,0.25)] text-emerald-300 backdrop-blur-md select-none;
   }
 
   .profile-toast-icon {
@@ -235,12 +235,33 @@
     @apply absolute top-1/2 -translate-y-1/2 text-slate-500 peer-focus:text-blue-400 transition-colors pointer-events-none;
   }
 
-  .profile-field-label-row {
-    @apply flex items-center justify-between w-full;
+  /* --- Phone: country selector + dial prefix + national number --- */
+  .phone-field {
+    @apply flex items-stretch gap-2;
   }
 
-  .profile-verified {
-    @apply inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium;
+  .phone-country {
+    @apply shrink-0 flex;
+  }
+
+  .phone-country-select {
+    @apply h-full w-32 sm:w-36 px-2.5 rounded-2xl bg-navy-950/70 border border-navy-600/70 text-slate-100 text-sm font-body outline-none transition-all cursor-pointer hover:border-navy-600 focus:border-blue-400/70;
+  }
+
+  .phone-number {
+    @apply flex items-center gap-2 flex-1 min-w-0 px-4 py-3 rounded-2xl bg-navy-950/70 border border-navy-600/70 shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)] transition-all focus-within:border-blue-400/70 focus-within:shadow-[0_0_0_3px_rgba(41,169,255,0.16)];
+  }
+
+  .phone-dial {
+    @apply inline-flex items-center gap-1 text-slate-400 text-sm font-mono shrink-0;
+  }
+
+  .phone-dial-icon {
+    @apply text-slate-500;
+  }
+
+  .phone-number-input {
+    @apply flex-1 min-w-0 bg-transparent border-0 outline-none text-slate-100 text-sm font-mono tracking-wide placeholder:text-slate-500;
   }
 
   .profile-interests-head {
@@ -286,46 +307,5 @@
 
   .toggle-knob-off {
     @apply translate-x-0;
-  }
-
-  /* --- Active device sessions --- */
-  .profile-sessions {
-    @apply flex flex-col gap-2.5;
-  }
-
-  .profile-session {
-    @apply flex items-center gap-3 p-3 rounded-xl bg-navy-950/50 border border-navy-600/40;
-  }
-
-  .profile-session-icon {
-    @apply size-8 shrink-0 rounded-lg bg-blue-400/10 text-blue-400 flex items-center justify-center;
-  }
-
-  .profile-session-info {
-    @apply flex flex-col gap-0.5 min-w-0 flex-1;
-  }
-
-  .profile-session-name {
-    @apply flex items-center gap-2 text-slate-100 text-xs sm:text-sm font-bold truncate;
-  }
-
-  .profile-session-current {
-    @apply text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/40;
-  }
-
-  .profile-session-meta {
-    @apply text-[11px] text-slate-400 truncate font-mono;
-  }
-
-  .profile-session-time {
-    @apply text-[10px] text-slate-500;
-  }
-
-  .profile-session-revoke {
-    @apply size-7 shrink-0 rounded-lg flex items-center justify-center text-slate-400 hover:text-danger-500 hover:bg-danger-500/10 transition-colors cursor-pointer disabled:opacity-40;
-  }
-
-  .profile-session-empty {
-    @apply text-xs text-slate-400 py-1;
   }
 }

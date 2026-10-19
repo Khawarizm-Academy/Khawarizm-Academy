@@ -192,11 +192,8 @@ def user_detail(request, user_id):
 def _update_user(request, user: User) -> Response:
     """Apply the console's account edits, keeping Django staff rights in sync."""
     values = _values_for({"fields": USER_FIELDS}, request.data or {}, create=False)
-    if "email" in values:
-        email = str(values["email"]).strip().lower()
-        if User.objects.filter(email=email).exclude(pk=user.pk).exists():
-            return Response({"detail": "البريد الإلكتروني مستخدم بالفعل."}, status=status.HTTP_400_BAD_REQUEST)
-        values["email"] = email
+    # Email is immutable: console edits can never change the account's identity.
+    values.pop("email", None)
     for attr, value in values.items():
         setattr(user, attr, value)
     if "role" in values:

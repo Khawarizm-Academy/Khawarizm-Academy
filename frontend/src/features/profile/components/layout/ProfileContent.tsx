@@ -2,8 +2,6 @@ import React from 'react';
 import {
   User,
   Mail,
-  Phone,
-  CheckCircle2,
   Sparkles,
   Bell,
   Globe,
@@ -18,6 +16,7 @@ import { SettingsCard } from '@/features/profile/components/cards/SettingsCard';
 import { ActiveSessionsCard } from '@/features/profile/components/cards/ActiveSessionsCard';
 import { ToggleSwitch } from '@/features/profile/components/controls/ToggleSwitch';
 import { FieldText } from '@/features/profile/components/controls/FieldText';
+import { PhoneField } from '@/features/profile/components/controls/PhoneField';
 import { Dropdown } from '@/shared/components/Form/Dropdown';
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
 import { ProfileHero } from '@/features/profile/components/hero/ProfileHero';
@@ -60,36 +59,24 @@ export const ProfileContent: React.FC = () => {
                 />
                 <FieldText
                   id="email"
-                  label={
-                    <span className="profile-field-label-row">
-                      <span>البريد الإلكتروني</span>
-                      <span className="profile-verified">
-                        <CheckCircle2 size={12} />
-                        مؤكد
-                      </span>
-                    </span>
-                  }
+                  label="البريد الإلكتروني"
                   icon={Mail}
                   type="email"
                   value={profile.email}
                   onChange={(v) => changeField('email', v)}
                   required
                   textLeft
+                  disabled
                   placeholder="name@example.com"
                 />
               </div>
 
-              <FieldText
+              <PhoneField
                 id="phone"
                 label="رقم الجوال"
-                icon={Phone}
-                type="tel"
-                dir="ltr"
                 value={profile.phone}
                 onChange={(v) => changeField('phone', v)}
-                textLeft
-                iconPosition="right"
-                placeholder="+966 5X XXX XXXX"
+                placeholder="5X XXX XXXX"
               />
             </SettingsCard>
 
@@ -133,6 +120,9 @@ export const ProfileContent: React.FC = () => {
               </div>
             </SettingsCard>
 
+            {/* Live device sessions sit in the wide column so the footprints read comfortably */}
+            <ActiveSessionsCard />
+
             {/* Desktop save row anchors to the primary column so the summary
                 card in the secondary column never pushes the buttons down */}
             <ProfileSaveActions placement="desktop" />
@@ -140,7 +130,7 @@ export const ProfileContent: React.FC = () => {
 
           {/* Secondary column */}
           <div className="profile-column-secondary">
-            <SettingsCard icon={Bell} title="الإشعارات والتذكيرات" index={2}>
+            <SettingsCard icon={Bell} title="الإشعارات والتذكيرات" index={3}>
               <div className="profile-stack">
                 <ToggleSwitch
                   label="تذكير قبل الجلسات المباشرة"
@@ -160,7 +150,7 @@ export const ProfileContent: React.FC = () => {
               </div>
             </SettingsCard>
 
-            <SettingsCard icon={Globe} title="اللغة والحساب" index={3}>
+            <SettingsCard icon={Globe} title="اللغة والحساب" index={4}>
               <Dropdown
                 id="language"
                 label="لغة الواجهة"
@@ -188,7 +178,7 @@ export const ProfileContent: React.FC = () => {
               />
             </SettingsCard>
 
-            <SettingsCard icon={Award} title="ملخص الحساب" iconClassName="text-gold-400" index={4}>
+            <SettingsCard icon={Award} title="ملخص الحساب" iconClassName="text-gold-400" index={5}>
               <div className="profile-stack gap-3">
                 <div className="profile-stat">
                   <span className="profile-stat-label">المستوى الأكاديمي</span>
@@ -204,9 +194,6 @@ export const ProfileContent: React.FC = () => {
                 </div>
               </div>
             </SettingsCard>
-
-            {/* Live device sessions, revocable from the profile */}
-            <ActiveSessionsCard />
           </div>
         </div>
 
