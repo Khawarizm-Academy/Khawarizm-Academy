@@ -7,7 +7,10 @@ Django admin is available at /admin/ as the data editor.
 from django.contrib import admin
 from django.urls import include, path
 
+from config.views import root
+
 urlpatterns = [
+    path("", root),
     path("admin/", admin.site.urls),
     path("api/", include("features.auth.urls")),
     path("api/", include("features.catalog.urls")),

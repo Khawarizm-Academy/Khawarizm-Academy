@@ -2,24 +2,32 @@
 
 from __future__ import annotations
 
+import re
+from urllib.parse import urlsplit
+
 from django.conf import settings
 from django.http import HttpRequest, HttpResponseForbidden
 from django.utils.deprecation import MiddlewareMixin
 
 
-def _is_allowed_origin(origin: str | None) -> bool:
+def _origin_of(value: str | None) -> str | None:
+    """Reduce a request Origin or Referer to its bare scheme://host origin."""
+    if not value:
+        return None
+    parts = urlsplit(value)
+    if not parts.scheme or not parts.netloc:
+        return value
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+def _is_allowed_origin(value: str | None) -> bool:
+    origin = _origin_of(value)
     if not origin:
         return False
-    for allowed in settings.CORS_ALLOWED_ORIGINS:
-        if origin == allowed:
-            return True
-    if hasattr(settings, "CORS_ALLOWED_ORIGIN_REGEXES") and settings.CORS_ALLOWED_ORIGIN_REGEXES:
-        import re
-
-        for pattern in settings.CORS_ALLOWED_ORIGIN_REGEXES:
-            if re.match(pattern, origin):
-                return True
-    return False
+    if origin in settings.CORS_ALLOWED_ORIGINS:
+        return True
+    regexes = getattr(settings, "CORS_ALLOWED_ORIGIN_REGEXES", None) or []
+    return any(re.match(pattern, origin) for pattern in regexes)
 
 
 class ApiOriginRestrictionMiddleware(MiddlewareMixin):
