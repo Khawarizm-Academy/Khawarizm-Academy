@@ -5,6 +5,8 @@ The frontend is the only client, so there is no template/static setup.
 """
 
 import os
+import shutil
+import tempfile
 import urllib.parse
 from pathlib import Path
 
@@ -16,6 +18,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Vercel sets VERCEL=1 and VERCEL_URL=<deployment host> on every deployment.
 IS_VERCEL = bool(os.environ.get("VERCEL"))
 VERCEL_URL = os.environ.get("VERCEL_URL", "")
+
+# Vercel runs the app as an AWS Lambda: the project is unpacked under /var/task,
+# which is packaged read-only, and /tmp is the only writable path. Builds run in
+# a normal container instead, so this stays False while `migrate` populates the
+# bundle.
+IS_SERVERLESS_RUNTIME = IS_VERCEL and (
+    bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME")) or str(BASE_DIR).startswith("/var/task")
+)
 
 # Profile selector — export DJANGO_ENV in the host environment to pick a profile.
 DJANGO_ENV = os.environ.get("DJANGO_ENV", "development")
@@ -126,9 +136,27 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # Postgres when DATABASE_URL is provided (Vercel Postgres/Neon); SQLite otherwise.
-# On Vercel with no database, migrate runs at build time and the generated SQLite
-# file is bundled into the function (read-only at runtime).
 DATABASE_URL = os.environ.get("DATABASE_URL")
+
+
+def resolve_sqlite_path(base_dir: Path, serverless: bool, runtime_dir: Path | None = None) -> Path:
+    """Pick a writable SQLite file for the current environment.
+
+    A serverless bundle is read-only, so writing the bundled file fails with
+    "attempt to write a readonly database" (a 500 on every sign-up or edit).
+    Copy the build-time database into the one writable directory (/tmp) once
+    per instance and write there. Writes are per-instance and reset on cold
+    starts, so set DATABASE_URL for durable storage.
+    """
+    if not serverless:
+        return base_dir / "db.sqlite3"
+    bundled = base_dir / "db.sqlite3"
+    runtime = (runtime_dir or Path(tempfile.gettempdir())) / "db.sqlite3"
+    if not runtime.exists() and bundled.exists():
+        shutil.copy2(bundled, runtime)
+    return runtime
+
+
 if DATABASE_URL:
     db = urllib.parse.urlparse(DATABASE_URL)
     options = {}
@@ -152,7 +180,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME),
         }
     }
 

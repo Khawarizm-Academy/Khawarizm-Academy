@@ -228,8 +228,10 @@ Function.
 exists before the first request.
 
 > **SQLite on Vercel is read-only.** Without `DATABASE_URL` the build bundles
-> `db.sqlite3`, so reads work — but writes (enroll, save, profile edits) do not
-> persist. Add Postgres for a fully working backend.
+> `db.sqlite3`; at runtime the app copies it to `/tmp` so writes succeed instead
+> of failing with *"attempt to write a readonly database"*. `/tmp` is
+> per-instance and resets on cold starts, so accounts and edits are **not
+> durable**. Add Postgres (`DATABASE_URL`) for a fully working backend.
 
 ---
 
