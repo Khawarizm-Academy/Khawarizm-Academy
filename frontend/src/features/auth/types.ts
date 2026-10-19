@@ -112,7 +112,12 @@ export const DEVICE_LABELS: Record<string, string> = {
 export const SESSION_LOST_MESSAGES: Record<string, string> = {
   signed_in_elsewhere: 'تم تسجيل الدخول من جهاز آخر، لذلك تم إنهاء هذه الجلسة.',
   session_invalid: 'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى.',
+  session_missing: 'انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى.',
+  token_expired: 'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى.',
+  token_invalid: 'رمز الدخول غير صالح، يرجى تسجيل الدخول مرة أخرى.',
   expired: 'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى.',
   session_expired: 'انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى.',
   revoked: 'تم إنهاء هذه الجلسة من قِبَل الإدارة.',
+  revoked_by_admin: 'تم إنهاء هذه الجلسة من قِبَل الإدارة.',
+  logout: 'تم تسجيل الخروج من هذه الجلسة.',
 };
