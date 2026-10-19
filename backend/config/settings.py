@@ -4,6 +4,7 @@ Kept intentionally small: Postgres/SQLite, DRF, CORS, and env-driven secrets.
 The frontend is the only client, so there is no template/static setup.
 """
 
+import logging
 import os
 import shutil
 import tempfile
@@ -14,6 +15,7 @@ from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+LOGGER = logging.getLogger(__name__)
 
 # Vercel sets VERCEL=1 and VERCEL_URL=<deployment host> on every deployment.
 IS_VERCEL = bool(os.environ.get("VERCEL"))
@@ -183,6 +185,17 @@ else:
             "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME),
         }
     }
+
+# Sessions and every other row live in the database. An ephemeral SQLite copy
+# cannot keep them, so users are randomly logged out with 401 "session_missing".
+# Shout about it: this misconfiguration is invisible otherwise.
+if IS_SERVERLESS_RUNTIME and not DATABASE_URL:
+    LOGGER.warning(
+        "Serverless runtime without DATABASE_URL: using an ephemeral SQLite copy in /tmp. "
+        "Accounts, sessions, and every other write are lost on cold starts and invisible "
+        "across instances, so sign-ins fail with 401. Attach Postgres (Vercel Postgres / "
+        "Neon / Supabase) and set DATABASE_URL."
+    )
 
 AUTH_PASSWORD_VALIDATORS = []
 
