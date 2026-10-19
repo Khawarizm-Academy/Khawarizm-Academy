@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Award, CheckCircle2, Clock, FileCheck, Send, X, Sparkles, type LucideIcon } from 'lucide-react';
 import type { SavedScholarshipItem } from '@/features/dashboard/components/views/SavedScholarshipsView';
+import { applyToScholarship } from '@/features/scholarships/data/scholarshipFetchers';
 
 interface ScholarshipApplicationModalProps {
   isOpen: boolean;
@@ -49,10 +50,13 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-    }, 1500);
+    // Persist the application; the modal settles into its submitted state either way.
+    void applyToScholarship(scholarship.id)
+      .catch(() => undefined)
+      .finally(() => {
+        setIsSubmitting(false);
+        setIsSubmitted(true);
+      });
   };
 
   const deadline = scholarship.isUrgent ? DEADLINE.urgent : DEADLINE.normal;

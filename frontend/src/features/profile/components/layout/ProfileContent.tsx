@@ -15,6 +15,7 @@ import { AVAILABLE_INTERESTS } from '@/features/profile/types';
 import type { LearningLevel, InterfaceLanguage } from '@/features/profile/types';
 import { useProfile } from '@/features/profile/context/profileContext';
 import { SettingsCard } from '@/features/profile/components/cards/SettingsCard';
+import { ActiveSessionsCard } from '@/features/profile/components/cards/ActiveSessionsCard';
 import { ToggleSwitch } from '@/features/profile/components/controls/ToggleSwitch';
 import { FieldText } from '@/features/profile/components/controls/FieldText';
 import { Dropdown } from '@/shared/components/Form/Dropdown';
@@ -203,6 +204,9 @@ export const ProfileContent: React.FC = () => {
                 </div>
               </div>
             </SettingsCard>
+
+            {/* Live device sessions, revocable from the profile */}
+            <ActiveSessionsCard />
           </div>
         </div>
 

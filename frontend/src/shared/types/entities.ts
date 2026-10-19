@@ -127,6 +127,14 @@ export interface CourseDetail {
   relatedIds: string[];
 }
 
+/** Certificate metadata issued by the API when a course is completed. */
+export interface CourseCertificate {
+  courseId: string;
+  courseTitle: string;
+  credentialId: string;
+  isOfficial: boolean;
+}
+
 /** A Google Meet weekly review session — a launchpad, never an embedded call. */
 export interface CourseLiveSession {
   id: string;

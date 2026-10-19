@@ -287,4 +287,45 @@
   .toggle-knob-off {
     @apply translate-x-0;
   }
+
+  /* --- Active device sessions --- */
+  .profile-sessions {
+    @apply flex flex-col gap-2.5;
+  }
+
+  .profile-session {
+    @apply flex items-center gap-3 p-3 rounded-xl bg-navy-950/50 border border-navy-600/40;
+  }
+
+  .profile-session-icon {
+    @apply size-8 shrink-0 rounded-lg bg-blue-400/10 text-blue-400 flex items-center justify-center;
+  }
+
+  .profile-session-info {
+    @apply flex flex-col gap-0.5 min-w-0 flex-1;
+  }
+
+  .profile-session-name {
+    @apply flex items-center gap-2 text-slate-100 text-xs sm:text-sm font-bold truncate;
+  }
+
+  .profile-session-current {
+    @apply text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/40;
+  }
+
+  .profile-session-meta {
+    @apply text-[11px] text-slate-400 truncate font-mono;
+  }
+
+  .profile-session-time {
+    @apply text-[10px] text-slate-500;
+  }
+
+  .profile-session-revoke {
+    @apply size-7 shrink-0 rounded-lg flex items-center justify-center text-slate-400 hover:text-danger-500 hover:bg-danger-500/10 transition-colors cursor-pointer disabled:opacity-40;
+  }
+
+  .profile-session-empty {
+    @apply text-xs text-slate-400 py-1;
+  }
 }

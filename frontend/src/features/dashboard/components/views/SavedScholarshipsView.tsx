@@ -4,6 +4,9 @@ import { useCachedData } from '@/shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
 import { fetchSavedScholarships, fetchFavoriteCourses } from '@/features/dashboard/data/dashboardFetchers';
+import { saveScholarship } from '@/features/scholarships/data/scholarshipFetchers';
+import { toggleCourseFavorite } from '@/features/courses/data/courseFetchers';
+import { dataCacheManager } from '@/shared/lib/cacheManager';
 import type { SavedScholarshipItem, FavoriteCourseItem } from '@/features/dashboard/types';
 import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 export type { SavedScholarshipItem };
@@ -53,6 +56,10 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
     if (idx !== -1) {
       setDeletedItem({ item: scholarships[idx], index: idx });
       setLocalScholarships(scholarships.filter((s) => s.id !== id));
+      // Toggle the saved row off in the API, then refresh the shared list.
+      void saveScholarship(id)
+        .then(() => dataCacheManager.invalidate(['dashboard', 'saved-scholarships']))
+        .catch(() => undefined);
     }
   };
 
@@ -61,6 +68,10 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
       const next = [...scholarships];
       next.splice(deletedItem.index, 0, deletedItem.item);
       setLocalScholarships(next);
+      // Undo re-saves through the same toggle so the API matches the UI again.
+      void saveScholarship(deletedItem.item.id)
+        .then(() => dataCacheManager.invalidate(['dashboard', 'saved-scholarships']))
+        .catch(() => undefined);
       setDeletedItem(null);
     }
   };
@@ -68,6 +79,10 @@ export const SavedScholarshipsView: React.FC<SavedScholarshipsViewProps> = ({
   const handleDeleteFavoriteCourse = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setLocalCourses(favoriteCourses.filter((c) => c.id !== id));
+    // Toggle the favorite row off in the API, then refresh the shared list.
+    void toggleCourseFavorite(id)
+      .then(() => dataCacheManager.invalidate(['dashboard', 'favorite-courses']))
+      .catch(() => undefined);
   };
 
   return (

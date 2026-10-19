@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Bookmark } from 'lucide-react';
 import { useNavigate } from '@/app/routerContext';
 import catalogJson from '@/shared/json/catalog.json';
 import type { CatalogItem } from '@/shared/types/entities';
@@ -11,6 +11,14 @@ interface ItemDetailViewProps {
   item: CatalogItem;
   backPath: string;
   primaryLabel: string;
+  /** Runs the item's primary action; absent when the page owns no action. */
+  onPrimaryAction?: () => void;
+  /** Saved state for the bookmark toggle; absent when the page owns no save action. */
+  isSaved?: boolean;
+  onToggleSave?: () => void;
+  /** Bookmark copy, owned by the calling page. */
+  saveLabel?: string;
+  savedLabel?: string;
 }
 
 /** Course vs scholarship tone classes so the two share one layout. */
@@ -39,6 +47,11 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   item,
   backPath,
   primaryLabel,
+  onPrimaryAction,
+  isSaved = false,
+  onToggleSave,
+  saveLabel = '',
+  savedLabel = '',
 }) => {
   const navigate = useNavigate();
   const isCourse = item.type === 'course';
@@ -78,9 +91,26 @@ export const ItemDetailView: React.FC<ItemDetailViewProps> = ({
             <span className={tone.category}>{item.category}</span>
           </div>
 
-          <button type="button" className={`${tone.primary} w-full py-3.5 text-sm font-bold`}>
+          <button
+            type="button"
+            onClick={onPrimaryAction}
+            className={`${tone.primary} w-full py-3.5 text-sm font-bold`}
+          >
             {primaryLabel}
           </button>
+
+          {onToggleSave && (
+            <button
+              type="button"
+              onClick={onToggleSave}
+              className="btn-pill-subtle w-full py-3 text-sm"
+              aria-pressed={isSaved}
+            >
+              <Bookmark size={15} className={isSaved ? 'fill-gold-400 text-gold-400' : undefined} />
+              {isSaved ? savedLabel : saveLabel}
+            </button>
+          )}
+
           <button type="button" onClick={() => navigate(backPath)} className="btn-pill-subtle w-full py-3 text-sm">
             استكشاف المزيد
           </button>

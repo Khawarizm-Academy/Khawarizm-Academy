@@ -3,7 +3,9 @@ import { useCachedData } from '@/shared/hooks/useCachedData';
 import {
   fetchCourseDetail,
   fetchCourseProblems,
+  syncCourseProgress,
 } from '@/features/courses/data/courseFetchers';
+import { dataCacheManager } from '@/shared/lib/cacheManager';
 import { courseCopy } from '@/features/courses/data/courseCopy';
 import {
   courseProgress,
@@ -37,8 +39,8 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
     { keepPreviousData: true, staleTime: 10 * 60 * 1000, cacheTime: 30 * 60 * 1000 }
   );
 
-  const problemsFetcher = useCallback(() => fetchCourseProblems(), []);
-  const { data: problems } = useCachedData<CourseProblem[]>(['course-problems'], problemsFetcher, {
+  const problemsFetcher = useCallback(() => fetchCourseProblems(slug), [slug]);
+  const { data: problems } = useCachedData<CourseProblem[]>(['course-problems', slug], problemsFetcher, {
     staleTime: 30 * 60 * 1000,
   });
   const problemList = useMemo(() => problems ?? [], [problems]);
@@ -70,11 +72,21 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
 
   const completeLesson = useCallback(() => {
     if (!activeLessonId) return;
-    setCompletedIds((prev) => (prev.includes(activeLessonId) ? prev : [...prev, activeLessonId]));
+    const next = completedIds.includes(activeLessonId) ? completedIds : [...completedIds, activeLessonId];
+    setCompletedIds(next);
+    // Persist the session so the dashboard resumes from this lesson.
+    void syncCourseProgress(slug, {
+      progress: courseProgress(ordered, next),
+      completedLessonIds: next,
+      lastLesson: activeLessonId,
+      isCompleted: ordered.length > 0 && next.length === ordered.length,
+    })
+      .then(() => dataCacheManager.invalidate(['dashboard', 'courses-list']))
+      .catch(() => undefined);
     // Auto-advance prompt: finishing a lesson points at its practice set.
     setActiveTab('problems');
     showToast(courseCopy.player.lessonDoneToast);
-  }, [activeLessonId, showToast]);
+  }, [activeLessonId, completedIds, ordered, slug, showToast]);
 
   const openSyllabus = useCallback(() => setIsSyllabusOpen(true), []);
   const closeSyllabus = useCallback(() => setIsSyllabusOpen(false), []);

@@ -33,7 +33,7 @@ export const MobileCourseLandingView: React.FC = () => {
           <LiveSessionCard />
           <ExamCalloutCard />
           <InstructorCard />
-          <RelatedCoursesRail relatedIds={course.relatedIds} />
+          <RelatedCoursesRail slug={course.id} relatedIds={course.relatedIds} />
           {!isEnrolled && <CourseStickyCta />}
         </>
       ) : (

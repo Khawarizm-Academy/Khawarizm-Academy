@@ -23,6 +23,9 @@ export interface LandingCopy {
   aboutTitle: string;
   liveStateLabels: Record<'live' | 'upcoming' | 'past', string>;
   toastEnrolled: string;
+  toastFavoriteSaved: string;
+  toastFavoriteRemoved: string;
+  toastSignIn: string;
   metaRating: string;
   metaEnrolled: string;
   metaDuration: string;
