@@ -139,9 +139,17 @@ ASGI_APPLICATION = "config.asgi.application"
 
 # Postgres when DATABASE_URL is provided (Vercel Postgres/Neon); SQLite otherwise.
 DATABASE_URL = os.environ.get("DATABASE_URL")
+# A host with a mounted volume can pin the SQLite file to it (e.g. /data/db.sqlite3),
+# which keeps one durable file instead of a per-instance /tmp copy.
+SQLITE_PATH = os.environ.get("SQLITE_PATH", "")
 
 
-def resolve_sqlite_path(base_dir: Path, serverless: bool, runtime_dir: Path | None = None) -> Path:
+def resolve_sqlite_path(
+    base_dir: Path,
+    serverless: bool,
+    runtime_dir: Path | None = None,
+    override: str | None = None,
+) -> Path:
     """Pick a writable SQLite file for the current environment.
 
     A serverless bundle is read-only, so writing the bundled file fails with
@@ -149,7 +157,12 @@ def resolve_sqlite_path(base_dir: Path, serverless: bool, runtime_dir: Path | No
     Copy the build-time database into the one writable directory (/tmp) once
     per instance and write there. Writes are per-instance and reset on cold
     starts, so set DATABASE_URL for durable storage.
+
+    `override` (the SQLITE_PATH env var) wins everywhere: point it at a mounted
+    volume to keep a single durable file without a database server.
     """
+    if override:
+        return Path(override)
     if not serverless:
         return base_dir / "db.sqlite3"
     bundled = base_dir / "db.sqlite3"
@@ -182,14 +195,14 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME),
+            "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME, override=SQLITE_PATH),
         }
     }
 
 # Sessions and every other row live in the database. An ephemeral SQLite copy
 # cannot keep them, so users are randomly logged out with 401 "session_missing".
 # Shout about it: this misconfiguration is invisible otherwise.
-if IS_SERVERLESS_RUNTIME and not DATABASE_URL:
+if IS_SERVERLESS_RUNTIME and not DATABASE_URL and not SQLITE_PATH:
     LOGGER.warning(
         "Serverless runtime without DATABASE_URL: using an ephemeral SQLite copy in /tmp. "
         "Accounts, sessions, and every other write are lost on cold starts and invisible "

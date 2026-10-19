@@ -39,6 +39,12 @@ class ResolveSqlitePathTests(SimpleTestCase):
             self.assertEqual(resolved, Path(runtime_dir) / "db.sqlite3")
             self.assertFalse(resolved.exists())
 
+    def test_override_wins_everywhere(self):
+        self.assertEqual(
+            resolve_sqlite_path(Path("/srv/app"), serverless=True, override="/data/db.sqlite3"),
+            Path("/data/db.sqlite3"),
+        )
+
 
 ALLOWED = {
     "CORS_ALLOWED_ORIGINS": ["https://khawarizmacademy.vercel.app"],

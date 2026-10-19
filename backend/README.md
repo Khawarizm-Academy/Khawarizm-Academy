@@ -109,6 +109,7 @@ exported by hand:
 | `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames the API answers on |
 | `DJANGO_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins allowed to call the API |
 | `DATABASE_URL` | Postgres connection string; falls back to SQLite when unset |
+| `SQLITE_PATH` | Absolute path for the SQLite file (pin it to a mounted volume) |
 | `FIREBASE_*` | The Firebase web config + Admin SDK credentials (see below) |
 
 The secret check **fails loudly**: a non-debug run refuses to boot while
@@ -232,6 +233,34 @@ exists before the first request.
 > of failing with *"attempt to write a readonly database"*. `/tmp` is
 > per-instance and resets on cold starts, so accounts and edits are **not
 > durable**. Add Postgres (`DATABASE_URL`) for a fully working backend.
+
+---
+
+## Deploy on a persistent disk (Railway / Render / Fly)
+
+A file database is fine on any host that gives the app a real disk. Mount a
+volume and point `SQLITE_PATH` at it — the same file survives restarts, so
+sessions and every write are durable, with **no database server to run**.
+
+1. Deploy the repo with **Root Directory = `backend`**. The included
+   `Dockerfile` builds the API with gunicorn; on a non-Docker platform use
+   `gunicorn config.wsgi:application` as the start command.
+2. Add a **persistent volume** mounted at `/data` (Railway: *Volumes*; Render:
+   *Disks*; Fly: `fly volumes create`).
+3. Set the environment variables:
+
+   | Variable | Value |
+   | :--- | :--- |
+   | `DJANGO_ENV` | `production` |
+   | `DJANGO_SECRET_KEY` | a long random string (required) |
+   | `DJANGO_ALLOWED_HOSTS` | your API hostname |
+   | `DJANGO_CORS_ALLOWED_ORIGINS` | your frontend origin(s), comma-separated |
+   | `SQLITE_PATH` | `/data/db.sqlite3` |
+   | `FIREBASE_*` | the production Firebase config (see above) |
+
+The container runs `migrate` on boot, creating the file on the volume the first
+time. `DATABASE_URL` still wins if you later prefer Postgres; `SQLITE_PATH` is
+ignored in that case.
 
 ---
 
