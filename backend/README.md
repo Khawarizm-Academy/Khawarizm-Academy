@@ -112,6 +112,18 @@ exported by hand:
 | `SQLITE_PATH` | Absolute path for the SQLite file (pin it to a mounted volume) |
 | `FIREBASE_*` | The Firebase web config + Admin SDK credentials (see below) |
 
+**Database per profile.** Development uses SQLite because `.env.development`
+sets no `DATABASE_URL`. Production uses Postgres because `.env.production`
+sets one — copy the committed template to start a new host:
+
+```bash
+cp .env.production.example .env.production   # then fill in real values
+```
+
+`DATABASE_URL` wins wherever it is set, so the switch is simply whether that
+key is present (development: absent → SQLite; production: present → Postgres).
+Postgres URLs need `?sslmode=require` for managed hosts such as Aiven/Neon.
+
 The secret check **fails loudly**: a non-debug run refuses to boot while
 `DJANGO_SECRET_KEY` is still a placeholder.
 
