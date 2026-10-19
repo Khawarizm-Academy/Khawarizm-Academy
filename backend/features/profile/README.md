@@ -28,8 +28,7 @@ profile/
 ├── apps.py           AppConfig (label "profile")
 ├── views.py          profile_view (GET + PATCH)
 ├── urls.py           /api/profile
-├── admin.py          empty (no models)
-├── migrations/       (empty; no models)
+├── tests.py          the read → patch → read round-trip
 └── README.md
 ```
 

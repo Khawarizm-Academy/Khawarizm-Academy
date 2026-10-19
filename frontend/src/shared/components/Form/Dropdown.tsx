@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { Portal } from '@/shared/components/Overlays/Portal';
 
 export interface DropdownOption {
   value: string;
@@ -45,6 +46,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const [visible, setVisible] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
   const closeTimerRef = useRef<number | null>(null);
 
   const selected = options.find((o) => o.value === value);
@@ -61,6 +69,29 @@ export const Dropdown: React.FC<DropdownProps> = ({
     closeTimerRef.current = window.setTimeout(() => setVisible(false), 140);
   };
 
+  const updatePanelPosition = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    setPanelPos({
+      top: rect.bottom + 8,
+      left: rect.left,
+      width: rect.width,
+    });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updatePanelPosition();
+    const onScroll = () => updatePanelPosition();
+    const onResize = () => updatePanelPosition();
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [open]);
+
   useEffect(() => {
     return () => {
       if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
@@ -70,7 +101,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: MouseEvent | TouchEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) closeDropdown();
+      if (rootRef.current && !rootRef.current.contains(e.target as Node) && panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        closeDropdown();
+      }
     };
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('touchstart', onPointerDown);
@@ -122,6 +155,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
       <button
         type="button"
         id={id}
+        ref={buttonRef}
         role="combobox"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -142,12 +176,15 @@ export const Dropdown: React.FC<DropdownProps> = ({
       </button>
 
       {visible && (
-        <div
-          id={`${id ?? 'dropdown'}-listbox`}
-          role="listbox"
-          tabIndex={-1}
-          className={`dropdown-panel ${open ? 'animate-dropdown-in' : 'animate-dropdown-out'}`}
-        >
+        <Portal>
+          <div
+            ref={panelRef}
+            id={`${id ?? 'dropdown'}-listbox`}
+            role="listbox"
+            tabIndex={-1}
+            className={`dropdown-panel ${open ? 'animate-dropdown-in' : 'animate-dropdown-out'}`}
+            style={{ position: 'fixed', top: panelPos.top, left: panelPos.left, width: panelPos.width, zIndex: 9999 }}
+          >
           {options.map((opt, idx) => {
             const isSelected = opt.value === value;
             const isActive = idx === activeIndex && open;
@@ -170,7 +207,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
               </button>
             );
           })}
-        </div>
+          </div>
+        </Portal>
       )}
     </div>
   );

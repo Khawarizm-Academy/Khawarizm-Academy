@@ -13,6 +13,8 @@ interface FieldTextProps {
   textLeft?: boolean;
   iconPosition?: 'left' | 'right';
   required?: boolean;
+  /** Locked fields (the account email) render dimmed and reject edits. */
+  disabled?: boolean;
 }
 
 export const FieldText: React.FC<FieldTextProps> = ({
@@ -27,6 +29,7 @@ export const FieldText: React.FC<FieldTextProps> = ({
   textLeft = false,
   iconPosition = 'left',
   required,
+  disabled = false,
 }) => (
   <div className="profile-field">
     <label htmlFor={id} className="profile-label">
@@ -41,7 +44,11 @@ export const FieldText: React.FC<FieldTextProps> = ({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
-        className={`input-field peer ${iconPosition === 'left' ? 'pl-10' : 'pr-10'} ${textLeft ? 'text-left' : ''}`}
+        disabled={disabled}
+        readOnly={disabled}
+        className={`input-field peer ${iconPosition === 'left' ? 'pl-10' : 'pr-10'} ${textLeft ? 'text-left' : ''} ${
+          disabled ? 'input-field-locked' : ''
+        }`}
       />
       <Icon
         size={16}

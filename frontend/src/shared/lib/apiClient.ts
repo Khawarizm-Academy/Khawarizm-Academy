@@ -127,6 +127,8 @@ export const apiPost = <T>(path: string, body?: unknown) =>
 export const apiPatch = <T>(path: string, body?: unknown) =>
   apiRequest<T>(path, { method: 'PATCH', body: JSON.stringify(body ?? {}) });
 
+export const apiDelete = <T>(path: string) => apiRequest<T>(path, { method: 'DELETE' });
+
 /** Serialize params into a query string, skipping undefined and 'all' values. */
 export function buildQuery(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();

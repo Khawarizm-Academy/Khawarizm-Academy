@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from features.auth import services
+from features.auth.models import User
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
 from features.common.testing import ApiTestCase, FakeRequest, authenticate, make_admin, make_user
 
@@ -208,3 +209,138 @@ class AdminConsoleAnalyticsTests(ApiTestCase):
         services.open_session(make_user(email="everything@example.com"), FakeRequest(), "password")
         body = self.client.get("/api/admin/events?kind=celebration").json()
         self.assertTrue(body["results"])
+
+
+class AdminConsoleUserMutationTests(ApiTestCase):
+    def setUp(self):
+        super().setUp()
+        self.admin = make_admin()
+        authenticate(self.client, self.admin)
+
+    def test_create_user_fills_the_row(self):
+        response = self.client.post(
+            "/api/admin/users",
+            {"email": "new@example.com", "fullName": "New Learner", "role": Role.STUDENT, "password": "secret-123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(User.objects.filter(email="new@example.com").exists())
+        # A student profile is created for the new account.
+        self.assertTrue(User.objects.get(email="new@example.com").student_profile)
+
+    def test_create_admin_gets_staff_rights(self):
+        self.client.post("/api/admin/users", {"email": "boss@example.com", "role": Role.ADMIN}, format="json")
+        self.assertTrue(User.objects.get(email="boss@example.com").is_staff)
+
+    def test_create_without_email_is_a_bad_request(self):
+        self.assertEqual(self.client.post("/api/admin/users", {"role": Role.STUDENT}, format="json").status_code, 400)
+
+    def test_create_duplicate_email_is_a_bad_request(self):
+        make_user(email="taken@example.com")
+        response = self.client.post("/api/admin/users", {"email": "taken@example.com"}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_patch_edits_the_account(self):
+        target = make_user(email="edit@example.com", full_name="Before")
+        response = self.client.patch(
+            f"/api/admin/users/{target.id}",
+            {"fullName": "After", "phone": "+966500000000", "isActive": False},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        target.refresh_from_db()
+        self.assertEqual(target.full_name, "After")
+        self.assertEqual(target.phone, "+966500000000")
+        self.assertFalse(target.is_active)
+
+    def test_patch_role_keeps_django_staff_in_sync(self):
+        target = make_user(email="promote@example.com")
+        self.client.patch(f"/api/admin/users/{target.id}", {"role": Role.ADMIN}, format="json")
+        target.refresh_from_db()
+        self.assertEqual(target.role, Role.ADMIN)
+        self.assertTrue(target.is_staff)
+
+    def test_patch_cannot_demote_your_own_account(self):
+        response = self.client.patch(f"/api/admin/users/{self.admin.id}", {"role": Role.STUDENT}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_patch_never_changes_the_email_identity(self):
+        target = make_user(email="identity@example.com")
+        response = self.client.patch(
+            f"/api/admin/users/{target.id}",
+            {"email": "hijacked@example.com", "fullName": "Renamed"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        target.refresh_from_db()
+        self.assertEqual(target.email, "identity@example.com")
+        self.assertEqual(target.full_name, "Renamed")
+
+    def test_delete_removes_the_account(self):
+        target = make_user(email="remove@example.com")
+        response = self.client.delete(f"/api/admin/users/{target.id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(pk=target.id).exists())
+
+    def test_delete_cannot_target_your_own_account(self):
+        self.assertEqual(self.client.delete(f"/api/admin/users/{self.admin.id}").status_code, 400)
+
+    def test_a_student_cannot_create_users(self):
+        self.client.credentials()
+        authenticate(self.client, make_user(email="plain@example.com"))
+        self.assertEqual(self.client.post("/api/admin/users", {"email": "x@example.com"}, format="json").status_code, 403)
+
+
+class AdminConsoleContentTests(ApiTestCase):
+    def setUp(self):
+        super().setUp()
+        authenticate(self.client, make_admin())
+
+    def test_schema_lists_the_managed_types_and_fields(self):
+        body = self.client.get("/api/admin/content/schema").json()
+        keys = [item["key"] for item in body["types"]]
+        self.assertEqual(keys, ["courses", "scholarships", "events", "competitions"])
+        self.assertTrue(body["types"][0]["fields"])
+        self.assertTrue(body["userFields"])
+        # Email is the account identity: exposed to the form but read-only.
+        email_field = next(field for field in body["userFields"] if field["name"] == "email")
+        self.assertTrue(email_field["readonly"])
+
+    def test_events_can_be_listed_created_updated_and_deleted(self):
+        created = self.client.post(
+            "/api/admin/content/events",
+            {"eventId": "e1", "title": "Annual Conference", "format": "بث مباشر"},
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+        row_id = created.json()["id"]
+
+        listing = self.client.get("/api/admin/content/events?q=Conference").json()
+        self.assertEqual(listing["total"], 1)
+        self.assertEqual(listing["results"][0]["key"], "e1")
+
+        updated = self.client.patch(f"/api/admin/content/events/{row_id}", {"title": "Renamed"}, format="json")
+        self.assertEqual(updated.json()["values"]["title"], "Renamed")
+
+        self.assertEqual(self.client.delete(f"/api/admin/content/events/{row_id}").status_code, 200)
+
+    def test_missing_required_field_is_a_bad_request(self):
+        response = self.client.post("/api/admin/content/events", {"title": "No id"}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_a_duplicate_key_is_a_bad_request(self):
+        self.client.post("/api/admin/content/events", {"eventId": "dup", "title": "One"}, format="json")
+        response = self.client.post("/api/admin/content/events", {"eventId": "dup", "title": "Two"}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_an_unknown_type_is_a_bad_request(self):
+        self.assertEqual(self.client.get("/api/admin/content/unknown").status_code, 400)
+
+    def test_missing_row_is_a_404(self):
+        response = self.client.patch("/api/admin/content/events/00000000-0000-0000-0000-000000000000", {"title": "x"}, format="json")
+        self.assertEqual(response.status_code, 404)
+
+    def test_overview_reports_content_counts(self):
+        body = self.client.get("/api/admin/overview").json()
+        self.assertIn("content", body)
+        self.assertEqual(set(body["content"]), {"courses", "scholarships", "events", "competitions"})

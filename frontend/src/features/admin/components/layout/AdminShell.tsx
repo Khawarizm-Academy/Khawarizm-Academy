@@ -7,6 +7,7 @@ import { AdminNotice } from '@/features/admin/components/chrome/AdminNotice';
 import { UserDetailPanel } from '@/features/admin/components/views/UserDetailPanel';
 import { OverviewView } from '@/features/admin/components/views/OverviewView';
 import { UsersView } from '@/features/admin/components/views/UsersView';
+import { ContentView } from '@/features/admin/components/views/ContentView';
 import { SessionsView } from '@/features/admin/components/views/SessionsView';
 import { AnalyticsView } from '@/features/admin/components/views/AnalyticsView';
 import { ActivityView } from '@/features/admin/components/views/ActivityView';
@@ -16,6 +17,7 @@ import type { AdminSectionKey } from '@/features/admin/types';
 const SECTION_VIEWS: Record<AdminSectionKey, React.FC> = {
   overview: OverviewView,
   users: UsersView,
+  content: ContentView,
   sessions: SessionsView,
   analytics: AnalyticsView,
   activity: ActivityView,

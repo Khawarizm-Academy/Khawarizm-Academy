@@ -12,7 +12,10 @@ interface DashboardStatsHeaderProps {
   title: string;
   subtitle: string;
   chips: StatChipItem[];
-  studentName?: string;
+  /** The real signed-in learner's first name; the header never invents one. */
+  studentName: string;
+  /** True when `title` is a greeting placeholder and must be suffixed with the name. */
+  greeting?: boolean;
   unreadNotificationsCount?: number;
   onNotificationsClick?: () => void;
   onAvatarClick?: () => void;
@@ -53,8 +56,9 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
   title,
   subtitle,
   chips,
-  studentName = 'أحمد',
-  unreadNotificationsCount = 5,
+  studentName,
+  greeting = false,
+  unreadNotificationsCount = 0,
   onNotificationsClick,
   onAvatarClick,
   onSavedClick,
@@ -109,7 +113,7 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
     {/* Desktop stats row: welcome message on the right, chips on the left */}
     <div className="dash-stats-row">
       <div className="dash-greet">
-        <h1 className="dash-greet-title">{title}</h1>
+        <h1 className="dash-greet-title">{greeting ? `${title}، ${studentName}` : title}</h1>
         <p className="dash-greet-sub">{subtitle}</p>
       </div>
 

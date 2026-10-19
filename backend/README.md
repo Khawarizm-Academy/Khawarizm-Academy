@@ -228,8 +228,10 @@ Function.
 exists before the first request.
 
 > **SQLite on Vercel is read-only.** Without `DATABASE_URL` the build bundles
-> `db.sqlite3`, so reads work — but writes (enroll, save, profile edits) do not
-> persist. Add Postgres for a fully working backend.
+> `db.sqlite3`; at runtime the app copies it to `/tmp` so writes succeed instead
+> of failing with *"attempt to write a readonly database"*. `/tmp` is
+> per-instance and resets on cold starts, so accounts and edits are **not
+> durable**. Add Postgres (`DATABASE_URL`) for a fully working backend.
 
 ---
 
@@ -245,7 +247,7 @@ the last column.
 | `GET` | `/courses/:slug` — course detail (modules, lessons, live sessions, exam) | courses |
 | `GET` | `/courses/:slug/problems`, `/problems` — practice set | courses |
 | `GET` | `/courses/:slug/related` — related-course rail | courses |
-| `POST` | `/courses/:slug/enroll` · `/progress` — learner actions | courses |
+| `POST` | `/courses/:slug/enroll` · `/favorite` · `/progress` — learner actions | courses |
 | `GET` | `/courses/:slug/certificate` — certificate metadata | courses |
 | `GET` | `/scholarships/:slug` — scholarship detail | scholarships |
 | `POST` | `/scholarships/:slug/apply` · `/save` | scholarships |
@@ -257,6 +259,7 @@ the last column.
 | `GET` · `PATCH` | `/profile` — learner profile & preferences | profile |
 | `GET` | `/auth/me` — current learner (demo) | auth |
 | `POST` | `/auth/login` · `/auth/oauth/:provider` · `/auth/logout` | auth |
+| `GET` · `POST` · `PATCH` · `DELETE` | `/admin/*` — overview, accounts & roles, sessions & revokes, analytics, the content editor | adminconsole |
 
 Errors use one structured shape (see `features/common/errors.py`) so the
 frontend's data-section error state can render a message and a retry.

@@ -13,6 +13,69 @@ export interface Paged<T> {
   results: T[];
 }
 
+/** The four generic content collections the console can manage. */
+export type AdminContentTypeKey = 'courses' | 'scholarships' | 'events' | 'competitions';
+
+/** The input a schema field maps onto; drives the generic form renderer. */
+export type AdminFieldKind = 'text' | 'textarea' | 'url' | 'number' | 'decimal' | 'bool' | 'select' | 'json';
+
+/** One `{value,label}` choice for a `select` field. */
+export interface AdminFieldOption {
+  value: string;
+  label: string;
+}
+
+/** One editable field the schema describes; `name` is camelCase, `attr` the column. */
+export interface AdminField {
+  name: string;
+  attr: string;
+  label: string;
+  kind: AdminFieldKind;
+  required?: boolean;
+  /** Set once at creation and never editable again (the account email). */
+  readonly?: boolean;
+  options?: AdminFieldOption[];
+}
+
+/** One managed content collection plus the fields its form renders. */
+export interface AdminContentType {
+  key: AdminContentTypeKey;
+  label: string;
+  keyField: string;
+  titleField: string;
+  fields: AdminField[];
+}
+
+/** One content row: stable id, business key, title, and every editable value. */
+export interface AdminContentRow {
+  id: string;
+  key: string;
+  title: string;
+  values: Record<string, unknown>;
+}
+
+/** A paged page of content rows. */
+export type AdminContentPage = Paged<AdminContentRow>;
+
+/** The content registry the console renders its editor from. */
+export interface AdminContentSchema {
+  types: AdminContentType[];
+  userFields: AdminField[];
+}
+
+/** The account payload a create or edit submits; `password` is create-only. */
+export interface AdminUserInput {
+  email: string;
+  fullName?: string;
+  phone?: string;
+  role?: AuthRole;
+  isActive?: boolean;
+  membershipStatus?: string;
+  language?: string;
+  timezone?: string;
+  password?: string;
+}
+
 /** Headline counters behind `GET /admin/overview`. */
 export interface AdminOverview {
   users: { total: number; students: number; instructors: number; admins: number; newLast7Days: number };
@@ -23,6 +86,8 @@ export interface AdminOverview {
     rejectedLast7d: number;
     revocationsLast7d: number;
   };
+  /** A counter per managed content collection. */
+  content: Record<AdminContentTypeKey, number>;
 }
 
 /** One row of the users table. */
@@ -117,9 +182,9 @@ export interface LoginSeries {
 }
 
 /** The console's sections; each one is a `?tab=` value. */
-export type AdminSectionKey = 'overview' | 'users' | 'sessions' | 'analytics' | 'activity';
+export type AdminSectionKey = 'overview' | 'users' | 'content' | 'sessions' | 'analytics' | 'activity';
 
-export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ['overview', 'users', 'sessions', 'analytics', 'activity'];
+export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ['overview', 'users', 'content', 'sessions', 'analytics', 'activity'];
 
 /** Filter values shared by the tables. */
 export type AdminRoleFilter = AuthRole | 'all';
@@ -130,6 +195,7 @@ export type AdminLoginRange = '7' | '14' | '30';
 export const SECTION_LABELS: Record<AdminSectionKey, string> = {
   overview: 'نظرة عامة',
   users: 'المستخدمون',
+  content: 'إدارة المحتوى',
   sessions: 'الجلسات',
   analytics: 'التحليلات',
   activity: 'سجل النشاط',

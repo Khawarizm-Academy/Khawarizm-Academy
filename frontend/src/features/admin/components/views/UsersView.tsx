@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
+import { UserPlus } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/authContext';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { AdminSearchBox } from '@/features/admin/components/controls/AdminSearchBox';
 import { UsersTable } from '@/features/admin/components/layout/UsersTable';
 import { AdminPagination } from '@/features/admin/components/toolbar/AdminPagination';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
+import { CreateUserModal } from '@/features/admin/components/overlays/CreateUserModal';
 import type { AdminRoleFilter } from '@/features/admin/types';
 
 const ROLE_FILTERS: Array<{ id: AdminRoleFilter; label: string }> = [
@@ -31,6 +33,7 @@ export const UsersView: React.FC = () => {
     changingRoleId,
     changeRole,
   } = useAdmin();
+  const [isCreating, setIsCreating] = useState(false);
 
   const isSearching = Boolean(userSearch) || userRole !== 'all';
 
@@ -43,13 +46,19 @@ export const UsersView: React.FC = () => {
           placeholder="ابحث بالاسم أو البريد…"
           label="بحث في المستخدمين"
         />
-        <SlidingSegmentedControl
-          options={ROLE_FILTERS}
-          value={userRole}
-          onChange={setUserRole}
-          tone="blue"
-          aria-label="تصفية حسب الدور"
-        />
+        <div className="admin-toolbar-actions">
+          <SlidingSegmentedControl
+            options={ROLE_FILTERS}
+            value={userRole}
+            onChange={setUserRole}
+            tone="blue"
+            aria-label="تصفية حسب الدور"
+          />
+          <button type="button" className="admin-primary-btn" onClick={() => setIsCreating(true)}>
+            <UserPlus size={15} />
+            <span>مستخدم جديد</span>
+          </button>
+        </div>
       </div>
 
       {users && users.results.length > 0 ? (
@@ -76,6 +85,7 @@ export const UsersView: React.FC = () => {
           onRetry={refresh}
         />
       )}
+      {isCreating && <CreateUserModal onClose={() => setIsCreating(false)} />}
     </div>
   );
 };

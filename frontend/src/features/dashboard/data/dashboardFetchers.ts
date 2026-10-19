@@ -1,4 +1,4 @@
-import { apiGet } from '@/shared/lib/apiClient';
+import { apiGet, apiPost } from '@/shared/lib/apiClient';
 import type {
   EnrolledCourse,
   LiveSessionInfo,
@@ -85,3 +85,6 @@ export const fetchDrawerNotifications = async (): Promise<DashboardNotification[
   const data = await apiGet<{ drawer: DashboardNotification[] }>('/dashboard/notifications');
   return data.drawer;
 };
+
+export const markNotificationRead = (id: string): Promise<{ read: boolean }> =>
+  apiPost<{ read: boolean }>(`/dashboard/notifications/${id}/read`);

@@ -1,13 +1,11 @@
 import React from 'react';
-import { CalendarDays } from 'lucide-react';
-import { FeaturePlaceholder } from '@/shared/components/Placeholder/FeaturePlaceholder';
+import { EventsHero } from '@/features/events/components/hero/EventsHero';
+import { EventsDataSection } from '@/features/events/components/layout/EventsDataSection';
 
-export const EventsPage: React.FC = () => {
-  return (
-    <FeaturePlaceholder
-      title="الفعاليات والندوات"
-      description="جاهزون لعرض مؤتمر خوارزم السنوي، ورش العمل التقنية، والندوات العلمية المتخصصة — قريبًا على هذه الصفحة."
-      icon={<CalendarDays size={36} />}
-    />
-  );
-};
+/** Events page — hero plus the cached events data section. */
+export const EventsPage: React.FC = () => (
+  <main className="content-container">
+    <EventsHero />
+    <EventsDataSection />
+  </main>
+);

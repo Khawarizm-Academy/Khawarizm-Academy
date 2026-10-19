@@ -15,7 +15,7 @@ export const DashboardShell: React.FC = () => {
     selectView,
     activeWorkspaceCourse,
     closeWorkspace,
-    isLiveClassroomOpen,
+    activeLiveSession,
     closeLiveClassroom,
     selectedScholarship,
     closeScholarship,
@@ -44,8 +44,15 @@ export const DashboardShell: React.FC = () => {
         courseTitle={activeWorkspaceCourse || undefined}
       />
 
-      {/* Live classroom */}
-      <LiveClassroomModal isOpen={isLiveClassroomOpen} onClose={closeLiveClassroom} />
+      {/* Live classroom, opened with the real course it was launched from */}
+      {activeLiveSession && (
+        <LiveClassroomModal
+          isOpen
+          onClose={closeLiveClassroom}
+          courseTitle={activeLiveSession.courseTitle}
+          instructorName={activeLiveSession.instructorName}
+        />
+      )}
 
       {/* Scholarship application */}
       <ScholarshipApplicationModal

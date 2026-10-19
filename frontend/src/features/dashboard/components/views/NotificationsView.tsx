@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Bell, ChevronLeft } from 'lucide-react';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
-import { fetchDashboardNotifications } from '@/features/dashboard/data/dashboardFetchers';
+import { fetchDashboardNotifications, markNotificationRead } from '@/features/dashboard/data/dashboardFetchers';
 import { NotificationListItem } from '@/features/dashboard/components/cards/NotificationListItem';
 import { DashboardSectionEmpty } from '@/features/dashboard/components/states/DashboardSectionEmpty';
 import type { NotificationItemData } from '@/features/dashboard/types';
@@ -17,26 +17,28 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
   onBack,
   onSelectNotification,
 }) => {
-  const { data, isLoading } = useCachedData<NotificationItemData[]>(
+  const { data, isLoading, setData } = useCachedData<NotificationItemData[]>(
     ['dashboard', 'notifications-view'],
     fetchDashboardNotifications,
     { initialData: [] }
   );
 
-  // Local override so marking-as-read persists for the session
-  const [localItems, setLocalItems] = useState<NotificationItemData[] | null>(null);
-  const notifications = localItems ?? data;
+  const notifications = data;
 
   const unreadCount = notifications.filter((n) => n.isUnread).length;
 
   const handleMarkAllRead = () => {
-    setLocalItems((prev) => (prev ?? notifications).map((n) => ({ ...n, isUnread: false })));
+    const unread = notifications.filter((n) => n.isUnread);
+    // Writing the shared cache keeps the sidebar bell count in step with the list.
+    setData(notifications.map((n) => ({ ...n, isUnread: false })));
+    // Persist the whole batch; one failed call never blocks the others.
+    void Promise.all(unread.map((n) => markNotificationRead(n.id))).catch(() => undefined);
   };
 
   const handleToggleRead = (id: string, item: NotificationItemData) => {
-    setLocalItems((prev) =>
-      (prev ?? notifications).map((n) => (n.id === id ? { ...n, isUnread: false } : n))
-    );
+    setData(notifications.map((n) => (n.id === id ? { ...n, isUnread: false } : n)));
+    // Persist the single read so the bell count stays right across sessions.
+    void markNotificationRead(id).catch(() => undefined);
     onSelectNotification?.(item);
   };
 

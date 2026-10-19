@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Bell, X } from 'lucide-react';
 import { useCachedData } from '@/shared/hooks/useCachedData';
+import { dataCacheManager } from '@/shared/lib/cacheManager';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
-import { fetchDrawerNotifications } from '@/features/dashboard/data/dashboardFetchers';
+import { fetchDrawerNotifications, markNotificationRead } from '@/features/dashboard/data/dashboardFetchers';
 import { NotificationListItem } from '@/features/dashboard/components/cards/NotificationListItem';
 import type { DashboardNotification } from '@/features/dashboard/types';
 
@@ -17,28 +18,33 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
   onClose,
   onNavigate,
 }) => {
-  const { data, isLoading } = useCachedData<DashboardNotification[]>(
+  const { data, isLoading, setData } = useCachedData<DashboardNotification[]>(
     ['dashboard', 'notifications-drawer'],
     fetchDrawerNotifications,
     { enabled: isOpen, initialData: [] }
   );
 
-  // Local override so marking-as-read persists for the session
-  const [localItems, setLocalItems] = useState<DashboardNotification[] | null>(null);
-  const notifications = localItems ?? data;
+  const notifications = data;
 
   if (!isOpen) return null;
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const handleMarkAllRead = () => {
-    setLocalItems((prev) => (prev ?? notifications).map((n) => ({ ...n, isRead: true })));
+    const unread = notifications.filter((n) => !n.isRead);
+    setData(notifications.map((n) => ({ ...n, isRead: true })));
+    // The sidebar bell reads the view key, so refresh it too.
+    dataCacheManager.invalidate(['dashboard', 'notifications-view']);
+    // Persist the whole batch; one failed call never blocks the others.
+    void Promise.all(unread.map((n) => markNotificationRead(n.id))).catch(() => undefined);
   };
 
   const handleItemClick = (notif: DashboardNotification) => {
-    setLocalItems((prev) =>
-      (prev ?? notifications).map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
-    );
+    setData(notifications.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n)));
+    // The sidebar bell reads the view key, so refresh it too.
+    dataCacheManager.invalidate(['dashboard', 'notifications-view']);
+    // Persist the single read so the bell count stays right across sessions.
+    void markNotificationRead(notif.id).catch(() => undefined);
     if (notif.link && onNavigate) {
       onClose();
       onNavigate(notif.link);

@@ -26,7 +26,8 @@ export interface EnrolledCourse {
   isCompleted?: boolean;
   completionDate?: string;
   iconType?: 'python' | 'data' | 'ai' | 'uiux' | 'code';
-  slug?: string;
+  /** Real DB slug: every enrolled course deep-links to its player/certificate. */
+  slug: string;
 }
 
 export interface LiveSessionInfo {

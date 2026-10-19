@@ -30,7 +30,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // In-dashboard self-contained modal chambers.
   const [activeWorkspaceCourse, setActiveWorkspaceCourse] = useState<string | null>(null);
-  const [isLiveClassroomOpen, setIsLiveClassroomOpen] = useState(false);
+  const [liveSession, setLiveSession] = useState<{ courseTitle: string; instructorName: string } | null>(null);
   const [selectedScholarship, setSelectedScholarship] = useState<SavedScholarshipItem | null>(null);
   const [selectedCompetition, setSelectedCompetition] = useState<CompetitionItem | null>(null);
   const [previewCertificateItem, setPreviewCertificateItem] = useState<CertificateItem | null>(null);
@@ -67,9 +67,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
   const unreadCount = notifications.filter((notif) => notif.isUnread).length;
 
+  // The live chamber opens with the real course it was launched from.
+  const openLiveClassroom = (course: EnrolledCourse) =>
+    setLiveSession({ courseTitle: course.title, instructorName: course.instructor ?? '' });
+
   // Every notification routes to the view that owns its content.
   const notificationActions: Record<NotificationItemData['type'], () => void> = {
-    live: () => setIsLiveClassroomOpen(true),
+    live: () => {
+      const course = coursesData.find((item) => item.nextLiveTime) ?? coursesData[0];
+      if (course) openLiveClassroom(course);
+    },
     scholarship: () => selectView('saved'),
     competition: () => selectView('achievements'),
     lesson: () => selectView('enrolled'),
@@ -89,18 +96,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     coursesData,
     isLoadingCourses,
     activeWorkspaceCourse,
-    isLiveClassroomOpen,
+    activeLiveSession: liveSession,
     selectedScholarship,
     selectedCompetition,
     previewCertificateItem,
     selectView,
     openWorkspace: setActiveWorkspaceCourse,
-    openLiveClassroom: () => setIsLiveClassroomOpen(true),
+    openLiveClassroom,
     selectScholarship: setSelectedScholarship,
     selectCompetition: setSelectedCompetition,
     previewCertificate: setPreviewCertificateItem,
     closeWorkspace: () => setActiveWorkspaceCourse(null),
-    closeLiveClassroom: () => setIsLiveClassroomOpen(false),
+    closeLiveClassroom: () => setLiveSession(null),
     closeScholarship: () => setSelectedScholarship(null),
     closeCompetition: () => setSelectedCompetition(null),
     closeCertificate: () => setPreviewCertificateItem(null),

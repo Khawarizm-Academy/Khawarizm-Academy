@@ -8,7 +8,7 @@ curriculum, practice problems, enroll/progress, and certificate metadata.
 | | |
 | :--- | :--- |
 | **App label** | `courses` |
-| **Routes** | `GET /api/courses/:slug`, `GET /api/courses/:slug/problems`, `GET /api/problems`, `GET /api/courses/:slug/related`, `POST /api/courses/:slug/enroll`, `POST /api/courses/:slug/progress`, `GET /api/courses/:slug/certificate` |
+| **Routes** | `GET /api/courses/:slug`, `GET /api/courses/:slug/problems`, `GET /api/problems`, `GET /api/courses/:slug/related`, `POST /api/courses/:slug/enroll`, `POST /api/courses/:slug/favorite`, `POST /api/courses/:slug/progress`, `GET /api/courses/:slug/certificate` |
 | **Owns** | `Course`, `CourseModule`, `CourseLesson`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` |
 | **Frontend twin** | `frontend/src/features/courses/` |
 
@@ -26,7 +26,7 @@ courses/
 ├── apps.py           AppConfig (label "courses")
 ├── models.py         Course, CourseModule, CourseLesson, CourseLiveSession, CourseProblem, CourseProblemOption
 ├── serializers.py    course_catalog_item, module, lesson, live_session, course_detail, course_problem
-├── views.py          course detail/problems/related/enroll/progress/certificate; problems_list
+├── views.py          course detail/problems/related/enroll/favorite/progress/certificate; problems_list
 ├── urls.py           /api/courses/* and /api/problems
 ├── admin.py          Course/Module/Problem with inlines
 ├── migrations/       schema history
@@ -46,9 +46,14 @@ courses/
 - **Problems are shared:** `problems_list` and `course_problems_view` both
   return the same `CourseProblem` set with prefetched options. The related rail
   filters `Course` by `slug__in(course.related_ids)`.
-- **Mutations are acknowledgements:** `enroll` and `progress` accept the demo
-  learner context and return small payloads; persistence lands when auth/session
-  is implemented.
+- **Mutations persist for a signed-in learner:** `enroll` does
+  `get_or_create` on `dashboard.Enrollment`; `progress` writes `progress`,
+  `last_lesson` and `is_completed` onto that row; `favorite` toggles a
+  `dashboard.FavoriteCourse`. The dashboard models are imported *inside* the
+  view so `courses` never depends on `dashboard` at module load. A visitor
+  keeps the old acknowledgement — `enroll` and `progress` echo the course id
+  back and `favorite` answers `{favorited: false, requiresAuth: true}`. All
+  three 404 first on a missing course.
 
 ## Data
 

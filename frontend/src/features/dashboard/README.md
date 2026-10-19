@@ -66,7 +66,7 @@ dashboard/
 - `DashboardProvider` reads the shared dashboard chrome from `DashboardContentProvider` (static config) and parses `?view=` / `?state=` at render (never copied into state). It owns:
   - header + stat chips (hydrated from the content view headers) and async `coursesData` with `isLoadingCourses`,
   - `unreadCount` derived from the notifications call,
-  - five chamber states: `activeWorkspaceCourse`, `isLiveClassroomOpen`, `selectedScholarship`, `selectedCompetition`, `previewCertificateItem`,
+  - five chamber states: `activeWorkspaceCourse`, `activeLiveSession`, `selectedScholarship`, `selectedCompetition`, `previewCertificateItem`,
   - all open/close/select actions and `handleNotificationAction`, which routes a notification type to the right chamber or course route.
 - `dashboardContext.ts` keeps only pure UI constants (`SUB_NAV_VIEWS`) and the `buildViewHeaders` hydrator; `DashboardContentContext.ts` exposes `content` + `chambers` via `useDashboardContent()`.
 - `DashboardMain` chooses full-page, single-column, or two-column layout from `content.views.fullPageViews` / `singleColumnViews`.

@@ -27,7 +27,7 @@ export const AdminHeader: React.FC = () => {
         </span>
         <div className="admin-topbar-heading">
           <h1 className="admin-topbar-title">لوحة الإدارة</h1>
-          <p className="admin-topbar-sub">المستخدمون والأجهزة وتحليلات الدخول</p>
+          <p className="admin-topbar-sub">المستخدمون والمحتوى والأجهزة وتحليلات الدخول</p>
         </div>
       </div>
 

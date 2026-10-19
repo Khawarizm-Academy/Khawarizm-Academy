@@ -23,7 +23,8 @@ Five sections, selected by `?tab=` so a section is linkable:
 | Tab | Answers |
 | :--- | :--- |
 | `overview` | headline counts (users, active sessions, logins, revocations) |
-| `users` | every account, with role filter, search, and a detail panel |
+| `users` | every account, with role filter, search, and a detail panel (view/edit/delete) |
+| `content` | generic content manager with sub-tabs (courses, scholarships, events, competitions), schema-driven forms |
 | `sessions` | every device session, active/closed filter, search by mail or IP |
 | `analytics` | the login series chart and the OS / browser / device breakdown |
 | `activity` | the most recent audit rows, filterable by kind |
@@ -81,7 +82,7 @@ admin/
 
 | Source | Provides |
 | :--- | :--- |
-| `data/adminFetchers.ts` | `fetchOverview`, `fetchUsers`, `fetchUserDetail`, `updateUserRole`, `fetchSessions`, `revokeAdminSession`, `fetchLoginSeries`, `fetchDeviceBreakdown`, `fetchEvents` |
+| `data/adminFetchers.ts` | `fetchOverview`, `fetchUsers`, `fetchUserDetail`, `updateUserRole`, `fetchSessions`, `revokeAdminSession`, `fetchLoginSeries`, `fetchDeviceBreakdown`, `fetchEvents`, `createAdminUser`, `updateAdminUser`, `deleteAdminUser`, `fetchContentSchema`, `fetchContent`, `createContent`, `updateContent`, `deleteContent` |
 | `data/adminFormatters.ts` | `formatCount`, `formatDateTime`, `formatShortDateTime`, `formatDayLabel`, `initialsOf`, `SECTION_ICONS`, `METRIC_ICONS`, `REVOKE_REASON_LABELS`, `EVENT_KIND_LABELS` |
 | `@/shared/lib/apiClient` | every request goes through the Bearer + silent-refresh client |
 
@@ -93,8 +94,19 @@ admin/
 - `admin/errors` from a 403 render as a full-panel state, not a crash — a
   non-staff reader who lands here is told plainly that they cannot manage the
   platform.
-- `user_detail`'s `events` omit `email` (the profile already identifies the
-  user); the global `/admin/events` stream carries it.
+
+## Endpoints
+
+| Method | Path | Notes |
+| :--- | :--- | :--- |
+| `POST` | `/admin/users` | Create account; returns `AdminUserRow`. |
+| `PATCH` | `/admin/users/:id` | Update subset; returns `AdminUserRow`. Self-demotion rejected. |
+| `DELETE` | `/admin/users/:id` | `{deleted:true,id}`; self-delete rejected. |
+| `GET` | `/admin/content/schema` | `{types, userFields}` (schema-driven forms). |
+| `GET` | `/admin/content/:type` | Paged rows; `q` filters by key/title fields. |
+| `POST` | `/admin/content/:type` | Create row from schema fields; returns `ContentRow`. |
+| `PATCH` | `/admin/content/:type/:id` | Update subset; returns `ContentRow`. |
+| `DELETE` | `/admin/content/:type/:id` | `{deleted:true,id}`. |
 
 ## Related
 

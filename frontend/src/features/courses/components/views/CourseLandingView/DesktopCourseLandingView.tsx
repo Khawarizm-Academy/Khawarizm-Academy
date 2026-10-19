@@ -44,7 +44,7 @@ export const DesktopCourseLandingView: React.FC = () => {
           </div>
 
           <InstructorCard />
-          <RelatedCoursesRail relatedIds={course.relatedIds} />
+          <RelatedCoursesRail slug={course.id} relatedIds={course.relatedIds} />
         </>
       ) : (
         <CourseNotFound />

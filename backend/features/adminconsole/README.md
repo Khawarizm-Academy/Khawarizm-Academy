@@ -12,26 +12,28 @@ already defines, so there is one definition of "a session row" in the codebase.
 | | |
 | :--- | :--- |
 | **App label** | `adminconsole` |
-| **Routes** | `GET /api/admin/overview`, `GET /api/admin/users`, `GET /api/admin/users/:id`, `POST /api/admin/users/:id/role`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events` |
+| **Routes** | `GET /api/admin/overview`, `GET|POST /api/admin/users`, `GET|PATCH|DELETE /api/admin/users/:id`, `POST /api/admin/users/:id/role`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events`, `GET /api/admin/content/schema`, `GET|POST /api/admin/content/:type`, `PATCH|DELETE /api/admin/content/:type/:id` |
 | **Owns** | — (reads across features) |
-| **Imports** | `User`, `UserSession`, `AuthEvent` (accounts); `user_profile`, `session_payload`, `session_with_user` |
+| **Imports** | `User`, `UserSession`, `AuthEvent` (accounts); `user_profile`, `session_payload`, `session_with_user`; `Course`/`Scholarship`/`EventItem`/`Competition` (content) |
 | **Frontend twin** | `frontend/src/features/admin/` |
 
 ## Purpose
 
 Answers the three questions an administrator has: *who is here*, *from where*,
-and *what just happened* — plus the one action they need: **force-logout a
-device anywhere in the fleet.**
+and *what just happened* — plus the actions they need: **create, edit, disable
+and delete any account** and **manage the four managed content types**
+(courses, scholarships, events, competitions) through one schema-driven editor.
 
 ## Structure
 
 ```text
 adminconsole/
 ├── apps.py           AppConfig (label "adminconsole")
+├── serializers.py     USER_FIELDS + the CONTENT_TYPES registry (the editor's schema)
 ├── views.py          thin staff-only views + the two label maps
 ├── urls.py           /api/admin routes
 ├── admin.py          (none — it owns no models)
-├── tests.py          permissions, filters, the current-session flag, the 400s
+├── tests.py          permissions, filters, the current-session flag, the 400s, content CRUD
 └── README.md
 ```
 
@@ -56,15 +58,26 @@ adminconsole/
 - **Role changes keep Django in sync:** setting a role to `admin` sets
   `is_staff`, and any other role clears it, then `ensure_profile` creates the
   matching profile row. An admin cannot change their own role.
+- **Accounts are fully managed:** `POST /api/admin/users` creates an account
+  (email lowercased + a password), `PATCH /api/admin/users/:id` updates any
+  subset of `USER_FIELDS`, `DELETE /api/admin/users/:id` removes it. An admin
+  cannot demote or delete their own account.
+- **The content editor is schema-driven:** `serializers.py` declares
+  `USER_FIELDS` and `CONTENT_TYPES` — one row per managed type listing its
+  label, the model it maps to, its key field, and the fields the form renders
+  (`AdminFieldKind`: text/textarea/url/number/decimal/bool/select/json).
+  `GET /api/admin/content/schema` hands that registry to the console, so adding
+  a managed field is one registry row, never a new branch.
 
 ## Data
 
 | Source | Provides |
 | :--- | :--- |
-| `accounts.User` | user rows, role counts, the users table |
+| `accounts.User` | user rows, role counts, the users table, user create/edit/delete |
 | `accounts.UserSession` | device rows, the active/total counts, the os/browser/device breakdown |
 | `accounts.AuthEvent` | the daily login series and the recent-activity stream |
 | `accounts.serializers` | the payload shapes, shared with `/api/auth/*` |
+| `courses.Course`, `scholarships.Scholarship`, `events.EventItem`, `competitions.Competition` | the four managed content types |
 
 ## Payload notes
 
@@ -73,6 +86,10 @@ adminconsole/
   `/api/admin/events` stream *does* carry `email`, because there the question
   is "who acted".
 - Both list endpoints return `{total, page, pageSize, results}`.
+- A content row is `{id, key, title, values}` where `key` is the type's business
+  key (`slug`, `event_id`, `competition_id`) and `values` is every schema field
+  read straight off the model — so the console's edit form is seeded from one
+  payload and the PATCH it sends back is the same shape.
 
 ## Related
 

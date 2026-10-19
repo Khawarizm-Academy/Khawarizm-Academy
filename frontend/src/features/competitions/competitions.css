@@ -1,0 +1,66 @@
+/* ==========================================================================
+   Competitions Feature — page hero, urgent-challenge banner slot & cards.
+   Feature-owned concept classes. Imported by styles/globals.css, which keeps
+   only classes shared by 2+ features. Declared in @layer components so JSX
+   utilities can still override them.
+   ========================================================================== */
+@layer components {
+  /* --- Page hero --- */
+  .competitions-hero {
+    @apply w-full flex flex-col items-center justify-center text-center gap-3 pt-6 pb-2;
+  }
+
+  .competitions-hero-title {
+    @apply text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white font-display tracking-tight;
+  }
+
+  .competitions-hero-subtitle {
+    @apply max-w-2xl text-slate-400 text-sm sm:text-base font-body leading-relaxed;
+  }
+
+  /* --- Sections: urgent challenge banner, then the remaining-competitions grid --- */
+  .competitions-data {
+    @apply w-full flex flex-col gap-10 md:gap-14;
+  }
+
+  .competitions-section {
+    @apply w-full flex flex-col gap-6;
+  }
+
+  .competitions-section-title {
+    @apply text-xl sm:text-2xl font-bold text-white font-display;
+  }
+
+  .competitions-grid {
+    @apply w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch;
+  }
+
+  /* --- Competition cards --- */
+  .competition-card {
+    @apply flex flex-col;
+  }
+
+  .competition-card-body {
+    @apply flex flex-col gap-4 p-6 flex-1;
+  }
+
+  .competition-card-desc {
+    @apply text-sm text-slate-400 font-body leading-relaxed line-clamp-3;
+  }
+
+  .competition-timer {
+    @apply flex flex-wrap items-center gap-2 text-xs text-slate-400 font-body pt-1;
+  }
+
+  .competition-timer-value {
+    @apply font-bold text-white tabular-nums;
+  }
+
+  .competition-timer-sep {
+    @apply text-slate-600;
+  }
+
+  .competition-timer-label {
+    @apply text-slate-500;
+  }
+}

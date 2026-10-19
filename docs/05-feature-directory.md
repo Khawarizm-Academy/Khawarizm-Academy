@@ -11,8 +11,9 @@ Every product feature lives in its own folder under `frontend/src/features/` and
 | **Auth** | `/login` | Complete | [`auth/README.md`](../frontend/src/features/auth/README.md) |
 | **Profile** | `/profile` → `/dashboard?view=profile` | Complete | [`profile/README.md`](../frontend/src/features/profile/README.md) |
 | **Scholarships** | `/scholarships/:slug` | Functional | [`scholarships/README.md`](../frontend/src/features/scholarships/README.md) |
-| **Events** | `/events` | Staged (placeholder) | [`events/README.md`](../frontend/src/features/events/README.md) |
-| **Competitions** | `/competitions` | Staged (placeholder) | [`competitions/README.md`](../frontend/src/features/competitions/README.md) |
+| **Events** | `/events` | Complete | [`events/README.md`](../frontend/src/features/events/README.md) |
+| **Competitions** | `/competitions` | Complete | [`competitions/README.md`](../frontend/src/features/competitions/README.md) |
+| **Admin** | `/admin` | Complete | [`admin/README.md`](../frontend/src/features/admin/README.md) |
 
 ---
 
@@ -72,17 +73,31 @@ The scholarship detail view, loaded by URL slug, with an application CTA and loa
 
 ## Events — `features/events/`
 
-The events & seminars destination. Currently a single placeholder page (`FeaturePlaceholder`) so the tab never renders empty; the full listing experience is not built yet.
+The events & seminars destination: a featured keynote plus a grid of every
+upcoming event, served by `GET /events` and wrapped in a data section with
+skeleton / empty / error states.
 
-- **Entry:** `pages/EventsPage.tsx`.
+- **Entry:** `pages/EventsPage.tsx` → `EventsHero` + `EventsDataSection`.
 - Read more: [`events/README.md`](../frontend/src/features/events/README.md).
 
 ## Competitions — `features/competitions/`
 
-The competitions & challenges destination. Currently a single placeholder page (`FeaturePlaceholder`); the arena itself is demonstrated inside the dashboard's competition chamber.
+The competitions & challenges destination: a hero, a competition banner, and a
+card grid served by `GET /competitions`, with the same data-section states. The
+arena itself still opens inside the dashboard's competition chamber.
 
-- **Entry:** `pages/CompetitionsPage.tsx`.
+- **Entry:** `pages/CompetitionsPage.tsx` → `CompetitionsHero` + `CompetitionsDataSection`.
 - Read more: [`competitions/README.md`](../frontend/src/features/competitions/README.md).
+
+## Admin — `features/admin/`
+
+The staff-only console at a single responsive surface (no desktop/mobile split).
+Section tabs (`?tab=`) cover the overview, users, content, sessions, analytics,
+and activity. Users can be created, edited (any field, including role), and
+deleted; the four content types are edited through schema-driven forms.
+
+- **Entry:** `pages/AdminPage.tsx` → `AdminProvider` + `AdminShell`.
+- Read more: [`admin/README.md`](../frontend/src/features/admin/README.md).
 
 ---
 
@@ -123,6 +138,7 @@ names line up one-for-one, so a feature's data lives in the app of the same name
 | Profile | `features/profile` | [`profile/README.md`](../../backend/features/profile/README.md) |
 | Events | `features/events` | [`events/README.md`](../../backend/features/events/README.md) |
 | Competitions | `features/competitions` | [`competitions/README.md`](../../backend/features/competitions/README.md) |
+| Admin | `features/adminconsole` (label `adminconsole`) | [`adminconsole/README.md`](../../backend/features/adminconsole/README.md) |
 
 The full backend feature map and folder contract live in
 [`backend/features/README.md`](../../backend/features/README.md); the internal

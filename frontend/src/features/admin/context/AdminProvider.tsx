@@ -15,6 +15,14 @@ import {
   fetchUsers,
   revokeAdminSession,
   updateUserRole,
+  createAdminUser,
+  updateAdminUser,
+  deleteAdminUser,
+  fetchContentSchema,
+  fetchContent,
+  createContent as createContentRequest,
+  updateContent as updateContentRequest,
+  deleteContent as deleteContentRequest,
 } from '@/features/admin/data/adminFetchers';
 import type {
   AdminActiveFilter,
@@ -27,6 +35,10 @@ import type {
   AdminSessionWithUser,
   AdminUserDetail,
   AdminUserRow,
+  AdminUserInput,
+  AdminContentSchema,
+  AdminContentTypeKey,
+  AdminContentPage,
   DeviceBreakdown,
   LoginSeries,
   Paged,
@@ -59,6 +71,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [deletingContentId, setDeletingContentId] = useState<string | null>(null);
+  const [contentType, setContentTypeState] = useState<AdminContentTypeKey | null>(null);
+  const [contentSearch, setContentSearchState] = useState('');
+  const [contentPage, setContentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -91,6 +108,23 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     { enabled: selectedUserId !== null }
   );
 
+  // Content schema is the single source of truth for forms; load it once.
+  const contentSchema = useCachedData<AdminContentSchema>(['admin', 'content', 'schema'], fetchContentSchema);
+
+  const contentTypeList = contentSchema.data?.types ?? [];
+  const activeContentType = contentType ?? contentTypeList[0]?.key ?? null;
+
+  // Load content rows only while the content section is open.
+  const content = useCachedData<AdminContentPage>(
+    ['admin', 'content', activeContentType, contentSearch, contentPage],
+    () =>
+      fetchContent(activeContentType as AdminContentTypeKey, {
+        q: contentSearch,
+        page: contentPage,
+      }),
+    { enabled: currentSection === 'content' && activeContentType !== null, keepPreviousData: true }
+  );
+
   // Every page reset travels with its own filter, so results never sit on a stale page.
   const setUserSearch = useCallback((value: string) => {
     setUserSearchState(value);
@@ -107,6 +141,21 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setSessionActive = useCallback((value: AdminActiveFilter) => {
     setSessionActiveState(value);
     setSessionPage(1);
+  }, []);
+
+  const setContentType = useCallback((type: AdminContentTypeKey) => {
+    setContentTypeState(type);
+    setContentSearchState('');
+    setContentPage(1);
+  }, []);
+
+  const setContentSearch = useCallback((value: string) => {
+    setContentSearchState(value);
+    setContentPage(1);
+  }, []);
+
+  const setContentPageCallback = useCallback((page: number) => {
+    setContentPage(page);
   }, []);
 
   const selectSection = useCallback(
@@ -142,11 +191,92 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const createUser = async (input: AdminUserInput): Promise<boolean> => {
+    setError(null);
+    try {
+      await createAdminUser(input);
+      await Promise.all([users.refetch(), overview.refetch()]);
+      return true;
+    } catch (thrown) {
+      setError(toMessage(thrown));
+      return false;
+    }
+  };
+
+  const updateUser = async (userId: string, input: Partial<AdminUserInput>): Promise<boolean> => {
+    setError(null);
+    try {
+      await updateAdminUser(userId, input);
+      await Promise.all([users.refetch(), overview.refetch(), selectedUser.refetch()]);
+      return true;
+    } catch (thrown) {
+      setError(toMessage(thrown));
+      return false;
+    }
+  };
+
+  const deleteUser = async (userId: string): Promise<boolean> => {
+    setError(null);
+    setDeletingUserId(userId);
+    try {
+      await deleteAdminUser(userId);
+      await Promise.all([users.refetch(), overview.refetch()]);
+      return true;
+    } catch (thrown) {
+      setError(toMessage(thrown));
+      return false;
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
+  const createContent = async (values: Record<string, unknown>): Promise<boolean> => {
+    if (!activeContentType) return false;
+    setError(null);
+    try {
+      await createContentRequest(activeContentType, values);
+      await Promise.all([content.refetch(), overview.refetch()]);
+      return true;
+    } catch (thrown) {
+      setError(toMessage(thrown));
+      return false;
+    }
+  };
+
+  const updateContent = async (id: string, values: Record<string, unknown>): Promise<boolean> => {
+    if (!activeContentType) return false;
+    setError(null);
+    try {
+      await updateContentRequest(activeContentType, id, values);
+      await Promise.all([content.refetch(), overview.refetch()]);
+      return true;
+    } catch (thrown) {
+      setError(toMessage(thrown));
+      return false;
+    }
+  };
+
+  const deleteContent = async (id: string): Promise<boolean> => {
+    if (!activeContentType) return false;
+    setError(null);
+    setDeletingContentId(id);
+    try {
+      await deleteContentRequest(activeContentType, id);
+      await Promise.all([content.refetch(), overview.refetch()]);
+      return true;
+    } catch (thrown) {
+      setError(toMessage(thrown));
+      return false;
+    } finally {
+      setDeletingContentId(null);
+    }
+  };
+
   const refresh = async () => {
     setError(null);
     setIsRefreshing(true);
     try {
-      await Promise.all([
+      const refreshers: Promise<unknown>[] = [
         overview.refetch(),
         users.refetch(),
         sessions.refetch(),
@@ -154,7 +284,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         devices.refetch(),
         events.refetch(),
         selectedUser.refetch(),
-      ]);
+        contentSchema.refetch(),
+      ];
+      if (activeContentType) refreshers.push(content.refetch());
+      await Promise.all(refreshers);
     } finally {
       setIsRefreshing(false);
     }
@@ -163,6 +296,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const sectionLoading: Record<AdminSectionKey, boolean> = {
     overview: overview.isLoading,
     users: users.isLoading,
+    content: contentSchema.isLoading || content.isLoading,
     sessions: sessions.isLoading,
     analytics: loginSeries.isLoading || devices.isLoading,
     activity: events.isLoading,
@@ -171,6 +305,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const loadErrors: Record<AdminSectionKey, boolean> = {
     overview: overview.isError,
     users: users.isError,
+    content: contentSchema.isError || content.isError,
     sessions: sessions.isError,
     analytics: loginSeries.isError || devices.isError,
     activity: events.isError,
@@ -206,6 +341,16 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     events: events.data ?? [],
     eventKind,
     setEventKind,
+    contentSchema: contentSchema.data ?? null,
+    contentType: activeContentType,
+    setContentType,
+    content: content.data ?? null,
+    contentSearch,
+    contentPage,
+    setContentSearch,
+    setContentPage: setContentPageCallback,
+    deletingUserId,
+    deletingContentId,
     selectedUserId,
     selectedUser: selectedUser.data ?? null,
     isLoadingSelectedUser: selectedUser.isLoading,
@@ -220,6 +365,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     refresh,
     changeRole,
     revokeSession,
+    createUser,
+    updateUser,
+    deleteUser,
+    createContent,
+    updateContent,
+    deleteContent,
   };
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
