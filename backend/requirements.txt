@@ -6,5 +6,7 @@ firebase-admin==6.6.0
 gunicorn==26.2.0
 psycopg[binary]==3.3.6
 PyJWT[crypto]==2.10.1
+Pyrogram==2.0.106
 python-dotenv==1.2.4
 sqlparse==0.6.0
+TgCrypto==1.2.5

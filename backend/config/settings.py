@@ -100,6 +100,7 @@ INSTALLED_APPS = [
     "features.competitions",
     "features.profile",
     "features.adminconsole",
+    "features.videohosting",
 ]
 
 # Every account (student / instructor / admin) lives in the auth feature app.
@@ -283,3 +284,18 @@ if FIREBASE_PROJECT_ID and not (FIREBASE_API_KEY and FIREBASE_AUTH_DOMAIN):
         "Copy the entire web config block from Firebase console → Project settings → "
         "Your apps, or clear FIREBASE_PROJECT_ID to keep using dev:<email> tokens."
     )
+
+# Telegram is the video CDN (unlimited, free) and the control plane stays tiny.
+# Ingest needs the API credentials; serving only needs the tokens, so a
+# serverless deploy can run with just TELEGRAM_STREAM_TOKEN.
+TELEGRAM_API_ID = os.environ.get("TELEGRAM_API_ID", "")
+TELEGRAM_API_HASH = os.environ.get("TELEGRAM_API_HASH", "")
+# Bot used for ingest/upload (a member of the storage channel).
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+# Throwaway, read-only bot whose token appears in redirect URLs; it can only
+# read ciphertext segments, never the AES keys, so a leak is bounded.
+TELEGRAM_STREAM_TOKEN = os.environ.get("TELEGRAM_STREAM_TOKEN", "")
+TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "")
+
+# How long a minted playback grant lives before the viewer must re-mint.
+STREAM_TOKEN_TTL_HOURS = env_int("STREAM_TOKEN_TTL_HOURS", 6)

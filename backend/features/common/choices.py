@@ -58,6 +58,15 @@ class ScholarshipDeadlineUrgency(models.TextChoices):
     NORMAL = "normal", "normal"
 
 
+class VideoStatus(models.TextChoices):
+    """Lifecycle of a Telegram-hosted, HLS-packaged lesson video."""
+
+    UPLOADING = "uploading", "Uploading"
+    PROCESSING = "processing", "Processing"
+    READY = "ready", "Ready"
+    ERROR = "error", "Error"
+
+
 class LessonStatus(models.TextChoices):
     LOCKED = "locked", "locked"
     ACTIVE = "active", "active"
