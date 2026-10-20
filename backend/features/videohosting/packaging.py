@@ -9,6 +9,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from django.conf import settings
+
 # The fixed rendition ladder — one decode, three outputs, per-rendition keys.
 RENDITIONS = (
     {"quality": "360p", "height": 360, "video_bitrate_kbps": 600, "audio_bitrate_kbps": 96},
@@ -46,6 +48,27 @@ class PackagingResult:
 
 def ffmpeg_available() -> bool:
     return shutil.which("ffmpeg") is not None and shutil.which("ffprobe") is not None
+
+
+def require_packaging_host() -> None:
+    """Fail loudly when packaging is attempted somewhere it can never work.
+
+    Vercel runs the API as a read-only serverless function: no system packages,
+    a 4.5MB request cap, a 300s ceiling, and a 500MB /tmp. Installing FFmpeg
+    there is impossible, so encoding must happen on a machine that has it. This
+    guard turns a confusing "ffmpeg not found" into the actual instruction.
+    """
+    if settings.IS_VERCEL:
+        raise PackagingError(
+            "Video packaging cannot run on Vercel (no FFmpeg, 4.5MB body cap, 300s limit). "
+            "Run `python manage.py ingest_video <file> --slug <slug>` on a machine with "
+            "FFmpeg installed, then deploy — the API only serves tokens, manifests, and keys."
+        )
+    if not ffmpeg_available():
+        raise PackagingError(
+            "ffmpeg/ffprobe not found on PATH. Install FFmpeg (e.g. `sudo apt install ffmpeg`) "
+            "on the ingest host, or run the ingest from a machine that has it."
+        )
 
 
 def _run(command: list[str]) -> None:
@@ -143,9 +166,7 @@ def package_video(source_path: str) -> PackagingResult:
     decrypts another quality, and the stored playlists contain no working URL —
     only __TOKEN__ placeholders that the serving layer rewrites per request.
     """
-    if not ffmpeg_available():
-        raise PackagingError("ffmpeg/ffprobe not found on PATH — install FFmpeg to ingest videos")
-
+    require_packaging_host()
     source = Path(source_path)
     if not source.is_file():
         raise PackagingError(f"Source file not found: {source}")

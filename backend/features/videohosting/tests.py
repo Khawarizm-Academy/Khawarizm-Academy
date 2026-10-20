@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import hashlib
 from datetime import timedelta
+from unittest import mock
 
 from django.utils import timezone
 
 from features.common.choices import VideoStatus
 from features.common.testing import ApiTestCase, authenticate
-from features.videohosting import tokens
+from features.videohosting import packaging, tokens
 from features.videohosting.models import StreamToken, VideoAsset, VideoRendition, VideoSegment
 from features.videohosting.serializers import asset_meta
 
@@ -58,6 +59,25 @@ class AssetModelTests(ApiTestCase):
         asset = make_asset()
         with self.assertRaises(Exception):
             VideoRendition.objects.create(asset=asset, quality="360p", aes_key_hex=KEY_HEX)
+
+
+class PackagingHostTests(ApiTestCase):
+    def test_guard_blocks_vercel_with_instructions(self):
+        with mock.patch.object(packaging.settings, "IS_VERCEL", True):
+            with self.assertRaises(packaging.PackagingError) as ctx:
+                packaging.require_packaging_host()
+        self.assertIn("cannot run on Vercel", str(ctx.exception))
+
+    def test_guard_reports_missing_ffmpeg_off_vercel(self):
+        with mock.patch.object(packaging.settings, "IS_VERCEL", False):
+            with mock.patch.object(packaging, "ffmpeg_available", return_value=False):
+                with self.assertRaises(packaging.PackagingError) as ctx:
+                    packaging.require_packaging_host()
+        self.assertIn("Install FFmpeg", str(ctx.exception))
+
+    def test_guard_passes_when_ffmpeg_present(self):
+        with mock.patch.object(packaging, "ffmpeg_available", return_value=True):
+            packaging.require_packaging_host()  # must not raise
 
 
 class AssetMetaTests(ApiTestCase):

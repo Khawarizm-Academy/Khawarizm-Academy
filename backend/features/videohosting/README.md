@@ -66,6 +66,32 @@ raw token is shown once at mint time. `VideoStatus` lives in
    IP-bound and expiring; the master and key responses are `no-store`. A leaked
    segment URL exposes encrypted bytes and nothing more.
 
+## Where FFmpeg runs — **not on Vercel**
+
+FFmpeg is only needed for **packaging** (step 1). It cannot run on Vercel: the
+serverless runtime has no system packages, a 4.5 MB request cap, a 300 s ceiling,
+a read-only filesystem, and a 500 MB `/tmp`. `require_packaging_host()` fails
+loudly with those instructions instead of a vague "ffmpeg not found".
+
+The split is the whole point — the **serving** path (steps 2–3) is tiny and
+serverless-friendly, so it runs fine on Vercel:
+
+| Concern | Runs where | Needs FFmpeg? |
+| :--- | :--- | :--- |
+| `ingest_video` (upload + package + store) | Your machine, a worker container, or any VM | **Yes** |
+| Token mint, manifests, keys, segment redirects | Vercel (serverless) | No |
+| Segment bytes | Telegram CDN (redirect target) | No |
+
+**Recommended flow** — encode locally once per video, then deploy:
+
+```bash
+cd backend && source .venv/bin/activate
+python manage.py ingest_video ~/lesson-01.mp4 --slug course-1--lesson-1 --delete-source
+```
+
+For hosted/repeatable encoding, run the same command in a small worker container
+(Railway / Render / Fly / a VPS) that has FFmpeg — never the Vercel function.
+
 ## Configuration
 
 Environment variables (never commit real values):

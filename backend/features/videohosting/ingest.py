@@ -34,11 +34,9 @@ def ingest_file(
     asset.save(update_fields=["status", "error_message", "updated_at"])
 
     try:
-        if not packaging.ffmpeg_available():
-            raise packaging.PackagingError("ffmpeg/ffprobe not found on PATH — install FFmpeg to ingest videos")
+        packaging.require_packaging_host()
 
-        service = TelegramMediaService()
-        asyncio.run(_upload_source(service, asset, source))
+        service = TelegramMediaService()        asyncio.run(_upload_source(service, asset, source))
         result = packaging.package_video(str(source))
         try:
             asyncio.run(_upload_package(service, asset, result))
