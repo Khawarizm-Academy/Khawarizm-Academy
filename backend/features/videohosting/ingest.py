@@ -36,7 +36,8 @@ def ingest_file(
     try:
         packaging.require_packaging_host()
 
-        service = TelegramMediaService()        asyncio.run(_upload_source(service, asset, source))
+        service = TelegramMediaService()        
+        asyncio.run(_upload_source(service, asset, source))
         result = packaging.package_video(str(source))
         try:
             asyncio.run(_upload_package(service, asset, result))
