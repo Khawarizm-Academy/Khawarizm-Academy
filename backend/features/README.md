@@ -22,6 +22,7 @@ which routes it serves, and the rules every feature follows — mirroring
 | **Competitions** | `competitions` | `/api/competitions` | `Competition` | [`competitions/README.md`](competitions/README.md) |
 | **Profile** | `profile` | `/api/profile` | — (edits `accounts.User`) | [`profile/README.md`](profile/README.md) |
 | **Admin console** | `adminconsole` | `/api/admin/*` | — (reads across features) | [`adminconsole/README.md`](adminconsole/README.md) |
+| **Video hosting** | `videohosting` | `/api/videos/*`, `/api/stream/*` | `VideoAsset`, `VideoRendition`, `VideoSegment`, `StreamToken` | [`videohosting/README.md`](videohosting/README.md) |
 
 Every folder is a Django app in `INSTALLED_APPS` and mounted in
 `config/urls.py`. `profile` is the one model-less feature: it installs an

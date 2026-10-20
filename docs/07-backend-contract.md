@@ -201,6 +201,25 @@ Staff-only (`IsAdminRole`), under `/admin`:
 | `GET` · `POST` | `/admin/content/:type` | Paged rows / create (`courses`, `scholarships`, `events`, `competitions`). |
 | `PATCH` · `DELETE` | `/admin/content/:type/:id` | Edit / remove one content row. |
 
+### Video hosting
+
+Telegram channel as the data plane (unlimited storage); the backend is the
+control plane only and never proxies a video byte. Playback routes carry a
+minted token — hls.js cannot send an `Authorization` header on a segment fetch,
+so the token **is** the grant (IP-bound, expiring, stored hashed).
+
+| Method | Path | Purpose |
+| :--- | :--- | :--- |
+| `GET` | `/videos/:slug` | Readiness, duration, and the rendition ladder. |
+| `POST` | `/videos/:slug/token` | Mint a playback grant (auth required). |
+| `GET` | `/stream/:token/master.m3u8` | Master playlist, `__TOKEN__` swapped for the caller's token. |
+| `GET` | `/stream/:token/:quality/index.m3u8` | Rendition media playlist. |
+| `GET` | `/stream/:token/key/:quality` | The 16-byte AES-128 key for one rendition (`no-store`). |
+| `GET` | `/stream/:token/:quality/:index.ts` | **302** straight to Telegram's CDN (browser fetches the encrypted segment). |
+
+The stored playlists keep `__TOKEN__` placeholders, so a database dump contains
+no usable URL; only the SHA-256 of each grant is stored.
+
 ---
 
 ## 5. Integration guidance
