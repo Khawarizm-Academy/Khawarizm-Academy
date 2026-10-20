@@ -14,6 +14,7 @@ Every product feature lives in its own folder under `frontend/src/features/` and
 | **Events** | `/events` | Complete | [`events/README.md`](../frontend/src/features/events/README.md) |
 | **Competitions** | `/competitions` | Complete | [`competitions/README.md`](../frontend/src/features/competitions/README.md) |
 | **Admin** | `/admin` | Complete | [`admin/README.md`](../frontend/src/features/admin/README.md) |
+| **Video hosting** | — (consumed by the courses player) | Complete | [`videohosting/README.md`](../frontend/src/features/videohosting/README.md) |
 
 ---
 

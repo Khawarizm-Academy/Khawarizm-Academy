@@ -354,6 +354,11 @@
     @apply absolute inset-0 w-full h-full object-cover;
   }
 
+  /* Viewer stamp drawn over the frame — the anti-screen-record deterrent. */
+  .player-watermark {
+    @apply absolute inset-0 z-[5] w-full h-full pointer-events-none;
+  }
+
   .player-source-chip {
     @apply absolute top-3 right-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-navy-950/70 backdrop-blur-md border border-navy-600/50 text-[11px] text-slate-200 font-body pointer-events-none;
   }

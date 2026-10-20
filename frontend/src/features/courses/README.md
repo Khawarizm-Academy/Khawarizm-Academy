@@ -2,6 +2,10 @@
 
 The full course lifecycle: discover a course, learn it in the browser, and earn a certificate.
 
+> Real playback is provided by [`../videohosting/README.md`](../videohosting/README.md):
+> the stage binds a hosted `<video>` through `useHlsPlayback`, and unhosted
+> lessons fall back to the placeholder surface.
+
 ## At a glance
 
 | | |
