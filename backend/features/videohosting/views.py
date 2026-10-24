@@ -19,7 +19,7 @@ from features.auth.device import client_ip
 from features.videohosting import tokens
 from features.videohosting.models import VideoAsset, VideoSegment
 from features.videohosting.serializers import asset_meta, minted_token
-from features.videohosting.telegram import resolve_file_path_http, telegram_file_url
+from features.videohosting.providers.telegram import resolve_file_path_http, telegram_file_url
 
 ASSET_NOT_FOUND = {"detail": "الفيديو غير موجود"}
 TOKEN_INVALID = {"detail": "انتهت صلاحية رابط المشاهدة"}

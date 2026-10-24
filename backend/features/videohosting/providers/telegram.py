@@ -1,4 +1,4 @@
-# Telegram Client Layer <- Streaming Views & Ingest Command
+# Telegram provider <- the providers registry, ingest command, serving views
 # Wraps Pyrogram so a Telegram channel acts as unlimited video storage: upload
 # (>2GB auto-split), 1 MiB chunk streaming, and Bot API file-path resolution.
 # Serving paths never import Pyrogram — they refresh file paths over plain HTTPS.
@@ -6,9 +6,24 @@ import asyncio
 import os
 import time
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, Union
+from typing import AsyncGenerator, Dict, Union
 
 from django.conf import settings
+
+from features.videohosting.providers.base import ProviderSpec
+
+TELEGRAM = ProviderSpec(
+    code="telegram",
+    name="Telegram",
+    is_enabled=False,
+    is_default=False,
+    capabilities={
+        "resumableUpload": False,
+        "privateAccess": True,
+        "requiresAuth": False,
+        "playback": "hls_token",
+    },
+)
 
 # Pyrogram is imported lazily: the serving stack (serverless) must stay
 # importable without it, and its sync wrapper needs a running event loop.
@@ -115,7 +130,7 @@ class TelegramMediaService:
 
     # ----------------------------------------------------------------- upload
 
-    async def upload_file(self, file_path: str, caption: str = "") -> Dict[str, Any]:
+    async def upload_file(self, file_path: str, caption: str = "") -> Dict[str, object]:
         """Upload one file (>2GB auto-split into parts) and return catalog rows."""
         size = os.path.getsize(file_path)
         if size > SPLIT_THRESHOLD_BYTES:
@@ -123,7 +138,7 @@ class TelegramMediaService:
         result = await self._with_retry(self._upload_single, file_path, caption)
         return {"is_split": False, "parts": [result]}
 
-    async def _upload_single(self, file_path: str, caption: str = "") -> Dict[str, Any]:
+    async def _upload_single(self, file_path: str, caption: str = "") -> Dict[str, object]:
         sent = await self.client.send_document(
             chat_id=self.channel_id,
             document=file_path,
@@ -142,7 +157,7 @@ class TelegramMediaService:
             "mime_type": doc.mime_type,
         }
 
-    async def _upload_split(self, file_path: str, caption: str) -> Dict[str, Any]:
+    async def _upload_split(self, file_path: str, caption: str) -> Dict[str, object]:
         """Split above the bot upload cap, upload part by part, clean up temp parts."""
         base_dir, file_name = os.path.split(file_path)
         split_dir = os.path.join(base_dir, f"split_{int(time.time())}")
@@ -203,7 +218,7 @@ class TelegramMediaService:
             sent += len(chunk)
             yield chunk
 
-    async def get_file_meta(self, message_id: int) -> Dict[str, Any]:
+    async def get_file_meta(self, message_id: int) -> Dict[str, object]:
         """Exact metadata for one stored message (used by re-packaging)."""
         msg = await self._with_retry(
             self.client.get_messages, chat_id=self.channel_id, message_ids=message_id

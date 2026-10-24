@@ -92,6 +92,30 @@ python manage.py ingest_video ~/lesson-01.mp4 --slug course-1--lesson-1 --delete
 For hosted/repeatable encoding, run the same command in a small worker container
 (Railway / Render / Fly / a VPS) that has FFmpeg — never the Vercel function.
 
+## Providers
+
+Providers live in `providers/` — one module per host, plus the registry:
+
+```text
+features/videohosting/providers/
+├── __init__.py      registry — SPECS, spec_for(), ensure_defaults(), default_code()
+├── base.py          ProviderSpec — code, name, enablement, capabilities
+├── google_drive.py  GOOGLE_DRIVE spec + credentials() access point
+└── telegram.py      TELEGRAM spec + TelegramMediaService + Bot API helpers
+```
+
+The specs are the source of truth for the admin-visible `VideoProvider` rows:
+`ensure_defaults()` upserts one row per spec, so a row toggled by hand in the
+admin is re-synced to its spec on the next call.
+
+### Adding a new provider — three steps, no existing logic touched
+
+1. **`providers/<code>.py`** — a `ProviderSpec` (code, name, enablement,
+   capabilities) and a `credentials()` reading the provider's settings block.
+2. **`config/settings.py`** — `os.environ.get` for its keys; **`.env*`** — a
+   placeholder block (commented dev, real values only via host env).
+3. **`providers/__init__.py`** — import the spec and add it to `SPECS`.
+
 ## Configuration
 
 Environment variables (never commit real values):
@@ -103,6 +127,10 @@ Environment variables (never commit real values):
 | `TELEGRAM_STREAM_TOKEN` | Throwaway read-only bot whose token appears in redirect URLs |
 | `TELEGRAM_CHANNEL_ID` | Storage channel (`@handle` or numeric id) |
 | `STREAM_TOKEN_TTL_HOURS` | Playback grant lifetime (default `6`) |
+| `GOOGLE_DRIVE_CLIENT_ID` / `CLIENT_SECRET` / `REFRESH_TOKEN` | Drive OAuth credentials |
+| `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` | Drive headless auth (alternative to the refresh token) |
+| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | The Drive folder videos upload into |
+| `VIDEO_HOSTING_DEFAULT_PROVIDER` | The provider assets default to (default `google_drive`) |
 
 `pyrogram` + `tgcrypto` are only imported on the ingest path; the serving stack
 stays importable (and serverless-safe) without them.

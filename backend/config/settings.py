@@ -299,3 +299,15 @@ TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "")
 
 # How long a minted playback grant lives before the viewer must re-mint.
 STREAM_TOKEN_TTL_HOURS = env_int("STREAM_TOKEN_TTL_HOURS", 6)
+
+# Google Drive is the managed playback host (features/videohosting/providers/google_drive.py).
+# Auth is OAuth 2.0: the refresh token mints short-lived Access Tokens, or a
+# service account JSON on headless hosts — one of the two is enough. Every key
+# is a SECRET — never commit a real value; set them in the host environment.
+GOOGLE_DRIVE_CLIENT_ID = os.environ.get("GOOGLE_DRIVE_CLIENT_ID", "")
+GOOGLE_DRIVE_CLIENT_SECRET = os.environ.get("GOOGLE_DRIVE_CLIENT_SECRET", "")
+GOOGLE_DRIVE_REFRESH_TOKEN = os.environ.get("GOOGLE_DRIVE_REFRESH_TOKEN", "")
+GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", "")
+GOOGLE_DRIVE_ROOT_FOLDER_ID = os.environ.get("GOOGLE_DRIVE_ROOT_FOLDER_ID", "")
+# The provider assets default to when none is named explicitly.
+VIDEO_HOSTING_DEFAULT_PROVIDER = os.environ.get("VIDEO_HOSTING_DEFAULT_PROVIDER", "google_drive")

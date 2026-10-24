@@ -13,7 +13,7 @@ from typing import Any
 from features.common.choices import VideoStatus
 from features.videohosting import packaging
 from features.videohosting.models import VideoAsset, VideoRendition, VideoSegment
-from features.videohosting.telegram import TelegramMediaService
+from features.videohosting.providers.telegram import TelegramMediaService
 
 
 def ingest_file(

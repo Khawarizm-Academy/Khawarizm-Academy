@@ -10,13 +10,15 @@ import hashlib
 from datetime import timedelta
 from unittest import mock
 
+from django.conf import settings
 from django.utils import timezone
 
 from features.common.choices import VideoStatus
 from features.common.testing import ApiTestCase, authenticate
-from features.videohosting import packaging, tokens
-from features.videohosting.models import StreamToken, VideoAsset, VideoRendition, VideoSegment
+from features.videohosting import packaging, providers, tokens
+from features.videohosting.models import StreamToken, VideoAsset, VideoProvider, VideoRendition, VideoSegment
 from features.videohosting.serializers import asset_meta
+from features.videohosting.providers import google_drive
 
 MASTER = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=800000\n/api/stream/__TOKEN__/360p/index.m3u8\n"
 MEDIA = "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"/api/stream/__TOKEN__/key/360p\"\nseg_00000.ts\n"
@@ -111,6 +113,59 @@ class TokenTests(ApiTestCase):
         asset = make_asset()
         raw, _ = tokens.mint(asset, None, "10.0.0.1")
         self.assertIsNotNone(tokens.resolve(raw, "10.0.0.1"))
+
+
+class RegistryTests(ApiTestCase):
+    def test_specs_upsert_every_provider_row(self):
+        providers.ensure_defaults()
+        codes = set(VideoProvider.objects.values_list("code", flat=True))
+        self.assertEqual(codes, {"google_drive", "telegram"})
+        # Enablement matches the specs: Drive is live, Telegram waits on its infra.
+        self.assertTrue(VideoProvider.objects.get(code="google_drive").is_enabled)
+        self.assertFalse(VideoProvider.objects.get(code="telegram").is_enabled)
+
+    def test_a_hand_toggled_row_is_resynced_to_its_spec(self):
+        providers.ensure_defaults()
+        VideoProvider.objects.filter(code="telegram").update(is_enabled=True)
+        providers.ensure_defaults()  # specs, not hand-edited rows, are the source of truth
+        self.assertFalse(VideoProvider.objects.get(code="telegram").is_enabled)
+
+    def test_spec_for_is_a_record_lookup(self):
+        self.assertEqual(providers.spec_for("google_drive").code, "google_drive")
+        self.assertIsNone(providers.spec_for("nope"))
+
+    def test_default_provider_matches_settings(self):
+        providers.ensure_defaults()
+        self.assertEqual(providers.default_code(), settings.VIDEO_HOSTING_DEFAULT_PROVIDER)
+
+
+class GoogleDriveCredentialsTests(ApiTestCase):
+    def test_missing_keys_fail_loudly_naming_them(self):
+        # One auth mode present so the auth sweep passes and the missing keys list.
+        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", '{"type":"service_account"}'):
+            with self.assertRaises(ValueError) as ctx:
+                google_drive.credentials()
+        self.assertIn("GOOGLE_DRIVE_CLIENT_ID", str(ctx.exception))
+
+    def test_no_auth_mode_fails_with_the_instruction(self):
+        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_REFRESH_TOKEN", ""):
+            with self.assertRaises(ValueError) as ctx:
+                google_drive.credentials()
+        self.assertIn("REFRESH_TOKEN", str(ctx.exception))
+
+
+class ProviderRouteTests(ApiTestCase):
+    def test_providers_route_requires_authentication(self):
+        response = self.client.get("/api/videos/providers")
+        self.assertEqual(response.status_code, 401)
+
+    def test_providers_route_lists_the_registry(self):
+        authenticate(self.client)
+        response = self.client.get("/api/videos/providers")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()["results"]
+        self.assertEqual([row["code"] for row in payload], ["google_drive", "telegram"])
+        self.assertEqual(payload[0]["capabilities"]["resumableUpload"], True)
 
 
 class RouteTests(ApiTestCase):
