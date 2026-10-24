@@ -65,8 +65,9 @@ The backend is organised as **one app per feature** under `backend/features/`.
 The feature map, folder contract, and code rules live in
 [`backend/features/README.md`](../backend/features/README.md); the internal
 architecture is in [08 · Backend Architecture](08-backend-architecture.md). The
-database ships empty, so add records through the Django admin (`/admin/`) — every
-model is registered there as a data editor.
+seed (`python manage.py seed_demo`) loads the demo data; everything beyond it is
+added through the Django admin (`/admin/`) — every model is registered there as
+a data editor.
 
 ---
 

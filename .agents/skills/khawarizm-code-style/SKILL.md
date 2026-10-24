@@ -107,22 +107,16 @@ Every list, label, record and config map goes in a JSON file under `frontend/src
 
 ```
 src/shared/json/
-├── auth.json                    # login mode options (short/long labels per surface)
-├── catalog.json                 # page titles, sort options, filter groups
-├── courseSystem.json            # course landing/player system content
-├── dashboardChambers.json       # in-dashboard modal content (workspace, arena, scholarship…)
-├── dashboardNav.json            # dashboard sidebar items
-├── dashboardNotifications.json  # notification type -> payload
-├── dashboardViews.json          # per-view title, subtitle, chips
-├── footer.json                  # tagline, link columns, copyright
-├── localization.json            # every EN -> AR dictionary
-├── mockCatalog.json             # mock course + scholarship records
-├── mockCourses.json             # mock course pages
-├── mockCourseProblems.json      # mock problem-set records
-├── mockDashboard.json           # mock dashboard records
-├── mockHomepage.json            # mock homepage records
-├── routes.json                  # paths, redirects, titles, shell flags
-└── shellNav.json                # NAV_TARGETS paths + one tab list
+├── catalog.json               # page titles, sort options, filter groups
+├── countryDialCodes.json      # phone dial codes for forms
+├── courseSystem.json          # course landing/player system content
+├── dashboardContent.json      # dashboard section content + per-view copy
+├── dashboardNav.json          # dashboard sidebar items
+├── footer.json                # tagline, link columns, copyright
+├── localization.json          # every EN -> AR dictionary
+├── routes.json                # paths, redirects, titles, shell flags
+├── scholarshipDetail.json     # scholarship landing system content
+└── shellNav.json              # NAV_TARGETS paths + one tab list
 ```
 
 **JSON cannot hold a component or a type.** So it stores the *name*, and a `.ts` file next to it hydrates:
@@ -144,7 +138,7 @@ export function resolveIcon(name: string): LucideIcon {
 2. Add a type or cast (`as EnrolledCourse[]`).
 3. Hydrate names into components.
 
-If it holds data of its own, that data belongs in the JSON. Typed mock assemblies live in `src/shared/mocks/<name>.ts` (the one place a barrel `index.ts` is allowed).
+If it holds data of its own, that data belongs in the JSON. Record-shaped data shared across features goes in `src/shared/types/entities.ts` (types only, no imports of data).
 
 **Rule: a `.ts` file next to JSON is allowed to add types and hydrate. Nothing else.**
 
@@ -302,7 +296,7 @@ import { DashboardTopBar } from '@/features/dashboard/components/chrome/Dashboar
 import { toArabic } from '@/shared/lib/localization';
 ```
 
-Rules: **direct file paths, no component barrels** (one exception: `@/shared/mocks` index); `.ts`/`.tsx` extensionless, `.json`/`.css` keep the extension; **types use `import type`** (`verbatimModuleSyntax`). Full taxonomy & placement: [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md).
+Rules: **direct file paths, no component barrels**; `.ts`/`.tsx` extensionless, `.json`/`.css` keep the extension; **types use `import type`** (`verbatimModuleSyntax`). Full taxonomy & placement: [`khawarizm-organization-and-imports`](../khawarizm-organization-and-imports/SKILL.md).
 
 ## 13. Related skills & docs
 

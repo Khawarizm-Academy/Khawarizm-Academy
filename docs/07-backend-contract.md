@@ -110,8 +110,8 @@ Dashboard-specific projections live in `frontend/src/features/dashboard/types.ts
 - **Mutations** the chambers imply: enroll/unenroll, save/unsave a scholarship, toggle a favorite, submit a scholarship application, submit a competition solution, mark a notification read.
 
 ### 3.4 Auth
-- Email login and social OAuth (Google, Facebook). Today the login is mocked and routes to `/dashboard`.
-- Expected: session/token issuance, current-user fetch, and logout that calls `dataCacheManager.clear()`.
+- Email login and social OAuth (Google, Facebook) — the browser verifies with Firebase, the server exchanges the ID token for a session. See [08 · Backend Architecture](08-backend-architecture.md) → Configuring Firebase.
+- Flow: `GET /auth/config` (public web config) → `POST /auth/firebase` (identity → session) → `POST /auth/refresh` (rotation) → `GET /auth/me`; logout calls `dataCacheManager.clear()`.
 
 ---
 
@@ -125,19 +125,22 @@ under `/api/`.
 feature's `types.ts`. Empty/`None` fields are omitted (the backend `compact` helper).
 Errors share one structured shape (`backend/features/common/errors.py`).
 
-**Current user.** There is no auth yet: `backend/features/auth/services.py`
-resolves a single demo learner (created on first request). The `auth/*` routes
-are stubs for a later flow. See [08 · Backend Architecture](08-backend-architecture.md)
-for the feature layout.
+**Current user.** The browser verifies identity with Firebase Auth; the server
+exchanges the Firebase ID token for a `UserSession` (HS256 access token +
+rotating refresh token). `GET /auth/config` ships the public web config to the
+browser. See [08 · Backend Architecture](08-backend-architecture.md) for the
+feature layout and the session model.
 
 ### Auth
 
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
-| `POST` | `/auth/login` | Email + password login. |
-| `POST` | `/auth/oauth/:provider` | Social login (google, facebook). |
-| `POST` | `/auth/logout` | End the session. |
+| `GET` | `/auth/config` | The public Firebase web config (web-config trio; public by design). |
+| `POST` | `/auth/firebase` | Firebase ID token → session (access + rotating refresh tokens). |
+| `POST` | `/auth/refresh` | Rotate the refresh token, mint a fresh access token. |
 | `GET` | `/auth/me` | Current user profile. |
+| `POST` | `/auth/logout` | End the session. |
+| `GET` / `POST` | `/auth/sessions` · `/auth/sessions/:id/revoke` | List live sessions / revoke one. |
 
 ### Catalog & courses
 
@@ -203,13 +206,17 @@ Staff-only (`IsAdminRole`), under `/admin`:
 
 ### Video hosting
 
-Telegram channel as the data plane (unlimited storage); the backend is the
-control plane only and never proxies a video byte. Playback routes carry a
-minted token — hls.js cannot send an `Authorization` header on a segment fetch,
-so the token **is** the grant (IP-bound, expiring, stored hashed).
+A hosting provider (Telegram channel or Google Drive) is the data plane
+(unlimited storage); the backend is the control plane only and never proxies a
+video byte. Providers are registered as one module each under
+`features/videohosting/providers/` — adding one is a single file plus an env
+block. Playback routes carry a minted token — hls.js cannot send an
+`Authorization` header on a segment fetch, so the token **is** the grant
+(IP-bound, expiring, stored hashed).
 
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
+| `GET` | `/videos/providers` | The registry rows (enabled, capabilities, camelCase). |
 | `GET` | `/videos/:slug` | Readiness, duration, and the rendition ladder. |
 | `POST` | `/videos/:slug/token` | Mint a playback grant (auth required). |
 | `GET` | `/stream/:token/master.m3u8` | Master playlist, `__TOKEN__` swapped for the caller's token. |

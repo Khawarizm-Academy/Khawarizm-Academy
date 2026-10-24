@@ -16,6 +16,8 @@ The **definitive operational standard** for the Django + DRF backend. It tells y
 > skill stays the canonical source for agents.
 > Folder map & folder contract: [`backend/features/README.md`](../../../backend/features/README.md).
 > Building a whole new feature: [`khawarizm-backend-feature`](../khawarizm-backend-feature/SKILL.md).
+> Env vars, secrets, provider credentials: [`khawarizm-env-config`](../khawarizm-env-config/SKILL.md).
+> Video hosting providers, ingest & streaming: [`khawarizm-videohosting`](../khawarizm-videohosting/SKILL.md).
 
 ---
 
@@ -242,10 +244,11 @@ numbered steps, no commented-out code.
 
 ## 7. Data editing — the admin is the data editor
 
-The database ships **empty** (no seed command, no fixtures). Data is added
-through the Django admin or the ORM. So **every model must be registered** in
-its feature's `admin.py` with useful columns, filters, search, and **inlines for
-children**:
+The database starts with seed data (`python manage.py seed_demo` — idempotent:
+reference catalog data, a demo learner, the admin). Data **beyond** the seed is
+added through the Django admin or the ORM. So **every model must be registered**
+in its feature's `admin.py` with useful columns, filters, search, and **inlines
+for children**:
 
 ```python
 @admin.register(Course)

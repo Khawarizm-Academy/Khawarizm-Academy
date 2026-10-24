@@ -227,13 +227,13 @@ Course landing + player + certificate. Styling lives on `.course-*` / player cla
 - **Player chrome:** `components/chrome/PlayerTopBar.tsx`, `LessonTabBar.tsx`, `CoursePathSidebar.tsx`; `components/layout/PlayerStage.tsx`, `PlayerPanels.tsx` (`LessonPanel`, `LiveSessionPanel`, `ExamPanel`, `ProblemsPanel`); `components/overlays/PlayerMiniPlayer.tsx`, `PlayerSyllabusDrawer.tsx`, `CourseToast.tsx`; `components/controls/PlayerSettingsMenu.tsx`.
 - **Cards:** `components/cards/CurriculumModuleCard.tsx`, `PathLessonRow.tsx`, `InstructorCard.tsx`, `LiveSessionCard.tsx`, `LiveSessionPlayerCard.tsx`, `ExamCalloutCard.tsx`, `CertificatePreview.tsx`.
 - **States:** `components/states/CourseLandingSkeleton.tsx`, `CoursePlayerSkeleton.tsx`, `CourseNotFound.tsx`.
-- **Data:** `data/` holds the non-JSON modules; reads go through `shared/mocks/courses.ts` + `@/shared/hooks/useCachedData` with keys such as `['course-detail', slug]` and `['course-problems', slug]`.
+- **Data:** `data/` holds the non-JSON modules; reads go through JSON-backed fetchers + `@/shared/hooks/useCachedData` with keys such as `['course-detail', slug]` and `['course-problems', slug]`.
 
 ---
 
 ## 12. Dashboard workspace (`src/features/dashboard/`)
 
-`/dashboard` learning workspace. Styling lives on `.dash-*` classes in **`src/features/dashboard/dashboard.css`** (imported by `globals.css`). Static content: `shared/json/dashboardViews.json` / `dashboardChambers.json` / `dashboardNav.json` / `dashboardNotifications.json`; `RING_COLORS` in `features/dashboard/data/radialRingColors.ts` (hex required for the `$(color)80` glow alpha); fetchers in `features/dashboard/data/dashboardFetchers.ts`.
+`/dashboard` learning workspace. Styling lives on `.dash-*` classes in **`src/features/dashboard/dashboard.css`** (imported by `globals.css`). Static content: `shared/json/dashboardContent.json` / `dashboardNav.json`; `RING_COLORS` in `features/dashboard/data/radialRingColors.ts` (hex required for the `$(color)80` glow alpha); fetchers in `features/dashboard/data/dashboardFetchers.ts`.
 
 - **Page:** `pages/DashboardPage.tsx` — `?view=` from the URL (`getDashboardNavItem`, aliases resolve); `?state=live|empty` demo modes. RTL grid `.dash-grid` with `<DesktopDashboardSidebar />` as Child #1.
 - **Layout:** `components/layout/DashboardShell.tsx`, `DashboardMain.tsx`.
@@ -241,5 +241,5 @@ Course landing + player + certificate. Styling lives on `.course-*` / player cla
 - **Hero cards:** `components/cards/PriorityContinueCard.tsx` (cyan) / `LiveSessionPriorityCard.tsx` (red live countdown) — share `.dash-hero*`, `.dash-progress*`, `RadialProgressRing.tsx`.
 - **Views:** `components/views/EnrolledCoursesView.tsx`, `CompetitionsCertificatesView.tsx`, `SavedScholarshipsView.tsx`, `NotificationsView.tsx`; `components/cards/EnrolledCourseCard.tsx`, `EnrolledCourseRow.tsx`, `NotificationListItem.tsx`, `ChallengeSpotlightCard.tsx`.
 - **States:** `components/states/EmptyDashboardState.tsx` (brand-new account hero, `.dash-compass` + `.animate-orbit-slow`).
-- **Overlays (chambers):** `components/overlays/CourseWorkspaceModal.tsx`, `LiveClassroomModal.tsx`, `CompetitionArenaModal.tsx`, `ScholarshipApplicationModal.tsx`, `CertificatePreviewModal.tsx`, `NotificationsDrawer.tsx` — all share `.dash-modal-overlay` + `.dash-modal-shell`; internals driven by `dashboardChambers.json`.
+- **Overlays (chambers):** `components/overlays/CourseWorkspaceModal.tsx`, `LiveClassroomModal.tsx`, `CompetitionArenaModal.tsx`, `ScholarshipApplicationModal.tsx`, `CertificatePreviewModal.tsx`, `NotificationsDrawer.tsx` — all share `.dash-modal-overlay` + `.dash-modal-shell`; internals driven by `dashboardContent.json`.
 - **Notifications** is a `fullPageViews` entry: the page-level stats header hides and `<NotificationsView />` renders its own header + `btn-pill-subtle` mark-all-read action.

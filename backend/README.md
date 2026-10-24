@@ -18,7 +18,7 @@ feature reads from the API without any shape-casting.
 | API layer | Django REST Framework 3.18 (function-based views) |
 | CORS | `django-cors-headers` (frontend origin allow-list) |
 | Database | SQLite locally · Postgres on Vercel when `DATABASE_URL` is set |
-| Auth | none yet — a single demo learner is created on first request |
+| Auth | Firebase ID-token verification + HS256 access tokens with rotating refresh sessions (`accounts.User`) |
 
 ---
 
@@ -32,8 +32,8 @@ backend/
 │   ├── middleware.py
 │   └── asgi.py · wsgi.py
 ├── features/                   one app per feature (see features/README.md)
-│   ├── common/                 shared choices + serializers (no models)
-│   ├── auth/                   learner identity + login stubs (label: accounts)
+│   ├── common/                 shared models (UUID/TimeStamped), choice enums, seed_demo
+│   ├── auth/                   learner identity + Firebase/refresh sessions (label: accounts)
 │   ├── catalog/                browse union + taxonomy
 │   ├── courses/                course entity + curriculum + problems
 │   ├── scholarships/           scholarship entity + apply/save
@@ -41,7 +41,9 @@ backend/
 │   ├── home/                   curated landing rails
 │   ├── events/                 events + workshops
 │   ├── competitions/           competitions + challenges
-│   └── profile/                profile read/update
+│   ├── profile/                profile read/update
+│   ├── adminconsole/           staff analytics + content editor (reads across features)
+│   └── videohosting/           hosted lesson video: providers/, ingest, HLS control plane
 ├── requirements.txt
 ├── .env.development            dev profile (loaded by default)
 ├── .env.production             prod profile (loaded when DJANGO_ENV=production)
@@ -111,14 +113,16 @@ exported by hand:
 | `DATABASE_URL` | Postgres connection string; falls back to SQLite when unset |
 | `SQLITE_PATH` | Absolute path for the SQLite file (pin it to a mounted volume) |
 | `FIREBASE_*` | The Firebase web config + Admin SDK credentials (see below) |
+| `TELEGRAM_*` | Video hosting (features/videohosting): API id/hash, ingest bot, read-only stream bot, storage channel |
+| `GOOGLE_DRIVE_*` | Alternative managed host: OAuth client id/secret/refresh token, service-account JSON, upload folder |
+| `VIDEO_HOSTING_DEFAULT_PROVIDER` | Provider assets default to (`google_drive`) |
+| `STREAM_TOKEN_TTL_HOURS` | Playback grant lifetime (default `6`) |
 
 **Database per profile.** Development uses SQLite because `.env.development`
-sets no `DATABASE_URL`. Production uses Postgres because `.env.production`
-sets one — copy the committed template to start a new host:
-
-```bash
-cp .env.production.example .env.production   # then fill in real values
-```
+sets no `DATABASE_URL`. Production values are set in the **host environment** (or as Vercel Project
+Environment Variables). The gitignored `.env.production` is only needed on a
+self-hosted box — create it there from the commented placeholder names in
+`.env.development` and the table above, then fill in real values.
 
 `DATABASE_URL` wins wherever it is set, so the switch is simply whether that
 key is present (development: absent → SQLite; production: present → Postgres).
@@ -182,11 +186,14 @@ them for Auth.
 | `python manage.py runserver` | Dev server |
 | `python manage.py check` | Framework sanity check |
 | `python manage.py test` | Run the backend test suite |
+| `python manage.py seed_demo` | Idempotent seed: reference catalog data, a demo learner, the admin |
+| `python manage.py ingest_video <file> --slug <slug>` | Package + host one video (needs FFmpeg; never on Vercel) |
 
-> The database starts **empty** — the API ships no seed data. Add records through
-> the Django admin (`/admin/`) or the ORM; every frontend page renders an empty
-> state until then. The admin registers every model with useful list columns, so
-> it doubles as a data editor.
+> The database starts with the seed: `python manage.py seed_demo` loads the
+> reference catalog data and a demo learner/admin (idempotent — run it as often
+> as you like). Data beyond the seed is added through the Django admin
+> (`/admin/`) or the ORM; the admin registers every model with useful list
+> columns, so it doubles as a data editor.
 
 ---
 
@@ -208,8 +215,10 @@ python manage.py test features.courses   # one feature
 | :--- | :--- |
 | `ApiTestCase` | a `TestCase` whose client passes the API origin middleware |
 | `api_client()` | a DRF client that always sends an allowed `Origin` |
-| `demo_learner()` | the single learner every request acts as |
-| `make_learner()` · `make_course()` · `make_scholarship()` | rows with every required field filled |
+| `FakeRequest()` | a request stand-in for testing pure helpers |
+| `authenticate(client, user)` | signs a client in (session/`Bearer`) |
+| `make_user()` · `make_admin()` | accounts with every required field filled |
+| `make_course()` · `make_scholarship()` | content rows with every required field filled |
 
 Tests run against an **in-memory SQLite** database, so they never touch
 `db.sqlite3`. Because `config/middleware.py` rejects any `/api/` call without an
@@ -298,9 +307,15 @@ the last column.
 | `GET` | `/events` — events & seminars | events |
 | `GET` | `/competitions` — competitions & challenges | competitions |
 | `GET` · `PATCH` | `/profile` — learner profile & preferences | profile |
-| `GET` | `/auth/me` — current learner (demo) | auth |
-| `POST` | `/auth/login` · `/auth/oauth/:provider` · `/auth/logout` | auth |
+| `GET` | `/auth/config` — the public Firebase web config for the browser | auth |
+| `POST` | `/auth/firebase` — exchange a Firebase ID token for a session | auth |
+| `POST` | `/auth/refresh` — rotate the refresh token, mint a new access token | auth |
+| `GET` | `/auth/me` — current learner | auth |
+| `POST` | `/auth/logout` · `GET` `/auth/sessions` · `POST` `/auth/sessions/:id/revoke` | auth |
 | `GET` · `POST` · `PATCH` · `DELETE` | `/admin/*` — overview, accounts & roles, sessions & revokes, analytics, the content editor | adminconsole |
+| `GET` | `/videos/providers` · `/videos/:slug` — hosting registry, readiness + ladder | videohosting |
+| `POST` | `/videos/:slug/token` — mint a playback grant (auth) | videohosting |
+| `GET` | `/stream/:token/*` — master/media playlists, AES key, 302 to the provider CDN | videohosting |
 
 Errors use one structured shape (see `features/common/errors.py`) so the
 frontend's data-section error state can render a message and a retry.

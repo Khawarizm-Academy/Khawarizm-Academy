@@ -45,8 +45,9 @@ reads across the other features.
 | `home` | `home` | `HomeFeaturedCourse`, `HomeFeaturedScholarship`, `HomeCompetition`, `HomeEvent`, `HomeQuickLink` |
 | `events` | `events` | `EventItem` |
 | `competitions` | `competitions` | `Competition` |
-| `profile` | — | — (edits `accounts.User`; mounted, not installed) |
+| `profile` | `profile` | — (edits `accounts.User`; owns no tables) |
 | `adminconsole` | `adminconsole` | — (staff analytics across features) |
+| `videohosting` | `videohosting` | `VideoProvider`, `VideoAsset`, `VideoRendition`, `VideoSegment`, `StreamToken`, `ProviderAsset`, `UploadSession`, plus the `providers/` module-per-host registry |
 
 **Why `accounts`?** The auth folder keeps the product name (`auth`) but the app
 label cannot be `auth` — Django reserves that label for `django.contrib.auth`.
