@@ -1,9 +1,8 @@
-"""Video hosting models — the Telegram-backed HLS catalog.
+"""Video hosting models — provider-agnostic video catalog.
 
-The split is deliberate: manifests, AES keys, and segment indexes live here
-(control plane, tiny and fast); the encrypted `.ts` bytes live in a Telegram
-channel (data plane, unlimited storage, zero backend bandwidth in redirect
-mode). Nothing here ever exposes a key or a raw Telegram file to the client.
+The split is deliberate: manifests, keys, and tokens live here (control plane);
+video bytes live with the configured provider (data plane). Nothing here ever
+exposes provider credentials or raw private URLs to the client.
 """
 
 from __future__ import annotations
@@ -13,6 +12,23 @@ from django.db import models
 
 from features.common.choices import VideoStatus
 from features.common.models import TimeStampedModel, UUIDModel
+
+
+class VideoProvider(UUIDModel, TimeStampedModel):
+    """A configured video hosting provider (e.g. google_drive, telegram)."""
+
+    code = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=120)
+    is_enabled = models.BooleanField(default=False)
+    is_default = models.BooleanField(default=False)
+    capabilities = models.JSONField(default=dict, blank=True)
+    config = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class VideoAsset(UUIDModel, TimeStampedModel):
@@ -27,12 +43,16 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     status = models.CharField(max_length=12, choices=VideoStatus.choices, default=VideoStatus.UPLOADING)
     error_message = models.TextField(blank=True)
 
+    provider = models.ForeignKey(
+        VideoProvider, null=True, blank=True, on_delete=models.SET_NULL, related_name="assets"
+    )
+
     # Derived — the player polls readiness without loading the rendition tables.
     @property
     def is_ready(self) -> bool:
         return self.status == VideoStatus.READY
 
-    # Source file — the original upload kept in Telegram for re-packaging.
+    # Source file — kept for re-packaging when applicable.
     source_message_id = models.PositiveBigIntegerField(null=True, blank=True, help_text="Telegram message holding the original upload")
     source_size_bytes = models.BigIntegerField(default=0)
     source_file_name = models.CharField(max_length=255, blank=True)
@@ -68,7 +88,6 @@ class VideoRendition(UUIDModel):
 
     # AES-128 key — server-side only; delivered exclusively through the gated key endpoint.
     aes_key_hex = models.CharField(max_length=32, help_text="16-byte HLS segment key, hex; never leaves the backend un-gated")
-
     segment_count = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -80,23 +99,73 @@ class VideoRendition(UUIDModel):
 
 
 class VideoSegment(UUIDModel):
-    """One encrypted `.ts` segment stored as a Telegram document message."""
+    """One encrypted `.ts` segment stored as a provider document/object."""
 
     rendition = models.ForeignKey(VideoRendition, related_name="segments", on_delete=models.CASCADE)
     index = models.PositiveIntegerField()
 
-    # Telegram addressing — file_id is the durable handle, file_path is resolved lazily and cached.
-    message_id = models.PositiveBigIntegerField()
-    file_id = models.CharField(max_length=64, blank=True, help_text="Stable Telegram file handle used to resolve a fresh file_path")
-    file_path = models.CharField(max_length=255, blank=True, help_text="Resolved Bot API file path cached for the redirect")
+    # Provider addressing.
+    message_id = models.PositiveBigIntegerField(null=True, blank=True)
+    file_id = models.CharField(max_length=255, blank=True, help_text="Stable provider file handle used to resolve a fresh file path")
+    file_path = models.CharField(max_length=512, blank=True, help_text="Resolved provider file path cached for the redirect")
+    provider_asset_id = models.CharField(max_length=255, blank=True)
     size_bytes = models.PositiveBigIntegerField(default=0)
 
     class Meta:
         ordering = ["rendition", "index"]
         unique_together = ("rendition", "index")
+        indexes = [models.Index(fields=["rendition", "index"])]
 
     def __str__(self) -> str:
         return f"{self.rendition}#{self.index}"
+
+
+class ProviderAsset(UUIDModel, TimeStampedModel):
+    """Mapping between a VideoAsset and a provider-specific object."""
+
+    asset = models.ForeignKey(VideoAsset, related_name="provider_assets", on_delete=models.CASCADE)
+    provider = models.ForeignKey(VideoProvider, related_name="provider_assets", on_delete=models.CASCADE)
+    external_id = models.CharField(max_length=255)
+    external_path = models.CharField(max_length=512, blank=True)
+    mime_type = models.CharField(max_length=128, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ("provider", "external_id")
+        indexes = [
+            models.Index(fields=["asset", "provider"]),
+            models.Index(fields=["external_id"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.asset.slug}:{self.provider.code}:{self.external_id}"
+
+
+class UploadSession(UUIDModel, TimeStampedModel):
+    """Resumable upload session state for a provider."""
+
+    asset = models.ForeignKey(VideoAsset, related_name="upload_sessions", on_delete=models.CASCADE)
+    provider = models.ForeignKey(VideoProvider, related_name="upload_sessions", on_delete=models.CASCADE)
+    session_key = models.CharField(max_length=64, unique=True)
+    status = models.CharField(max_length=16, default="pending")
+    upload_uri = models.TextField(blank=True)
+    progress = models.PositiveIntegerField(default=0)
+    bytes_uploaded = models.BigIntegerField(default=0)
+    total_bytes = models.BigIntegerField(default=0)
+    chunk_size = models.PositiveIntegerField(default=262144)
+    error_message = models.TextField(blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["asset", "provider"]),
+            models.Index(fields=["status"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.asset.slug}:{self.provider.code}:{self.session_key[:8]}"
 
 
 class StreamToken(UUIDModel, TimeStampedModel):

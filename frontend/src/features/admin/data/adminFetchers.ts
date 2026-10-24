@@ -80,3 +80,9 @@ export const updateContent = (type: AdminContentTypeKey, id: string, values: Rec
 
 export const deleteContent = (type: AdminContentTypeKey, id: string) =>
   apiDelete<{ deleted: boolean; id: string }>(`/admin/content/${type}/${id}`);
+
+export const fetchVideoProviders = () => apiGet<{ results: any[] }>('/admin/video-providers');
+export const fetchVideoAssets = () => apiGet<{ results: any[] }>('/admin/video-assets');
+export const createVideoAsset = (input: { slug: string; title?: string; provider?: string }) =>
+  apiPost('/admin/video-assets', input);
+export const deleteVideoAsset = (id: string) => apiDelete<{ deleted: boolean; id: string }>(`/admin/video-assets/${id}`);

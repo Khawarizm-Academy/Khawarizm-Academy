@@ -138,3 +138,14 @@ def segment_view(request: Any, token: str, quality: str, index: int):
     # so the browser reuses downloaded segments instead of re-hitting the API.
     response["Location"] = telegram_file_url(_fresh_file_path(segment))
     return response
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def video_providers_list(request: Any) -> Response:
+    from features.videohosting import providers as vh_providers
+    from features.videohosting.models import VideoProvider
+    from features.videohosting.serializers import provider_payload
+    vh_providers.ensure_defaults()
+    providers = VideoProvider.objects.all()
+    return Response({"results": [provider_payload(p) for p in providers]})

@@ -341,3 +341,65 @@ def content_detail(request, type_key, pk):
     except (IntegrityError, ValueError):
         return Response({"detail": "تعذّر الحفظ: بيانات غير صالحة أو مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializers.content_row(spec, row))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_providers(request):
+    from features.videohosting.models import VideoProvider
+    from features.videohosting.serializers import provider_payload
+    providers = VideoProvider.objects.all()
+    if not providers.exists():
+        from features.videohosting import providers as vh_providers
+        vh_providers.ensure_defaults()
+        providers = VideoProvider.objects.all()
+    return Response({"results": [provider_payload(p) for p in providers]})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_assets(request):
+    from features.videohosting.models import VideoAsset, VideoProvider
+    from features.videohosting import providers as vh_providers
+    vh_providers.ensure_defaults()
+    if request.method == "POST":
+        data = request.data or {}
+        slug = data.get("slug")
+        if not slug:
+            return Response({"detail": "slug مطلوب."}, status=status.HTTP_400_BAD_REQUEST)
+        provider_code = data.get("provider")
+        provider = None
+        if provider_code:
+            provider = VideoProvider.objects.filter(code=provider_code).first()
+            if provider and provider.code == "telegram":
+                return Response({"detail": "مُعطّل مؤقتًا — البنية التحتية المطلوبة غير مُهيأة."}, status=status.HTTP_400_BAD_REQUEST)
+        if provider is None:
+            provider = VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
+        try:
+            asset = VideoAsset.objects.create(
+                slug=slug,
+                title=data.get("title") or "",
+                provider=provider,
+                created_by=request.user,
+            )
+            return Response({"id": str(asset.id), "slug": asset.slug, "status": asset.status}, status=status.HTTP_201_CREATED)
+        except Exception:
+            return Response({"detail": "تعذّر الإنشاء."}, status=status.HTTP_400_BAD_REQUEST)
+    assets = VideoAsset.objects.select_related("provider").all()[:100]
+    return Response({"results": [
+        {"id": str(a.id), "slug": a.slug, "title": a.title, "status": a.status, "provider": a.provider.code if a.provider else None}
+        for a in assets
+    ]})
+
+
+@api_view(["GET", "DELETE"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_asset_detail(request, asset_id):
+    from features.videohosting.models import VideoAsset
+    asset = VideoAsset.objects.filter(pk=asset_id).first()
+    if asset is None:
+        return Response({"detail": "غير موجود."}, status=status.HTTP_404_NOT_FOUND)
+    if request.method == "DELETE":
+        asset.delete()
+        return Response({"deleted": True, "id": str(asset_id)})
+    return Response({"id": str(asset.id), "slug": asset.slug, "title": asset.title, "status": asset.status})

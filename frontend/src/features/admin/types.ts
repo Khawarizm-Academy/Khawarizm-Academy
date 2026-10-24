@@ -182,9 +182,9 @@ export interface LoginSeries {
 }
 
 /** The console's sections; each one is a `?tab=` value. */
-export type AdminSectionKey = 'overview' | 'users' | 'content' | 'sessions' | 'analytics' | 'activity';
+export type AdminSectionKey = 'overview' | 'users' | 'content' | 'videos' | 'sessions' | 'analytics' | 'activity';
 
-export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ['overview', 'users', 'content', 'sessions', 'analytics', 'activity'];
+export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ['overview', 'users', 'content', 'videos', 'sessions', 'analytics', 'activity'];
 
 /** Filter values shared by the tables. */
 export type AdminRoleFilter = AuthRole | 'all';
@@ -196,6 +196,7 @@ export const SECTION_LABELS: Record<AdminSectionKey, string> = {
   overview: 'نظرة عامة',
   users: 'المستخدمون',
   content: 'إدارة المحتوى',
+  videos: 'استضافة الفيديو',
   sessions: 'الجلسات',
   analytics: 'التحليلات',
   activity: 'سجل النشاط',
@@ -215,3 +216,19 @@ export const REVOKE_REASON_LABELS: Record<string, string> = {
   expired: 'انتهت الصلاحية',
   revoked_by_admin: 'أُنهيت بالإدارة',
 };
+
+export interface AdminVideoProvider {
+  code: string;
+  name: string;
+  enabled: boolean;
+  isDefault?: boolean;
+  capabilities?: Record<string, unknown>;
+}
+
+export interface AdminVideoAsset {
+  id: string;
+  slug: string;
+  title: string;
+  status: string;
+  provider: string | null;
+}

@@ -18,4 +18,7 @@ urlpatterns = [
     path("admin/content/schema", views.content_schema, name="admin-content-schema"),
     path("admin/content/<str:type_key>", views.content_items, name="admin-content-items"),
     path("admin/content/<str:type_key>/<uuid:pk>", views.content_detail, name="admin-content-detail"),
+    path("admin/video-providers", views.video_providers, name="admin-video-providers"),
+    path("admin/video-assets", views.video_assets, name="admin-video-assets"),
+    path("admin/video-assets/<uuid:asset_id>", views.video_asset_detail, name="admin-video-asset-detail"),
 ]

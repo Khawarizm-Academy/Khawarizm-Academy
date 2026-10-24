@@ -13,6 +13,7 @@ from features.videohosting import views
 urlpatterns = [
     path("videos/<slug:slug>", views.video_meta_view, name="videohosting-meta"),
     path("videos/<slug:slug>/token", views.video_token_view, name="videohosting-token"),
+    path("videos/providers", views.video_providers_list, name="videohosting-providers"),
     # HLS control plane: hls.js and the browser resolve these from the playlists.
     path("stream/<str:token>/master.m3u8", views.master_playlist_view, name="videohosting-master"),
     path("stream/<str:token>/<slug:quality>/index.m3u8", views.media_playlist_view, name="videohosting-media"),

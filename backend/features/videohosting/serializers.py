@@ -41,3 +41,13 @@ def minted_token(asset: Any, raw_token: str, token_row: Any, master_url: str) ->
         expiresAt=token_row.expires_at.isoformat(),
         durationSeconds=asset.duration_seconds,
     )
+
+
+def provider_payload(provider: Any) -> dict[str, Any]:
+    return compact(
+        code=provider.code,
+        name=provider.name,
+        enabled=provider.is_enabled,
+        isDefault=provider.is_default,
+        capabilities=provider.capabilities or {},
+    )
