@@ -125,6 +125,37 @@ def exchange_refresh_token(refresh_token: str) -> tuple[bool, str, str]:
     return True, bearer, "حصل على access token بنجاح."
 
 
+def exchange_authorization_code(code: str, redirect_uri: str) -> tuple[bool, str, str]:
+    """Trade the consent page's code for a refresh token — (ok, token, detail).
+
+    `manage.py drive_auth` drives the two-step mint: bare run prints the
+    consent URL, rerun with --code lands here. The redirect URI must equal
+    the consent call's, or Google refuses the grant.
+    """
+    body = urllib.parse.urlencode({
+        "client_id": (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip(),
+        "client_secret": (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip(),
+        "code": code.strip(),
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code",
+    }).encode("utf-8")
+    request = urllib.request.Request(  # noqa: S310 — fixed OAuth host, POST to its own API
+        DRIVE_TOKEN_URL, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        text = _error_body(error)
+        return False, "", f"رفض Google الطلب: {text[:250] or error}"
+    except Exception as exc:
+        return False, "", f"تعذّر الاتصال: {exc}"
+    refresh = payload.get("refresh_token", "")
+    if not refresh:
+        return False, "", f"لا refresh token في ردّ Google: {payload.get('error_description', 'غير معروف')}"
+    return True, refresh, "تم التبادل بنجاح."
+
+
 def service_account_token(service_account: dict) -> tuple[bool, str, str]:
     """Sign one RS256 JWT for the service account and mint a bearer token.
 
@@ -209,6 +240,16 @@ def _drive_error_message(error: urllib.error.HTTPError) -> str:
         return str(error)
 
 
+def _403_hint(message: str) -> str:
+    """One Arabic fix per known Drive 403 — quota, or a read-only share."""
+    lower = message.lower()
+    if "storage quota" in lower:
+        return message + " — حساب الخدمة بلا حصة تخزين: أعد توليد refresh token بحسابك (python manage.py drive_auth) أو استخدم Shared Drive."
+    if "permissions" in lower:
+        return message + " — وشارك مجلد الرفع مع بريد حساب الخدمة كـ Editor."
+    return message
+
+
 class GoogleDriveService:
     """Stores one file in the configured Drive folder via a resumable session.
 
@@ -260,6 +301,8 @@ class GoogleDriveService:
                 session_url = response.headers.get("Location", "")
         except urllib.error.HTTPError as error:
             message = _drive_error_message(error)
+            if error.code == 403:
+                message = _403_hint(message)
             if error.code == 404:
                 message += " — وشارك مجلد الرفع مع بريد حساب الخدمة إن كنت تستخدمه."
             raise RuntimeError(f"فشل فتح جلسة الرفع على Drive: {message}") from error
@@ -323,10 +366,58 @@ class GoogleDriveService:
                     continue
                 if error.code == 308:
                     raise RuntimeError("Google Drive لم يقبل آخر مقطع — الجلسة لم تكتمل.") from error
-                if error.code == 403 and "permissions" in message.lower():
-                    message += " — وشارك مجلد الرفع مع بريد حساب الخدمة كـ Editor."
+                if error.code == 403:
+                    message = _403_hint(message)
                 raise RuntimeError(f"فشل رفع مقطع إلى Drive: {message}") from error
             except Exception as error:
                 last_error = error
                 time.sleep(1)
         raise RuntimeError(f"تعذّر رفع مقطع إلى Drive: {last_error}")
+
+
+def upload_probe() -> tuple[bool, str]:
+    """One real 1-byte write into the folder, deleted after — (ok, detail).
+
+    The token and folder walks can both pass while every upload still fails
+    (a service account owns no storage quota), so the deep check proves the
+    folder actually accepts bytes before calling Drive ready.
+    """
+    okay, bearer, detail = access_token()
+    if not okay:
+        return False, detail
+    try:
+        folder_id = (credentials()["GOOGLE_DRIVE_ROOT_FOLDER_ID"] or "").strip()
+    except ValueError as exc:
+        return False, str(exc)
+    metadata = {"name": ".ingest-probe", "description": "videohosting deep-check probe", "parents": [folder_id]}
+    open_request = urllib.request.Request(  # noqa: S310 — fixed Drive host
+        DRIVE_UPLOAD_SESSION_URL,
+        data=json.dumps(metadata).encode("utf-8"),
+        method="POST",
+        headers={"Authorization": f"Bearer {bearer}", "Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(open_request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
+            session_url = response.headers.get("Location", "")
+        put_request = urllib.request.Request(  # noqa: S310 — fixed Drive host
+            session_url, data=b"0", method="PUT",
+            headers={"Authorization": f"Bearer {bearer}", "Content-Length": "1", "Content-Range": "bytes 0-0/1"},
+        )
+        with urllib.request.urlopen(put_request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
+            file_id = str(json.loads(response.read().decode("utf-8")).get("id", ""))
+    except urllib.error.HTTPError as error:
+        return False, _drive_error_message(error) if error.code != 403 else _403_hint(_drive_error_message(error))
+    except Exception as exc:
+        return False, f"تعذّر الاتصال بـ Drive: {exc}"
+    if not session_url or not file_id:
+        return False, "لم يكتمل probe الرفع — راجع عناوين ردّ Google."
+    delete_request = urllib.request.Request(  # noqa: S310 — fixed Drive host
+        f"https://www.googleapis.com/drive/v3/files/{file_id}", method="DELETE",
+        headers={"Authorization": f"Bearer {bearer}"},
+    )
+    cleaned = "وتم حذفه."
+    try:
+        urllib.request.urlopen(delete_request, timeout=REQUEST_SECONDS)  # noqa: S310 — fixed host
+    except Exception:
+        cleaned = "(تعذّر حذفه تلقائيًّا — احذفه يدويًّا.)"
+    return True, f"كتب 1 بايت في المجلد {cleaned}"

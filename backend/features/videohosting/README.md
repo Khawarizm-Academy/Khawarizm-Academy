@@ -132,10 +132,27 @@ Environment variables (never commit real values):
 | `TELEGRAM_CHANNEL_ID` | Storage channel (`@handle` or numeric id) |
 | `STREAM_TOKEN_TTL_HOURS` | Playback grant lifetime (default `6`) |
 | `GOOGLE_DRIVE_CLIENT_ID` / `CLIENT_SECRET` | Drive OAuth application credentials |
-| `GOOGLE_DRIVE_REFRESH_TOKEN` | Drive OAuth grant — tried first when minting access tokens |
-| `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` | Drive headless auth — the automatic fallback (raw JSON or base64) |
+| `GOOGLE_DRIVE_REFRESH_TOKEN` | Drive OAuth grant — the upload engine, tried first when minting access tokens |
+| `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` | Drive headless auth fallback (raw JSON or base64) — mints tokens, but its uploads need a Shared Drive |
 | `GOOGLE_DRIVE_ROOT_FOLDER_ID` | The Drive folder videos upload into; share it with the service-account email as **Editor** for its uploads to land |
 | `VIDEO_HOSTING_DEFAULT_PROVIDER` | The provider assets default to (default `google_drive`) |
+
+Google bills a Drive upload to the **uploader**, and service accounts carry
+*no storage quota* — so an SA upload into a personal folder dies with
+"Service Accounts do not have storage quota" even with an Editor share,
+unless the folder is a Workspace **Shared Drive**. The durable fix is the
+human refresh token; re-mint it with:
+
+```bash
+python manage.py drive_auth             # 1: prints the consent URL
+python manage.py drive_auth --code=...  # 2: prints the GOOGLE_DRIVE_REFRESH_TOKEN line
+```
+
+Keep the OAuth consent screen published as **In production** — a Testing app
+expires its refresh tokens after 7 days, which is the usual cause of
+`invalid_grant`. The deep diagnostics end in a real 1-byte write probe
+(`drive_probe`), so `فحص المنظومة` exposes the quota reality itself instead
+of the first real upload doing it.
 
 `pyrogram` + `tgcrypto` are only imported on the ingest path; the serving stack
 stays importable (and serverless-safe) without them.

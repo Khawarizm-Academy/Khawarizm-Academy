@@ -16,7 +16,7 @@ from django.utils import timezone
 
 from features.videohosting import packaging
 from features.videohosting.providers.google_drive import GOOGLE_DRIVE, access_token as drive_access_token
-from features.videohosting.providers.google_drive import parse_service_account
+from features.videohosting.providers.google_drive import parse_service_account, upload_probe as drive_upload_probe
 from features.videohosting.providers.telegram import TELEGRAM
 
 # Deep (network) checks use a short timeout — a down provider must not hang the admin.
@@ -230,9 +230,11 @@ def drive_env_checks() -> list[Check]:
 
 
 def drive_deep_checks() -> list[Check]:
-    """Prove the credentials against Google's own API — token, then the folder.
+    """Prove the credentials against Google's own API — token, folder, then a write.
 
-    Dual-mode: whichever of refresh token / service account mints a token.
+    Dual-mode: whichever of refresh token / service account mints a token. A
+    folder GET can pass while every upload still refuses (a service account
+    has no storage quota), so deep runs end in a real 1-byte probe.
     """
     if _blocking(drive_env_checks()):
         return []
@@ -241,6 +243,8 @@ def drive_deep_checks() -> list[Check]:
     if okay:
         folder_ok, folder_detail = _drive_folder(bearer)
         checks.append(check("drive_folder", "الوصول إلى مجلد الرفع", folder_ok, folder_detail))
+        probe_ok, probe_detail = drive_upload_probe()
+        checks.append(check("drive_probe", "تجربة كتابة فعلية (1 بايت)", probe_ok, probe_detail))
     return checks
 
 

@@ -7,13 +7,18 @@ key endpoint serves the stored AES key directly.
 from __future__ import annotations
 
 import hashlib
+import io
+import json
 import tempfile
 import urllib.error
 from datetime import timedelta
+from io import StringIO
 from pathlib import Path
 from unittest import mock
 
 from django.conf import settings
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.utils import timezone
 
 from features.common.choices import VideoStatus
@@ -217,6 +222,9 @@ class _ScriptedDriveHTTP:
             # urllib's default opener has no 308 handler, so a live resume
             # tick arrives as an HTTPError — the stand-in mirrors that.
             raise urllib.error.HTTPError(request.full_url, 308, "Resume Incomplete", headers, None)
+        if status >= 400:
+            # Errors never flow through either: they raise with a readable body.
+            raise urllib.error.HTTPError(request.full_url, status, "http impl error", headers, io.BytesIO(payload))
         return _FakeDriveResponse(status, headers, payload)
 
 
@@ -271,6 +279,108 @@ class GoogleDriveUploadServiceTests(ApiTestCase):
             with self.assertRaises(RuntimeError) as ctx:
                 google_drive.GoogleDriveService().upload_file(str(fake_bin))
         self.assertIn("آخر مقطع", str(ctx.exception))
+
+    def test_a_quota_refusal_names_the_two_real_fixes(self):
+        # A service account has no storage quota: Google refuses the chunk and
+        # the error must route the operator to the refresh token or a Shared Drive.
+        quota_body = json.dumps({
+            "error": {"message": "Service Accounts do not have storage quota. "
+                    "Leverage shared drives, or use OAuth delegation instead."}
+        }).encode("utf-8")
+        scripted = _ScriptedDriveHTTP([
+            (200, {}, b'{"access_token": "BEAR"}'),
+            (200, {"Location": "https://upload.session/3"}, b""),
+            (403, {}, quota_body),
+        ])
+        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
+             mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
+            fake_bin = Path(tempfile.mkdtemp()) / "lesson.mp4"
+            fake_bin.write_bytes(b"0" * 600)
+            with self.assertRaises(RuntimeError) as ctx:
+                google_drive.GoogleDriveService().upload_file(str(fake_bin))
+        self.assertIn("drive_auth", str(ctx.exception))
+        self.assertIn("Shared Drive", str(ctx.exception))
+
+
+class DriveUploadProbeTests(ApiTestCase):
+    """The deep check's 1-byte write — the only test that proves quota state."""
+
+    def test_probe_writes_one_byte_and_cleans_up(self):
+        scripted = _ScriptedDriveHTTP([
+            (200, {}, b'{"access_token": "BEAR"}'),
+            (200, {"Location": "https://upload.session/9"}, b""),
+            (200, {}, b'{"id": "PROBE1"}'),
+            (204, {}, b""),
+        ])
+        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
+             mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
+            okay, detail = google_drive.upload_probe()
+        self.assertTrue(okay)
+        self.assertIn("1 بايت", detail)
+        self.assertIn("حذف", detail)
+        self.assertEqual(scripted.calls[-1].get_method(), "DELETE")
+
+    def test_probe_surfaces_the_quota_refusal_with_its_fix(self):
+        quota_body = json.dumps({
+            "error": {"message": "Service Accounts do not have storage quota. Leverage shared drives."}
+        }).encode("utf-8")
+        scripted = _ScriptedDriveHTTP([
+            (200, {}, b'{"access_token": "BEAR"}'),
+            (403, {}, quota_body),
+        ])
+        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
+             mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
+            okay, detail = google_drive.upload_probe()
+        self.assertFalse(okay)
+        self.assertIn("drive_auth", detail)
+        self.assertIn("Shared Drive", detail)
+
+
+class DriveAuthCommandTests(ApiTestCase):
+    """The refresh-token re-mint — a mechanical recipe on the manage.py surface."""
+
+    def test_bare_run_prints_the_consent_recipe(self):
+        outlet = StringIO()
+        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid.apps.googleusercontent.com"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"):
+            call_command("drive_auth", stdout=outlet)
+        text = outlet.getvalue()
+        self.assertIn("accounts.google.com/o/oauth2/v2/auth", text)
+        self.assertIn("access_type=offline", text)
+        self.assertIn("developers.google.com/oauthplayground", text)
+        self.assertIn("--code=", text)
+
+    def test_with_a_code_prints_the_env_line_and_the_pitfall(self):
+        scripted = _ScriptedDriveHTTP([(200, {}, b'{"access_token": "at", "refresh_token": "RF-NEW"}')])
+        outlet = StringIO()
+        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
+            call_command("drive_auth", code="4/0ABX", stdout=outlet)
+        text = outlet.getvalue()
+        self.assertIn("GOOGLE_DRIVE_REFRESH_TOKEN=RF-NEW", text)
+        self.assertIn("In production", text)
+
+    def test_a_refused_code_fails_loudly(self):
+        scripted = _ScriptedDriveHTTP([(400, {}, b'{"error": "invalid_grant", "error_description": "Code was already redeemed."}')])
+        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
+            with self.assertRaises(CommandError) as ctx:
+                call_command("drive_auth", code="dead", stdout=StringIO())
+        self.assertIn("already redeemed", str(ctx.exception))
 
 
 class ProviderRouteTests(ApiTestCase):
