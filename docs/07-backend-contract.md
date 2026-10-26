@@ -205,7 +205,7 @@ Staff-only (`IsAdminRole`), under `/admin`:
 | `PATCH` · `DELETE` | `/admin/content/:type/:id` | Edit / remove one content row. |
 | `GET` | `/admin/video-providers` | Registry rows + `available`/`reason` from each provider's env checks. |
 | `GET` · `POST` | `/admin/video-assets` | Asset rows (`progress`, `stage`, `error`, `qualities`, `createdAt`) / record one (refused with its reason if the provider's checks fail). |
-| `POST` | `/admin/video-assets/upload` | Multipart file upload → `202` + asset row; a worker thread then ingests and the row's `progress`/`stage`/`status` follow it. Real-server only (not ephemeral serverless). |
+| `POST` | `/admin/video-assets/upload` | Multipart file upload (`provider` query optional) → `202` + asset row; a worker thread then ingests via the **chosen** provider and the row's `progress`/`stage`/`status` follow it. Refused with its reason when the provider's env checks fail; unknown codes are refused, never defaulted. Real-server only (not ephemeral serverless). |
 | `GET` · `DELETE` | `/admin/video-assets/:id` | The tracker's poll target / remove one asset. |
 | `GET` | `/admin/video-diagnostics?deep=true` | Staged video validation — pipeline, Telegram env (+ Bot API on deep), Drive env (+ OAuth/folder on deep). |
 

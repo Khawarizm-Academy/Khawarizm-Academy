@@ -395,7 +395,7 @@ class AdminConsoleVideoTests(ApiTestCase):
         with mock.patch.object(diagnostics, "provider_available", return_value=False):
             response = self.client.post("/api/admin/video-assets", {"slug": "video-tg", "provider": "telegram"}, format="json")
         self.assertEqual(response.status_code, 400)
-        self.assertIn("تليجرام", response.json()["detail"])
+        self.assertIn("TELEGRAM_API_ID", response.json()["detail"])
 
     def test_telegram_asset_is_selectable_when_env_checks_pass(self):
         from features.videohosting import diagnostics
@@ -431,19 +431,19 @@ class AdminConsoleVideoUploadTests(TransactionTestCase):
     def setUp(self):
         self.client = api_client()
         authenticate(self.client, make_admin())
-        self._patcher = mock.patch.object(ingest, "TelegramMediaService", FakeTelegramService)
-        self._patcher.start()
+        self._telegram = mock.patch.object(ingest, "TelegramMediaService", FakeTelegramService)
+        self._telegram.start()
 
     def tearDown(self):
-        self._patcher.stop()
+        self._telegram.stop()
         super().tearDown()
 
-    def _upload(self, slug="clip-1"):
+    def _upload(self, slug="clip-1", provider="telegram"):
         from django.core.files.uploadedfile import SimpleUploadedFile
 
         return self.client.post(
             "/api/admin/video-assets/upload",
-            {"slug": slug, "title": "درس تجريبي", "file": SimpleUploadedFile("clip.mp4", b"0" * 2048)},
+            {"slug": slug, "title": "درس تجريبي", "provider": provider, "file": SimpleUploadedFile("clip.mp4", b"0" * 2048)},
             format="multipart",
         )
 
@@ -491,7 +491,64 @@ class AdminConsoleVideoUploadTests(TransactionTestCase):
                 format="multipart",
             )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("تليجرام", response.json()["detail"])
+        # The refusal names the provider and the exact env key that is missing.
+        self.assertIn("Telegram غير جاهز", response.json()["detail"])
+        self.assertIn("TELEGRAM_API_ID", response.json()["detail"])
+
+    def test_an_unknown_provider_code_is_refused_not_silently_defaulted(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        response = self.client.post(
+            "/api/admin/video-assets/upload",
+            {"slug": "clip-x", "provider": "space_bucket", "file": SimpleUploadedFile("clip.mp4", b"0")},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("space_bucket", response.json()["detail"])
+
+
+class FakeDriveService:
+    """A GoogleDriveService stand-in: no network, one Drive-style file id."""
+
+    def upload_file(self, file_path: str, caption: str = "", on_bytes=None) -> dict:
+        if on_bytes is not None:
+            on_bytes(2048, 2048)
+        return {"is_split": False, "parts": [{"file_id": "DRIVE123", "size_bytes": 2048}]}
+
+
+class AdminConsoleDriveUploadTests(TransactionTestCase):
+    """Selecting Drive must ride the Drive pipeline and never touch Telegram."""
+
+    def setUp(self):
+        self.client = api_client()
+        authenticate(self.client, make_admin())
+
+    def test_upload_routes_the_drive_provider_through_the_drive_service(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        with mock.patch.object(diagnostics, "provider_available", return_value=True), \
+             mock.patch.object(ingest, "GoogleDriveService", FakeDriveService), \
+             mock.patch.object(ingest, "TelegramMediaService",
+                               side_effect=AssertionError("Drive upload must not construct the Telegram service")):
+            response = self.client.post(
+                "/api/admin/video-assets/upload",
+                {"slug": "drive-clip", "provider": "google_drive",
+                 "file": SimpleUploadedFile("lesson.mp4", b"0" * 2048)},
+                format="multipart",
+            )
+            self.assertEqual(response.status_code, 202)
+            deadline = time.monotonic() + 5
+            from features.videohosting.models import VideoAsset
+            while time.monotonic() < deadline:
+                asset = VideoAsset.objects.get(slug="drive-clip")
+                if asset.status == "staged" and asset.progress == 100:
+                    break
+                time.sleep(0.05)
+        self.assertEqual(asset.status, "staged", f"row error: {asset.error_message}")
+        self.assertEqual(asset.source_file_id, "DRIVE123")
+        self.assertEqual(asset.source_file_name, "lesson.mp4")
+        self.assertEqual(asset.progress, 100)
+        self.assertFalse(asset.master_playlist)
 
     def test_upload_requires_the_file_and_slug(self):
         response = self.client.post("/api/admin/video-assets/upload", {"slug": "clip-x"}, format="multipart")

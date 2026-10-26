@@ -157,6 +157,95 @@ class GoogleDriveCredentialsTests(ApiTestCase):
                 google_drive.credentials()
         self.assertIn("REFRESH_TOKEN", str(ctx.exception))
 
+    def test_service_account_alone_mints_a_jwt_bearer_token(self):
+        # Dual-mode: an absent refresh token falls through to the service
+        # account — a jwt-bearer grant, never the password-style refresh grant.
+        token_reply = _ScriptedDriveHTTP([(200, {}, b'{"access_token": "SA-BEARER"}')])
+        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_REFRESH_TOKEN", ""), \
+             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON",
+                               '{"type":"service_account","client_email":"sa@academy.iam.gserviceaccount.com",'
+                               '"private_key":"ignored-here"}'), \
+             mock.patch.object(google_drive, "load_pem_private_key", return_value=_SigningStub()), \
+             mock.patch.object(google_drive.urllib.request, "urlopen", token_reply):
+            okay, bearer, _detail = google_drive.access_token()
+        self.assertTrue(okay)
+        self.assertEqual(bearer, "SA-BEARER")
+        # The minted grant is the machine flow, not the refresh-token flow.
+        grant = token_reply.calls[0].data.decode("utf-8")
+        self.assertIn("grant-type%3Ajwt-bearer", grant)
+
+
+class _FakeDriveResponse:
+    """The slice of urllib's response the uploader touches."""
+
+    def __init__(self, status, headers=None, body=b""):
+        self.status = status
+        self.headers = headers or {}
+        self._body = body
+
+    def read(self):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class _SigningStub:
+    """A private-key stand-in whose sign() produces a fixed signature."""
+
+    def sign(self, data, padding, algorithm):
+        return b"satellite-signature"
+
+
+class _ScriptedDriveHTTP:
+    """A urlopen stand-in answering from a script: (status, headers, body)."""
+
+    def __init__(self, steps):
+        self.steps = list(steps)
+        self.calls = []
+
+    def __call__(self, request, timeout=0):
+        self.calls.append(request)
+        status, headers, payload = self.steps.pop(0)
+        return _FakeDriveResponse(status, headers, payload)
+
+
+class GoogleDriveUploadServiceTests(ApiTestCase):
+    def test_resumable_upload_sessions_chunks_and_reports_progress(self):
+        scripted = _ScriptedDriveHTTP([
+            (200, {}, b'{"access_token": "BEAR"}'),          # token exchange
+            (200, {"Location": "https://upload.session/1"}, b""),  # session open
+            (308, {}, b""),                                   # chunk 1 accepted
+            (308, {}, b""),                                   # chunk 2 accepted
+            (200, {}, b'{"id": "FILE123"}'),                  # final chunk creates the file
+        ])
+        ticks = []
+
+        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
+             mock.patch.object(google_drive, "CHUNK_BYTES", 256), \
+             mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
+            fake_bin = Path(tempfile.mkdtemp()) / "lesson.mp4"
+            fake_bin.write_bytes(b"0" * 600)
+            uploaded = google_drive.GoogleDriveService().upload_file(str(fake_bin), caption="source · x", on_bytes=lambda done, total: ticks.append((done, total)))
+
+        parts = uploaded["parts"]
+        self.assertEqual(parts[0]["file_id"], "FILE123")
+        self.assertEqual(parts[0]["size_bytes"], 600)
+        ranges = [call.headers.get("Content-range") for call in scripted.calls if call.get_method() == "PUT"]
+        self.assertEqual(ranges, ["bytes 0-255/*", "bytes 256-511/*", "bytes 512-599/600"])
+        session_open = [call for call in scripted.calls if "resumable" in call.full_url][0]
+        self.assertIn("FOLDER1", session_open.data.decode("utf-8"))
+        self.assertEqual(ticks, [(256, 600), (512, 600), (600, 600)])
+
 
 class ProviderRouteTests(ApiTestCase):
     def test_providers_route_requires_authentication(self):
@@ -266,11 +355,19 @@ class DiagnosticsTests(ApiTestCase):
         telegram = next(group for group in payload["groups"] if group["id"] == "telegram")
         self.assertEqual({c["id"] for c in telegram["checks"]} & {"bot_api", "chat_access"}, set())
 
-    def test_deep_drive_skips_the_network_offline_and_flags_service_accounts(self):
+    def test_deep_service_account_proves_itself_over_the_network(self):
+        # Service-account-only env with a parseable JSON: the deep run mints a
+        # JWT — this fake private key fails inspection so the token check fails
+        # and the folder check is skipped (no token to spend).
+        service_account = ('{"type":"service_account","client_email":"sa@academy.iam.gserviceaccount.com",'
+                           '"private_key":"not a pem"}')
         with mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_ID", "id"), \
              mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
              mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"), \
-             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", '{"type":"service_account"}'):
+             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_REFRESH_TOKEN", ""), \
+             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", service_account), \
+             mock.patch.object(diagnostics.urllib.request, "urlopen",
+                               side_effect=AssertionError("fake stand-in — nothing should hit the network")):
             group = diagnostics.drive_group(deep=True)
         check_ids = {c.id for c in group.checks}
         self.assertIn("drive_token", check_ids)
@@ -280,7 +377,13 @@ class DiagnosticsTests(ApiTestCase):
 class StagingTests(ApiTestCase):
     """--package never / auto-without-ffmpeg stores the source with no FFmpeg."""
 
+    def _telegram_asset(self, slug: str) -> None:
+        """These tests study the Telegram ladder, so the row must name it."""
+        providers.ensure_defaults()
+        VideoAsset.objects.create(slug=slug, provider=VideoProvider.objects.get(code="telegram"))
+
     def test_never_stages_the_source_without_renditions(self):
+        self._telegram_asset("staged-1")
         with mock.patch.object(ingest, "TelegramMediaService", self._fake_service()):
             asset = ingest.ingest_file("missing.mp4", "staged-1", package="never")
         self.assertEqual(asset.status, VideoStatus.STAGED)
@@ -289,12 +392,14 @@ class StagingTests(ApiTestCase):
         self.assertFalse(asset.renditions.all().exists())
 
     def test_auto_stages_when_ffmpeg_is_missing(self):
+        self._telegram_asset("staged-2")
         with mock.patch.object(ingest, "TelegramMediaService", self._fake_service()):
             with mock.patch.object(packaging, "ffmpeg_available", return_value=False):
                 asset = ingest.ingest_file("missing.mp4", "staged-2", package="auto")
         self.assertEqual(asset.status, VideoStatus.STAGED)
 
     def test_force_without_ffmpeg_marks_the_asset_errored(self):
+        self._telegram_asset("staged-3")
         with mock.patch.object(ingest, "TelegramMediaService", self._fake_service()):
             with mock.patch.object(packaging, "ffmpeg_available", return_value=False):
                 with self.assertRaises(packaging.PackagingError):
@@ -304,6 +409,7 @@ class StagingTests(ApiTestCase):
         self.assertIn("ffmpeg", asset.error_message)
 
     def test_auto_packages_when_ffmpeg_exists(self):
+        self._telegram_asset("staged-4")
         with tempfile.TemporaryDirectory() as work:
             fake_result = packaging.PackagingResult(
                 master_playlist=MASTER, duration_seconds=90, renditions=[], work_dir=Path(work)

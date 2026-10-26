@@ -58,6 +58,7 @@ class VideoAsset(UUIDModel, TimeStampedModel):
 
     # Source file — kept for re-packaging when applicable.
     source_message_id = models.PositiveBigIntegerField(null=True, blank=True, help_text="Telegram message holding the original upload")
+    source_file_id = models.CharField(max_length=128, blank=True, help_text="Provider file handle for non-message providers (Drive file id)")
     source_size_bytes = models.BigIntegerField(default=0)
     source_file_name = models.CharField(max_length=255, blank=True)
 

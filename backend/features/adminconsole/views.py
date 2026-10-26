@@ -374,7 +374,7 @@ def video_providers(request):
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_assets(request):
-    from features.videohosting.models import VideoAsset, VideoProvider
+    from features.videohosting.models import VideoAsset
     from features.videohosting import providers as vh_providers
     vh_providers.ensure_defaults()
     if request.method == "POST":
@@ -382,20 +382,9 @@ def video_assets(request):
         slug = data.get("slug")
         if not slug:
             return Response({"detail": "slug مطلوب."}, status=status.HTTP_400_BAD_REQUEST)
-        provider_code = data.get("provider")
-        provider = None
-        if provider_code:
-            provider = VideoProvider.objects.filter(code=provider_code).first()
-            if provider and provider.code == "telegram":
-                # Telegram becomes selectable the moment its env checks pass.
-                from features.videohosting import diagnostics
-                if not diagnostics.provider_available("telegram"):
-                    return Response(
-                        {"detail": f"تليجرام غير جاهز — {diagnostics.provider_reason('telegram')}"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-        if provider is None:
-            provider = VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
+        provider, refusal = resolve_provider(data.get("provider"))
+        if refusal is not None:
+            return refusal
         try:
             asset = VideoAsset.objects.create(
                 slug=slug,
@@ -412,6 +401,33 @@ def video_assets(request):
             return Response({"detail": "تعذّر الإنشاء."}, status=status.HTTP_400_BAD_REQUEST)
     assets = VideoAsset.objects.select_related("provider").prefetch_related("renditions").all()[:100]
     return Response({"results": [asset_row(a, include_error=True) for a in assets]})
+
+
+def resolve_provider(provider_code: str | None):
+    """Resolve one provider code against the registry and its env checks.
+
+    Data-driven — every provider is gated the same way, and an unknown code
+    fails loudly instead of silently falling back to the default. Returns
+    (provider, None) on success or (None, a ready Response) to send as-is.
+    """
+    from features.videohosting import diagnostics
+    from features.videohosting.models import VideoProvider
+
+    if not provider_code:
+        provider = VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
+        return provider, None
+    provider = VideoProvider.objects.filter(code=provider_code).first()
+    if provider is None:
+        return None, Response(
+            {"detail": f"مزود غير معروف: {provider_code}."}, status=status.HTTP_400_BAD_REQUEST
+        )
+    # The provider becomes selectable the moment its own env checks pass.
+    if not diagnostics.provider_available(provider.code):
+        return None, Response(
+            {"detail": f"الرفع عبر {provider.name} غير جاهز — {diagnostics.provider_reason(provider.code)}"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return provider, None
 
 
 # One asset row for list / detail / upload responses — the tracker reads the same shape.
@@ -444,11 +460,10 @@ def video_asset_upload(request):
 
     The HTTP leg ends as soon as the file is on disk: the response carries the
     asset id and the admin's tracker polls its progress/stage/status while the
-    Telegram upload, packaging, and segment publishing run in the background.
+    provider upload, packaging, and segment publishing run in the background.
     """
-    from features.videohosting import diagnostics, ingest
     from features.videohosting import providers as vh_providers
-    from features.videohosting.models import VideoAsset, VideoProvider
+    from features.videohosting.models import VideoAsset
     vh_providers.ensure_defaults()
 
     uploaded = request.data.get("file")
@@ -458,15 +473,9 @@ def video_asset_upload(request):
     if uploaded.size > VIDEO_UPLOAD_MAX_BYTES:
         return Response({"detail": "الملف أكبر من 2GB — قسّمه أو استخدم ingest_video من الخادم."}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
 
-    provider_code = request.data.get("provider")
-    provider = None
-    if provider_code:
-        provider = VideoProvider.objects.filter(code=provider_code).first()
-        if provider and provider.code == "telegram" and not diagnostics.provider_available("telegram"):
-            return Response(
-                {"detail": f"تليجرام غير جاهز — {diagnostics.provider_reason('telegram')}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    provider, refusal = resolve_provider(request.data.get("provider"))
+    if refusal is not None:
+        return refusal
 
     existing = VideoAsset.objects.filter(slug=slug).first()
     if existing is not None and existing.status in ("uploading", "processing"):

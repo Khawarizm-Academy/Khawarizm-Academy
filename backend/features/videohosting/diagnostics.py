@@ -15,12 +15,12 @@ from django.conf import settings
 from django.utils import timezone
 
 from features.videohosting import packaging
-from features.videohosting.providers.google_drive import GOOGLE_DRIVE
+from features.videohosting.providers.google_drive import GOOGLE_DRIVE, access_token as drive_access_token
+from features.videohosting.providers.google_drive import parse_service_account
 from features.videohosting.providers.telegram import TELEGRAM
 
 # Deep (network) checks use a short timeout — a down provider must not hang the admin.
 REQUEST_SECONDS = 8
-DRIVE_OAUTH_URL = "https://oauth2.googleapis.com/token"
 DRIVE_FILE_URL = "https://www.googleapis.com/drive/v3/files/{file_id}"
 TELEGRAM_API_URL = "https://api.telegram.org"
 
@@ -46,7 +46,7 @@ HINTS: dict[str, str] = {
     "root_folder": "أضف GOOGLE_DRIVE_ROOT_FOLDER_ID (من رابط المجلد في Drive) للمجلد الذي ستُرفع إليه الفيديوهات",
     "auth_mode": "أضف GOOGLE_DRIVE_REFRESH_TOKEN أو GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON — أحدهما يكفي",
     "service_account_json": "محتوى GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON يجب أن يكون JSON صالحًا (أو مشفّرًا base64)",
-    "drive_token": "أعد توليد refresh token (وضع OAuth) وتأكد أن CLIENT_ID/SECRET صحيحان",
+    "drive_token": "أعد توليد refresh token وضع GOOGLE_DRIVE_REFRESH_TOKEN، أو تأكد أن حساب الخدمة صالح ومشارَك مجلد الرفع مع بريده",
     "drive_folder": "تأكد أن الحساب المفوَّض يملك صلاحية على المجلد وأن معرّف المجلد صحيح",
 }
 
@@ -230,17 +230,15 @@ def drive_env_checks() -> list[Check]:
 
 
 def drive_deep_checks() -> list[Check]:
-    """Prove the credentials against Google's own API — token, then the folder."""
+    """Prove the credentials against Google's own API — token, then the folder.
+
+    Dual-mode: whichever of refresh token / service account mints a token.
+    """
     if _blocking(drive_env_checks()):
         return []
-    refresh_token = (settings.GOOGLE_DRIVE_REFRESH_TOKEN or "").strip()
-    if not refresh_token:
-        # Service-account flows mint their own JWTs; deep validation needs google-auth later.
-        return [check("drive_token", "التحقق العميق من حساب الخدمة", True,
-                      "وضع حساب الخدمة — تحقق سطحي فقط (الرفع الفعلي يتحقق عند أول عملية).")]
-    token_ok, bearer, token_detail = _drive_token(refresh_token)
-    checks = [check("drive_token", "تبادل refresh token مقابل access token", token_ok, token_detail)]
-    if token_ok:
+    okay, bearer, detail = drive_access_token()
+    checks = [check("drive_token", "المصادقة مقابل Google", okay, detail)]
+    if okay:
         folder_ok, folder_detail = _drive_folder(bearer)
         checks.append(check("drive_folder", "الوصول إلى مجلد الرفع", folder_ok, folder_detail))
     return checks
@@ -251,28 +249,6 @@ def drive_group(deep: bool) -> CheckGroup:
     if deep:
         group.checks.extend(drive_deep_checks())
     return group
-
-
-def _drive_token(refresh_token: str) -> tuple[bool, str, str]:
-    """Exchange the refresh token — (ok, bearer token, detail)."""
-    body = urllib.parse.urlencode({
-        "client_id": (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip(),
-        "client_secret": (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip(),
-        "refresh_token": refresh_token,
-        "grant_type": "refresh_token",
-    }).encode("utf-8")
-    request = urllib.request.Request(  # noqa: S310 — fixed OAuth host, POST to its own API
-        DRIVE_OAUTH_URL, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"}
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except Exception as exc:
-        return False, "", f"تعذّر الاتصال: {exc}"
-    bearer = payload.get("access_token", "")
-    if not bearer:
-        return False, "", f"رفض OAuth الطلب: {payload.get('error_description', payload.get('error', 'غير معروف'))}"
-    return True, bearer, "حصل على access token بنجاح."
 
 
 def _drive_folder(bearer: str) -> tuple[bool, str]:
@@ -290,20 +266,8 @@ def _drive_folder(bearer: str) -> tuple[bool, str]:
 
 
 def _service_account_parses(raw: str) -> bool:
-    """The service-account env value is raw JSON or base64 — both are accepted."""
-    candidate = raw.strip()
-    if not candidate.startswith("{"):
-        import base64
-
-        try:
-            candidate = base64.b64decode(candidate).decode("utf-8")
-        except Exception:
-            return False
-    try:
-        parsed = json.loads(candidate)
-    except ValueError:
-        return False
-    return isinstance(parsed, dict)
+    """The service-account env value is raw JSON or base64 — both accepted."""
+    return parse_service_account(raw) is not None
 
 
 # --------------------------------------------------------------- provider gates

@@ -19,6 +19,8 @@ from django.db import connection
 from features.common.choices import VideoStatus
 from features.videohosting import packaging
 from features.videohosting.models import VideoAsset, VideoRendition, VideoSegment
+from features.videohosting.providers import default_code
+from features.videohosting.providers.google_drive import GoogleDriveService
 from features.videohosting.providers.telegram import TelegramMediaService
 
 
@@ -31,6 +33,8 @@ PACKAGE_MODES = ("auto", "force", "never")
 SOURCE_SPAN = (0, 50)
 PACKAGING_SPAN = (50, 75)
 SEGMENTS_SPAN = (75, 99)
+# A source-only store (Drive) has no later legs — its bytes carry the full bar.
+FULL_SPAN = (0, 99)
 SECONDS_BETWEEN_FLUSHES = 1.0
 
 
@@ -138,6 +142,8 @@ def ingest_file(
     asset, _ = VideoAsset.objects.get_or_create(
         slug=slug, defaults={"created_by": created_by, "title": title or slug}
     )
+    # The chosen provider decides the flow; an unset provider takes the configured default.
+    provider_code = asset.provider.code if asset.provider else default_code()
     asset.status = VideoStatus.PROCESSING
     asset.error_message = ""
     asset.save(update_fields=["status", "error_message", "updated_at"])
@@ -146,40 +152,59 @@ def ingest_file(
     if tracker is not None:
         tracker.start()
     try:
-        service = TelegramMediaService()
-        bytes_arg = _bytes_report_arg(service, tracker)  # empty for every stand-in service
         client_name = asset.source_file_name  # set by the admin upload endpoint, empty otherwise
-        if not _should_package(package):
-            # Stage the source only: retrieves fine later, no HLS outputs yet.
-            source_fields = asyncio.run(_upload_source(service, asset, source, bytes_arg, keep_name=client_name))
-            asset.renditions.all().delete()  # a re-staged asset has no HLS outputs anymore
-            asset.master_playlist = ""
-            for field, value in {**source_fields, "master_playlist": "", "status": VideoStatus.STAGED}.items():
+        if provider_code == "google_drive":
+            # Drive stores the source for a later packaging run — no HLS here.
+            service = GoogleDriveService()
+            uploaded = service.upload_file(str(source), caption=f"source · {asset.slug}", **_bytes_report_arg(service, tracker, FULL_SPAN))
+            part = uploaded["parts"][0]
+            asset.renditions.all().delete()  # a re-uploaded asset has no HLS outputs anymore
+            drive_fields = {
+                "source_file_id": str(part["file_id"]),
+                "source_size_bytes": part["size_bytes"],
+                "source_file_name": client_name or source.name,
+                "master_playlist": "",
+                "status": VideoStatus.STAGED,
+            }
+            for field, value in drive_fields.items():
                 setattr(asset, field, value)
-            asset.save(update_fields=[*source_fields, "master_playlist", "status", "updated_at"])
-        else:
-            packaging.require_packaging_host()
-            if tracker is not None:
-                tracker.tick(PACKAGING_SPAN[0], "packaging")
-
-            source_fields = asyncio.run(_upload_source(service, asset, source, bytes_arg, keep_name=client_name))
-            result = packaging.package_video(str(source))
-            try:
+            asset.save(update_fields=[*drive_fields, "updated_at"])
+        elif provider_code == "telegram":
+            service = TelegramMediaService()
+            bytes_arg = _bytes_report_arg(service, tracker, SOURCE_SPAN)  # empty for every stand-in service
+            if not _should_package(package):
+                # Stage the source only: retrieves fine later, no HLS outputs yet.
+                source_fields = asyncio.run(_upload_source(service, asset, source, bytes_arg, keep_name=client_name))
+                asset.renditions.all().delete()  # a re-staged asset has no HLS outputs anymore
+                asset.master_playlist = ""
+                for field, value in {**source_fields, "master_playlist": "", "status": VideoStatus.STAGED}.items():
+                    setattr(asset, field, value)
+                asset.save(update_fields=[*source_fields, "master_playlist", "status", "updated_at"])
+            else:
+                packaging.require_packaging_host()
                 if tracker is not None:
-                    tracker.tick(PACKAGING_SPAN[1], "packaging")
-                renditions = asyncio.run(_upload_package(service, asset.slug, result, tracker))
-            finally:
-                shutil.rmtree(result.work_dir, ignore_errors=True)  # segments are in Telegram now
+                    tracker.tick(PACKAGING_SPAN[0], "packaging")
 
-            for field, value in {
-                **source_fields,
-                "master_playlist": result.master_playlist,
-                "duration_seconds": result.duration_seconds,
-                "status": VideoStatus.READY,
-            }.items():
-                setattr(asset, field, value)
-            asset.save(update_fields=[*source_fields, "master_playlist", "duration_seconds", "status", "updated_at"])
-            _store_renditions(asset, renditions)
+                source_fields = asyncio.run(_upload_source(service, asset, source, bytes_arg, keep_name=client_name))
+                result = packaging.package_video(str(source))
+                try:
+                    if tracker is not None:
+                        tracker.tick(PACKAGING_SPAN[1], "packaging")
+                    renditions = asyncio.run(_upload_package(service, asset.slug, result, tracker))
+                finally:
+                    shutil.rmtree(result.work_dir, ignore_errors=True)  # segments are in Telegram now
+
+                for field, value in {
+                    **source_fields,
+                    "master_playlist": result.master_playlist,
+                    "duration_seconds": result.duration_seconds,
+                    "status": VideoStatus.READY,
+                }.items():
+                    setattr(asset, field, value)
+                asset.save(update_fields=[*source_fields, "master_playlist", "duration_seconds", "status", "updated_at"])
+                _store_renditions(asset, renditions)
+        else:
+            raise ValueError(f"لا يوجد مسار رفع للمزود: {provider_code}")
     except Exception as exc:  # surface every failure on the row, then re-raise for the operator
         if tracker is not None:
             tracker.abandon()
@@ -199,13 +224,13 @@ def ingest_file(
 
 
 def _bytes_report_arg(
-    service: TelegramMediaService, tracker: ProgressTracker | None
+    service: object, tracker: ProgressTracker | None, span: tuple[int, int]
 ) -> dict[str, Callable[[int, int], None]]:
-    """Byte ticks go only to a service that accepts them (the real Pyrogram one)."""
+    """Byte ticks go only to a service that accepts them (every real one does)."""
     if tracker is None:
         return {}
     parameter = inspect.signature(service.upload_file).parameters.get("on_bytes")
-    return {"on_bytes": lambda done, total: tracker.bump_bytes(done, total, SOURCE_SPAN)} if parameter else {}
+    return {"on_bytes": lambda done, total: tracker.bump_bytes(done, total, span)} if parameter else {}
 
 
 async def _upload_source(

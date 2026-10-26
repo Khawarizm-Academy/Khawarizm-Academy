@@ -1,9 +1,9 @@
 # Video Hosting — استضافة الفيديو
 
 Unlimited, cheap, encrypted video hosting for lesson playback. A Telegram
-channel is the **data plane** (unlimited, free storage in direct-CDN redirect
-mode); this Django app is the **control plane** (hashing, manifests, keys — a few
-kilobytes per request). The backend never proxies a video byte.
+channel or a Google Drive folder is the **data plane** (unlimited, cheap
+storage); this Django app is the **control plane** (hashing, manifests, keys — a
+few kilobytes per request). The backend never proxies a video byte.
 
 ## The shape of a request
 
@@ -52,16 +52,19 @@ raw token is shown once at mint time. `VideoStatus` lives in
 
 ## How it works
 
-1. **Ingest** (`python manage.py ingest_video <file> --slug <slug>`): the source
-   is uploaded to the channel (files over ~2GB are auto-split), FFmpeg builds an
-   AES-128 HLS ladder (one **unique key per rendition**, 6s VOD segments), each
-   `.ts` is uploaded as a document, and the manifests keep `__TOKEN__`
-   placeholders — no usable URL is ever stored at rest.
+1. **Ingest** (`python manage.py ingest_video <file> --slug <slug>`): the asset's
+   provider decides the flow. **Telegram** uploads the source to the channel
+   (files over ~2GB are auto-split), FFmpeg builds an AES-128 HLS ladder (one
+   **unique key per rendition**, 6s VOD segments), each `.ts` is uploaded as a
+   document, and the manifests keep `__TOKEN__` placeholders — no usable URL is
+   ever stored at rest. **Google Drive** resumable-uploads the source into the
+   configured folder and stages the asset (`source_file_id`) for a later
+   packaging run — no HLS is built on this path.
 2. **Serve**: a signed-in viewer mints a token (IP-bound, TTL from
-   `STREAM_TOKEN_TTL_HOURS`); the playlists are rewritten per request with that
-   token; the key endpoint returns raw bytes with `no-store`; each segment view
-   resolves a fresh Telegram file path over plain HTTPS and returns a **302**
-   straight to the CDN, so `api.telegram.org` does the byte work.
+   `STREAM_TOKEN_TTL_HOURS`); the Telegram playlists are rewritten per request
+   with that token; the key endpoint returns raw bytes with `no-store`; each
+   segment view resolves a fresh Telegram file path over plain HTTPS and returns
+   a **302** straight to the CDN, so `api.telegram.org` does the byte work.
 3. **Protect**: the segment route only ever redirects to ciphertext; the key is
    IP-bound and expiring; the master and key responses are `no-store`. A leaked
    segment URL exposes encrypted bytes and nothing more.
@@ -100,7 +103,8 @@ Providers live in `providers/` — one module per host, plus the registry:
 features/videohosting/providers/
 ├── __init__.py      registry — SPECS, spec_for(), ensure_defaults(), default_code()
 ├── base.py          ProviderSpec — code, name, enablement, capabilities
-├── google_drive.py  GOOGLE_DRIVE spec + credentials() access point
+├── google_drive.py  GOOGLE_DRIVE spec + GoogleDriveService (resumable upload)
+│                    + dual-mode auth (refresh token → service-account JWT)
 └── telegram.py      TELEGRAM spec + TelegramMediaService + Bot API helpers
 ```
 
@@ -127,9 +131,10 @@ Environment variables (never commit real values):
 | `TELEGRAM_STREAM_TOKEN` | Throwaway read-only bot whose token appears in redirect URLs |
 | `TELEGRAM_CHANNEL_ID` | Storage channel (`@handle` or numeric id) |
 | `STREAM_TOKEN_TTL_HOURS` | Playback grant lifetime (default `6`) |
-| `GOOGLE_DRIVE_CLIENT_ID` / `CLIENT_SECRET` / `REFRESH_TOKEN` | Drive OAuth credentials |
-| `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` | Drive headless auth (alternative to the refresh token) |
-| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | The Drive folder videos upload into |
+| `GOOGLE_DRIVE_CLIENT_ID` / `CLIENT_SECRET` | Drive OAuth application credentials |
+| `GOOGLE_DRIVE_REFRESH_TOKEN` | Drive OAuth grant — tried first when minting access tokens |
+| `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` | Drive headless auth — the automatic fallback (raw JSON or base64) |
+| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | The Drive folder videos upload into; share it with the service-account email as **Editor** for its uploads to land |
 | `VIDEO_HOSTING_DEFAULT_PROVIDER` | The provider assets default to (default `google_drive`) |
 
 `pyrogram` + `tgcrypto` are only imported on the ingest path; the serving stack
