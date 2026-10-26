@@ -197,6 +197,12 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME, override=SQLITE_PATH),
+            # The upload worker and its tracker flusher run on their own
+            # connections; Django's default shared-cache in-memory test DB
+            # fails those writes instantly with "database table is locked"
+            # (SQLITE_LOCKED ignores the busy timeout). A file-backed test DB
+            # lets contention resolve through the normal busy timeout instead.
+            "TEST": {"NAME": str(Path(tempfile.gettempdir()) / "khawarizm-test-db.sqlite3")},
         }
     }
 

@@ -6,7 +6,7 @@ import asyncio
 import os
 import time
 from pathlib import Path
-from typing import AsyncGenerator, Dict, Union
+from typing import AsyncGenerator, Callable, Dict, Union
 
 from django.conf import settings
 
@@ -130,15 +130,27 @@ class TelegramMediaService:
 
     # ----------------------------------------------------------------- upload
 
-    async def upload_file(self, file_path: str, caption: str = "") -> Dict[str, object]:
-        """Upload one file (>2GB auto-split into parts) and return catalog rows."""
+    async def upload_file(self, file_path: str, caption: str = "", on_bytes: Callable[[int, int], None] | None = None) -> Dict[str, object]:
+        """Upload one file (>2GB auto-split into parts) and return catalog rows.
+
+        `on_bytes(current, total)` receives periodic byte ticks (the ingest
+        tracker maps them to the progress bar); it must stay ORM-free — Pyrogram
+        calls it inside its own event loop.
+        """
         size = os.path.getsize(file_path)
         if size > SPLIT_THRESHOLD_BYTES:
-            return await self._upload_split(file_path, caption)
-        result = await self._with_retry(self._upload_single, file_path, caption)
+            return await self._upload_split(file_path, caption, on_bytes)
+        result = await self._with_retry(self._upload_single, file_path, caption, on_bytes)
         return {"is_split": False, "parts": [result]}
 
-    async def _upload_single(self, file_path: str, caption: str = "") -> Dict[str, object]:
+    @staticmethod
+    def _pyrogram_progress(on_bytes: Callable[[int, int], None] | None):
+        """Pyrogram's progress hook — forwards (sent, total) to the caller's sink."""
+        if on_bytes is None:
+            return None
+        return lambda current, total, *_: on_bytes(int(current), int(total))
+
+    async def _upload_single(self, file_path: str, caption: str = "", on_bytes: Callable[[int, int], None] | None = None) -> Dict[str, object]:
         sent = await self.client.send_document(
             chat_id=self.channel_id,
             document=file_path,
@@ -146,6 +158,7 @@ class TelegramMediaService:
             file_name=os.path.basename(file_path),
             # .mp4 would otherwise be sent as video media with no .document.
             force_document=True,
+            progress=self._pyrogram_progress(on_bytes),
         )
         doc = sent.document
         return {
@@ -157,7 +170,7 @@ class TelegramMediaService:
             "mime_type": doc.mime_type,
         }
 
-    async def _upload_split(self, file_path: str, caption: str) -> Dict[str, object]:
+    async def _upload_split(self, file_path: str, caption: str, on_bytes: Callable[[int, int], None] | None = None) -> Dict[str, object]:
         """Split above the bot upload cap, upload part by part, clean up temp parts."""
         base_dir, file_name = os.path.split(file_path)
         split_dir = os.path.join(base_dir, f"split_{int(time.time())}")
@@ -184,7 +197,14 @@ class TelegramMediaService:
 
             parts = []
             for idx, part in enumerate(part_paths, start=1):
-                result = await self._upload_single(part, caption=f"{caption} (Part {idx}/{len(part_paths)})")
+                def part_bytes(sent: int, total: int, part_index: int = idx) -> None:
+                    """Cumulative ticks across parts — sent counts against all parts."""
+                    if on_bytes is None:
+                        return
+                    all_parts_bytes = len(part_paths) * SPLIT_THRESHOLD_BYTES
+                    on_bytes(((part_index - 1) * SPLIT_THRESHOLD_BYTES + sent), all_parts_bytes)
+
+                result = await self._upload_single(part, caption=f"{caption} (Part {idx}/{len(part_paths)})", on_bytes=part_bytes)
                 parts.append(result)
             return {"is_split": True, "parts": parts}
         finally:

@@ -52,6 +52,10 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     def is_ready(self) -> bool:
         return self.status == VideoStatus.READY
 
+    # Admin tracker — what the upload progress bar reads while the worker runs.
+    progress = models.PositiveSmallIntegerField(default=0, help_text="Ingest progress 0-100")
+    stage = models.CharField(max_length=20, blank=True, help_text="uploading | packaging | publishing")
+
     # Source file — kept for re-packaging when applicable.
     source_message_id = models.PositiveBigIntegerField(null=True, blank=True, help_text="Telegram message holding the original upload")
     source_size_bytes = models.BigIntegerField(default=0)

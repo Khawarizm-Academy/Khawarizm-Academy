@@ -3,15 +3,21 @@
 from __future__ import annotations
 
 import json
+import threading
+import uuid
 from datetime import timedelta
+from pathlib import Path
+from tempfile import gettempdir
 
 from django.db import IntegrityError
+from django.db import connections
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.exceptions import APIException
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -405,19 +411,108 @@ def video_assets(request):
         except Exception:
             return Response({"detail": "تعذّر الإنشاء."}, status=status.HTTP_400_BAD_REQUEST)
     assets = VideoAsset.objects.select_related("provider").prefetch_related("renditions").all()[:100]
-    return Response({"results": [
-        {
-            "id": str(a.id),
-            "slug": a.slug,
-            "title": a.title,
-            "status": a.status,
-            "provider": a.provider.code if a.provider else None,
-            "error": a.error_message[:200],
-            "qualities": len(a.renditions.all()),
-            "createdAt": a.created_at.isoformat(),
-        }
-        for a in assets
-    ]})
+    return Response({"results": [asset_row(a, include_error=True) for a in assets]})
+
+
+# One asset row for list / detail / upload responses — the tracker reads the same shape.
+def asset_row(asset, *, include_error: bool = False) -> dict:
+    row = {
+        "id": str(asset.id),
+        "slug": asset.slug,
+        "title": asset.title,
+        "status": asset.status,
+        "provider": asset.provider.code if asset.provider else None,
+        "progress": asset.progress,
+        "stage": asset.stage,
+        "qualities": asset.renditions.count(),
+        "createdAt": asset.created_at.isoformat(),
+    }
+    if include_error:
+        row["error"] = asset.error_message[:300]
+    return row
+
+
+# Bot uploads cap at ~2GB; anything larger must go through the split path anyway.
+VIDEO_UPLOAD_MAX_BYTES = 2 ** 31
+
+
+@api_view(["POST"])
+@parser_classes([MultiPartParser, FormParser])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_asset_upload(request):
+    """Accept the actual video file, then ingest it in a worker thread.
+
+    The HTTP leg ends as soon as the file is on disk: the response carries the
+    asset id and the admin's tracker polls its progress/stage/status while the
+    Telegram upload, packaging, and segment publishing run in the background.
+    """
+    from features.videohosting import diagnostics, ingest
+    from features.videohosting import providers as vh_providers
+    from features.videohosting.models import VideoAsset, VideoProvider
+    vh_providers.ensure_defaults()
+
+    uploaded = request.data.get("file")
+    slug = (request.data.get("slug") or "").strip()
+    if uploaded is None or not slug:
+        return Response({"detail": "الملف و معرّف الفيديو مطلوبان."}, status=status.HTTP_400_BAD_REQUEST)
+    if uploaded.size > VIDEO_UPLOAD_MAX_BYTES:
+        return Response({"detail": "الملف أكبر من 2GB — قسّمه أو استخدم ingest_video من الخادم."}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+    provider_code = request.data.get("provider")
+    provider = None
+    if provider_code:
+        provider = VideoProvider.objects.filter(code=provider_code).first()
+        if provider and provider.code == "telegram" and not diagnostics.provider_available("telegram"):
+            return Response(
+                {"detail": f"تليجرام غير جاهز — {diagnostics.provider_reason('telegram')}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    existing = VideoAsset.objects.filter(slug=slug).first()
+    if existing is not None and existing.status in ("uploading", "processing"):
+        return Response({"detail": "هذا المعرّف في منتصف رفع آخر — انتظر انتهاء المعالجة."}, status=status.HTTP_409_CONFLICT)
+
+    # Persist the stream to a stable temp path: the request dies here, the worker lives on.
+    file_name = getattr(uploaded, "name", "") or "video.bin"
+    temp_path = Path(gettempdir()) / f"kh-video-{uuid.uuid4().hex}{Path(file_name).suffix or '.bin'}"
+    with temp_path.open("wb") as destination:
+        for chunk in uploaded.chunks():
+            destination.write(chunk)
+
+    asset = existing or VideoAsset.objects.create(slug=slug, created_by=request.user)
+    asset.title = asset.title or (request.data.get("title") or Path(file_name).stem)
+    asset.provider = provider
+    asset.source_file_name = file_name
+    asset.status = "uploading"
+    asset.error_message = ""
+    asset.progress = 0
+    asset.stage = "uploading"
+    asset.save(update_fields=["title", "provider", "source_file_name", "status", "error_message", "progress", "stage", "updated_at"])
+
+    worker = threading.Thread(target=_run_ingest_worker, args=(slug, str(temp_path)), daemon=True)
+    worker.start()
+    return Response(asset_row(asset), status=status.HTTP_202_ACCEPTED)
+
+
+def _run_ingest_worker(slug: str, file_path: str) -> None:
+    """The background half of an admin upload: ingest, then drop this thread's DB connection.
+
+    ingest_file lands status+error on the row for its own failures; anything
+    that dies before or around it (imports, a lost DB) must still fail the row
+    loudly — a stuck `uploading` would spin the admin's tracker forever.
+    """
+    from features.videohosting import ingest
+    from features.videohosting.models import VideoAsset
+    from features.videohosting.models import VideoStatus
+
+    try:
+        ingest.ingest_file(file_path, slug, remove_source=True, track_progress=True)
+    except Exception as exc:
+        VideoAsset.objects.filter(slug=slug).exclude(
+            status__in=(VideoStatus.READY, VideoStatus.STAGED, VideoStatus.ERROR)
+        ).update(status=VideoStatus.ERROR, error_message=f"عامل الرفع توقّف: {exc}"[:2000], stage="")
+    finally:
+        connections.close_all()
 
 
 @api_view(["GET", "DELETE"])
@@ -430,7 +525,8 @@ def video_asset_detail(request, asset_id):
     if request.method == "DELETE":
         asset.delete()
         return Response({"deleted": True, "id": str(asset_id)})
-    return Response({"id": str(asset.id), "slug": asset.slug, "title": asset.title, "status": asset.status})
+    # The poller's shape: live status, progress bar, stage, and error detail.
+    return Response(asset_row(asset, include_error=True))
 
 
 @api_view(["GET"])

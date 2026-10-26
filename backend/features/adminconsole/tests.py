@@ -2,15 +2,26 @@
 
 from __future__ import annotations
 
+import time
 from unittest import mock
 
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 
 from features.auth import services
 from features.auth.models import User
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
-from features.common.testing import ApiTestCase, FakeRequest, authenticate, make_admin, make_user
+from features.common.testing import ApiTestCase, FakeRequest, api_client, authenticate, make_admin, make_user
+from features.videohosting import diagnostics, ingest, packaging
+
+
+class FakeTelegramService:
+    """A TelegramMediaService stand-in that never touches the network."""
+
+    async def upload_file(self, file_path: str, caption: str = "", on_bytes=None) -> dict:
+        if on_bytes is not None:
+            on_bytes(2048, 2048)  # the real service calls this from its event loop
+        return {"is_split": False, "parts": [{"message_id": 11, "file_id": "F", "size_bytes": 2048}]}
 
 
 class AdminConsoleUrlTests(TestCase):
@@ -400,6 +411,91 @@ class AdminConsoleVideoTests(ApiTestCase):
         self.assertEqual(row["slug"], "video-ls")
         for key in ("error", "qualities", "createdAt"):
             self.assertIn(key, row)
+
+    def test_asset_detail_carries_the_tracker_fields(self):
+        minted = self.client.post("/api/admin/video-assets", {"slug": "video-detail"}, format="json").json()
+        body = self.client.get(f"/api/admin/video-assets/{minted['id']}").json()
+        self.assertEqual(body["slug"], "video-detail")
+        self.assertIn("progress", body)
+        self.assertIn("stage", body)
+
+
+class AdminConsoleVideoUploadTests(TransactionTestCase):
+    """The file upload: gating, the worker thread, and the tracker fields.
+
+    TransactionTestCase on purpose: the ingest worker runs on its own
+    connection, so its committed writes are invisible from a TestCase's open
+    transaction — the polling loop here must read them.
+    """
+
+    def setUp(self):
+        self.client = api_client()
+        authenticate(self.client, make_admin())
+        self._patcher = mock.patch.object(ingest, "TelegramMediaService", FakeTelegramService)
+        self._patcher.start()
+
+    def tearDown(self):
+        self._patcher.stop()
+        super().tearDown()
+
+    def _upload(self, slug="clip-1"):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        return self.client.post(
+            "/api/admin/video-assets/upload",
+            {"slug": slug, "title": "درس تجريبي", "file": SimpleUploadedFile("clip.mp4", b"0" * 2048)},
+            format="multipart",
+        )
+
+    def _asset(self, slug="clip-1"):
+        from features.videohosting.models import VideoAsset
+
+        return VideoAsset.objects.get(slug=slug)
+
+    def test_upload_kicks_off_a_worker_that_stages_the_file(self):
+        # The patches must outlive the 202: the worker reads them from its own
+        # thread, seconds after the request has already returned.
+        with mock.patch.object(diagnostics, "provider_available", return_value=True), \
+             mock.patch.object(packaging, "ffmpeg_available", return_value=False):
+            response = self._upload()
+            self.assertEqual(response.status_code, 202)
+            self.assertEqual(response.json()["status"], "uploading")
+            # Terminal state pair: the staged save alone can land a tick before
+            # the tracker's final 100% flush — wait for both to settle.
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                asset = self._asset()
+                if asset.status == "staged" and asset.progress == 100:
+                    break
+                time.sleep(0.05)
+        self.assertEqual(asset.status, "staged", f"row error: {asset.error_message}")
+        self.assertEqual(asset.progress, 100)
+        self.assertEqual(asset.stage, "")
+        self.assertEqual(asset.source_file_name, "clip.mp4")
+        self.assertFalse(asset.master_playlist)
+
+    def test_upload_refuses_a_second_upload_for_a_busy_slug(self):
+        with mock.patch.object(diagnostics, "provider_available", return_value=True):
+            from features.videohosting.models import VideoAsset
+            VideoAsset.objects.create(slug="clip-1", status="uploading", stage="uploading")
+            response = self._upload()
+        self.assertEqual(response.status_code, 409)
+
+    def test_upload_still_gates_the_telegram_provider(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        with mock.patch.object(diagnostics, "provider_available", return_value=False):
+            response = self.client.post(
+                "/api/admin/video-assets/upload",
+                {"slug": "clip-tg", "provider": "telegram", "file": SimpleUploadedFile("clip.mp4", b"0")},
+                format="multipart",
+            )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("تليجرام", response.json()["detail"])
+
+    def test_upload_requires_the_file_and_slug(self):
+        response = self.client.post("/api/admin/video-assets/upload", {"slug": "clip-x"}, format="multipart")
+        self.assertEqual(response.status_code, 400)
 
 
 class AdminConsoleVideoPermissionTests(ApiTestCase):
