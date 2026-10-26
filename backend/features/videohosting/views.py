@@ -1,8 +1,8 @@
 """Video hosting views — the control plane.
 
 The backend never carries video bytes: it mints a scoped token, rewrites the
-stored `__TOKEN__` playlists for one request, gates the AES key, and 302-redirects
-each segment to Telegram's CDN so the encrypted `.ts` flows browser↔Telegram.
+stored ``__TOKEN__`` playlists for one request, gates the AES key, and 302-redirects
+each segment to the provider's CDN so the encrypted ``.ts`` flows browser↔provider.
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ from rest_framework.response import Response
 from features.auth.device import client_ip
 from features.videohosting import tokens
 from features.videohosting.models import VideoAsset, VideoSegment
+from features.videohosting.providers import default_code, spec_for
 from features.videohosting.serializers import asset_meta, minted_token
-from features.videohosting.providers.telegram import resolve_file_path_http, telegram_file_url
 
 ASSET_NOT_FOUND = {"detail": "الفيديو غير موجود"}
 TOKEN_INVALID = {"detail": "انتهت صلاحية رابط المشاهدة"}
@@ -55,20 +55,21 @@ def _grant(request: Any, token: str):
     return row, None
 
 
-def _fresh_file_path(segment: VideoSegment) -> str:
-    """The cached Bot API path, refreshed over HTTPS when Telegram has expired it.
+def _refresh_segment(segment, provider) -> str:
+    """Refresh a segment's file path (Telegram refreshes over HTTPS) then resolve redirect.
 
-    Bot API file links last only about an hour, so a long lesson refreshes once;
-    the new path is persisted so later segment views skip the lookup.
+    Bot API file links last only about an hour, so long lessons refresh once;
+    the new path is persisted so later segment views skip the lookup.  For
+    non-Telegram providers the file_id IS the path and no refresh happens.
     """
-    if segment.file_path:
-        return segment.file_path
-    if not segment.file_id:
-        raise ValueError(f"Segment {segment.pk} has no Telegram file handle")
-    file_path = resolve_file_path_http(segment.file_id)
-    segment.file_path = file_path
-    segment.save(update_fields=["file_path", "updated_at"])
-    return file_path
+    fp = segment.file_path
+    if not fp and segment.file_id and provider is not None:
+        spec = spec_for(provider.code)
+        if spec is not None:
+            fp = spec.file_path_refresher(segment.file_id)
+            segment.file_path = fp
+            segment.save(update_fields=["file_path", "updated_at"])
+    return fp or ""
 
 
 @api_view(["GET"])
@@ -133,7 +134,7 @@ def key_view(request: Any, token: str, quality: str):
 
 @api_view(["GET"])
 def segment_view(request: Any, token: str, quality: str, index: int):
-    """Resolve one segment and 302 the browser straight to Telegram's CDN."""
+    """Resolve one segment and 302 the browser straight to the provider's CDN."""
     row, error = _grant(request, token)
     if error is not None:
         return error
@@ -143,16 +144,36 @@ def segment_view(request: Any, token: str, quality: str, index: int):
     response = HttpResponse(status=302)
     # No Cache-Control: the redirect is tiny and the target itself is cacheable,
     # so the browser reuses downloaded segments instead of re-hitting the API.
-    response["Location"] = telegram_file_url(_fresh_file_path(segment))
+    provider = row.asset.provider
+    fp = _refresh_segment(segment, provider)
+    url = None
+    if fp:
+        if provider is not None:
+            spec = spec_for(provider.code)
+            if spec is not None:
+                url = spec.segment_redirect(fp)
+        # Fallback for assets created before provider assignment:
+        # assume Telegram (the only provider that produces HLS segments).
+        if url is None and provider is None:
+            # Fallback for assets created before provider assignment:
+            # assume Telegram (the only provider that produces HLS segments).
+            from features.videohosting.providers import SPECS
+            for sp in SPECS:
+                # The CDN redirect transforms a file path; identity leaves it unchanged.
+                if sp.segment_redirect("check") != "check":
+                    url = sp.segment_redirect(fp)
+                    break
+    response["Location"] = url or segment.file_path or ""
     return response
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def video_providers_list(request: Any) -> Response:
+    """Public provider listing — uses the same logic as admin, just without gate info."""
     from features.videohosting import providers as vh_providers
-    from features.videohosting.models import VideoProvider
     from features.videohosting.serializers import provider_payload
     vh_providers.ensure_defaults()
-    providers = VideoProvider.objects.all()
+    providers = list(vh_providers.VideoProvider.objects.all())
     return Response({"results": [provider_payload(p) for p in providers]})
+

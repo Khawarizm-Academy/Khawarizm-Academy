@@ -639,9 +639,9 @@ class DiagnosticsTests(ApiTestCase):
              mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
              mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"), \
              mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
-             mock.patch.object(diagnostics, "drive_access_token",
+             mock.patch.object(google_drive, "access_token",
                                return_value=(True, "BEAR", "استخدم access token المخزَّن.")) as fake_token, \
-             mock.patch.object(diagnostics, "drive_upload_probe",
+             mock.patch.object(google_drive, "upload_probe",
                                return_value=(False, "تعذّر الكتابة — راجع صلاحيات الحساب")) as fake_probe:
             group = diagnostics.drive_group(deep=True)
         by_id = {c.id: c for c in group.checks}

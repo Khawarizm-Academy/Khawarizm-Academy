@@ -1,5 +1,5 @@
-# Video ingest <- Management command
-# Upload → (package → store | stage): pushes the source into the Telegram
+# Video ingest <- Management command / admin console upload handler.
+# Upload → (package → store | stage): pushes the source into the provider
 # channel, then builds the AES-128 HLS ladder with FFmpeg when the host can —
 # or stages the source only, so "no FFmpeg" never blocks putting a video away.
 # Errors land on the asset row (status=error) so the admin can see what happened.
@@ -19,13 +19,11 @@ from django.db import connection
 from features.common.choices import VideoStatus
 from features.videohosting import packaging
 from features.videohosting.models import VideoAsset, VideoRendition, VideoSegment
-from features.videohosting.providers import default_code
-from features.videohosting.providers.google_drive import GoogleDriveService
-from features.videohosting.providers.telegram import TelegramMediaService
+from features.videohosting.providers import default_code, spec_for
 
 
 # The ingest shapes: "auto" packages when the host can, "force" requires the
-# packaging host, "never" stages the source so it can be packaged from an FFmpeg host.
+# packaging host, "never" stages the source so it can be packaged later.
 PACKAGE_MODES = ("auto", "force", "never")
 
 # The admin progress bar's weighted timeline: source upload → packaging →
@@ -38,6 +36,7 @@ FULL_SPAN = (0, 99)
 SECONDS_BETWEEN_FLUSHES = 1.0
 
 
+# ── ProgressTracker ────────────────────────────────────────────────────
 class ProgressTracker:
     """Merges provider byte ticks into the asset's one progress bar.
 
@@ -64,14 +63,12 @@ class ProgressTracker:
             self._state = (max(percent, self._state[0]), stage)
 
     def bump_bytes(self, done: int, total: int, span: tuple[int, int]) -> None:
-        """Map one provider byte tick into the given span of the timeline."""
         if total <= 0:
             return
         low, high = span
         self.tick(int(low + (high - low) * min(done / total, 1.0)), "uploading")
 
     def publish_segment(self, index: int, total: int) -> None:
-        """The segment ladder: one tick per uploaded segment."""
         low, high = SEGMENTS_SPAN
         if total <= 0:
             self.tick(high, "publishing")
@@ -79,7 +76,6 @@ class ProgressTracker:
         self.tick(int(low + (high - low) * index / total), "publishing")
 
     def finish(self) -> None:
-        """Stop the flusher and land the final 100% write on this thread."""
         self.tick(100, "")
         self._stopping.set()
         if self._thread.is_alive():
@@ -87,7 +83,6 @@ class ProgressTracker:
         VideoAsset.objects.filter(pk=self.asset_id).exclude(status=VideoStatus.ERROR).update(progress=100, stage="")
 
     def abandon(self) -> None:
-        """Stop flushing without the final write — the error handler owns the row."""
         self._stopping.set()
         if self._thread.is_alive():
             self._thread.join(timeout=SECONDS_BETWEEN_FLUSHES * 2)
@@ -107,15 +102,15 @@ class ProgressTracker:
                 state = self._state
             if state != last_written:
                 self._write(state)
-            connection.close()  # the thread owned this connection for its lifetime
+            connection.close()
 
     def _write(self, state: tuple[int, str]) -> None:
         percent, stage = state
         VideoAsset.objects.filter(pk=self.asset_id).update(progress=percent, stage=stage)
 
 
+# ── packaging decision ────────────────────────────────────────────────
 def _should_package(package: str) -> bool:
-    """The packaging decision: force always, never skips, auto follows the host."""
     if package == "force":
         return True
     if package == "never":
@@ -123,6 +118,7 @@ def _should_package(package: str) -> bool:
     return packaging.ffmpeg_available() and not settings.IS_VERCEL
 
 
+# ── public API ─────────────────────────────────────────────────────────
 def ingest_file(
     file_path: str | Path,
     slug: str,
@@ -133,17 +129,20 @@ def ingest_file(
     package: str = "auto",
     track_progress: bool = False,
 ) -> VideoAsset:
-    """Run one ingest and return the asset row; raises on failure except as noted.
-
-    With `track_progress`, a ProgressTracker runs beside the upload and the
-    admin's progress bar follows the source bytes, packaging, and segments.
-    """
+    """Run one ingest and return the asset row; raises on failure except as noted."""
     source = Path(file_path)
     asset, _ = VideoAsset.objects.get_or_create(
         slug=slug, defaults={"created_by": created_by, "title": title or slug}
     )
-    # The chosen provider decides the flow; an unset provider takes the configured default.
+
+    # Resolve the provider spec once — the rest delegates entirely to it.
     provider_code = asset.provider.code if asset.provider else default_code()
+    spec = spec_for(provider_code)
+    if spec is None:
+        raise ValueError(f"لا يوجد مسار رفع للمزود: {provider_code}")
+    if spec.ingest is None:
+        raise ValueError(f"المزود {spec.name} لا يدعم الرفع.")
+
     asset.status = VideoStatus.PROCESSING
     asset.error_message = ""
     asset.save(update_fields=["status", "error_message", "updated_at"])
@@ -152,60 +151,62 @@ def ingest_file(
     if tracker is not None:
         tracker.start()
     try:
-        client_name = asset.source_file_name  # set by the admin upload endpoint, empty otherwise
-        if provider_code == "google_drive":
-            # Drive stores the source for a later packaging run — no HLS here.
-            service = GoogleDriveService()
-            uploaded = service.upload_file(str(source), caption=f"source · {asset.slug}", **_bytes_report_arg(service, tracker, FULL_SPAN))
-            part = uploaded["parts"][0]
-            asset.renditions.all().delete()  # a re-uploaded asset has no HLS outputs anymore
-            drive_fields = {
-                "source_file_id": str(part["file_id"]),
-                "source_size_bytes": part["size_bytes"],
-                "source_file_name": client_name or source.name,
-                "master_playlist": "",
-                "status": VideoStatus.STAGED,
-            }
-            for field, value in drive_fields.items():
-                setattr(asset, field, value)
-            asset.save(update_fields=[*drive_fields, "updated_at"])
-        elif provider_code == "telegram":
-            service = TelegramMediaService()
-            bytes_arg = _bytes_report_arg(service, tracker, SOURCE_SPAN)  # empty for every stand-in service
+        client_name = getattr(asset, "source_file_name", "") or ""
+
+        if not hasattr(spec.ingest, "store_package"):
+            # Staged-only path (Google Drive): one upload leg.
+            svc = _make_service(spec)
+            bytes_arg = _report_arg(svc, tracker, FULL_SPAN)
+            stored = _await_if_needed(spec.ingest.store_source(svc, asset, source, bytes_arg))
+            fields = {"master_playlist": ""}
+            status = VideoStatus.STAGED
+            renditions = []
+        else:
+            # Full path (Telegram): source, optionally package.
+            svc = _make_service(spec)
+            bytes_arg = _report_arg(svc, tracker, SOURCE_SPAN)
+            stored = _await_if_needed(spec.ingest.store_source(svc, asset, source, bytes_arg))
+
             if not _should_package(package):
-                # Stage the source only: retrieves fine later, no HLS outputs yet.
-                source_fields = asyncio.run(_upload_source(service, asset, source, bytes_arg, keep_name=client_name))
-                asset.renditions.all().delete()  # a re-staged asset has no HLS outputs anymore
-                asset.master_playlist = ""
-                for field, value in {**source_fields, "master_playlist": "", "status": VideoStatus.STAGED}.items():
-                    setattr(asset, field, value)
-                asset.save(update_fields=[*source_fields, "master_playlist", "status", "updated_at"])
+                # Stage only — retrieve fine later, no HLS outputs yet.
+                fields = {"master_playlist": ""}
+                status = VideoStatus.STAGED
+                renditions = []
             else:
                 packaging.require_packaging_host()
                 if tracker is not None:
                     tracker.tick(PACKAGING_SPAN[0], "packaging")
 
-                source_fields = asyncio.run(_upload_source(service, asset, source, bytes_arg, keep_name=client_name))
                 result = packaging.package_video(str(source))
                 try:
-                    if tracker is not None:
-                        tracker.tick(PACKAGING_SPAN[1], "packaging")
-                    renditions = asyncio.run(_upload_package(service, asset.slug, result, tracker))
+                    pkg = _await_if_needed(spec.ingest.store_package(svc, slug, result, tracker))
                 finally:
-                    shutil.rmtree(result.work_dir, ignore_errors=True)  # segments are in Telegram now
+                    shutil.rmtree(result.work_dir, ignore_errors=True)
 
-                for field, value in {
-                    **source_fields,
+                fields = {
                     "master_playlist": result.master_playlist,
                     "duration_seconds": result.duration_seconds,
-                    "status": VideoStatus.READY,
-                }.items():
-                    setattr(asset, field, value)
-                asset.save(update_fields=[*source_fields, "master_playlist", "duration_seconds", "status", "updated_at"])
-                _store_renditions(asset, renditions)
-        else:
-            raise ValueError(f"لا يوجد مسار رفع للمزود: {provider_code}")
-    except Exception as exc:  # surface every failure on the row, then re-raise for the operator
+                }
+                status = VideoStatus.READY
+                renditions = pkg
+
+        # Persist fields onto the row.
+        for k, v in stored.items():
+            setattr(asset, k, v)
+        for k, v in fields.items():
+            setattr(asset, k, v)
+        asset.renditions.all().delete()  # re-uploaded assets need a fresh ladder
+        asset.status = status
+        save_keys = [*stored.keys(), *fields.keys(), "status", "updated_at"]
+        if "duration_seconds" in fields:
+            save_keys.append("duration_seconds")
+        asset.save(update_fields=save_keys)
+
+        # Create ORM rows for each published rendition.
+        if renditions:
+            _store_renditions(asset, renditions)
+
+    except Exception as exc:
         if tracker is not None:
             tracker.abandon()
         asset.status = VideoStatus.ERROR
@@ -219,76 +220,37 @@ def ingest_file(
     finally:
         if remove_source:
             source.unlink(missing_ok=True)
-
     return asset
 
 
-def _bytes_report_arg(
-    service: object, tracker: ProgressTracker | None, span: tuple[int, int]
-) -> dict[str, Callable[[int, int], None]]:
-    """Byte ticks go only to a service that accepts them (every real one does)."""
+# Re-exports kept at module level so tests can mock via ingest.TelegramMediaService.
+from features.videohosting.providers.telegram import TelegramMediaService  # noqa: E402,F401
+from features.videohosting.providers.google_drive import GoogleDriveService  # noqa: E402,F401
+
+
+# ── utility ────────────────────────────────────────────────────────────
+def _await_if_needed(coro_or_val):
+    """Return the value now, or await a coroutine in the running context."""
+    if asyncio.iscoroutine(coro_or_val):
+        return asyncio.run(coro_or_val)
+    return coro_or_val
+
+
+def _report_arg(service: object, tracker: "ProgressTracker | None", span: tuple[int, int]) -> dict[str, Callable[[int, int], None]]:
+    """Byte ticks go only to a service that accepts them."""
     if tracker is None:
         return {}
-    parameter = inspect.signature(service.upload_file).parameters.get("on_bytes")
-    return {"on_bytes": lambda done, total: tracker.bump_bytes(done, total, span)} if parameter else {}
+    param = inspect.signature(service.upload_file).parameters.get("on_bytes")
+    return {"on_bytes": lambda d, t: tracker.bump_bytes(d, t, span)} if param else {}
 
 
-async def _upload_source(
-    service: TelegramMediaService,
-    asset: VideoAsset,
-    source: Path,
-    upload_args: dict[str, Callable[[int, int], None]] | None = None,
-    keep_name: str = "",
-) -> dict[str, Any]:
-    """Store the original file so the video can be re-packaged without a re-upload.
-
-    Network only — the row write happens back in the sync caller, since ORM
-    calls are forbidden inside a running event loop.
-    """
-    uploaded = await service.upload_file(str(source), caption=f"source · {asset.slug}", **(upload_args or {}))
-    parts = uploaded["parts"]
-    # Re-packaging reads the parts in order; the first id is the durable handle.
-    # The temp worker file's name loses to any client-stamped one (admin uploads).
-    return {
-        "source_message_id": parts[0]["message_id"],
-        "source_size_bytes": sum(part["size_bytes"] for part in parts),
-        "source_file_name": keep_name or source.name,
-    }
-
-
-async def _upload_package(
-    service: TelegramMediaService,
-    slug: str,
-    result: packaging.PackagingResult,
-    tracker: ProgressTracker | None = None,
-) -> list[dict[str, Any]]:
-    """Upload every segment and return the rendition payloads to persist.
-
-    Network only — rows are created back in the sync caller.
-    """
-    total_segments = sum(len(packaged.segments) for packaged in result.renditions)
-    renditions = []
-    for packaged in result.renditions:
-        segments = []
-        for index, segment_path in enumerate(packaged.segments):
-            uploaded = await service.upload_file(str(segment_path), caption=f"{slug} · {packaged.quality} · {index}")
-            part = uploaded["parts"][0]
-            segments.append((index, part))
-            if tracker is not None:
-                published += 1
-                tracker.publish_segment(published, total_segments)
-
-        renditions.append({
-            "quality": packaged.quality,
-            "width": packaged.width,
-            "height": packaged.height,
-            "bandwidth_bps": packaged.bandwidth_bps,
-            "playlist": packaged.playlist_text,
-            "aes_key_hex": packaged.aes_key_hex,
-            "segment_count": len(packaged.segments),
-            "segments": segments,
-        })
-    return renditions
+def _make_service(spec) -> object:
+    """Instantiate the hosting provider's network client."""
+    if spec.code == "telegram":
+        return TelegramMediaService()
+    if spec.code == "google_drive":
+        return GoogleDriveService()
+    raise ValueError(f"Unknown provider service: {spec.code}")
 
 
 def _store_renditions(asset: VideoAsset, renditions: list[dict[str, Any]]) -> None:
@@ -305,15 +267,13 @@ def _store_renditions(asset: VideoAsset, renditions: list[dict[str, Any]]) -> No
             aes_key_hex=payload["aes_key_hex"],
             segment_count=payload["segment_count"],
         )
-        VideoSegment.objects.bulk_create(
-            [
-                VideoSegment(
-                    rendition=rendition,
-                    index=index,
-                    message_id=part["message_id"],
-                    file_id=part["file_id"],
-                    size_bytes=part["size_bytes"],
-                )
-                for index, part in payload["segments"]
-            ]
-        )
+        VideoSegment.objects.bulk_create([
+            VideoSegment(
+                rendition=rendition,
+                index=index,
+                message_id=part["message_id"],
+                file_id=part["file_id"],
+                size_bytes=part["size_bytes"],
+            )
+            for index, part in payload["segments"]
+        ])

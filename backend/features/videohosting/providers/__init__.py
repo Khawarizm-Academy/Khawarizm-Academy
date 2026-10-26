@@ -1,4 +1,4 @@
-# Provider registry <- /api/videohosting/providers, ingest, adminconsole
+# Provider registry <- /api/videohosting/providers, ingest, adminconsole.
 # One module per provider lives under providers/, each declaring a ProviderSpec.
 # Adding a provider touches no existing logic — see the three steps at the
 # bottom of this docstring.
@@ -11,7 +11,6 @@ from features.videohosting.providers.base import ProviderSpec
 from features.videohosting.providers.google_drive import GOOGLE_DRIVE
 from features.videohosting.providers.telegram import TELEGRAM
 
-# Every hosting provider the backend knows, one spec per module.
 SPECS: tuple[ProviderSpec, ...] = (GOOGLE_DRIVE, TELEGRAM)
 
 
@@ -28,10 +27,10 @@ def ensure_defaults() -> None:
     """
     for spec in SPECS:
         row, _ = VideoProvider.objects.get_or_create(code=spec.code, defaults=spec.row_defaults())
-        changes = {key: value for key, value in spec.row_defaults().items() if getattr(row, key) != value}
+        changes = {k: v for k, v in spec.row_defaults().items() if getattr(row, k) != v}
         if changes:
-            for key, value in changes.items():
-                setattr(row, key, value)
+            for k, v in changes.items():
+                setattr(row, k, v)
             row.save(update_fields=list(changes))
 
 
@@ -40,7 +39,29 @@ def default_code() -> str:
     return settings.VIDEO_HOSTING_DEFAULT_PROVIDER
 
 
-# Adding a new provider — three steps, one file each:
-#   1. providers/<code>.py — a ProviderSpec + a credentials() reading its settings.
-#   2. config/settings.py — os.environ.get for its keys; .env* — placeholder block.
-#   3. here — import the spec and add it to SPECS.
+def provider_listing(include_gate: bool = True) -> list[dict]:
+    """A unified provider listing used by both public and admin endpoints.
+
+    When `include_gate` is True, each entry carries ``available`` and ``reason``
+    drawn from the spec's own env checks — keeping the two callers identical.
+    """
+    ensure_defaults()
+    results = []
+    for p in VideoProvider.objects.all():
+        spec = spec_for(p.code)
+        if spec is None:
+            results.append({"code": p.code, "name": p.name, "enabled": p.is_enabled, "isDefault": p.is_default})
+            continue
+        available = spec.available()
+        reason = "" if available else spec.reason()
+        results.append({
+            **provider_payload(p),
+            "available": include_gate and available,
+            "reason": include_gate and reason,
+        })
+    return results
+
+
+# Added in the refactor: one import brings everything; no other module ever
+# needs to know about Telegram vs Drive internals.
+from features.videohosting.serializers import provider_payload  # noqa: E402 — after SPECS so import order works

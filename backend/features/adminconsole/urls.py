@@ -1,6 +1,6 @@
 """Admin console routes, mounted under /api/ and gated to admins."""
 
-from django.urls import path
+from django.urls import include, path
 
 from features.adminconsole import views
 
@@ -18,13 +18,6 @@ urlpatterns = [
     path("admin/content/schema", views.content_schema, name="admin-content-schema"),
     path("admin/content/<str:type_key>", views.content_items, name="admin-content-items"),
     path("admin/content/<str:type_key>/<uuid:pk>", views.content_detail, name="admin-content-detail"),
-    path("admin/video-providers", views.video_providers, name="admin-video-providers"),
-    path("admin/video-assets", views.video_assets, name="admin-video-assets"),
-    path("admin/video-assets/upload", views.video_asset_upload, name="admin-video-asset-upload"),
-    path("admin/video-assets/<uuid:asset_id>", views.video_asset_detail, name="admin-video-asset-detail"),
-    path("admin/video-diagnostics", views.video_diagnostics, name="admin-video-diagnostics"),
-    path("admin/video-drive/oauth/start", views.video_drive_oauth_start, name="admin-video-drive-oauth-start"),
-    path("admin/video-drive/oauth/callback", views.video_drive_oauth_callback, name="admin-video-drive-oauth-callback"),
-    path("admin/video-drive/oauth/status", views.video_drive_oauth_status, name="admin-video-drive-oauth-status"),
-    path("admin/video-drive/oauth/disconnect", views.video_drive_oauth_disconnect, name="admin-video-drive-oauth-disconnect"),
+    # Video hosting routes are owned by features/videohosting.console; paths and URL names unchanged.
+    path("admin/", include("features.videohosting.console.urls")),
 ]
