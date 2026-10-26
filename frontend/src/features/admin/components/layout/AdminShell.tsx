@@ -1,38 +1,8 @@
-import React from 'react';
-import { useAuth } from '@/features/auth/context/authContext';
-import { useAdmin } from '@/features/admin/context/adminContext';
-import { AdminHeader } from '@/features/admin/components/chrome/AdminHeader';
-import { AdminMobileTabs, AdminSectionNav } from '@/features/admin/components/chrome/AdminSectionNav';
-import { AdminNotice } from '@/features/admin/components/chrome/AdminNotice';
-import { UserDetailPanel } from '@/features/admin/components/views/UserDetailPanel';
-import { OverviewView } from '@/features/admin/components/views/OverviewView';
-import { UsersView } from '@/features/admin/components/views/UsersView';
-import { ContentView } from '@/features/admin/components/views/ContentView';
-import { SessionsView } from '@/features/admin/components/views/SessionsView';
-import { AnalyticsView } from '@/features/admin/components/views/AnalyticsView';
-import { ActivityView } from '@/features/admin/components/views/ActivityView';
-import { VideoHostingView } from '@/features/admin/components/views/VideoHostingView';
-import { AdminSystemView } from '@/features/admin/components/views/AdminSystemView';
-import type { AdminSectionKey } from '@/features/admin/types';
-
-/** One view per section, keyed by the `?tab=` value the provider reads. */
-const SECTION_VIEWS: Record<AdminSectionKey, React.FC> = {
-  overview: OverviewView,
-  users: UsersView,
-  content: ContentView,
-  videos: VideoHostingView,
-  system: AdminSystemView,
-  sessions: SessionsView,
-  analytics: AnalyticsView,
-  activity: ActivityView,
-};
-
 /** Console chrome: sticky rail, top bar, section pills, and the detail modal. */
 export const AdminShell: React.FC = () => {
   const { user } = useAuth();
   const { currentSection, selectSection, error, clearError } = useAdmin();
 
-  // The route guard already redirects visitors; this only guards a session that ends mid-view.
   if (!user) return null;
 
   const ActiveView = SECTION_VIEWS[currentSection];
@@ -42,16 +12,36 @@ export const AdminShell: React.FC = () => {
       <AdminSectionNav currentSection={currentSection} onSelect={selectSection} />
 
       <main className="admin-main">
-        <AdminHeader />
+        <div className="animate-fade-in-down">
+          <AdminHeader />
+        </div>
         <AdminNotice message={error} onDismiss={clearError} />
 
-        <div className="admin-container">
+        <div className="content-container animate-fade-in-up animation-delay-100">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-1">
+            <h1 className="dash-view-h1 text-white">{SECTION_LABELS[currentSection]}</h1>
+          </div>
           <AdminMobileTabs currentSection={currentSection} onSelect={selectSection} />
-          <ActiveView />
+          {/* Wrap active view so every section gets the same entrance treatment */}
+          <section className="animate-fade-in-up animation-delay-200">
+            <ActiveView />
+          </section>
         </div>
       </main>
 
       <UserDetailPanel />
     </div>
   );
+};
+
+/** Map each section key to an Arabic display label used as the page h1. */
+const SECTION_LABELS: Record<string, string> = {
+  overview: 'النظرة العامة',
+  users: 'إدارة المستخدمين',
+  sessions: 'الجلسات والأجهزة',
+  content: 'المحتوى',
+  videos: 'استضافة الفيديو',
+  analytics: 'تحليلات الدخول',
+  activity: 'سجل الأحداث',
+  system: 'فحص المنظومة',
 };

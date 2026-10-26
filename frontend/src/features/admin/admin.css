@@ -15,7 +15,7 @@
   }
 
   .admin-container {
-    @apply w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6;
+    @apply w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6;
   }
 
   /* --- Section rail (desktop) --- */
@@ -238,7 +238,7 @@
   }
 
   .admin-input {
-    @apply h-10 w-full px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:shadow-[0_0_0_3px_rgba(41,169,255,0.14)] disabled:opacity-50;
+    @apply h-10 w-full px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50;
   }
 
   .admin-input::placeholder {
@@ -250,7 +250,7 @@
   }
 
   .admin-textarea {
-    @apply w-full min-h-[88px] px-3 py-2 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:shadow-[0_0_0_3px_rgba(41,169,255,0.14)] resize-y disabled:opacity-50;
+    @apply w-full min-h-[88px] px-3 py-2 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 resize-y disabled:opacity-50;
   }
 
   .admin-textarea-code {
@@ -258,7 +258,7 @@
   }
 
   .admin-select {
-    @apply h-10 w-full px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all cursor-pointer hover:border-navy-600 focus:border-blue-400/70 focus:shadow-[0_0_0_3px_rgba(41,169,255,0.14)] disabled:opacity-50;
+    @apply h-10 w-full px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all cursor-pointer hover:border-navy-600 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50;
   }
 
   .admin-select-full {
@@ -293,12 +293,8 @@
   }
 
   .admin-table-row {
-    @apply flex flex-col gap-2.5 p-4 rounded-2xl border border-navy-600/50 bg-navy-900/50 cursor-pointer transition-colors hover:border-blue-400/40 hover:bg-navy-900/70;
+    @apply flex flex-col gap-2.5 p-4 rounded-2xl border border-navy-600/50 bg-navy-900/50 cursor-pointer transition-colors hover:border-blue-400/40 hover:bg-navy-900/70 xl:grid xl:gap-4 xl:items-center xl:flex-row;
     grid-template-columns: var(--admin-cols);
-  }
-
-  .admin-table-row {
-    @apply xl:grid xl:gap-4 xl:items-center;
   }
 
   .admin-table-row-static {
@@ -458,7 +454,7 @@
   .admin-chart-bar {
     @apply w-full rounded-t-sm bg-gradient-to-t from-blue-500/40 to-blue-400;
     min-height: 4px;
-    box-shadow: 0 0 10px rgba(41, 169, 255, 0.25);
+    box-shadow: var(--shadow-glow-blue);
   }
 
   .admin-chart-day {
@@ -554,10 +550,6 @@
 
   .admin-retry-btn {
     @apply mt-2 h-9 px-4 rounded-xl inline-flex items-center gap-2 border border-gold-400/50 bg-gold-400/10 text-xs font-bold font-display text-gold-400 transition-colors hover:bg-gold-400/20 cursor-pointer;
-  }
-
-  .admin-toolbar-actions {
-    @apply flex flex-wrap items-center gap-2;
   }
 
   /* --- Diagnostics: health chips, staged check cards, per-check rows --- */
@@ -688,15 +680,15 @@
   }
 
   .admin-check-ok .admin-check-dot {
-    @apply bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)];
+    @apply bg-emerald-400;
   }
 
   .admin-check-fail .admin-check-dot {
-    @apply bg-danger-500 shadow-[0_0_8px_rgba(239,68,68,0.5)];
+    @apply bg-danger-500;
   }
 
   .admin-check-warn .admin-check-dot {
-    @apply bg-warning-500 shadow-[0_0_8px_rgba(245,158,11,0.5)];
+    @apply bg-warning-500;
   }
 
   .admin-check-hint {
@@ -762,12 +754,12 @@
   }
 
   .admin-progress-fill {
-    @apply h-full rounded-full bg-gold-400 shadow-[0_0_10px_rgba(229,182,92,0.45)];
+    @apply h-full rounded-full bg-gold-400 shadow-[0_0_12px_rgba(229,182,92,0.35)];
     transition: width 0.3s ease-out;
   }
 
   .admin-progress-fill-error {
-    @apply bg-danger-500 shadow-[0_0_10px_rgba(239,68,68,0.45)];
+    @apply bg-danger-500 shadow-none;
   }
 
   .admin-progress-track-inline {
