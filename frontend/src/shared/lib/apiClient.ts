@@ -191,9 +191,18 @@ export function apiUpload<T>(path: string, formData: FormData, onProgress?: Uplo
   })();
 }
 
+/** Vercel functions reject request bodies over ~4.5 MB at the edge with a
+    bare 413 that carries no CORS headers — the browser then shows a cryptic
+    "blocked by CORS policy" pair instead of the size problem. A file beyond
+    the cap on a *.vercel.app API is doomed, so the caller refuses it
+    client-side with the real instruction; a real-server API stays uncapped. */
+export const VERCEL_UPLOAD_MAX_BYTES = 4 * 1024 * 1024;
+
+export const vercelUploadTooLarge = (file: File | null): boolean =>
+  file !== null && /(^|\.)vercel\.app$/.test(new URL(API_BASE_URL).hostname) && file.size > VERCEL_UPLOAD_MAX_BYTES;
+
 /** Serialize params into a query string, skipping undefined and 'all' values. */
-export function buildQuery(params: Record<string, string | number | undefined>): string {
-  const search = new URLSearchParams();
+export function buildQuery(params: Record<string, string | number | undefined>): string {  const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === '' || value === 'all') continue;
     search.set(key, String(value));
