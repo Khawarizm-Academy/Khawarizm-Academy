@@ -29,8 +29,6 @@ REQUIRED_SETTINGS = (
     "GOOGLE_DRIVE_CLIENT_SECRET",
     "GOOGLE_DRIVE_ROOT_FOLDER_ID",
 )
-# A service-account JSON is valid either raw or base64-encoded (env-friendly).
-SERVICE_ACCOUNT_BASE64 = False
 
 
 def credentials() -> dict[str, str]:
@@ -54,7 +52,3 @@ def credentials() -> dict[str, str]:
     if missing:
         raise ValueError(f"Google Drive is not configured — set {', '.join(missing)} in the environment")
     return values
-    candidate = raw.strip()
-    if candidate.startswith("{"):
-        return json.loads(candidate)
-    return json.loads(base64.b64decode(candidate).decode("utf-8"))

@@ -7,7 +7,9 @@ key endpoint serves the stored AES key directly.
 from __future__ import annotations
 
 import hashlib
+import tempfile
 from datetime import timedelta
+from pathlib import Path
 from unittest import mock
 
 from django.conf import settings
@@ -15,7 +17,7 @@ from django.utils import timezone
 
 from features.common.choices import VideoStatus
 from features.common.testing import ApiTestCase, authenticate
-from features.videohosting import packaging, providers, tokens
+from features.videohosting import diagnostics, ingest, packaging, providers, tokens
 from features.videohosting.models import StreamToken, VideoAsset, VideoProvider, VideoRendition, VideoSegment
 from features.videohosting.serializers import asset_meta
 from features.videohosting.providers import google_drive
@@ -142,13 +144,15 @@ class RegistryTests(ApiTestCase):
 class GoogleDriveCredentialsTests(ApiTestCase):
     def test_missing_keys_fail_loudly_naming_them(self):
         # One auth mode present so the auth sweep passes and the missing keys list.
-        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", '{"type":"service_account"}'):
+        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", '{"type":"service_account"}'), \
+             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_CLIENT_ID", ""):
             with self.assertRaises(ValueError) as ctx:
                 google_drive.credentials()
         self.assertIn("GOOGLE_DRIVE_CLIENT_ID", str(ctx.exception))
 
     def test_no_auth_mode_fails_with_the_instruction(self):
-        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_REFRESH_TOKEN", ""):
+        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_REFRESH_TOKEN", ""), \
+             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""):
             with self.assertRaises(ValueError) as ctx:
                 google_drive.credentials()
         self.assertIn("REFRESH_TOKEN", str(ctx.exception))
@@ -230,3 +234,102 @@ class RouteTests(ApiTestCase):
         minted = self.client.post("/api/videos/course-1--lesson-1/token", HTTP_X_FORWARDED_FOR="10.0.0.1").json()
         response = self.client.get(f"/api/stream/{minted['token']}/360p/99.ts", HTTP_X_FORWARDED_FOR="10.0.0.1")
         self.assertEqual(response.status_code, 404)
+
+
+class DiagnosticsTests(ApiTestCase):
+    """The staged validation — offline shape, env gating, and hint coverage."""
+
+    def test_every_failing_check_names_its_fix(self):
+        payload = diagnostics.run()
+        failing = [c for group in payload["groups"] for c in group["checks"] if not c["ok"]]
+        self.assertTrue(failing)
+        for item in failing:
+            self.assertTrue(item["hint"], f"check {item['id']} failed without a hint")
+
+    def test_providers_gate_on_their_env(self):
+        self.assertFalse(diagnostics.provider_available("telegram"))
+        self.assertTrue(diagnostics.provider_reason("telegram"))
+        with mock.patch.object(diagnostics.settings, "TELEGRAM_API_ID", "12345"), \
+             mock.patch.object(diagnostics.settings, "TELEGRAM_API_HASH", "hash"), \
+             mock.patch.object(diagnostics.settings, "TELEGRAM_BOT_TOKEN", "111:abc"), \
+             mock.patch.object(diagnostics.settings, "TELEGRAM_STREAM_TOKEN", "222:def"), \
+             mock.patch.object(diagnostics.settings, "TELEGRAM_CHANNEL_ID", "@channel"):
+            self.assertTrue(diagnostics.provider_available("telegram"))
+            self.assertEqual(diagnostics.provider_reason("telegram"), "")
+
+    def test_deep_runs_touch_no_network_when_env_is_absent(self):
+        def boom(*args, **kwargs):
+            raise AssertionError("deep checks must not reach the network without credentials")
+
+        with mock.patch.object(diagnostics.urllib.request, "urlopen", boom):
+            payload = diagnostics.run(deep=True)
+        telegram = next(group for group in payload["groups"] if group["id"] == "telegram")
+        self.assertEqual({c["id"] for c in telegram["checks"]} & {"bot_api", "chat_access"}, set())
+
+    def test_deep_drive_skips_the_network_offline_and_flags_service_accounts(self):
+        with mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_ID", "id"), \
+             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"), \
+             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", '{"type":"service_account"}'):
+            group = diagnostics.drive_group(deep=True)
+        check_ids = {c.id for c in group.checks}
+        self.assertIn("drive_token", check_ids)
+        self.assertNotIn("drive_folder", check_ids)
+
+
+class StagingTests(ApiTestCase):
+    """--package never / auto-without-ffmpeg stores the source with no FFmpeg."""
+
+    def test_never_stages_the_source_without_renditions(self):
+        with mock.patch.object(ingest, "TelegramMediaService", self._fake_service()):
+            asset = ingest.ingest_file("missing.mp4", "staged-1", package="never")
+        self.assertEqual(asset.status, VideoStatus.STAGED)
+        self.assertEqual(asset.source_message_id, 11)
+        self.assertEqual(asset.source_size_bytes, 2048)
+        self.assertFalse(asset.renditions.all().exists())
+
+    def test_auto_stages_when_ffmpeg_is_missing(self):
+        with mock.patch.object(ingest, "TelegramMediaService", self._fake_service()):
+            with mock.patch.object(packaging, "ffmpeg_available", return_value=False):
+                asset = ingest.ingest_file("missing.mp4", "staged-2", package="auto")
+        self.assertEqual(asset.status, VideoStatus.STAGED)
+
+    def test_force_without_ffmpeg_marks_the_asset_errored(self):
+        with mock.patch.object(ingest, "TelegramMediaService", self._fake_service()):
+            with mock.patch.object(packaging, "ffmpeg_available", return_value=False):
+                with self.assertRaises(packaging.PackagingError):
+                    ingest.ingest_file("missing.mp4", "staged-3", package="force")
+        asset = VideoAsset.objects.get(slug="staged-3")
+        self.assertEqual(asset.status, VideoStatus.ERROR)
+        self.assertIn("ffmpeg", asset.error_message)
+
+    def test_auto_packages_when_ffmpeg_exists(self):
+        with tempfile.TemporaryDirectory() as work:
+            fake_result = packaging.PackagingResult(
+                master_playlist=MASTER, duration_seconds=90, renditions=[], work_dir=Path(work)
+            )
+            with mock.patch.object(ingest, "TelegramMediaService", self._fake_service()), \
+                 mock.patch.object(packaging, "ffmpeg_available", return_value=True), \
+                 mock.patch.object(packaging, "package_video", return_value=fake_result):
+                asset = ingest.ingest_file("missing.mp4", "staged-4", package="auto")
+        self.assertEqual(asset.status, VideoStatus.READY)
+        self.assertEqual(asset.master_playlist, MASTER)
+
+    @staticmethod
+    def _fake_service() -> type:
+        """A TelegramMediaService stand-in that never touches the network."""
+
+        class FakeTelegramService:
+            async def upload_file(self, file_path: str, caption: str = ""):
+                return {"is_split": False, "parts": [{"message_id": 11, "file_id": "F", "size_bytes": 2048}]}
+
+        return FakeTelegramService
+
+
+class StagedTokenGateTests(ApiTestCase):
+    def test_staged_asset_explains_what_it_is_waiting_for(self):
+        authenticate(self.client)
+        make_asset(status=VideoStatus.STAGED)
+        response = self.client.post("/api/videos/course-1--lesson-1/token", HTTP_X_FORWARDED_FOR="10.0.0.1")
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("التغليف", response.json()["detail"])

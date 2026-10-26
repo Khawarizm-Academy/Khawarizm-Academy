@@ -21,4 +21,5 @@ urlpatterns = [
     path("admin/video-providers", views.video_providers, name="admin-video-providers"),
     path("admin/video-assets", views.video_assets, name="admin-video-assets"),
     path("admin/video-assets/<uuid:asset_id>", views.video_asset_detail, name="admin-video-asset-detail"),
+    path("admin/video-diagnostics", views.video_diagnostics, name="admin-video-diagnostics"),
 ]

@@ -346,6 +346,7 @@ def content_detail(request, type_key, pk):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_providers(request):
+    from features.videohosting import diagnostics as vh_diagnostics
     from features.videohosting.models import VideoProvider
     from features.videohosting.serializers import provider_payload
     providers = VideoProvider.objects.all()
@@ -353,7 +354,15 @@ def video_providers(request):
         from features.videohosting import providers as vh_providers
         vh_providers.ensure_defaults()
         providers = VideoProvider.objects.all()
-    return Response({"results": [provider_payload(p) for p in providers]})
+    # `available` greys the select when a provider's own env checks fail.
+    return Response({"results": [
+        {
+            **provider_payload(p),
+            "available": vh_diagnostics.provider_available(p.code),
+            "reason": "" if vh_diagnostics.provider_available(p.code) else vh_diagnostics.provider_reason(p.code),
+        }
+        for p in providers
+    ]})
 
 
 @api_view(["GET", "POST"])
@@ -372,7 +381,13 @@ def video_assets(request):
         if provider_code:
             provider = VideoProvider.objects.filter(code=provider_code).first()
             if provider and provider.code == "telegram":
-                return Response({"detail": "مُعطّل مؤقتًا — البنية التحتية المطلوبة غير مُهيأة."}, status=status.HTTP_400_BAD_REQUEST)
+                # Telegram becomes selectable the moment its env checks pass.
+                from features.videohosting import diagnostics
+                if not diagnostics.provider_available("telegram"):
+                    return Response(
+                        {"detail": f"تليجرام غير جاهز — {diagnostics.provider_reason('telegram')}"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
         if provider is None:
             provider = VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
         try:
@@ -382,12 +397,25 @@ def video_assets(request):
                 provider=provider,
                 created_by=request.user,
             )
-            return Response({"id": str(asset.id), "slug": asset.slug, "status": asset.status}, status=status.HTTP_201_CREATED)
+            return Response(
+                {"id": str(asset.id), "slug": asset.slug, "title": asset.title, "status": asset.status,
+                 "provider": asset.provider.code if asset.provider else None},
+                status=status.HTTP_201_CREATED,
+            )
         except Exception:
             return Response({"detail": "تعذّر الإنشاء."}, status=status.HTTP_400_BAD_REQUEST)
-    assets = VideoAsset.objects.select_related("provider").all()[:100]
+    assets = VideoAsset.objects.select_related("provider").prefetch_related("renditions").all()[:100]
     return Response({"results": [
-        {"id": str(a.id), "slug": a.slug, "title": a.title, "status": a.status, "provider": a.provider.code if a.provider else None}
+        {
+            "id": str(a.id),
+            "slug": a.slug,
+            "title": a.title,
+            "status": a.status,
+            "provider": a.provider.code if a.provider else None,
+            "error": a.error_message[:200],
+            "qualities": len(a.renditions.all()),
+            "createdAt": a.created_at.isoformat(),
+        }
         for a in assets
     ]})
 
@@ -403,3 +431,17 @@ def video_asset_detail(request, asset_id):
         asset.delete()
         return Response({"deleted": True, "id": str(asset_id)})
     return Response({"id": str(asset.id), "slug": asset.slug, "title": asset.title, "status": asset.status})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_diagnostics(request):
+    """The staged validation of every part the video pipeline relies on.
+
+    Shallow (default) stays offline; `?deep=true` also calls the providers'
+    own APIs so the admin sees exactly which stage breaks and why.
+    """
+    from features.videohosting import diagnostics
+
+    deep = (request.query_params.get("deep") or "").lower() in {"1", "true", "yes"}
+    return Response(diagnostics.run(deep=deep))

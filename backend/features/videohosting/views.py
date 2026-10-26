@@ -25,7 +25,14 @@ ASSET_NOT_FOUND = {"detail": "الفيديو غير موجود"}
 TOKEN_INVALID = {"detail": "انتهت صلاحية رابط المشاهدة"}
 RENDITION_NOT_FOUND = {"detail": "النسخة المطلوبة غير موجودة"}
 SEGMENT_NOT_FOUND = {"detail": "المقطع غير موجود"}
-NOT_READY = {"detail": "الفيديو قيد المعالجة"}
+# Per-status "not ready" — staged waits for an FFmpeg host, processing waits for time.
+NOT_READY_BY_STATUS = {
+    "staged": {"detail": "الفيديو مرفوع بانتظار التغليف — شغّل ingest_video بـ --package force من جهاز به FFmpeg"},
+    "processing": {"detail": "الفيديو قيد المعالجة"},
+    "uploading": {"detail": "الفيديو قيد المعالجة"},
+    "error": {"detail": "فشلت معالجة الفيديو — راجع لوحة الإدارة"},
+}
+NOT_READY = {"detail": "الفيديو غير جاهز للعرض"}
 
 # Placeholder living in every stored playlist; rewritten with the caller's token.
 TOKEN_PLACEHOLDER = "__TOKEN__"
@@ -81,7 +88,7 @@ def video_token_view(request: Any, slug: str) -> Response:
     if asset is None:
         return Response(ASSET_NOT_FOUND, status=404)
     if asset.status != "ready":
-        return Response(NOT_READY, status=409)
+        return Response(NOT_READY_BY_STATUS.get(asset.status, NOT_READY), status=409)
     raw, row = tokens.mint(asset, request.user, client_ip(request))
     master_url = request.build_absolute_uri(
         reverse("videohosting-master", kwargs={"token": raw})

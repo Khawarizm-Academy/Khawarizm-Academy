@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest import mock
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -344,3 +346,66 @@ class AdminConsoleContentTests(ApiTestCase):
         body = self.client.get("/api/admin/overview").json()
         self.assertIn("content", body)
         self.assertEqual(set(body["content"]), {"courses", "scholarships", "events", "competitions"})
+
+
+class AdminConsoleVideoRouteTests(TestCase):
+    def test_video_routes_resolve(self):
+        self.assertEqual(reverse("admin-video-diagnostics"), "/api/admin/video-diagnostics")
+        self.assertEqual(reverse("admin-video-providers"), "/api/admin/video-providers")
+        self.assertEqual(reverse("admin-video-assets"), "/api/admin/video-assets")
+
+
+class AdminConsoleVideoTests(ApiTestCase):
+    """The video hosting endpoints — providers, asset gating, and diagnostics."""
+
+    def setUp(self):
+        super().setUp()
+        authenticate(self.client, make_admin())
+
+    def test_diagnostics_payload_names_every_group(self):
+        body = self.client.get("/api/admin/video-diagnostics").json()
+        self.assertEqual([g["id"] for g in body["groups"]], ["pipeline", "telegram", "google_drive"])
+        self.assertEqual([p["code"] for p in body["providers"]], ["google_drive", "telegram"])
+        self.assertIsInstance(body["okOverall"], bool)
+        self.assertIn("problems", body)
+
+    def test_deep_param_is_accepted(self):
+        self.assertEqual(self.client.get("/api/admin/video-diagnostics?deep=true").status_code, 200)
+
+    def test_provider_rows_carry_availability(self):
+        body = self.client.get("/api/admin/video-providers").json()
+        for row in body["results"]:
+            self.assertIn("available", row)
+            self.assertIn("reason", row)
+
+    def test_telegram_asset_is_blocked_with_its_reason(self):
+        from features.videohosting import diagnostics
+
+        with mock.patch.object(diagnostics, "provider_available", return_value=False):
+            response = self.client.post("/api/admin/video-assets", {"slug": "video-tg", "provider": "telegram"}, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("تليجرام", response.json()["detail"])
+
+    def test_telegram_asset_is_selectable_when_env_checks_pass(self):
+        from features.videohosting import diagnostics
+
+        with mock.patch.object(diagnostics, "provider_available", return_value=True):
+            response = self.client.post("/api/admin/video-assets", {"slug": "video-tg", "provider": "telegram"}, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["provider"], "telegram")
+
+    def test_assets_listing_carries_health_columns(self):
+        self.client.post("/api/admin/video-assets", {"slug": "video-ls"}, format="json")
+        row = self.client.get("/api/admin/video-assets").json()["results"][0]
+        self.assertEqual(row["slug"], "video-ls")
+        for key in ("error", "qualities", "createdAt"):
+            self.assertIn(key, row)
+
+
+class AdminConsoleVideoPermissionTests(ApiTestCase):
+    def test_anonymous_is_rejected_from_video_diagnostics(self):
+        self.assertIn(self.client.get("/api/admin/video-diagnostics").status_code, (401, 403))
+
+    def test_student_is_rejected_from_video_diagnostics(self):
+        authenticate(self.client, make_user())
+        self.assertEqual(self.client.get("/api/admin/video-diagnostics").status_code, 403)

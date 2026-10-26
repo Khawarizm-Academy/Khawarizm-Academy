@@ -59,11 +59,13 @@ class ScholarshipDeadlineUrgency(models.TextChoices):
 
 
 class VideoStatus(models.TextChoices):
-    """Lifecycle of a Telegram-hosted, HLS-packaged lesson video."""
+    """Lifecycle of a hosted lesson video (any provider, HLS-packaged)."""
 
     UPLOADING = "uploading", "Uploading"
     PROCESSING = "processing", "Processing"
     READY = "ready", "Ready"
+    # Source stored safely, HLS packaging still pending (no FFmpeg on this host).
+    STAGED = "staged", "Staged"
     ERROR = "error", "Error"
 
 
