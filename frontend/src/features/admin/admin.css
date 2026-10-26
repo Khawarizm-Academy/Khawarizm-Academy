@@ -708,6 +708,72 @@
     @apply flex flex-wrap items-center gap-2.5 text-[11px] font-body text-slate-500;
   }
 
+  /* --- Video upload: dropzone, live tracker, progress bar --- */
+
+  /* The file picker itself doubles as a drag-and-drop target. */
+  .admin-dropzone {
+    @apply flex items-center justify-center gap-3 w-full px-4 py-6 rounded-2xl border-2 border-dashed border-navy-600/70 bg-navy-950/40 text-slate-300 cursor-pointer transition-colors hover:border-gold-400/50 hover:bg-navy-900/40;
+  }
+
+  .admin-dropzone-drag {
+    @apply border-gold-400/70 bg-gold-400/10 text-gold-400;
+  }
+
+  .admin-dropzone-name {
+    @apply text-[13px] font-bold font-display text-slate-100 truncate;
+  }
+
+  .admin-dropzone-hint {
+    @apply text-[11px] text-slate-400 font-body truncate;
+  }
+
+  /* One tracker card: head row (name, stage, percent), bar, verdict line. */
+  .admin-upload-tracker {
+    @apply flex flex-col gap-2.5 p-4 rounded-2xl border border-gold-400/40 bg-navy-900/60;
+  }
+
+  .admin-upload-tracker-error {
+    @apply border-danger-500/40 bg-danger-500/10;
+  }
+
+  .admin-upload-tracker-head {
+    @apply flex items-center gap-3 text-gold-400;
+  }
+
+  .admin-upload-tracker-name {
+    @apply text-[13px] font-bold font-display text-slate-100 truncate;
+  }
+
+  .admin-upload-tracker-stage {
+    @apply text-[11px] font-body text-slate-400;
+  }
+
+  .admin-upload-tracker-percent {
+    @apply text-[13px] font-bold text-slate-100;
+  }
+
+  .admin-upload-tracker-verdict-ok {
+    @apply text-[11px] font-bold font-display text-emerald-400;
+  }
+
+  /* The one progress bar concept — tracker card and inline table rows share it. */
+  .admin-progress-track {
+    @apply h-2 w-full rounded-full bg-navy-800 overflow-hidden;
+  }
+
+  .admin-progress-fill {
+    @apply h-full rounded-full bg-gold-400 shadow-[0_0_10px_rgba(229,182,92,0.45)];
+    transition: width 0.3s ease-out;
+  }
+
+  .admin-progress-fill-error {
+    @apply bg-danger-500 shadow-[0_0_10px_rgba(239,68,68,0.45)];
+  }
+
+  .admin-progress-track-inline {
+    @apply h-1.5 mt-1.5 max-w-[180px];
+  }
+
   /* --- User detail modal --- */
   .admin-modal-overlay {
     @apply fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 backdrop-blur-sm;

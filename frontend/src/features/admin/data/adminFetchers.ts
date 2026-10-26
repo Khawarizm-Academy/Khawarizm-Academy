@@ -1,6 +1,6 @@
 /** Every call the admin console makes, each one matching an adminconsole route. */
 
-import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from '@/shared/lib/apiClient';
+import { apiGet, apiPost, apiPatch, apiDelete, apiUpload, buildQuery, type UploadProgressHandler } from '@/shared/lib/apiClient';
 import type { AuthRole, AuthUser } from '@/features/auth/types';
 import type {
   AdminActiveFilter,
@@ -100,3 +100,19 @@ export const fetchVideoDiagnostics = (deep: boolean) =>
 export const createVideoAsset = (input: AdminVideoInput) => apiPost<AdminVideoAsset>('/admin/video-assets', input);
 
 export const deleteVideoAsset = (id: string) => apiDelete<{ deleted: boolean; id: string }>(`/admin/video-assets/${id}`);
+
+/** One asset's current row — the upload tracker's poll target. */
+export const fetchVideoAsset = (id: string) => apiGet<AdminVideoAsset>(`/admin/video-assets/${id}`);
+
+/** Upload the actual file; `onProgress` reports real HTTP bytes sent 0-100. */
+export const uploadVideoAsset = async (
+  { file, ...input }: AdminVideoInput & { file: File },
+  onProgress: UploadProgressHandler
+): Promise<AdminVideoAsset> => {
+  const formData = new FormData();
+  formData.set('file', file);
+  formData.set('slug', input.slug);
+  if (input.title) formData.set('title', input.title);
+  if (input.provider) formData.set('provider', input.provider);
+  return apiUpload<AdminVideoAsset>('/admin/video-assets/upload', formData, onProgress);
+};

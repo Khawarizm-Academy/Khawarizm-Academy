@@ -16,6 +16,7 @@ import {
   createContent,
   updateContent,
   deleteContent,
+  uploadVideoAsset,
 } from '@/features/admin/data/adminFetchers';
 
 const API_BASE = 'http://localhost:8000/api';
@@ -155,5 +156,100 @@ describe('admin fetchers', () => {
     await deleteContent('events', 'e-1');
     expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/content/events/e-1`);
     expect(lastCall().method).toBe('DELETE');
+  });
+});
+
+// The video upload rides XMLHttpRequest (fetch cannot report upload bytes),
+// so it needs its own minimal stand-in that records the request and lets the
+// test drive progress and resolution.
+class FakeUploadXHR {
+  static last: FakeUploadXHR | null = null;
+
+  status = 0;
+  statusText = '';
+  response: ArrayBuffer = new ArrayBuffer(0);
+  requestHeaders: Record<string, string> = {};
+  sentBody: FormData | null = null;
+  upload = {
+    onprogress: null as ((event: { loaded: number; total: number; lengthComputable: boolean }) => void) | null,
+  };
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onabort: (() => void) | null = null;
+
+  url = '';
+
+  open(_method: string, url: string): void {
+    this.url = url;
+  }
+
+  setRequestHeader(key: string, value: string): void {
+    this.requestHeaders[key] = value;
+  }
+
+  send(body: FormData): void {
+    FakeUploadXHR.last = this;
+    this.sentBody = body;
+  }
+
+  // Test drives: emit an upload progress tick, then resolve with a body.
+  static emitProgress(sent: number, total: number): void {
+    FakeUploadXHR.last?.upload.onprogress?.({ loaded: sent, total, lengthComputable: true });
+  }
+
+  static respond(status: number, body: unknown): void {
+    const xhr = FakeUploadXHR.last;
+    if (!xhr) throw new Error('استدعِ waitFor حتى يُنشأ طلب الرفع أولًا.');
+    xhr.response = new TextEncoder().encode(JSON.stringify(body)).buffer;
+    xhr.status = status;
+    xhr.statusText = 'OK';
+    xhr.onload?.();
+  }
+}
+
+/** Waits for the request to reach `send`, returning it typed non-null. */
+async function sentUploadRequest(): Promise<FakeUploadXHR> {
+  await vi.waitFor(() => expect(FakeUploadXHR.last).not.toBeNull());
+  const xhr = FakeUploadXHR.last;
+  if (!xhr) throw new Error('طلب الرفع لم يبدأ.');
+  return xhr;
+}
+
+describe('video upload fetcher', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('uploads the file as multipart with byte progress and parses the 202 row', async () => {
+    vi.stubGlobal('XMLHttpRequest', FakeUploadXHR);
+    const percents: number[] = [];
+    const file = new File(['bytes'], 'lesson.mp4', { type: 'video/mp4' });
+    const pending = uploadVideoAsset(
+      { slug: 'lesson-1', title: 'الدرس الأول', provider: 'telegram', file },
+      (percent) => percents.push(percent)
+    );
+
+    const sent = await sentUploadRequest();
+    FakeUploadXHR.emitProgress(500, 1000);
+    FakeUploadXHR.respond(202, { id: 'asset-1', slug: 'lesson-1', status: 'uploading', progress: 0, stage: 'uploading' });
+
+    expect(await pending).toEqual({ id: 'asset-1', slug: 'lesson-1', status: 'uploading', progress: 0, stage: 'uploading' });
+    expect(sent.url).toBe(`${API_BASE}/admin/video-assets/upload`);
+    expect(sent.sentBody?.get('slug')).toBe('lesson-1');
+    expect(sent.sentBody?.get('title')).toBe('الدرس الأول');
+    expect(sent.sentBody?.get('provider')).toBe('telegram');
+    expect(sent.sentBody?.get('file')).toBe(file);
+    expect(percents).toEqual([50]);
+  });
+
+  it('maps a failing upload onto the API error with the server detail', async () => {
+    vi.stubGlobal('XMLHttpRequest', FakeUploadXHR);
+    const file = new File(['bytes'], 'lesson.mp4');
+    const pending = uploadVideoAsset({ slug: 'lesson-1', file }, () => {});
+
+    await sentUploadRequest();
+    FakeUploadXHR.respond(400, { detail: 'تليجرام غير جاهز' });
+
+    await expect(pending).rejects.toMatchObject({ status: 400, message: 'تليجرام غير جاهز' });
   });
 });

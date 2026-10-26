@@ -4,7 +4,7 @@ import { useCachedData } from '@/shared/hooks/useCachedData';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
 import { ApiError } from '@/shared/lib/apiClient';
 import { ADMIN_SECTION_KEYS } from '@/features/admin/types';
-import { AdminContext, type AdminContextValue } from '@/features/admin/context/adminContext';
+import { AdminContext, type AdminContextValue, type VideoUploadState } from '@/features/admin/context/adminContext';
 import {
   fetchDeviceBreakdown,
   fetchEvents,
@@ -13,11 +13,13 @@ import {
   fetchSessions,
   fetchUserDetail,
   fetchUsers,
+  fetchVideoAsset as fetchVideoAssetRequest,
   fetchVideoAssets,
   fetchVideoProviders,
   fetchVideoDiagnostics,
   createVideoAsset as createVideoRequest,
   deleteVideoAsset as deleteVideoRequest,
+  uploadVideoAsset as uploadVideoRequest,
   revokeAdminSession,
   updateUserRole,
   createAdminUser,
@@ -85,6 +87,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
   const [creatingVideo, setCreatingVideo] = useState(false);
   const [deepDiagnosticsRequested, setDeepDiagnosticsRequested] = useState(false);
+  const [videoUpload, setVideoUpload] = useState<VideoUploadState | null>(null);
   const [contentType, setContentTypeState] = useState<AdminContentTypeKey | null>(null);
   const [contentSearch, setContentSearchState] = useState('');
   const [contentPage, setContentPage] = useState(1);
@@ -332,6 +335,61 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // The backend 202s as soon as the file lands on disk and ingests on a worker
+  // thread — so the tracker follows the server-side progress/stage/status from
+  // here until the row reaches a terminal state.
+  const pollTrackedIngest = async (assetId: string, current: VideoUploadState): Promise<boolean> => {
+    const MILLISECONDS_BETWEEN_POLLS = 2000;
+    const TRACKING_TIMEOUT_MS = 30 * 60 * 1000; // multi-hour pre-split uploads are fine
+    const deadline = Date.now() + TRACKING_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      const asset: AdminVideoAsset = await fetchVideoAssetRequest(assetId);
+      setVideoUpload({ ...current, percent: asset.progress ?? 0, stage: asset.stage ?? '' });
+      if (asset.status === 'error') {
+        setVideoUpload({ ...current, phase: 'error', error: asset.error ?? 'فشل الرفع على الخادم.' });
+        await refreshVideoData();
+        return false;
+      }
+      if (asset.status === 'ready' || asset.status === 'staged') {
+        setVideoUpload({ ...current, phase: 'done', percent: 100, stage: '' });
+        await refreshVideoData();
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, MILLISECONDS_BETWEEN_POLLS));
+    }
+    setVideoUpload({
+      ...current,
+      phase: 'error',
+      error: 'انتهت مهلة المتابعة — راجع حالة العنصر في جدول الفيديوهات.',
+    });
+    await refreshVideoData();
+    return false;
+  };
+
+  /** The file leg (XHR progress) then the ingest leg (polling) in one tracker. */
+  const uploadVideo = async (input: AdminVideoInput & { file: File }): Promise<boolean> => {
+    setError(null);
+    const started: VideoUploadState = {
+      phase: 'sending',
+      percent: 0,
+      stage: '',
+      slug: input.slug,
+      fileName: input.file.name,
+    };
+    setVideoUpload(started);
+    try {
+      const asset = await uploadVideoRequest(input, (percent) =>
+        setVideoUpload((state) => (state?.phase === 'sending' ? { ...started, percent } : state))
+      );
+      return await pollTrackedIngest(asset.id, { ...started, phase: 'tracking' });
+    } catch (thrown) {
+      setVideoUpload({ ...started, phase: 'error', error: toMessage(thrown) });
+      return false;
+    }
+  };
+
+  const clearVideoUpload = useCallback(() => setVideoUpload(null), []);
+
   const deleteVideo = async (id: string) => {
     setError(null);
     setDeletingVideoId(id);
@@ -475,6 +533,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     creatingVideo,
     createVideo,
     deleteVideo,
+    videoUpload,
+    uploadVideo,
+    clearVideoUpload,
     videoDiagnostics: videoDiagnostics.data ?? null,
     deepDiagnostics: deepDiagnosticsRequested ? deepDiagnostics.data ?? null : null,
     deepDiagnosticsLoading: deepDiagnostics.isFetching && deepDiagnosticsRequested,

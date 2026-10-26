@@ -227,6 +227,13 @@ export const VIDEO_STATUS_LABELS: Record<string, string> = {
   error: 'فشل',
 };
 
+/** The tracker's second line: what the ingest worker is busy with right now. */
+export const VIDEO_STAGE_LABELS: Record<string, string> = {
+  uploading: 'رفع المصدر',
+  packaging: 'تغليف HLS',
+  publishing: 'رفع المقاطع',
+};
+
 export interface AdminVideoProvider {
   code: string;
   name: string;
@@ -245,6 +252,10 @@ export interface AdminVideoAsset {
   title: string;
   status: string;
   provider: string | null;
+  /** Live ingest percent 0-100 while the upload worker runs. */
+  progress?: number;
+  /** uploading | packaging | publishing — see VIDEO_STAGE_LABELS. */
+  stage?: string;
   /** Truncated failure message when the asset errored. */
   error?: string;
   /** Packaged renditions on the asset (0 while staged). */

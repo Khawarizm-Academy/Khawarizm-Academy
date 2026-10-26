@@ -26,6 +26,23 @@ import type {
   Paged,
 } from '@/features/admin/types';
 
+/**
+ * The live upload tracker state: HTTP send (real upload bytes), then ingest
+ * polling (server-side progress + stage), then a terminal phase that stays
+ * until the next upload replaces it or the admin dismisses it.
+ */
+export interface VideoUploadState {
+  phase: 'sending' | 'tracking' | 'done' | 'error';
+  /** Upload bytes 0-100 while sending; ingest percent while tracking. */
+  percent: number;
+  /** Server ingest stage: uploading | packaging | publishing. */
+  stage: string;
+  slug: string;
+  fileName: string;
+  /** Failure text — HTTP detail or the asset's own error_message. */
+  error?: string;
+}
+
 export interface AdminContextValue {
   /** Drives the rail, the pills, and which view renders — read from `?tab=`. */
   currentSection: AdminSectionKey;
@@ -95,6 +112,11 @@ export interface AdminContextValue {
   creatingVideo: boolean;
   createVideo: (input: AdminVideoInput) => Promise<boolean>;
   deleteVideo: (id: string) => Promise<void>;
+
+  /** The one video currently uploading, from HTTP bytes to final ingest. */
+  videoUpload: VideoUploadState | null;
+  uploadVideo: (input: AdminVideoInput & { file: File }) => Promise<boolean>;
+  clearVideoUpload: () => void;
 
   /** The shallow diagnostics report (offline checks). */
   videoDiagnostics: AdminVideoDiagnostics | null;

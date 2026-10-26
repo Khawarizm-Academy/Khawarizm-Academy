@@ -87,7 +87,7 @@ admin/
 
 | Source | Provides |
 | :--- | :--- |
-| `data/adminFetchers.ts` | `fetchOverview`, `fetchUsers`, `fetchUserDetail`, `updateUserRole`, `fetchSessions`, `revokeAdminSession`, `fetchLoginSeries`, `fetchDeviceBreakdown`, `fetchEvents`, `createAdminUser`, `updateAdminUser`, `deleteAdminUser`, `fetchContentSchema`, `fetchContent`, `createContent`, `updateContent`, `deleteContent`, `fetchVideoProviders`, `fetchVideoAssets`, `fetchVideoDiagnostics(deep)`, `createVideoAsset`, `deleteVideoAsset` |
+| `data/adminFetchers.ts` | `fetchOverview`, `fetchUsers`, `fetchUserDetail`, `updateUserRole`, `fetchSessions`, `revokeAdminSession`, `fetchLoginSeries`, `fetchDeviceBreakdown`, `fetchEvents`, `createAdminUser`, `updateAdminUser`, `deleteAdminUser`, `fetchContentSchema`, `fetchContent`, `createContent`, `updateContent`, `deleteContent`, `fetchVideoProviders`, `fetchVideoAssets`, `fetchVideoDiagnostics(deep)`, `fetchVideoAsset(id)`, `uploadVideoAsset(file, onProgress)`, `createVideoAsset`, `deleteVideoAsset` |
 | `data/adminFormatters.ts` | `formatCount`, `formatDateTime`, `formatShortDateTime`, `formatDayLabel`, `initialsOf`, `SECTION_ICONS`, `METRIC_ICONS`, `REVOKE_REASON_LABELS`, `EVENT_KIND_LABELS` |
 | `@/shared/lib/apiClient` | every request goes through the Bearer + silent-refresh client |
 
@@ -115,6 +115,8 @@ admin/
 | `GET` | `/admin/video-providers` | Rows carry `available`/`reason` — the select gate. |
 | `GET` | `/admin/video-assets` | Assets carry `error`/`qualities`/`createdAt`. |
 | `POST` | `/admin/video-assets` | `{slug,title?,provider?}`; refused with an Arabic reason when the provider's env checks fail. |
+| `POST` | `/admin/video-assets/upload` | Multipart `{file,slug,title?,provider?}` → `202` with the asset row; the ingest worker then drives `progress`/`stage`/`status` on the polled detail row. Needs a real server host. |
+| `GET` | `/admin/video-assets/:id` | The tracker's poll target — same shape as the list row. |
 | `DELETE` | `/admin/video-assets/:id` | `{deleted:true,id}`. |
 | `GET` | `/admin/video-diagnostics?deep=true` | The staged validation; shallow stays offline, deep calls the providers' APIs. |
 
