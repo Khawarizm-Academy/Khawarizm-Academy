@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 import json
+import threading
+import uuid
 from datetime import timedelta
+from pathlib import Path
+from tempfile import gettempdir
 
 from django.db import IntegrityError
+from django.db import connections
+from django.http import HttpResponse
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.exceptions import APIException
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from features.adminconsole import serializers
@@ -341,3 +348,274 @@ def content_detail(request, type_key, pk):
     except (IntegrityError, ValueError):
         return Response({"detail": "تعذّر الحفظ: بيانات غير صالحة أو مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializers.content_row(spec, row))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_providers(request):
+    from features.videohosting import diagnostics as vh_diagnostics
+    from features.videohosting.models import VideoProvider
+    from features.videohosting.serializers import provider_payload
+    providers = VideoProvider.objects.all()
+    if not providers.exists():
+        from features.videohosting import providers as vh_providers
+        vh_providers.ensure_defaults()
+        providers = VideoProvider.objects.all()
+    # `available` greys the select when a provider's own env checks fail.
+    return Response({"results": [
+        {
+            **provider_payload(p),
+            "available": vh_diagnostics.provider_available(p.code),
+            "reason": "" if vh_diagnostics.provider_available(p.code) else vh_diagnostics.provider_reason(p.code),
+        }
+        for p in providers
+    ]})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_assets(request):
+    from features.videohosting.models import VideoAsset
+    from features.videohosting import providers as vh_providers
+    vh_providers.ensure_defaults()
+    if request.method == "POST":
+        data = request.data or {}
+        slug = data.get("slug")
+        if not slug:
+            return Response({"detail": "slug مطلوب."}, status=status.HTTP_400_BAD_REQUEST)
+        provider, refusal = resolve_provider(data.get("provider"))
+        if refusal is not None:
+            return refusal
+        try:
+            asset = VideoAsset.objects.create(
+                slug=slug,
+                title=data.get("title") or "",
+                provider=provider,
+                created_by=request.user,
+            )
+            return Response(
+                {"id": str(asset.id), "slug": asset.slug, "title": asset.title, "status": asset.status,
+                 "provider": asset.provider.code if asset.provider else None},
+                status=status.HTTP_201_CREATED,
+            )
+        except Exception:
+            return Response({"detail": "تعذّر الإنشاء."}, status=status.HTTP_400_BAD_REQUEST)
+    assets = VideoAsset.objects.select_related("provider").prefetch_related("renditions").all()[:100]
+    return Response({"results": [asset_row(a, include_error=True) for a in assets]})
+
+
+def resolve_provider(provider_code: str | None):
+    """Resolve one provider code against the registry and its env checks.
+
+    Data-driven — every provider is gated the same way, and an unknown code
+    fails loudly instead of silently falling back to the default. Returns
+    (provider, None) on success or (None, a ready Response) to send as-is.
+    """
+    from features.videohosting import diagnostics
+    from features.videohosting.models import VideoProvider
+
+    if not provider_code:
+        provider = VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
+        return provider, None
+    provider = VideoProvider.objects.filter(code=provider_code).first()
+    if provider is None:
+        return None, Response(
+            {"detail": f"مزود غير معروف: {provider_code}."}, status=status.HTTP_400_BAD_REQUEST
+        )
+    # The provider becomes selectable the moment its own env checks pass.
+    if not diagnostics.provider_available(provider.code):
+        return None, Response(
+            {"detail": f"الرفع عبر {provider.name} غير جاهز — {diagnostics.provider_reason(provider.code)}"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return provider, None
+
+
+# One asset row for list / detail / upload responses — the tracker reads the same shape.
+def asset_row(asset, *, include_error: bool = False) -> dict:
+    row = {
+        "id": str(asset.id),
+        "slug": asset.slug,
+        "title": asset.title,
+        "status": asset.status,
+        "provider": asset.provider.code if asset.provider else None,
+        "progress": asset.progress,
+        "stage": asset.stage,
+        "qualities": asset.renditions.count(),
+        "createdAt": asset.created_at.isoformat(),
+    }
+    if include_error:
+        row["error"] = asset.error_message[:300]
+    return row
+
+
+# Bot uploads cap at ~2GB; anything larger must go through the split path anyway.
+VIDEO_UPLOAD_MAX_BYTES = 2 ** 31
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_drive_oauth_start(request):
+    """Open the consent dance — Google's URL for the admin's browser.
+
+    The single-use CSRF state banks server-side; React receives the URL only
+    (it carries the public client id, not a secret).
+    """
+    from features.videohosting import oauthdrive
+    try:
+        return Response({"authUrl": oauthdrive.consent_url()})
+    except ValueError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def video_drive_oauth_callback(request):
+    """Google's redirect target — validates the state, mints the grant.
+
+    The code exchanges here on the backend and only the outcome (plus the
+    account email) persists; the browser lands on a neutral page because
+    there is no admin session to hand it to.
+    """
+    from features.videohosting import oauthdrive
+    okay, email, detail = oauthdrive.complete(
+        request.query_params.get("state") or "", request.query_params.get("code") or ""
+    )
+    return HttpResponseLoginPage(okay, detail)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_drive_oauth_status(request):
+    """The admin-safe connection state — account email and status, no tokens."""
+    from features.videohosting import oauthdrive
+    grant = oauthdrive.connected()
+    # camelCase payload per the JSON contract; the tokens never leave Django.
+    return Response({
+        "connected": grant["connected"],
+        "accountEmail": grant["account_email"],
+        "status": grant["status"],
+        "error": grant["error_message"],
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_drive_oauth_disconnect(request):
+    """Revoke the grant at Google and drop the persisted credential."""
+    from features.videohosting import oauthdrive
+    oauthdrive.revoke()
+    return Response({"connected": False})
+
+
+def HttpResponseLoginPage(okay: bool, detail: str) -> HttpResponse:
+    """The tiny neutral landing page Google's redirect ends on."""
+    body = (
+        "<!doctype html><html lang=ar dir=rtl><meta charset=utf-8><title>تخويل Google Drive</title>"
+        f"<body style='font-family:sans-serif;text-align:center;padding:4rem'>"
+        f"<h2>{'✓ تم ربط حساب Google' if okay else '✗ فشل التخويل'}</h2>"
+        f"<p>{detail[:200]}</p>"
+        "<p>أغلق هذه الصفحة، ثم أعد «فحص المنظومة» من لوحة الإدارة.</p>"
+        "<script>setTimeout(close,4000)</script></body></html>"
+    )
+    return HttpResponse(body, content_type="text/html; charset=utf-8")
+
+
+@api_view(["POST"])
+@parser_classes([MultiPartParser, FormParser])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_asset_upload(request):
+    """Accept the actual video file, then ingest it in a worker thread.
+
+    The HTTP leg ends as soon as the file is on disk: the response carries the
+    asset id and the admin's tracker polls its progress/stage/status while the
+    provider upload, packaging, and segment publishing run in the background.
+    """
+    from features.videohosting import providers as vh_providers
+    from features.videohosting.models import VideoAsset
+    vh_providers.ensure_defaults()
+
+    uploaded = request.data.get("file")
+    slug = (request.data.get("slug") or "").strip()
+    if uploaded is None or not slug:
+        return Response({"detail": "الملف و معرّف الفيديو مطلوبان."}, status=status.HTTP_400_BAD_REQUEST)
+    if uploaded.size > VIDEO_UPLOAD_MAX_BYTES:
+        return Response({"detail": "الملف أكبر من 2GB — قسّمه أو استخدم ingest_video من الخادم."}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+    provider, refusal = resolve_provider(request.data.get("provider"))
+    if refusal is not None:
+        return refusal
+
+    existing = VideoAsset.objects.filter(slug=slug).first()
+    if existing is not None and existing.status in ("uploading", "processing"):
+        return Response({"detail": "هذا المعرّف في منتصف رفع آخر — انتظر انتهاء المعالجة."}, status=status.HTTP_409_CONFLICT)
+
+    # Persist the stream to a stable temp path: the request dies here, the worker lives on.
+    file_name = getattr(uploaded, "name", "") or "video.bin"
+    temp_path = Path(gettempdir()) / f"kh-video-{uuid.uuid4().hex}{Path(file_name).suffix or '.bin'}"
+    with temp_path.open("wb") as destination:
+        for chunk in uploaded.chunks():
+            destination.write(chunk)
+
+    asset = existing or VideoAsset.objects.create(slug=slug, created_by=request.user)
+    asset.title = asset.title or (request.data.get("title") or Path(file_name).stem)
+    asset.provider = provider
+    asset.source_file_name = file_name
+    asset.status = "uploading"
+    asset.error_message = ""
+    asset.progress = 0
+    asset.stage = "uploading"
+    asset.save(update_fields=["title", "provider", "source_file_name", "status", "error_message", "progress", "stage", "updated_at"])
+
+    worker = threading.Thread(target=_run_ingest_worker, args=(slug, str(temp_path)), daemon=True)
+    worker.start()
+    return Response(asset_row(asset), status=status.HTTP_202_ACCEPTED)
+
+
+def _run_ingest_worker(slug: str, file_path: str) -> None:
+    """The background half of an admin upload: ingest, then drop this thread's DB connection.
+
+    ingest_file lands status+error on the row for its own failures; anything
+    that dies before or around it (imports, a lost DB) must still fail the row
+    loudly — a stuck `uploading` would spin the admin's tracker forever.
+    """
+    from features.videohosting import ingest
+    from features.videohosting.models import VideoAsset
+    from features.videohosting.models import VideoStatus
+
+    try:
+        ingest.ingest_file(file_path, slug, remove_source=True, track_progress=True)
+    except Exception as exc:
+        VideoAsset.objects.filter(slug=slug).exclude(
+            status__in=(VideoStatus.READY, VideoStatus.STAGED, VideoStatus.ERROR)
+        ).update(status=VideoStatus.ERROR, error_message=f"عامل الرفع توقّف: {exc}"[:2000], stage="")
+    finally:
+        connections.close_all()
+
+
+@api_view(["GET", "DELETE"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_asset_detail(request, asset_id):
+    from features.videohosting.models import VideoAsset
+    asset = VideoAsset.objects.filter(pk=asset_id).first()
+    if asset is None:
+        return Response({"detail": "غير موجود."}, status=status.HTTP_404_NOT_FOUND)
+    if request.method == "DELETE":
+        asset.delete()
+        return Response({"deleted": True, "id": str(asset_id)})
+    # The poller's shape: live status, progress bar, stage, and error detail.
+    return Response(asset_row(asset, include_error=True))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_diagnostics(request):
+    """The staged validation of every part the video pipeline relies on.
+
+    Shallow (default) stays offline; `?deep=true` also calls the providers'
+    own APIs so the admin sees exactly which stage breaks and why.
+    """
+    from features.videohosting import diagnostics
+
+    deep = (request.query_params.get("deep") or "").lower() in {"1", "true", "yes"}
+    return Response(diagnostics.run(deep=deep))

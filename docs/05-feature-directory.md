@@ -14,6 +14,7 @@ Every product feature lives in its own folder under `frontend/src/features/` and
 | **Events** | `/events` | Complete | [`events/README.md`](../frontend/src/features/events/README.md) |
 | **Competitions** | `/competitions` | Complete | [`competitions/README.md`](../frontend/src/features/competitions/README.md) |
 | **Admin** | `/admin` | Complete | [`admin/README.md`](../frontend/src/features/admin/README.md) |
+| **Video hosting** | — (consumed by the courses player) | Complete | [`videohosting/README.md`](../frontend/src/features/videohosting/README.md) |
 
 ---
 
@@ -139,6 +140,7 @@ names line up one-for-one, so a feature's data lives in the app of the same name
 | Events | `features/events` | [`events/README.md`](../../backend/features/events/README.md) |
 | Competitions | `features/competitions` | [`competitions/README.md`](../../backend/features/competitions/README.md) |
 | Admin | `features/adminconsole` (label `adminconsole`) | [`adminconsole/README.md`](../../backend/features/adminconsole/README.md) |
+| Video hosting | `features/videohosting` | [`videohosting/README.md`](../../backend/features/videohosting/README.md) |
 
 The full backend feature map and folder contract live in
 [`backend/features/README.md`](../../backend/features/README.md); the internal

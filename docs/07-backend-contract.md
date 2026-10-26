@@ -110,8 +110,8 @@ Dashboard-specific projections live in `frontend/src/features/dashboard/types.ts
 - **Mutations** the chambers imply: enroll/unenroll, save/unsave a scholarship, toggle a favorite, submit a scholarship application, submit a competition solution, mark a notification read.
 
 ### 3.4 Auth
-- Email login and social OAuth (Google, Facebook). Today the login is mocked and routes to `/dashboard`.
-- Expected: session/token issuance, current-user fetch, and logout that calls `dataCacheManager.clear()`.
+- Email login and social OAuth (Google, Facebook) — the browser verifies with Firebase, the server exchanges the ID token for a session. See [08 · Backend Architecture](08-backend-architecture.md) → Configuring Firebase.
+- Flow: `GET /auth/config` (public web config) → `POST /auth/firebase` (identity → session) → `POST /auth/refresh` (rotation) → `GET /auth/me`; logout calls `dataCacheManager.clear()`.
 
 ---
 
@@ -125,19 +125,22 @@ under `/api/`.
 feature's `types.ts`. Empty/`None` fields are omitted (the backend `compact` helper).
 Errors share one structured shape (`backend/features/common/errors.py`).
 
-**Current user.** There is no auth yet: `backend/features/auth/services.py`
-resolves a single demo learner (created on first request). The `auth/*` routes
-are stubs for a later flow. See [08 · Backend Architecture](08-backend-architecture.md)
-for the feature layout.
+**Current user.** The browser verifies identity with Firebase Auth; the server
+exchanges the Firebase ID token for a `UserSession` (HS256 access token +
+rotating refresh token). `GET /auth/config` ships the public web config to the
+browser. See [08 · Backend Architecture](08-backend-architecture.md) for the
+feature layout and the session model.
 
 ### Auth
 
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
-| `POST` | `/auth/login` | Email + password login. |
-| `POST` | `/auth/oauth/:provider` | Social login (google, facebook). |
-| `POST` | `/auth/logout` | End the session. |
+| `GET` | `/auth/config` | The public Firebase web config (web-config trio; public by design). |
+| `POST` | `/auth/firebase` | Firebase ID token → session (access + rotating refresh tokens). |
+| `POST` | `/auth/refresh` | Rotate the refresh token, mint a fresh access token. |
 | `GET` | `/auth/me` | Current user profile. |
+| `POST` | `/auth/logout` | End the session. |
+| `GET` / `POST` | `/auth/sessions` · `/auth/sessions/:id/revoke` | List live sessions / revoke one. |
 
 ### Catalog & courses
 
@@ -200,6 +203,57 @@ Staff-only (`IsAdminRole`), under `/admin`:
 | `GET` | `/admin/content/schema` | `{types, userFields}` — drives every admin form. |
 | `GET` · `POST` | `/admin/content/:type` | Paged rows / create (`courses`, `scholarships`, `events`, `competitions`). |
 | `PATCH` · `DELETE` | `/admin/content/:type/:id` | Edit / remove one content row. |
+| `GET` | `/admin/video-providers` | Registry rows + `available`/`reason` from each provider's env checks. |
+| `GET` · `POST` | `/admin/video-assets` | Asset rows (`progress`, `stage`, `error`, `qualities`, `createdAt`) / record one (refused with its reason if the provider's checks fail). |
+| `POST` | `/admin/video-assets/upload` | Multipart file upload (`provider` query optional) → `202` + asset row; a worker thread then ingests via the **chosen** provider and the row's `progress`/`stage`/`status` follow it. Refused with its reason when the provider's env checks fail; unknown codes are refused, never defaulted. Real-server only (not ephemeral serverless). |
+| `GET` · `DELETE` | `/admin/video-assets/:id` | The tracker's poll target / remove one asset. |
+| `GET` | `/admin/video-diagnostics?deep=true` | Staged video validation — pipeline, Telegram env (+ Bot API on deep), Drive env + grant (+ mint + 1-byte write probe on deep). |
+| `GET` | `/admin/video-drive/oauth/start` | Admin opens the consent dance → `{authUrl}`; the single-use CSRF `state` banks server-side. |
+| `GET` | `/admin/video-drive/oauth/callback` | **Public** (Google's redirect target): validates `state`, trades the `code`, stores the grant server-side, and returns a neutral HTML landing page — never a token. |
+| `GET` | `/admin/video-drive/oauth/status` | `{connected, accountEmail, status, error}` — the account email and grant state only; tokens never leave the backend. |
+| `POST` | `/admin/video-drive/oauth/disconnect` | Revokes the grant at Google (best effort) and deletes the stored credential row. |
+
+### Video hosting
+
+A hosting provider (Telegram channel or Google Drive) is the data plane
+(unlimited storage); the backend is the control plane only and never proxies a
+video byte. Providers are registered as one module each under
+`features/videohosting/providers/` — adding one is a single file plus an env
+block. Playback routes carry a minted token — hls.js cannot send an
+`Authorization` header on a segment fetch, so the token **is** the grant
+(IP-bound, expiring, stored hashed).
+
+| Method | Path | Purpose |
+| :--- | :--- | :--- |
+| `GET` | `/videos/providers` | The registry rows (enabled, capabilities, camelCase). |
+| `GET` | `/videos/:slug` | Readiness, duration, and the rendition ladder. |
+| `POST` | `/videos/:slug/token` | Mint a playback grant (auth required). |
+| `GET` | `/stream/:token/master.m3u8` | Master playlist, `__TOKEN__` swapped for the caller's token. |
+| `GET` | `/stream/:token/:quality/index.m3u8` | Rendition media playlist. |
+| `GET` | `/stream/:token/key/:quality` | The 16-byte AES-128 key for one rendition (`no-store`). |
+| `GET` | `/stream/:token/:quality/:index.ts` | **302** straight to Telegram's CDN (browser fetches the encrypted segment). |
+
+The stored playlists keep `__TOKEN__` placeholders, so a database dump contains
+no usable URL; only the SHA-256 of each grant is stored.
+
+**Ingest & staging.** `manage.py ingest_video <file> --slug <slug> --package
+auto|force|never` pushes the source into Telegram, then (when the host has
+FFmpeg and is not Vercel) packages the AES-128 HLS ladder. `auto` follows the
+host, `force` requires the packaging host, and `never` — or a missing FFmpeg —
+**stages** the source (`status=staged`, renditions cleared, no master
+playlist): the video is stored safely and can be packaged later by re-running
+with `force` on a machine that has FFmpeg. A staged asset refuses playback
+with a message that names the fix.
+
+**Admin endpoints (under `/api/`).** The console reads the same modules:
+`GET /admin/video-providers` (rows carry `available`/`reason` from the env
+checks — the select gate; Telegram is selectable the moment its checks pass),
+`GET/POST/DELETE /admin/video-assets` (asset rows carry `error`/`qualities`/
+`createdAt`; POST refuses a provider whose checks fail, with its Arabic
+reason), and `GET /admin/video-diagnostics?deep=true` — the staged validation:
+one check per thing that can silently break playback (FFmpeg, the serverless
+guard, each provider's env keys, and on deep runs the live Bot API / Google
+OAuth + folder calls), each failing check naming WHY and its fix.
 
 ---
 

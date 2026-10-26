@@ -51,7 +51,9 @@ frontend/src/features/
 ├── profile/README.md
 ├── events/README.md
 ├── competitions/README.md
-└── scholarships/README.md
+├── scholarships/README.md
+├── admin/README.md
+└── videohosting/README.md
 ```
 
 The backend mirrors them one-for-one under `backend/features/`:
@@ -67,7 +69,9 @@ backend/features/
 ├── home/README.md
 ├── events/README.md
 ├── competitions/README.md
-└── profile/README.md
+├── profile/README.md
+├── adminconsole/README.md
+└── videohosting/README.md
 ```
 
 ---

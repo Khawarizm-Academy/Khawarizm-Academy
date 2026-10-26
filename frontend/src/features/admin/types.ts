@@ -182,9 +182,9 @@ export interface LoginSeries {
 }
 
 /** The console's sections; each one is a `?tab=` value. */
-export type AdminSectionKey = 'overview' | 'users' | 'content' | 'sessions' | 'analytics' | 'activity';
+export type AdminSectionKey = 'overview' | 'users' | 'content' | 'videos' | 'system' | 'sessions' | 'analytics' | 'activity';
 
-export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ['overview', 'users', 'content', 'sessions', 'analytics', 'activity'];
+export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ['overview', 'users', 'content', 'videos', 'system', 'sessions', 'analytics', 'activity'];
 
 /** Filter values shared by the tables. */
 export type AdminRoleFilter = AuthRole | 'all';
@@ -196,6 +196,8 @@ export const SECTION_LABELS: Record<AdminSectionKey, string> = {
   overview: 'نظرة عامة',
   users: 'المستخدمون',
   content: 'إدارة المحتوى',
+  videos: 'استضافة الفيديو',
+  system: 'فحص المنظومة',
   sessions: 'الجلسات',
   analytics: 'التحليلات',
   activity: 'سجل النشاط',
@@ -215,3 +217,104 @@ export const REVOKE_REASON_LABELS: Record<string, string> = {
   expired: 'انتهت الصلاحية',
   revoked_by_admin: 'أُنهيت بالإدارة',
 };
+
+/** Arabic labels for the hosted-video lifecycle, mirrored from VideoStatus. */
+export const VIDEO_STATUS_LABELS: Record<string, string> = {
+  uploading: 'قيد الرفع',
+  processing: 'قيد التغليف',
+  ready: 'جاهز',
+  staged: 'مرحَّل — بانتظار التغليف',
+  error: 'فشل',
+};
+
+/** The tracker's second line: what the ingest worker is busy with right now. */
+export const VIDEO_STAGE_LABELS: Record<string, string> = {
+  uploading: 'رفع المصدر',
+  packaging: 'تغليف HLS',
+  publishing: 'رفع المقاطع',
+};
+
+export interface AdminVideoProvider {
+  code: string;
+  name: string;
+  enabled: boolean;
+  isDefault?: boolean;
+  capabilities?: Record<string, unknown>;
+  /** The provider's own env checks pass — the select-enable verdict. */
+  available?: boolean;
+  /** Why the provider is greyed out, in Arabic; empty when available. */
+  reason?: string;
+}
+
+export interface AdminVideoAsset {
+  id: string;
+  slug: string;
+  title: string;
+  status: string;
+  provider: string | null;
+  /** Live ingest percent 0-100 while the upload worker runs. */
+  progress?: number;
+  /** uploading | packaging | publishing — see VIDEO_STAGE_LABELS. */
+  stage?: string;
+  /** Truncated failure message when the asset errored. */
+  error?: string;
+  /** Packaged renditions on the asset (0 while staged). */
+  qualities?: number;
+  createdAt?: string;
+}
+
+/** The create-asset payload keyed by slug, with an optional provider verdict gate. */
+export interface AdminVideoInput {
+  slug: string;
+  title?: string;
+  provider?: string;
+}
+
+// ---------------------------------------------------------------- diagnostics
+// Mirrors `GET /admin/video-diagnostics` — one staged check per thing that can
+// silently break video playback, so an admin sees WHY it is not working.
+
+/** How bad a failing check is: blocking, degraded-but-usable, or just noise. */
+export type DiagnosticSeverity = 'info' | 'warn' | 'error';
+
+/** One named validation with its reason and the fix when it fails. */
+export interface AdminDiagnosticCheck {
+  id: string;
+  label: string;
+  ok: boolean;
+  severity: DiagnosticSeverity;
+  detail: string;
+  /** The actionable next step; empty for passing checks. */
+  hint: string;
+}
+
+/** A provider or the packaging pipeline, with its staged checks. */
+export interface AdminDiagnosticGroup {
+  id: string;
+  label: string;
+  /** The provider code, or "" for the packaging pipeline. */
+  provider: string;
+  ok: boolean;
+  warningCount: number;
+  checks: AdminDiagnosticCheck[];
+}
+
+/** One provider row: the same group body plus the select-enable verdict. */
+export interface AdminDiagnosticProvider extends AdminDiagnosticGroup {
+  code: string;
+  available: boolean;
+  reason: string;
+}
+
+/** The full staged validation payload. */
+export interface AdminVideoDiagnostics {
+  checkedAt: string;
+  /** True when live provider APIs were called, not just the environment. */
+  deep: boolean;
+  okOverall: boolean;
+  summary: { pipeline: boolean; telegram: boolean; google_drive: boolean };
+  /** One Arabic string per blocking failure, for the banner. */
+  problems: string[];
+  groups: AdminDiagnosticGroup[];
+  providers: AdminDiagnosticProvider[];
+}

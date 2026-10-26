@@ -12,7 +12,7 @@ already defines, so there is one definition of "a session row" in the codebase.
 | | |
 | :--- | :--- |
 | **App label** | `adminconsole` |
-| **Routes** | `GET /api/admin/overview`, `GET|POST /api/admin/users`, `GET|PATCH|DELETE /api/admin/users/:id`, `POST /api/admin/users/:id/role`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events`, `GET /api/admin/content/schema`, `GET|POST /api/admin/content/:type`, `PATCH|DELETE /api/admin/content/:type/:id` |
+| **Routes** | `GET /api/admin/overview`, `GET|POST /api/admin/users`, `GET|PATCH|DELETE /api/admin/users/:id`, `POST /api/admin/users/:id/role`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events`, `GET /api/admin/content/schema`, `GET|POST /api/admin/content/:type`, `PATCH|DELETE /api/admin/content/:type/:id`, `GET /api/admin/video-providers`, `GET|POST /api/admin/video-assets`, `POST /api/admin/video-assets/upload`, `GET|DELETE /api/admin/video-assets/:id`, `GET /api/admin/video-diagnostics` |
 | **Owns** | — (reads across features) |
 | **Imports** | `User`, `UserSession`, `AuthEvent` (accounts); `user_profile`, `session_payload`, `session_with_user`; `Course`/`Scholarship`/`EventItem`/`Competition` (content) |
 | **Frontend twin** | `frontend/src/features/admin/` |
@@ -78,6 +78,8 @@ adminconsole/
 | `accounts.AuthEvent` | the daily login series and the recent-activity stream |
 | `accounts.serializers` | the payload shapes, shared with `/api/auth/*` |
 | `courses.Course`, `scholarships.Scholarship`, `events.EventItem`, `competitions.Competition` | the four managed content types |
+| `videohosting` (via `diagnostics.py`) | provider `available`/`reason` gating, asset health columns, and the staged `/admin/video-diagnostics` report |
+| `videohosting.ingest` | the `POST /admin/video-assets/upload` worker: the file reaches a temp path and a `ProgressTracker` follows source bytes → packaging → segment publishing on the row's `progress`/`stage` fields |
 
 ## Payload notes
 
@@ -86,6 +88,8 @@ adminconsole/
   `/api/admin/events` stream *does* carry `email`, because there the question
   is "who acted".
 - Both list endpoints return `{total, page, pageSize, results}`.
+- Asset rows (list / detail / upload) share one shape: `{id, slug, title, status, provider, progress, stage, qualities, createdAt[, error]}` — the upload tracker polls the detail row until `status` is `ready`, `staged`, or `error`.
+- `POST /api/admin/video-assets/upload` is multipart (`file`, `slug`, optional `title`/`provider`): it responds `202` with the asset row once the file is on disk, then ingests on a worker thread. Telegram is refused with its diagnostics reason until the env checks pass, and a slug already mid-ingest answers `409`. Because the request dies before the work finishes, this endpoint belongs on a real server, not an ephemeral serverless worker.
 - A content row is `{id, key, title, values}` where `key` is the type's business
   key (`slug`, `event_id`, `competition_id`) and `values` is every schema field
   read straight off the model — so the console's edit form is seeded from one

@@ -1,6 +1,6 @@
 /** Every call the admin console makes, each one matching an adminconsole route. */
 
-import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from '@/shared/lib/apiClient';
+import { apiGet, apiPost, apiPatch, apiDelete, apiUpload, buildQuery, type UploadProgressHandler } from '@/shared/lib/apiClient';
 import type { AuthRole, AuthUser } from '@/features/auth/types';
 import type {
   AdminActiveFilter,
@@ -13,6 +13,10 @@ import type {
   AdminUserDetail,
   AdminUserInput,
   AdminUserRow,
+  AdminVideoAsset,
+  AdminVideoDiagnostics,
+  AdminVideoInput,
+  AdminVideoProvider,
   AdminContentSchema,
   AdminContentTypeKey,
   AdminContentPage,
@@ -80,3 +84,39 @@ export const updateContent = (type: AdminContentTypeKey, id: string, values: Rec
 
 export const deleteContent = (type: AdminContentTypeKey, id: string) =>
   apiDelete<{ deleted: boolean; id: string }>(`/admin/content/${type}/${id}`);
+
+/** The video hosting reads — providers carry the select verdict, assets the health columns. */
+export const fetchVideoProviders = async () =>
+  (await apiGet<{ results: AdminVideoProvider[] }>('/admin/video-providers')).results;
+
+export const fetchVideoAssets = async () =>
+  (await apiGet<{ results: AdminVideoAsset[] }>('/admin/video-assets')).results;
+
+/** The staged validation; `deep` also calls each provider's live API. */
+export const fetchVideoDiagnostics = (deep: boolean) =>
+  apiGet<AdminVideoDiagnostics>(`/admin/video-diagnostics${buildQuery({ deep: deep ? 'true' : undefined })}`);
+
+/** Record an asset; the backend refuses an unavailable provider with its reason. */
+export const createVideoAsset = (input: AdminVideoInput) => apiPost<AdminVideoAsset>('/admin/video-assets', input);
+
+export const deleteVideoAsset = (id: string) => apiDelete<{ deleted: boolean; id: string }>(`/admin/video-assets/${id}`);
+
+/** One asset's current row — the upload tracker's poll target. */
+export const fetchVideoAsset = (id: string) => apiGet<AdminVideoAsset>(`/admin/video-assets/${id}`);
+
+/** Step 1 of the Drive consent dance — the backend returns Google's URL only;
+    the tokens live in Django and React never sees one. */
+export const startDriveOAuth = () => apiGet<{ authUrl: string }>('/admin/video-drive/oauth/start');
+
+/** Upload the actual file; `onProgress` reports real HTTP bytes sent 0-100. */
+export const uploadVideoAsset = async (
+  { file, ...input }: AdminVideoInput & { file: File },
+  onProgress: UploadProgressHandler
+): Promise<AdminVideoAsset> => {
+  const formData = new FormData();
+  formData.set('file', file);
+  formData.set('slug', input.slug);
+  if (input.title) formData.set('title', input.title);
+  if (input.provider) formData.set('provider', input.provider);
+  return apiUpload<AdminVideoAsset>('/admin/video-assets/upload', formData, onProgress);
+};

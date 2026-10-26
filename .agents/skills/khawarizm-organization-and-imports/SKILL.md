@@ -26,11 +26,11 @@ import { toArabic } from '@/shared/lib/localization';
 ```
 
 Rules:
-1. **Direct file paths, no barrels.** Import a component from its exact file (`@/features/catalog/components/cards/CatalogCard`). One exception: `@/shared/mocks` keeps its `index.ts` barrel (`export * from './…'`).
+1. **Direct file paths, no barrels.** Import a component from its exact file (`@/features/catalog/components/cards/CatalogCard`). There is no barrel exception in this repo.
 2. **`.ts` / `.tsx` are extensionless** in the specifier. **`.json` and `.css` keep their extension** (`@/shared/json/catalog.json`).
 3. **Types use `import type`** (the repo runs `verbatimModuleSyntax`):
    ```ts
-   import type { CatalogItem } from '@/shared/mocks/catalog';
+   import type { CatalogItem } from '@/shared/types/entities';
    import { CatalogCard, type CatalogCardProps } from '@/features/catalog/components/cards/CatalogCard';
    ```
 4. **External packages stay bare** (`import { Trophy } from 'lucide-react'`).
@@ -122,7 +122,7 @@ import { MobileLoginView } from '@/features/auth/components/views/LoginView/Mobi
 | Feature data (non-JSON) | `src/features/<feature>/data/` | `dashboardFetchers.ts`, `radialRingColors.ts` |
 | Feature styles | `src/features/<feature>/<feature>.css` | `auth.css` — imported by `globals.css` only |
 | Static data | `src/shared/json/` | `routes.json`, `catalog.json` |
-| **Hydrated mock modules** | **`src/shared/mocks/`** | `shared/mocks/catalog.ts` (types + JSON casts), barrel `index.ts` |
+| **Cross-feature types** | **`src/shared/types/`** | `entities.ts` (the shared record shapes every feature imports with `import type`) |
 | Shared lib/helpers | `src/shared/lib/` | `navigation.ts`, `localization.ts`, `cacheManager.ts` |
 | Tokens + shared styles | `src/styles/` | `tokens.css`, `globals.css` |
 | Routes & root app | `src/app/` | `router.tsx`, `routes.tsx`, `pageLoads.ts`, `layouts/`, `pages/` |

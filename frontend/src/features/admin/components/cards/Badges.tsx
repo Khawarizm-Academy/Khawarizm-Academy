@@ -1,5 +1,5 @@
 import React from 'react';
-import { EVENT_KIND_LABELS, ROLE_LABELS, type AdminEventKind } from '@/features/admin/types';
+import { EVENT_KIND_LABELS, ROLE_LABELS, VIDEO_STATUS_LABELS, type AdminEventKind, type DiagnosticSeverity } from '@/features/admin/types';
 import type { AuthRole } from '@/features/auth/types';
 
 // One tone per role / event kind — a lookup, so a new value fails loudly in the map.
@@ -57,3 +57,35 @@ export const ActiveBadge: React.FC<{ isActive: boolean }> = ({ isActive }) => (
     {isActive ? 'مفعّل' : 'معطّل'}
   </span>
 );
+
+// Hosted-video lifecycle tones reused from the existing badge palette.
+const VIDEO_STATUS_TONE: Record<string, string> = {
+  ready: 'admin-badge-active',
+  staged: 'admin-badge-staged',
+  processing: 'admin-badge-refresh',
+  uploading: 'admin-badge-logout',
+  error: 'admin-badge-rejected',
+};
+
+/** Where the asset is in its lifecycle; an unknown status reads as broken. */
+export const VideoStatusBadge: React.FC<{ status: string }> = ({ status }) => (
+  <span className={`admin-badge ${VIDEO_STATUS_TONE[status] ?? 'admin-badge-rejected'}`}>
+    {VIDEO_STATUS_LABELS[status] ?? status}
+  </span>
+);
+
+// Diagnostic verdict tones: passed = quiet, degraded = amber, blocking = red.
+const SEVERITY_TONE: Record<DiagnosticSeverity, string> = {
+  info: 'admin-badge-active',
+  warn: 'admin-badge-staged',
+  error: 'admin-badge-rejected',
+};
+
+/** One word per severity so a failing stage is scannable at a glance. */
+export const SeverityBadge: React.FC<{ severity: DiagnosticSeverity; ok?: boolean }> = ({ severity, ok }) => {
+  if (ok) {
+    return <span className="admin-badge admin-badge-active">تعمل</span>;
+  }
+  const label = severity === 'warn' ? 'تنبيه' : 'معطّل';
+  return <span className={`admin-badge ${SEVERITY_TONE[severity]}`}>{label}</span>;
+};

@@ -100,6 +100,7 @@ INSTALLED_APPS = [
     "features.competitions",
     "features.profile",
     "features.adminconsole",
+    "features.videohosting",
 ]
 
 # Every account (student / instructor / admin) lives in the auth feature app.
@@ -196,6 +197,12 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME, override=SQLITE_PATH),
+            # The upload worker and its tracker flusher run on their own
+            # connections; Django's default shared-cache in-memory test DB
+            # fails those writes instantly with "database table is locked"
+            # (SQLITE_LOCKED ignores the busy timeout). A file-backed test DB
+            # lets contention resolve through the normal busy timeout instead.
+            "TEST": {"NAME": str(Path(tempfile.gettempdir()) / "khawarizm-test-db.sqlite3")},
         }
     }
 
@@ -283,3 +290,30 @@ if FIREBASE_PROJECT_ID and not (FIREBASE_API_KEY and FIREBASE_AUTH_DOMAIN):
         "Copy the entire web config block from Firebase console → Project settings → "
         "Your apps, or clear FIREBASE_PROJECT_ID to keep using dev:<email> tokens."
     )
+
+# Telegram is the video CDN (unlimited, free) and the control plane stays tiny.
+# Ingest needs the API credentials; serving only needs the tokens, so a
+# serverless deploy can run with just TELEGRAM_STREAM_TOKEN.
+TELEGRAM_API_ID = os.environ.get("TELEGRAM_API_ID", "")
+TELEGRAM_API_HASH = os.environ.get("TELEGRAM_API_HASH", "")
+# Bot used for ingest/upload (a member of the storage channel).
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+# Throwaway, read-only bot whose token appears in redirect URLs; it can only
+# read ciphertext segments, never the AES keys, so a leak is bounded.
+TELEGRAM_STREAM_TOKEN = os.environ.get("TELEGRAM_STREAM_TOKEN", "")
+TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "")
+
+# How long a minted playback grant lives before the viewer must re-mint.
+STREAM_TOKEN_TTL_HOURS = env_int("STREAM_TOKEN_TTL_HOURS", 6)
+
+# Google Drive is the managed playback host (features/videohosting/providers/google_drive.py).
+# Auth is OAuth 2.0 (authorization-code, offline access): the backend stores the
+# human refresh token in DriveGrant after the consent callback — env files carry
+# the OAuth CLIENT keys and the folder id, never a Google credential. Every key
+# is a SECRET — never commit a real value; set them in the host environment.
+GOOGLE_DRIVE_CLIENT_ID = os.environ.get("GOOGLE_DRIVE_CLIENT_ID", "")
+GOOGLE_DRIVE_CLIENT_SECRET = os.environ.get("GOOGLE_DRIVE_CLIENT_SECRET", "")
+GOOGLE_DRIVE_ROOT_FOLDER_ID = os.environ.get("GOOGLE_DRIVE_ROOT_FOLDER_ID", "")
+GOOGLE_DRIVE_OAUTH_REDIRECT_URI = os.environ.get("GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "")
+# The provider assets default to when none is named explicitly.
+VIDEO_HOSTING_DEFAULT_PROVIDER = os.environ.get("VIDEO_HOSTING_DEFAULT_PROVIDER", "google_drive")

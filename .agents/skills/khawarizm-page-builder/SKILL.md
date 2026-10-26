@@ -99,7 +99,7 @@ frontend/src/features/<feature>/
                               #   imported by src/styles/globals.css (never by a .tsx)
 ```
 
-If a piece is used across 2+ features, it moves to `src/shared/components/<Category>/`. Static data goes to `src/shared/json/`; a typed mock module goes to `src/shared/mocks/`.
+If a piece is used across 2+ features, it moves to `src/shared/components/<Category>/`. Static data goes to `src/shared/json/`; cross-feature record types go to `src/shared/types/`.
 
 ---
 

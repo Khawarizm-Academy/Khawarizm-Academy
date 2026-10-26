@@ -13,6 +13,8 @@ app or a new backend domain.
 > (the guideline) and [`docs/08-backend-architecture.md`](../../../docs/08-backend-architecture.md).
 > Master rules: [`khawarizm-backend`](../khawarizm-backend/SKILL.md). Frontend twin
 > page: [`khawarizm-page-builder`](../khawarizm-page-builder/SKILL.md).
+> Env keys & credentials wiring: [`khawarizm-env-config`](../khawarizm-env-config/SKILL.md).
+> A provider/pipeline feature end to end: [`khawarizm-videohosting`](../khawarizm-videohosting/SKILL.md).
 
 ---
 
@@ -107,6 +109,14 @@ class <Feature>Config(AppConfig):
     verbose_name = "<Feature>"
     default_auto_field = "django.db.models.BigAutoField"
 ```
+**Optional sub-packages & management commands.** A feature whose pipeline
+deserves folders nests them *inside* the feature — never a sibling module per
+provider: `features/videohosting/providers/` holds one module per provider plus
+a registry `__init__.py` (`SPECS`), so adding a provider is one file + one env
+block + one `SPECS` line. A CLI entry point is a management command:
+`features/<feature>/management/commands/<name>.py` plus empty `__init__.py`
+files in both new folders. Worked example: [`khawarizm-videohosting`](../khawarizm-videohosting/SKILL.md).
+
 **App-label exception:** the folder `features/auth` uses `label = "accounts"`,
 because Django reserves `auth` for `django.contrib.auth`. FKs then use
 `"accounts.User"`.
@@ -250,7 +260,8 @@ INSTALLED_APPS = [
     # …
 ]
 ```
-`features.common` is **not** listed — it is a plain package.
+`features.common` **is** listed in `INSTALLED_APPS`: it ships the shared abstract
+models, the choice enums, and the `seed_demo` command.
 
 ---
 
@@ -268,8 +279,9 @@ the paths are distinct.
 ---
 
 ### Step 10 — admin.py
-The database ships empty, so the admin **is** the data editor. Register every
-model with useful columns, filters, search, and inlines for children.
+The seed (`manage.py seed_demo`) fills the demo data, but content **beyond**
+the seed is added in the admin — so the admin **is** the data editor. Register
+every model with useful columns, filters, search, and inlines for children.
 
 ```python
 """<Feature> admin — the data editor."""
@@ -387,7 +399,7 @@ backend/features/<feature>/
 | **Field mapping in a view** | Duplicated, drifting shapes | One serializer per shape; views only call it. |
 | **`if param == …` ladders** | Unreadable and diff-heavy | Put alternatives in a `FILTERS` record (`catalog/filters.py`). |
 | **Empty 200 for a missing row** | The frontend renders a blank screen | 404 with the Arabic message (`{"detail": "… غير موجودة"}`). |
-| **Unregistered model** | No way to add data (DB ships empty) | Register every model in `admin.py` with inlines. |
+| **Unregistered model** | No way to add data beyond the seed | Register every model in `admin.py` with inlines. |
 | **Auto-increment public id** | A catalog link and `/courses/:slug` disagree | `slug` is the primary key and the route param. |
 | **Duplicated enum literals** | Values drift between apps | Import from `features.common.choices`. |
 | **Hand-rolled test client** | Every `/api/` call 403s without an `Origin` | Use `features.common.testing.ApiTestCase` / `api_client()`. |

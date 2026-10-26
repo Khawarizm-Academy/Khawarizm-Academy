@@ -136,7 +136,7 @@ export const MyDataSection: React.FC<{ filters: MyFilters }> = ({ filters }) => 
 - **Catalog:** `['catalog-items', { type, field, level, page, q }]`, `['catalog-detail', slug]`.
 - **Courses:** `['course-detail', slug]`, `['course-problems', slug]`.
 - **Home:** `['home-featured-courses']`.
-- **Dashboard (per-section, namespace-prefixed):** `['dashboard', 'stats']`, `['dashboard', 'upcoming-events']`, `['dashboard', 'courses-list']`, `['dashboard', 'competitions']`, `['dashboard', 'certificates']`, `['dashboard', 'saved-scholarships']`, `['dashboard', 'favorite-courses']`, `['dashboard', 'notifications-view']`, `['dashboard', 'notifications-drawer']` — each holds its own data (mocks or `blogPosting` fetchers in `features/dashboard/data/dashboardFetchers.ts`).
+- **Dashboard (per-section, namespace-prefixed):** `['dashboard', 'stats']`, `['dashboard', 'upcoming-events']`, `['dashboard', 'courses-list']`, `['dashboard', 'competitions']`, `['dashboard', 'certificates']`, `['dashboard', 'saved-scholarships']`, `['dashboard', 'favorite-courses']`, `['dashboard', 'notifications-view']`, `['dashboard', 'notifications-drawer']` — each holds its own data (fetchers in `features/dashboard/data/dashboardFetchers.ts`).
 
 ---
 

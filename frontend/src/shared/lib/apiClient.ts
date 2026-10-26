@@ -129,6 +129,68 @@ export const apiPatch = <T>(path: string, body?: unknown) =>
 
 export const apiDelete = <T>(path: string) => apiRequest<T>(path, { method: 'DELETE' });
 
+/** Progress callback receiving the upload percent 0-100. */
+export type UploadProgressHandler = (percent: number) => void;
+
+/**
+ * Multipart upload with real byte progress — `fetch` cannot report upload
+ * progress, so this path rides XMLHttpRequest. Auth semantics mirror
+ * `apiRequest`: one silent refresh-and-replay on 401, then a lost session.
+ */
+export function apiUpload<T>(path: string, formData: FormData, onProgress?: UploadProgressHandler): Promise<T> {
+  const isAuthFree = AUTH_FREE_PATHS.some((prefix) => path.startsWith(prefix));
+
+  const send = () =>
+    new Promise<{ status: number; body: ArrayBuffer; statusText: string }>((resolve, reject) => {
+      const token = getAccessToken();
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE_URL}${path}`);
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      if (onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) onProgress(Math.min(100, Math.round((event.loaded / event.total) * 100)));
+        };
+      }
+      xhr.onload = () => resolve({ status: xhr.status, body: xhr.response, statusText: xhr.statusText });
+      xhr.onerror = () => reject(new Error('تعذّر الاتصال بالخادم أثناء الرفع.'));
+      xhr.onabort = () => reject(new Error('أُلغيّ الرفع.'));
+      xhr.responseType = 'arraybuffer';
+      xhr.send(formData);
+    });
+
+  const decodeBody = (body: ArrayBuffer) => {
+    try {
+      return JSON.parse(new TextDecoder().decode(body)) as { detail?: string; code?: string };
+    } catch {
+      return {};
+    }
+  };
+
+  return (async () => {
+    let response = await send();
+    const ok = response.status >= 200 && response.status < 300;
+
+    if (response.status === 401 && !isAuthFree) {
+      const original = decodeBody(response.body);
+      const refreshed = await refreshTokens();
+      if (refreshed) {
+        response = await send();
+      } else {
+        clearTokens();
+        const code = original.code ?? 'session_expired';
+        authLostHandler?.(code);
+        throw new ApiError(401, original.detail ?? 'انتهت الجلسة.', code);
+      }
+    }
+
+    if (!ok) {
+      const payload = decodeBody(response.body);
+      throw new ApiError(response.status, payload.detail ?? `API ${response.status}: ${response.statusText}`, payload.code);
+    }
+    return decodeBody(response.body) as T;
+  })();
+}
+
 /** Serialize params into a query string, skipping undefined and 'all' values. */
 export function buildQuery(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();

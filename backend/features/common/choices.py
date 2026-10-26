@@ -58,6 +58,17 @@ class ScholarshipDeadlineUrgency(models.TextChoices):
     NORMAL = "normal", "normal"
 
 
+class VideoStatus(models.TextChoices):
+    """Lifecycle of a hosted lesson video (any provider, HLS-packaged)."""
+
+    UPLOADING = "uploading", "Uploading"
+    PROCESSING = "processing", "Processing"
+    READY = "ready", "Ready"
+    # Source stored safely, HLS packaging still pending (no FFmpeg on this host).
+    STAGED = "staged", "Staged"
+    ERROR = "error", "Error"
+
+
 class LessonStatus(models.TextChoices):
     LOCKED = "locked", "locked"
     ACTIVE = "active", "active"

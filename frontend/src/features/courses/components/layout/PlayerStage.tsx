@@ -14,6 +14,10 @@ import {
 } from 'lucide-react';
 import { useCoursePlayer } from '@/features/courses/context/coursePlayerContext';
 import { courseCopy } from '@/features/courses/data/courseCopy';
+import { useAuth } from '@/features/auth/context/authContext';
+import { useHlsPlayback } from '@/features/videohosting/hooks/useHlsPlayback';
+import { WatermarkOverlay } from '@/features/videohosting/components/overlays/WatermarkOverlay';
+import { videoHostingSlugFor } from '@/features/videohosting/data/videoSlug';
 import { PlayerSettingsMenu } from '@/features/courses/components/controls/PlayerSettingsMenu';
 import {
   useVideoPlayerState,
@@ -35,8 +39,10 @@ function bufferedFraction(currentMs: number, totalMs: number): number {
  */
 export const PlayerStage: React.FC = () => {
   const { course, activeLesson } = useCoursePlayer();
+  const { user } = useAuth();
   const video = useVideoPlayerState();
   const stageRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const seekRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -45,9 +51,18 @@ export const PlayerStage: React.FC = () => {
   const provider = videoProviderFor(course?.id ?? '');
   const P = courseCopy.player;
 
+  // A lesson is only streamable when the hosting backend has it packaged.
+  const streamSlug = activeLesson ? videoHostingSlugFor(course?.id, activeLesson.id) : null;
+  const { status: streamStatus, errorMessage: streamError, reload: reloadStream } = useHlsPlayback(
+    videoRef,
+    streamSlug,
+  );
+  const isHosted = streamStatus !== 'error' && streamStatus !== 'idle';
+
   const isPlaying = video.playState === 'playing';
-  const isBuffering = video.playState === 'buffering';
-  const hasError = video.playState === 'error';
+  const isBuffering = video.playState === 'buffering' || streamStatus === 'loading';
+  const hasError = video.playState === 'error' || streamStatus === 'error';
+  const errorText = video.errorMessage ?? streamError;
 
   // Rebinding to a new lesson resets playback; the same lesson keeps its state
   // so switching tabs on mobile never interrupts the audio.
@@ -56,6 +71,13 @@ export const PlayerStage: React.FC = () => {
       videoPlayerActions.syncVideoSource(activeLesson.id, lessonDurationMs(activeLesson.duration));
     }
   }, [activeLesson]);
+
+  // The real element becomes the playback clock; unmounting restores the
+  // simulated ticker so an unhosted lesson still behaves like before.
+  useEffect(() => {
+    videoPlayerActions.bindMediaElement(videoRef.current);
+    return () => videoPlayerActions.bindMediaElement(null);
+  }, [streamSlug, streamStatus]);
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) {
@@ -175,11 +197,31 @@ export const PlayerStage: React.FC = () => {
 
   return (
     <div ref={stageRef} className="player-stage group cursor-pointer" onClick={onStageToggle}>
-      <img
-        src={course.thumbnailUrl}
-        alt={activeLesson?.title ?? course.title}
-        className="player-video"
-      />
+      {isHosted ? (
+        <video
+          ref={videoRef}
+          className="player-video"
+          playsInline
+          muted={video.muted}
+          onLoadedMetadata={(event) => {
+            const element = event.currentTarget;
+            videoPlayerActions.syncFromMedia(element.currentTime * 1000, element.duration * 1000, 'idle');
+          }}
+          onTimeUpdate={(event) => {
+            const element = event.currentTarget;
+            videoPlayerActions.syncFromMedia(element.currentTime * 1000, video.durationMs, 'playing');
+          }}
+          onWaiting={() => videoPlayerActions.syncFromMedia(video.currentMs, video.durationMs, 'buffering')}
+          onPlaying={() => videoPlayerActions.syncFromMedia(video.currentMs, video.durationMs, 'playing')}
+          onPause={() => videoPlayerActions.syncFromMedia(video.currentMs, video.durationMs, 'idle')}
+          onEnded={() => videoPlayerActions.syncFromMedia(video.durationMs, video.durationMs, 'idle')}
+          onError={() => videoPlayerActions.fail(P.errorNote)}
+        />
+      ) : (
+        <img src={course.thumbnailUrl} alt={activeLesson?.title ?? course.title} className="player-video" />
+      )}
+
+      {isHosted && user && <WatermarkOverlay label={user.email || user.fullName} />}
 
       <div className="player-source-chip" title={P.sourceLabel}>
         <span className={isPlaying ? 'player-source-dot player-source-dot-live' : 'player-source-dot'} />
@@ -198,8 +240,15 @@ export const PlayerStage: React.FC = () => {
           <div className="player-state-card">
             <AlertTriangle size={28} className="text-danger-500" />
             <span className="player-state-title">{P.errorTitle}</span>
-            <span className="player-state-note">{video.errorMessage ?? P.errorNote}</span>
-            <button type="button" className="btn-outline-blue" onClick={videoPlayerActions.retry}>
+            <span className="player-state-note">{errorText ?? P.errorNote}</span>
+            <button
+              type="button"
+              className="btn-outline-blue"
+              onClick={() => {
+                videoPlayerActions.retry();
+                reloadStream();
+              }}
+            >
               <RefreshCw size={14} />
               {P.retryLabel}
             </button>

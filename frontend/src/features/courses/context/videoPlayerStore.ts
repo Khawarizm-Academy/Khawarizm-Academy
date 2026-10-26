@@ -38,6 +38,13 @@ interface VideoPlayerStore {
   retry: () => void;
   fail: (message: string) => void;
   syncVideoSource: (sourceKey: string, durationMs: number) => void;
+  /**
+   * Bind a real `<video>` element so playback mirrors the media element instead
+   * of the simulated ticker. Pass null to detach (unhosted lessons, unmount).
+   */
+  bindMediaElement: (element: HTMLVideoElement | null) => void;
+  /** Report progress from the bound element, clamped to the media duration. */
+  syncFromMedia: (currentMs: number, durationMs: number, playState: VideoPlayState) => void;
 }
 
 function rateOf(speed: string): number {
@@ -62,6 +69,8 @@ function createVideoPlayerStore(): VideoPlayerStore {
   const listeners = new Set<() => void>();
   let tickTimer: number | null = null;
   let bufferTimer: number | null = null;
+  // When set, the element is the playback clock and the simulated ticker stays off.
+  let mediaElement: HTMLVideoElement | null = null;
 
   const emit = () => listeners.forEach((listener) => listener());
   const patch = (partial: Partial<VideoPlayerState>) => {
@@ -118,6 +127,11 @@ function createVideoPlayerStore(): VideoPlayerStore {
     play: () => {
       if (state.playState === 'playing' || state.playState === 'buffering') return;
       if (state.currentMs >= state.durationMs) patch({ currentMs: 0 });
+      if (mediaElement) {
+        patch({ playState: 'buffering' });
+        void mediaElement.play().catch(() => store.fail('تعذر تشغيل الفيديو.'));
+        return;
+      }
       bufferThen(BUFFER_ON_PLAY_MS, () => {
         patch({ playState: 'playing' });
         startTicker();
@@ -127,6 +141,7 @@ function createVideoPlayerStore(): VideoPlayerStore {
     pause: () => {
       stopTicker();
       clearBuffer();
+      if (mediaElement) mediaElement.pause(); // the element's own events confirm pause
       if (state.playState === 'playing' || state.playState === 'buffering') {
         patch({ playState: 'idle' });
       }
@@ -137,11 +152,17 @@ function createVideoPlayerStore(): VideoPlayerStore {
       else store.play();
     },
 
-    toggleMute: () => patch({ muted: !state.muted }),
+    toggleMute: () => {
+      if (mediaElement) mediaElement.muted = !state.muted;
+      patch({ muted: !state.muted });
+    },
 
     toggleCaptions: () => patch({ captions: !state.captions }),
 
-    setSpeed: (speed) => patch({ speed }),
+    setSpeed: (speed) => {
+      if (mediaElement) mediaElement.playbackRate = rateOf(speed);
+      patch({ speed });
+    },
 
     setQuality: (quality) => patch({ quality }),
 
@@ -149,6 +170,11 @@ function createVideoPlayerStore(): VideoPlayerStore {
       if (state.playState === 'error') return;
       const stepMs = seconds * 1000;
       const nextMs = Math.min(Math.max(state.currentMs + stepMs, 0), state.durationMs);
+      if (mediaElement) {
+        mediaElement.currentTime = nextMs / 1000;
+        patch({ currentMs: nextMs });
+        return;
+      }
       patch({ currentMs: nextMs });
       if (state.playState === 'playing') {
         bufferThen(BUFFER_ON_SEEK_MS, () => {
@@ -161,6 +187,11 @@ function createVideoPlayerStore(): VideoPlayerStore {
     seekFraction: (fraction) => {
       if (state.playState === 'error') return;
       const clamped = Math.min(Math.max(fraction, 0), 1);
+      if (mediaElement) {
+        mediaElement.currentTime = (clamped * state.durationMs) / 1000;
+        patch({ currentMs: clamped * state.durationMs });
+        return;
+      }
       patch({ currentMs: clamped * state.durationMs });
       if (state.playState === 'playing') {
         bufferThen(BUFFER_ON_SEEK_MS, () => {
@@ -173,6 +204,9 @@ function createVideoPlayerStore(): VideoPlayerStore {
     retry: () => {
       stopTicker();
       clearBuffer();
+      if (mediaElement) {
+        mediaElement.currentTime = 0;
+      }
       patch({ playState: 'idle', errorMessage: null });
     },
 
@@ -187,9 +221,25 @@ function createVideoPlayerStore(): VideoPlayerStore {
       if (state.sourceKey === sourceKey) return;
       stopTicker();
       clearBuffer();
+      if (mediaElement) {
+        mediaElement.currentTime = 0;
+      }
       // New lesson restarts playback but keeps the viewer's speed/quality/captions.
       state = { ...state, playState: 'idle', currentMs: 0, durationMs, sourceKey, errorMessage: null };
       emit();
+    },
+
+    /** Rebinding also resets the clock so the element and the store start together. */
+    bindMediaElement: (element) => {
+      mediaElement = element;
+      if (!element) return;
+      element.muted = state.muted;
+      element.playbackRate = rateOf(state.speed);
+    },
+
+    /** The element reports progress; the simulated ticker stays off while bound. */
+    syncFromMedia: (currentMs, durationMs, playState) => {
+      patch({ currentMs, durationMs, playState });
     },
   };
 

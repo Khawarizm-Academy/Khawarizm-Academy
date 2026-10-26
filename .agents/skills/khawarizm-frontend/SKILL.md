@@ -50,7 +50,7 @@ Always follow this mapping when creating or moving files.
 | **Feature data (non-JSON)** | `src/features/<feature>/data/` | `<name>.ts` (`dashboardFetchers.ts`, `radialRingColors.ts`) |
 | **Feature styles (one feature)** | `src/features/<feature>/` | `<feature>.css` — imported by `globals.css` only |
 | **Static data (any kind)** | `src/shared/json/` | `<name>.json` |
-| **Hydrated mock modules** | `src/shared/mocks/` | `<name>.ts` + `index.ts` barrel |
+| **Hydrated mock modules** | `src/shared/json/` | `<name>.json` + a hydrating `.ts` beside it |
 | **Shared utility / helpers** | `src/shared/lib/` | `<name>.ts` (`localization.ts`, `navigation.ts`, `cacheManager.ts`) |
 | **Shared styles & tokens (2+ features)** | `src/styles/` | `tokens.css`, `globals.css` |
 | **Routes & root app** | `src/app/` | `router.tsx`, `routes.tsx`, `App.tsx`, `pageLoads.ts`, `layouts/` |
@@ -133,14 +133,14 @@ Rules:
 - **Pages:** `CourseLandingPage`, `CoursePlayerPage`, `CourseCertificatePage` (`features/courses/pages/`).
 - **Views:** `views/CourseLandingView/` and `views/CoursePlayerView/` are Desktop/Mobile pairs; `views/CertificateView.tsx`.
 - **CTA:** `CoursePrimaryCta`, `CourseStickyCta`, `CourseActionPanel`; **player chrome:** `PlayerTopBar`, `LessonTabBar`, `CoursePathSidebar`, `PlayerStage`, `PlayerPanels`, `PlayerSyllabusDrawer`, `PlayerMiniPlayer`.
-- **Data:** reads via `shared/mocks/courses.ts` + `useCachedData` (`['course-detail', slug]`, `['course-problems', slug]`).
+- **Data:** reads via JSON-backed fetchers + `useCachedData` (`['course-detail', slug]`, `['course-problems', slug]`).
 - **Styling:** `.course-*` / `.player-*` / `.cert-*` classes in `src/features/courses/courses.css`.
 
 ### 3.11 Dashboard (learning workspace)
 - **Page:** `<DashboardPage />` — self-contained layout: right sidebar + top bar, RTL grid with the sidebar as **Child #1** (§6.1). `?view=` drives the active view through `getDashboardNavItem`; `?state=live|empty` are demo modes.
 - **Shell & stats:** `<DesktopDashboardSidebar />` (Child #1; its bottom row pairs the saved bookmark + notification bell), `<DashboardTopBar />`, `<MobileDashboardTopBar />`, `<DashboardStatsHeader />`, `<DashboardStatsSidebar />`, `<DashboardSubNavigation />` (mobile/tablet-only, `.dash-subnav` is `lg:hidden`).
 - **Priority cards:** `<PriorityContinueCard />` (cyan) and `<LiveSessionPriorityCard />` (red live countdown) share `.dash-hero*` and `<RadialProgressRing />` (`RING_COLORS` in `features/dashboard/data/radialRingColors.ts`).
-- **Views:** `<EnrolledCoursesView />`, `<CompetitionsCertificatesView />`, `<SavedScholarshipsView />`, `<NotificationsView />`, `<NotificationsDrawer />`, `<EmptyDashboardState />` — data-driven from `dashboardViews.json` / `dashboardChambers.json`.
+- **Views:** `<EnrolledCoursesView />`, `<CompetitionsCertificatesView />`, `<SavedScholarshipsView />`, `<NotificationsView />`, `<NotificationsDrawer />`, `<EmptyDashboardState />` — data-driven from `dashboardContent.json`.
 - **Chambers (§6.2):** `<CourseWorkspaceModal />`, `<LiveClassroomModal />`, `<CompetitionArenaModal />`, `<ScholarshipApplicationModal />`, `<CertificatePreviewModal />` — all share `.dash-modal-*` chrome.
 - **Styling:** every element sits on a `.dash-*` class in `src/features/dashboard/dashboard.css`. Canvas, elevation and accent rules live in §6.7.
 
