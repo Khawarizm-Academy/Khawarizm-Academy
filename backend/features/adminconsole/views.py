@@ -11,6 +11,7 @@ from tempfile import gettempdir
 
 from django.db import IntegrityError
 from django.db import connections
+from django.http import HttpResponse
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -18,7 +19,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.exceptions import APIException
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from features.adminconsole import serializers
@@ -450,6 +451,74 @@ def asset_row(asset, *, include_error: bool = False) -> dict:
 
 # Bot uploads cap at ~2GB; anything larger must go through the split path anyway.
 VIDEO_UPLOAD_MAX_BYTES = 2 ** 31
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_drive_oauth_start(request):
+    """Open the consent dance — Google's URL for the admin's browser.
+
+    The single-use CSRF state banks server-side; React receives the URL only
+    (it carries the public client id, not a secret).
+    """
+    from features.videohosting import oauthdrive
+    try:
+        return Response({"authUrl": oauthdrive.consent_url()})
+    except ValueError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def video_drive_oauth_callback(request):
+    """Google's redirect target — validates the state, mints the grant.
+
+    The code exchanges here on the backend and only the outcome (plus the
+    account email) persists; the browser lands on a neutral page because
+    there is no admin session to hand it to.
+    """
+    from features.videohosting import oauthdrive
+    okay, email, detail = oauthdrive.complete(
+        request.query_params.get("state") or "", request.query_params.get("code") or ""
+    )
+    return HttpResponseLoginPage(okay, detail)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_drive_oauth_status(request):
+    """The admin-safe connection state — account email and status, no tokens."""
+    from features.videohosting import oauthdrive
+    grant = oauthdrive.connected()
+    # camelCase payload per the JSON contract; the tokens never leave Django.
+    return Response({
+        "connected": grant["connected"],
+        "accountEmail": grant["account_email"],
+        "status": grant["status"],
+        "error": grant["error_message"],
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_drive_oauth_disconnect(request):
+    """Revoke the grant at Google and drop the persisted credential."""
+    from features.videohosting import oauthdrive
+    oauthdrive.revoke()
+    return Response({"connected": False})
+
+
+def HttpResponseLoginPage(okay: bool, detail: str) -> HttpResponse:
+    """The tiny neutral landing page Google's redirect ends on."""
+    body = (
+        "<!doctype html><html lang=ar dir=rtl><meta charset=utf-8><title>تخويل Google Drive</title>"
+        f"<body style='font-family:sans-serif;text-align:center;padding:4rem'>"
+        f"<h2>{'✓ تم ربط حساب Google' if okay else '✗ فشل التخويل'}</h2>"
+        f"<p>{detail[:200]}</p>"
+        "<p>أغلق هذه الصفحة، ثم أعد «فحص المنظومة» من لوحة الإدارة.</p>"
+        "<script>setTimeout(close,4000)</script></body></html>"
+    )
+    return HttpResponse(body, content_type="text/html; charset=utf-8")
 
 
 @api_view(["POST"])

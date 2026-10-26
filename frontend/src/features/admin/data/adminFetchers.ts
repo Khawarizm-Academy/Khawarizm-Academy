@@ -104,6 +104,10 @@ export const deleteVideoAsset = (id: string) => apiDelete<{ deleted: boolean; id
 /** One asset's current row — the upload tracker's poll target. */
 export const fetchVideoAsset = (id: string) => apiGet<AdminVideoAsset>(`/admin/video-assets/${id}`);
 
+/** Step 1 of the Drive consent dance — the backend returns Google's URL only;
+    the tokens live in Django and React never sees one. */
+export const startDriveOAuth = () => apiGet<{ authUrl: string }>('/admin/video-drive/oauth/start');
+
 /** Upload the actual file; `onProgress` reports real HTTP bytes sent 0-100. */
 export const uploadVideoAsset = async (
   { file, ...input }: AdminVideoInput & { file: File },

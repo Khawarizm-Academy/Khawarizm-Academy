@@ -33,8 +33,14 @@ def _is_allowed_origin(value: str | None) -> bool:
 class ApiOriginRestrictionMiddleware(MiddlewareMixin):
     """Return 403 if a request to /api/ comes without an allowed origin/referer."""
 
+    # A top-level Google OAuth redirect carries no Origin or Referer; its CSRF
+    # protection is the single-use `state` in the query, not the origin gate.
+    EXEMPT_PATHS = ("/api/admin/video-drive/oauth/callback",)
+
     def process_request(self, request: HttpRequest):
         if request.path.startswith("/api/"):
+            if request.path in self.EXEMPT_PATHS:
+                return None
             origin = request.META.get("HTTP_ORIGIN") or request.META.get("HTTP_REFERER")
             if not _is_allowed_origin(origin):
                 return HttpResponseForbidden("Forbidden: direct access to API is not allowed")

@@ -1,26 +1,18 @@
 # Google Drive provider <- the providers registry, resumable upload helpers
 # Drive stores the video files: the backend resumable-uploads into a Drive
-# folder with the OAuth credentials and serves playback through short-lived
-# grants, never a raw, shareable file URL.
-#
-# Auth is dual-mode: the refresh token mints short-lived Access Tokens (OAuth),
-# or the service-account JSON signs its own RS256 JWT — whichever works first.
-import base64
+# folder with the human OAuth grant persisted in DriveGrant (the service
+# account carried no storage quota — it was retired). The bearer mints in
+# features/videohosting/oauthdrive.py; this module never sees the token.
 import json
 import os
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
-
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 from django.conf import settings
 
+from features.videohosting.oauthdrive import access_token as oauth_access_token
 from features.videohosting.providers.base import ProviderSpec
-
 GOOGLE_DRIVE = ProviderSpec(
     code="google_drive",
     name="Google Drive",
@@ -34,17 +26,16 @@ GOOGLE_DRIVE = ProviderSpec(
     },
 )
 
-# Every env key the OAuth path needs; SERVICE_ACCOUNT_JSON is the headless
-# alternative to REFRESH_TOKEN, and one of the two must be present.
+# Every env key the Drive integration needs; the bucket comes from the
+# persisted OAuth grant, so a half-configured environment raises naming the
+# exact keys to set instead of failing inside a random HTTP call.
 REQUIRED_SETTINGS = (
     "GOOGLE_DRIVE_CLIENT_ID",
     "GOOGLE_DRIVE_CLIENT_SECRET",
     "GOOGLE_DRIVE_ROOT_FOLDER_ID",
 )
 
-DRIVE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 DRIVE_UPLOAD_SESSION_URL = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id"
-DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 
 # Drive's resumable protocol rejects chunks that are not multiples of this.
 CHUNK_BYTES = 256 * 1024
@@ -61,167 +52,14 @@ def credentials() -> dict[str, str]:
     """
     values = {key: getattr(settings, key) or "" for key in REQUIRED_SETTINGS}
     missing = [key for key in REQUIRED_SETTINGS if not values[key]]
-    honoring_auth = bool(
-        (settings.GOOGLE_DRIVE_REFRESH_TOKEN or "").strip()
-        or (settings.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON or "").strip()
-    )
-    if not honoring_auth:
-        raise ValueError(
-            "Google Drive is not configured — set GOOGLE_DRIVE_REFRESH_TOKEN (OAuth) "
-            "or GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON (headless) in the environment"
-        )
     if missing:
         raise ValueError(f"Google Drive is not configured — set {', '.join(missing)} in the environment")
     return values
 
 
-def parse_service_account(raw: str) -> dict | None:
-    """The service-account env value is raw JSON or base64 — dict or None."""
-    candidate = raw.strip()
-    if not candidate:
-        return None
-    if not candidate.startswith("{"):
-        try:
-            candidate = base64.b64decode(candidate).decode("utf-8")
-        except Exception:
-            return None
-    try:
-        parsed = json.loads(candidate)
-    except ValueError:
-        return None
-    return parsed if isinstance(parsed, dict) and parsed.get("client_email") and parsed.get("private_key") else None
-
-
-def exchange_refresh_token(refresh_token: str) -> tuple[bool, str, str]:
-    """Exchange the refresh token — (ok, bearer token, detail).
-
-    The uploader reaches this through `access_token()`, so there is exactly
-    one OAuth exchange in the codebase.
-    """
-    body = urllib.parse.urlencode({
-        "client_id": (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip(),
-        "client_secret": (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip(),
-        "refresh_token": refresh_token,
-        "grant_type": "refresh_token",
-    }).encode("utf-8")
-    request = urllib.request.Request(  # noqa: S310 — fixed OAuth host, POST to its own API
-        DRIVE_TOKEN_URL, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"}
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as error:
-        text = _error_body(error)
-        if "invalid_grant" in text:
-            return False, "", (
-                "refresh token منتهي أو منسحب — أعد توليده بالأمر python manage.py drive_auth وضع GOOGLE_DRIVE_REFRESH_TOKEN جديدًا."
-            )
-        return False, "", f"رفض OAuth الطلب: {text[:200] or error}"
-    except Exception as exc:
-        return False, "", f"تعذّر الاتصال: {exc}"
-    bearer = payload.get("access_token", "")
-    if not bearer:
-        return False, "", f"رفض OAuth الطلب: {payload.get('error_description', payload.get('error', 'غير معروف'))}"
-    return True, bearer, "حصل على access token بنجاح."
-
-
-def exchange_authorization_code(code: str, redirect_uri: str) -> tuple[bool, str, str]:
-    """Trade the consent page's code for a refresh token — (ok, token, detail).
-
-    `manage.py drive_auth` drives the two-step mint: bare run prints the
-    consent URL, rerun with --code lands here. The redirect URI must equal
-    the consent call's, or Google refuses the grant.
-    """
-    body = urllib.parse.urlencode({
-        "client_id": (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip(),
-        "client_secret": (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip(),
-        "code": code.strip(),
-        "redirect_uri": redirect_uri,
-        "grant_type": "authorization_code",
-    }).encode("utf-8")
-    request = urllib.request.Request(  # noqa: S310 — fixed OAuth host, POST to its own API
-        DRIVE_TOKEN_URL, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"}
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as error:
-        text = _error_body(error)
-        return False, "", f"رفض Google الطلب: {text[:250] or error}"
-    except Exception as exc:
-        return False, "", f"تعذّر الاتصال: {exc}"
-    refresh = payload.get("refresh_token", "")
-    if not refresh:
-        return False, "", f"لا refresh token في ردّ Google: {payload.get('error_description', 'غير معروف')}"
-    return True, refresh, "تم التبادل بنجاح."
-
-
-def service_account_token(service_account: dict) -> tuple[bool, str, str]:
-    """Sign one RS256 JWT for the service account and mint a bearer token.
-
-    Google's machine protocol: base64url(header).base64url(claims) signed
-    with the account's private key, posted as a jwt-bearer grant.
-    """
-    now = int(time.time())
-    header = {"alg": "RS256", "typ": "JWT"}
-    claims = {
-        "iss": service_account["client_email"],
-        "scope": DRIVE_SCOPE,
-        "aud": DRIVE_TOKEN_URL,
-        "iat": now,
-        "exp": now + 3600,
-    }
-    signing_input = f"{_b64url(header)}.{_b64url(claims)}"
-    try:
-        key = load_pem_private_key(service_account["private_key"].encode("utf-8"), password=None)
-        signature = key.sign(signing_input.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256())
-    except Exception as exc:
-        return False, "", f"مفتاح حساب الخدمة غير صالح: {exc}"
-    body = urllib.parse.urlencode({
-        "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        "assertion": f"{signing_input}.{_b64url(signature)}",
-    }).encode("utf-8")
-    request = urllib.request.Request(  # noqa: S310 — fixed OAuth host, POST to its own API
-        DRIVE_TOKEN_URL, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"}
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
-            payload = json.loads(response.read().decode("utf-8"))
-    except Exception as exc:
-        return False, "", f"تعذّر اتصال حساب الخدمة: {exc}"
-    bearer = payload.get("access_token", "")
-    if not bearer:
-        return False, "", f"رفض Google مصادقة حساب الخدمة: {payload.get('error_description', 'غير معروف')}"
-    return True, bearer, "حصل على access token عبر حساب الخدمة بنجاح."
-
-
 def access_token() -> tuple[bool, str, str]:
-    """Mint a bearer with the first auth mode that works; both details on failure.
-
-    The refresh token goes first (it is a human's grant); the service account
-    is the automatic fallback when that token was revoked or expired.
-    """
-    failures: list[str] = []
-    refresh = (settings.GOOGLE_DRIVE_REFRESH_TOKEN or "").strip()
-    if refresh:
-        ok, bearer, detail = exchange_refresh_token(refresh)
-        if ok:
-            return True, bearer, detail
-        failures.append(f"refresh token: {detail}")
-    service_account = parse_service_account(settings.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON or "")
-    if service_account is not None:
-        ok, bearer, detail = service_account_token(service_account)
-        if ok:
-            return True, bearer, detail
-        failures.append(f"حساب الخدمة: {detail}")
-    if not failures:
-        return False, "", "لا refresh token ولا حساب خدمة صالح — راجع «فحص المنظومة»."
-    return False, "", " — ".join(failures)
-
-
-def _b64url(payload: dict | bytes) -> str:
-    raw = json.dumps(payload, separators=(",", ":")).encode("utf-8") if isinstance(payload, dict) else payload
-    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+    """The bearer for every Drive call — minted by the persisted OAuth grant."""
+    return oauth_access_token()
 
 
 def _error_body(error: urllib.error.HTTPError) -> str:
@@ -241,12 +79,9 @@ def _drive_error_message(error: urllib.error.HTTPError) -> str:
 
 
 def _403_hint(message: str) -> str:
-    """One Arabic fix per known Drive 403 — quota, or a read-only share."""
-    lower = message.lower()
-    if "storage quota" in lower:
-        return message + " — حساب الخدمة بلا حصة تخزين: أعد توليد refresh token بحسابك (python manage.py drive_auth) أو استخدم Shared Drive."
-    if "permissions" in lower:
-        return message + " — وشارك مجلد الرفع مع بريد حساب الخدمة كـ Editor."
+    """One Arabic fix per known Drive 403 — a read-only share."""
+    if "permissions" in message.lower():
+        return message + " — وشارك مجلد الرفع مع الحساب المُخوَّل كـ Editor."
     return message
 
 

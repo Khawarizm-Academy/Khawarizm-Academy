@@ -7,24 +7,23 @@ key endpoint serves the stored AES key directly.
 from __future__ import annotations
 
 import hashlib
+import base64
 import io
 import json
 import tempfile
 import urllib.error
+import urllib.parse
 from datetime import timedelta
-from io import StringIO
 from pathlib import Path
 from unittest import mock
 
 from django.conf import settings
-from django.core.management import call_command
-from django.core.management.base import CommandError
 from django.utils import timezone
 
 from features.common.choices import VideoStatus
 from features.common.testing import ApiTestCase, authenticate
-from features.videohosting import diagnostics, ingest, packaging, providers, tokens
-from features.videohosting.models import StreamToken, VideoAsset, VideoProvider, VideoRendition, VideoSegment
+from features.videohosting import diagnostics, ingest, oauthdrive, packaging, providers, tokens
+from features.videohosting.models import DriveAuthState, DriveGrant, StreamToken, VideoAsset, VideoProvider, VideoRendition, VideoSegment
 from features.videohosting.serializers import asset_meta
 from features.videohosting.providers import google_drive
 
@@ -149,38 +148,21 @@ class RegistryTests(ApiTestCase):
 
 class GoogleDriveCredentialsTests(ApiTestCase):
     def test_missing_keys_fail_loudly_naming_them(self):
-        # One auth mode present so the auth sweep passes and the missing keys list.
-        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", '{"type":"service_account"}'), \
-             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_CLIENT_ID", ""):
+        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_CLIENT_ID", ""):
             with self.assertRaises(ValueError) as ctx:
                 google_drive.credentials()
         self.assertIn("GOOGLE_DRIVE_CLIENT_ID", str(ctx.exception))
 
-    def test_no_auth_mode_fails_with_the_instruction(self):
-        with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_REFRESH_TOKEN", ""), \
-             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""):
-            with self.assertRaises(ValueError) as ctx:
-                google_drive.credentials()
-        self.assertIn("REFRESH_TOKEN", str(ctx.exception))
-
-    def test_service_account_alone_mints_a_jwt_bearer_token(self):
-        # Dual-mode: an absent refresh token falls through to the service
-        # account — a jwt-bearer grant, never the password-style refresh grant.
-        token_reply = _ScriptedDriveHTTP([(200, {}, b'{"access_token": "SA-BEARER"}')])
+    def test_uploads_without_a_stored_grant_require_authorization_first(self):
+        # The grant lives in DriveGrant now — no row means the admin must
+        # authorize a Google account before any upload attempt.
+        DriveGrant.objects.all().delete()
         with mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
              mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_REFRESH_TOKEN", ""), \
-             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON",
-                               '{"type":"service_account","client_email":"sa@academy.iam.gserviceaccount.com",'
-                               '"private_key":"ignored-here"}'), \
-             mock.patch.object(google_drive, "load_pem_private_key", return_value=_SigningStub()), \
-             mock.patch.object(google_drive.urllib.request, "urlopen", token_reply):
-            okay, bearer, _detail = google_drive.access_token()
-        self.assertTrue(okay)
-        self.assertEqual(bearer, "SA-BEARER")
-        # The minted grant is the machine flow, not the refresh-token flow.
-        grant = token_reply.calls[0].data.decode("utf-8")
-        self.assertIn("grant-type%3Ajwt-bearer", grant)
+             mock.patch.object(google_drive.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"):
+            with self.assertRaises(RuntimeError) as ctx:
+                google_drive.GoogleDriveService().upload_file("/tmp/x.mp4")
+        self.assertIn("تخويل", str(ctx.exception))
 
 
 class _FakeDriveResponse:
@@ -201,11 +183,30 @@ class _FakeDriveResponse:
         return False
 
 
-class _SigningStub:
-    """A private-key stand-in whose sign() produces a fixed signature."""
+def _drive_grant(bearer: str = "BEAR") -> DriveGrant:
+    """One stored Google grant with a fresh cached access token — no network.
 
-    def sign(self, data, padding, algorithm):
-        return b"satellite-signature"
+    The upload grants need `refresh_token`, so the row mirrors what Google's
+    consent callback writes; tests stop at the Drive-call script.
+    """
+    return DriveGrant.objects.create(
+        account_email="owner@example.com",
+        refresh_token="rt-fixed",
+        access_token=bearer,
+        access_token_expires_at=timezone.now() + timedelta(hours=1),
+    )
+
+
+def _google_id_token(email: str) -> str:
+    """A three-part id_token whose middle section carries the email claim."""
+    payload = base64.urlsafe_b64encode(json.dumps({"email": email}).encode("utf-8")).rstrip(b"=").decode("ascii")
+    return f"header.{payload}.signature"
+
+
+def _banked_state() -> str:
+    """Run consent_url() and hand back the raw CSRF state it banked."""
+    url = oauthdrive.consent_url()
+    return urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["state"][0]
 
 
 class _ScriptedDriveHTTP:
@@ -231,7 +232,6 @@ class _ScriptedDriveHTTP:
 class GoogleDriveUploadServiceTests(ApiTestCase):
     def test_resumable_upload_sessions_chunks_and_reports_progress(self):
         scripted = _ScriptedDriveHTTP([
-            (200, {}, b'{"access_token": "BEAR"}'),          # token exchange
             (200, {"Location": "https://upload.session/1"}, b""),  # session open
             (308, {}, b""),                                   # chunk 1 accepted
             (308, {}, b""),                                   # chunk 2 accepted
@@ -239,11 +239,10 @@ class GoogleDriveUploadServiceTests(ApiTestCase):
         ])
         ticks = []
 
+        _drive_grant()
         with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
              mock.patch.object(google_drive, "CHUNK_BYTES", 256), \
              mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
             fake_bin = Path(tempfile.mkdtemp()) / "lesson.mp4"
@@ -263,16 +262,14 @@ class GoogleDriveUploadServiceTests(ApiTestCase):
         # An intermediate 308 is the protocol's keep-going; a 308 after the
         # last chunk means Drive did not finish — name it, never mask it.
         scripted = _ScriptedDriveHTTP([
-            (200, {}, b'{"access_token": "BEAR"}'),
             (200, {"Location": "https://upload.session/2"}, b""),
             (308, {}, b""),
             (308, {}, b""),
         ])
+        _drive_grant()
         with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
              mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
             fake_bin = Path(tempfile.mkdtemp()) / "lesson.mp4"
             fake_bin.write_bytes(b"0" * 600)
@@ -280,47 +277,40 @@ class GoogleDriveUploadServiceTests(ApiTestCase):
                 google_drive.GoogleDriveService().upload_file(str(fake_bin))
         self.assertIn("آخر مقطع", str(ctx.exception))
 
-    def test_a_quota_refusal_names_the_two_real_fixes(self):
-        # A service account has no storage quota: Google refuses the chunk and
-        # the error must route the operator to the refresh token or a Shared Drive.
+    def test_a_permissions_refusal_names_the_share_fix(self):
+        # A grant cannot touch a folder it is not Editor on: Google refuses the
+        # session open and the error must route the operator to the share.
         quota_body = json.dumps({
-            "error": {"message": "Service Accounts do not have storage quota. "
-                    "Leverage shared drives, or use OAuth delegation instead."}
+            "error": {"message": "The user does not have sufficient permissions with respect to this file."}
         }).encode("utf-8")
         scripted = _ScriptedDriveHTTP([
-            (200, {}, b'{"access_token": "BEAR"}'),
-            (200, {"Location": "https://upload.session/3"}, b""),
             (403, {}, quota_body),
         ])
+        _drive_grant()
         with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
              mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
             fake_bin = Path(tempfile.mkdtemp()) / "lesson.mp4"
             fake_bin.write_bytes(b"0" * 600)
             with self.assertRaises(RuntimeError) as ctx:
                 google_drive.GoogleDriveService().upload_file(str(fake_bin))
-        self.assertIn("drive_auth", str(ctx.exception))
-        self.assertIn("Shared Drive", str(ctx.exception))
+        self.assertIn("Editor", str(ctx.exception))
 
 
 class DriveUploadProbeTests(ApiTestCase):
-    """The deep check's 1-byte write — the only test that proves quota state."""
+    """The deep check's 1-byte write — the only test that proves the folder works."""
 
     def test_probe_writes_one_byte_and_cleans_up(self):
         scripted = _ScriptedDriveHTTP([
-            (200, {}, b'{"access_token": "BEAR"}'),
             (200, {"Location": "https://upload.session/9"}, b""),
             (200, {}, b'{"id": "PROBE1"}'),
             (204, {}, b""),
         ])
+        _drive_grant()
         with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
              mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
             okay, detail = google_drive.upload_probe()
         self.assertTrue(okay)
@@ -328,59 +318,193 @@ class DriveUploadProbeTests(ApiTestCase):
         self.assertIn("حذف", detail)
         self.assertEqual(scripted.calls[-1].get_method(), "DELETE")
 
-    def test_probe_surfaces_the_quota_refusal_with_its_fix(self):
+    def test_probe_surfaces_the_refusal_with_its_fix(self):
         quota_body = json.dumps({
-            "error": {"message": "Service Accounts do not have storage quota. Leverage shared drives."}
+            "error": {"message": "The user does not have sufficient permissions with respect to this file."}
         }).encode("utf-8")
         scripted = _ScriptedDriveHTTP([
-            (200, {}, b'{"access_token": "BEAR"}'),
             (403, {}, quota_body),
         ])
+        _drive_grant()
         with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
              mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
              mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
             okay, detail = google_drive.upload_probe()
         self.assertFalse(okay)
-        self.assertIn("drive_auth", detail)
-        self.assertIn("Shared Drive", detail)
+        self.assertIn("Editor", detail)
 
 
-class DriveAuthCommandTests(ApiTestCase):
-    """The refresh-token re-mint — a mechanical recipe on the manage.py surface."""
+class DriveOAuthTests(ApiTestCase):
+    """The consent dance — state CSRF, exchange, persistence, and the refresh."""
 
-    def test_bare_run_prints_the_consent_recipe(self):
-        outlet = StringIO()
-        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid.apps.googleusercontent.com"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"):
-            call_command("drive_auth", stdout=outlet)
-        text = outlet.getvalue()
-        self.assertIn("accounts.google.com/o/oauth2/v2/auth", text)
-        self.assertIn("access_type=offline", text)
-        self.assertIn("developers.google.com/oauthplayground", text)
-        self.assertIn("--code=", text)
+    def test_consent_url_banks_a_single_use_state(self):
+        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"):
+            url = oauthdrive.consent_url()
+        self.assertIn("accounts.google.com/o/oauth2/v2/auth", url)
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+        self.assertEqual(query["access_type"], ["offline"])
+        self.assertEqual(query["prompt"], ["consent"])
+        self.assertIn("drive.file", query["scope"][0])
+        self.assertIn("redirect_uri=http%3A%2F%2Fcb", url)
+        # Only the state's hash is stored — the raw value rides the URL alone.
+        self.assertTrue(DriveAuthState.objects.filter(state_hash=oauthdrive._hash(query["state"][0])).exists())
+        self.assertFalse(DriveAuthState.objects.filter(state_hash=query["state"][0]).exists())
 
-    def test_with_a_code_prints_the_env_line_and_the_pitfall(self):
-        scripted = _ScriptedDriveHTTP([(200, {}, b'{"access_token": "at", "refresh_token": "RF-NEW"}')])
-        outlet = StringIO()
-        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
-            call_command("drive_auth", code="4/0ABX", stdout=outlet)
-        text = outlet.getvalue()
-        self.assertIn("GOOGLE_DRIVE_REFRESH_TOKEN=RF-NEW", text)
-        self.assertIn("In production", text)
+    def test_complete_rejects_an_unknown_state_without_touching_the_network(self):
+        def boom(*args, **kwargs):
+            raise AssertionError("a bad state must die before any Google call")
 
-    def test_a_refused_code_fails_loudly(self):
-        scripted = _ScriptedDriveHTTP([(400, {}, b'{"error": "invalid_grant", "error_description": "Code was already redeemed."}')])
-        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
-            with self.assertRaises(CommandError) as ctx:
-                call_command("drive_auth", code="dead", stdout=StringIO())
-        self.assertIn("already redeemed", str(ctx.exception))
+        DriveGrant.objects.all().delete()
+        with mock.patch.object(oauthdrive.urllib.request, "urlopen", boom):
+            okay, email, detail = oauthdrive.complete("forged", "4/0CODE")
+        self.assertFalse(okay)
+        self.assertIn("state", detail)
+        self.assertEqual(DriveGrant.objects.count(), 0)
+
+    def test_complete_rejects_an_expired_state(self):
+        raw = "expired-state"
+        DriveAuthState.objects.create(state_hash=oauthdrive._hash(raw), expires_at=timezone.now() - timedelta(seconds=1))
+        okay, _email, detail = oauthdrive.complete(raw, "4/0CODE")
+        self.assertFalse(okay)
+        self.assertIn("state", detail)
+
+    def test_complete_stores_a_single_use_state_only_once(self):
+        # A replayed callback (same state twice) loses the second time.
+        scripted = _ScriptedDriveHTTP([
+            (200, {}, json.dumps({
+                "access_token": "AT-1", "refresh_token": "RT-1", "expires_in": 3600,
+                "scope": "https://www.googleapis.com/auth/drive.file",
+                "id_token": _google_id_token("owner@example.com"),
+            }).encode("utf-8")),
+        ])
+        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
+             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+            state = _banked_state()
+            okay, email, detail = oauthdrive.complete(state, "4/0CODE")
+        self.assertTrue(okay)
+        self.assertEqual(email, "owner@example.com")
+        grant = DriveGrant.objects.get()
+        self.assertEqual(grant.refresh_token, "RT-1")
+        self.assertEqual(grant.access_token, "AT-1")
+        # The verdict never carries a credential — no token, nothing reusable.
+        self.assertNotIn("RT-1", detail)
+        self.assertNotIn("AT-1", detail)
+        self.assertEqual(DriveAuthState.objects.count(), 0)
+        # The state is spent: a replayed callback fails without a new exchange.
+        self.assertEqual(len(scripted.calls), 1)
+        replay_okay, _email, replayed_detail = oauthdrive.complete(state, "4/0CODE")
+        self.assertFalse(replay_okay)
+        self.assertIn("state", replayed_detail)
+
+    def test_a_regrant_without_a_refresh_token_keeps_the_old_one(self):
+        # Google omits refresh_token on re-consent — the stored grant survives.
+        _drive_grant()
+        scripted = _ScriptedDriveHTTP([(
+            200, {}, json.dumps({
+                "access_token": "AT-2", "expires_in": 3600,
+                "scope": "https://www.googleapis.com/auth/drive.file",
+                "id_token": _google_id_token("owner@example.com"),
+            }).encode("utf-8")),
+        ])
+        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
+             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+            state = _banked_state()
+            okay, _email, _detail = oauthdrive.complete(state, "4/0CODE")
+        self.assertTrue(okay)
+        grant = DriveGrant.objects.get()
+        self.assertEqual(grant.refresh_token, "rt-fixed")
+        self.assertEqual(grant.access_token, "AT-2")
+
+    def test_a_refused_code_reports_google_s_own_words(self):
+        scripted = _ScriptedDriveHTTP([(
+            400, {}, json.dumps({"error": "invalid_grant", "error_description": "Code was already redeemed."}).encode("utf-8"),
+        )])
+        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
+             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+            state = _banked_state()
+            okay, _email, detail = oauthdrive.complete(state, "4/0SPENT")
+        self.assertFalse(okay)
+        self.assertIn("already redeemed", detail)
+        self.assertEqual(DriveGrant.objects.count(), 0)
+
+    def test_access_token_requires_a_stored_grant(self):
+        DriveGrant.objects.all().delete()
+        okay, bearer, detail = oauthdrive.access_token()
+        self.assertFalse(okay)
+        self.assertEqual(bearer, "")
+        self.assertIn("تخويل", detail)
+
+    def test_a_fresh_cached_token_never_touches_the_network(self):
+        _drive_grant()
+
+        def boom(*args, **kwargs):
+            raise AssertionError("a fresh cached token must not refresh over the network")
+
+        with mock.patch.object(oauthdrive.urllib.request, "urlopen", boom):
+            okay, bearer, _detail = oauthdrive.access_token()
+        self.assertTrue(okay)
+        self.assertEqual(bearer, "BEAR")
+
+    def test_an_expired_cached_token_refreshes_against_the_stored_grant(self):
+        grant = _drive_grant()
+        grant.access_token_expires_at = timezone.now() - timedelta(seconds=1)
+        grant.save(update_fields=["access_token_expires_at"])
+        scripted = _ScriptedDriveHTTP([(200, {}, json.dumps({"access_token": "AT-3", "expires_in": 3600}).encode("utf-8"))])
+        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+            okay, bearer, _detail = oauthdrive.access_token()
+        self.assertTrue(okay)
+        self.assertEqual(bearer, "AT-3")
+        grant.refresh_from_db()
+        self.assertEqual(grant.access_token, "AT-3")
+        body = scripted.calls[0].data.decode("utf-8")
+        self.assertIn("refresh_token=rt-fixed", body)
+        self.assertIn("grant_type=refresh_token", body)
+
+    def test_an_invalid_grant_marks_the_row_revoked(self):
+        grant = _drive_grant()
+        grant.access_token_expires_at = timezone.now() - timedelta(seconds=1)
+        grant.save(update_fields=["access_token_expires_at"])
+        scripted = _ScriptedDriveHTTP([(
+            400, {}, json.dumps({"error": "invalid_grant", "error_description": "Token has been expired or revoked."}).encode("utf-8"),
+        )])
+        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+            okay, _bearer, detail = oauthdrive.access_token()
+        self.assertFalse(okay)
+        self.assertIn("تخويل", detail)
+        grant.refresh_from_db()
+        self.assertEqual(grant.status, DriveGrant.Status.REVOKED)
+        self.assertIn("أعد التخويل", grant.error_message)
+
+    def test_connected_reports_email_and_status_only(self):
+        _drive_grant()
+        payload = oauthdrive.connected()
+        self.assertEqual(payload["connected"], True)
+        self.assertEqual(payload["account_email"], "owner@example.com")
+        text = json.dumps(payload)
+        self.assertNotIn("BEAR", text)
+        self.assertNotIn("rt-fixed", text)
+
+    def test_revoke_drops_the_row_even_when_google_fails(self):
+        def boom(*args, **kwargs):
+            raise AssertionError("the best-effort Google revoke must swallow network failures")
+
+        _drive_grant()
+        with mock.patch.object(oauthdrive.urllib.request, "urlopen", boom):
+            oauthdrive.revoke()
+        self.assertEqual(DriveGrant.objects.count(), 0)
 
 
 class ProviderRouteTests(ApiTestCase):
@@ -491,44 +615,40 @@ class DiagnosticsTests(ApiTestCase):
         telegram = next(group for group in payload["groups"] if group["id"] == "telegram")
         self.assertEqual({c["id"] for c in telegram["checks"]} & {"bot_api", "chat_access"}, set())
 
-    def test_deep_service_account_proves_itself_over_the_network(self):
-        # Service-account-only env with a parseable JSON: the deep run mints a
-        # JWT — this fake private key fails inspection so the token check fails
-        # and the folder check is skipped (no token to spend).
-        service_account = ('{"type":"service_account","client_email":"sa@academy.iam.gserviceaccount.com",'
-                           '"private_key":"not a pem"}')
-        with mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_ID", "id"), \
+    def test_deep_drive_checks_touch_no_network_without_a_grant(self):
+        # A configured env with no stored consent stops at the shallow gate —
+        # the admin must authorize first; the deep mint never fires.
+        def boom(*args, **kwargs):
+            raise AssertionError("deep drive checks must not reach the network without a grant")
+
+        DriveGrant.objects.all().delete()
+        with mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
              mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
              mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"), \
-             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_REFRESH_TOKEN", ""), \
-             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", service_account), \
-             mock.patch.object(diagnostics.urllib.request, "urlopen",
-                               side_effect=AssertionError("fake stand-in — nothing should hit the network")):
+             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
+             mock.patch.object(diagnostics.urllib.request, "urlopen", boom):
             group = diagnostics.drive_group(deep=True)
         check_ids = {c.id for c in group.checks}
-        self.assertIn("drive_token_service", check_ids)
-        self.assertNotIn("drive_token_refresh", check_ids)
-        self.assertNotIn("drive_folder", check_ids)
-        self.assertNotIn("drive_probe", check_ids)
+        self.assertEqual(check_ids, {"client_id", "client_secret", "root_folder", "redirect_uri", "oauth_grant"})
 
-    def test_deep_reports_each_auth_mode_so_a_dead_token_cannot_hide(self):
-        # The service account mints fine while the refresh token is dead: the
-        # admin must see both verdicts — the fallback must not mask the death.
-        with mock.patch.object(diagnostics, "drive_exchange",
-                               return_value=(False, "", "refresh token منتهي — أعد توليده")) as fake_exchange, \
-             mock.patch.object(diagnostics, "drive_service_token",
-                               return_value=(True, "SA-BEARER", "حساب الخدمة نجح.")) as fake_service, \
-             mock.patch.object(diagnostics, "_drive_folder", return_value=(True, "المجلد جاهز.")), \
+    def test_deep_proves_the_grant_token_then_the_write(self):
+        # The grant mints, then the 1-byte probe is the folder's verdict —
+        # drive.file cannot read folder metadata, so there is no folder GET.
+        _drive_grant()
+        with mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"), \
+             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
+             mock.patch.object(diagnostics, "drive_access_token",
+                               return_value=(True, "BEAR", "استخدم access token المخزَّن.")) as fake_token, \
              mock.patch.object(diagnostics, "drive_upload_probe",
-                               return_value=(False, "حساب الخدمة بلا حصة تخزين — python manage.py drive_auth")):
+                               return_value=(False, "تعذّر الكتابة — راجع صلاحيات الحساب")) as fake_probe:
             group = diagnostics.drive_group(deep=True)
         by_id = {c.id: c for c in group.checks}
-        self.assertFalse(by_id["drive_token_refresh"].ok, "the dead refresh token must surface as its own failing check")
-        self.assertTrue(by_id["drive_token_service"].ok)
-        self.assertTrue(by_id["drive_folder"].ok)
+        self.assertTrue(by_id["drive_token"].ok)
         self.assertFalse(by_id["drive_probe"].ok)
-        fake_exchange.assert_called_once()
-        fake_service.assert_called_once()
+        fake_token.assert_called_once()
+        fake_probe.assert_called_once()
 
 
 class StagingTests(ApiTestCase):

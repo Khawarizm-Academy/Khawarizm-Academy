@@ -307,13 +307,13 @@ TELEGRAM_CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "")
 STREAM_TOKEN_TTL_HOURS = env_int("STREAM_TOKEN_TTL_HOURS", 6)
 
 # Google Drive is the managed playback host (features/videohosting/providers/google_drive.py).
-# Auth is OAuth 2.0: the refresh token mints short-lived Access Tokens, or a
-# service account JSON on headless hosts — one of the two is enough. Every key
+# Auth is OAuth 2.0 (authorization-code, offline access): the backend stores the
+# human refresh token in DriveGrant after the consent callback — env files carry
+# the OAuth CLIENT keys and the folder id, never a Google credential. Every key
 # is a SECRET — never commit a real value; set them in the host environment.
 GOOGLE_DRIVE_CLIENT_ID = os.environ.get("GOOGLE_DRIVE_CLIENT_ID", "")
 GOOGLE_DRIVE_CLIENT_SECRET = os.environ.get("GOOGLE_DRIVE_CLIENT_SECRET", "")
-GOOGLE_DRIVE_REFRESH_TOKEN = os.environ.get("GOOGLE_DRIVE_REFRESH_TOKEN", "")
-GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", "")
 GOOGLE_DRIVE_ROOT_FOLDER_ID = os.environ.get("GOOGLE_DRIVE_ROOT_FOLDER_ID", "")
+GOOGLE_DRIVE_OAUTH_REDIRECT_URI = os.environ.get("GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "")
 # The provider assets default to when none is named explicitly.
 VIDEO_HOSTING_DEFAULT_PROVIDER = os.environ.get("VIDEO_HOSTING_DEFAULT_PROVIDER", "google_drive")

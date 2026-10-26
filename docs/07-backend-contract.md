@@ -207,7 +207,11 @@ Staff-only (`IsAdminRole`), under `/admin`:
 | `GET` · `POST` | `/admin/video-assets` | Asset rows (`progress`, `stage`, `error`, `qualities`, `createdAt`) / record one (refused with its reason if the provider's checks fail). |
 | `POST` | `/admin/video-assets/upload` | Multipart file upload (`provider` query optional) → `202` + asset row; a worker thread then ingests via the **chosen** provider and the row's `progress`/`stage`/`status` follow it. Refused with its reason when the provider's env checks fail; unknown codes are refused, never defaulted. Real-server only (not ephemeral serverless). |
 | `GET` · `DELETE` | `/admin/video-assets/:id` | The tracker's poll target / remove one asset. |
-| `GET` | `/admin/video-diagnostics?deep=true` | Staged video validation — pipeline, Telegram env (+ Bot API on deep), Drive env (+ OAuth/folder on deep). |
+| `GET` | `/admin/video-diagnostics?deep=true` | Staged video validation — pipeline, Telegram env (+ Bot API on deep), Drive env + grant (+ mint + 1-byte write probe on deep). |
+| `GET` | `/admin/video-drive/oauth/start` | Admin opens the consent dance → `{authUrl}`; the single-use CSRF `state` banks server-side. |
+| `GET` | `/admin/video-drive/oauth/callback` | **Public** (Google's redirect target): validates `state`, trades the `code`, stores the grant server-side, and returns a neutral HTML landing page — never a token. |
+| `GET` | `/admin/video-drive/oauth/status` | `{connected, accountEmail, status, error}` — the account email and grant state only; tokens never leave the backend. |
+| `POST` | `/admin/video-drive/oauth/disconnect` | Revokes the grant at Google (best effort) and deletes the stored credential row. |
 
 ### Video hosting
 

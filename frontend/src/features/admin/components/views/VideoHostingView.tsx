@@ -5,6 +5,7 @@ import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptySt
 import { VideoStatusBadge } from '@/features/admin/components/cards/Badges';
 import { ConfirmAction } from '@/features/admin/components/controls/ConfirmAction';
 import { formatShortDateTime } from '@/features/admin/data/adminFormatters';
+import { startDriveOAuth } from '@/features/admin/data/adminFetchers';
 import { VIDEO_STAGE_LABELS, type AdminVideoProvider } from '@/features/admin/types';
 
 /** The select's per-provider footnote; unknown codes simply read no note. */
@@ -54,6 +55,19 @@ export const VideoHostingView: React.FC = () => {
   const [form, setForm] = useState<{ slug: string; title: string }>({ slug: '', title: '' });
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [authorizingDrive, setAuthorizingDrive] = useState(false);
+
+  /** Drive's blocker is a missing consent, not a config edit — open Google's
+      URL (public id only) and let Django hold whatever comes back. */
+  const authorizeDrive = async () => {
+    setAuthorizingDrive(true);
+    try {
+      const { authUrl } = await startDriveOAuth();
+      window.open(authUrl, '_blank', 'noopener');
+    } finally {
+      setAuthorizingDrive(false);
+    }
+  };
 
   const chosen = videoProviders.find((p) => p.code === provider);
   const chosenBlocked = Boolean(provider) && (!chosen || !isSelectable(chosen));
@@ -247,8 +261,28 @@ export const VideoHostingView: React.FC = () => {
                 .map((p) => (
                   <div key={p.code} className="admin-detail-empty">
                     {p.name} غير جاهز — {p.reason || 'تعذّر التحقق من جاهزيته.'}
+                    {p.code === 'google_drive' && (
+                      <button
+                        type="button"
+                        className="admin-ghost-btn"
+                        onClick={authorizeDrive}
+                        disabled={authorizingDrive}
+                      >
+                        {authorizingDrive ? 'جارٍ تجهيز الرابط…' : 'تخويل حساب Google'}
+                      </button>
+                    )}
                   </div>
                 ))}
+              {chosenBlocked && chosen?.code === 'google_drive' && (
+                <button
+                  type="button"
+                  className="admin-ghost-btn"
+                  onClick={authorizeDrive}
+                  disabled={authorizingDrive}
+                >
+                  {authorizingDrive ? 'جارٍ تجهيز الرابط…' : 'تخويل حساب Google'}
+                </button>
+              )}
               {chosenBlocked && (
                 <div className="admin-form-error">{chosen?.reason ?? 'هذا المزود غير مفعّل.'}</div>
               )}

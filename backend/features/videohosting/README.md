@@ -100,12 +100,15 @@ For hosted/repeatable encoding, run the same command in a small worker container
 Providers live in `providers/` — one module per host, plus the registry:
 
 ```text
-features/videohosting/providers/
-├── __init__.py      registry — SPECS, spec_for(), ensure_defaults(), default_code()
-├── base.py          ProviderSpec — code, name, enablement, capabilities
-├── google_drive.py  GOOGLE_DRIVE spec + GoogleDriveService (resumable upload)
-│                    + dual-mode auth (refresh token → service-account JWT)
-└── telegram.py      TELEGRAM spec + TelegramMediaService + Bot API helpers
+features/videohosting/
+├── oauthdrive.py       the human grant: consent URL, CSRF state, code exchange,
+│                       refresh-token persistence (DriveGrant), auto-refresh
+├── providers/
+│   ├── __init__.py     registry — SPECS, spec_for(), ensure_defaults(), default_code()
+│   ├── base.py         ProviderSpec — code, name, enablement, capabilities
+│   ├── google_drive.py GOOGLE_DRIVE spec + GoogleDriveService (resumable upload)
+│   │                   — the bearer comes from oauthdrive, never from env
+│   └── telegram.py     TELEGRAM spec + TelegramMediaService + Bot API helpers
 ```
 
 The specs are the source of truth for the admin-visible `VideoProvider` rows:
@@ -131,28 +134,38 @@ Environment variables (never commit real values):
 | `TELEGRAM_STREAM_TOKEN` | Throwaway read-only bot whose token appears in redirect URLs |
 | `TELEGRAM_CHANNEL_ID` | Storage channel (`@handle` or numeric id) |
 | `STREAM_TOKEN_TTL_HOURS` | Playback grant lifetime (default `6`) |
-| `GOOGLE_DRIVE_CLIENT_ID` / `CLIENT_SECRET` | Drive OAuth application credentials |
-| `GOOGLE_DRIVE_REFRESH_TOKEN` | Drive OAuth grant — the upload engine, tried first when minting access tokens |
-| `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` | Drive headless auth fallback (raw JSON or base64) — mints tokens, but its uploads need a Shared Drive |
-| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | The Drive folder videos upload into; share it with the service-account email as **Editor** for its uploads to land |
+| `GOOGLE_DRIVE_CLIENT_ID` / `CLIENT_SECRET` | OAuth Web client credentials — backend-only; if exposed, rotate in Google Cloud Console |
+| `GOOGLE_DRIVE_OAUTH_REDIRECT_URI` | The callback registered on the OAuth client, e.g. `http://localhost:8000/api/admin/video-drive/oauth/callback` |
+| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | The Drive folder videos upload into; share it with the authorized account as **Editor** |
 | `VIDEO_HOSTING_DEFAULT_PROVIDER` | The provider assets default to (default `google_drive`) |
 
-Google bills a Drive upload to the **uploader**, and service accounts carry
-*no storage quota* — so an SA upload into a personal folder dies with
-"Service Accounts do not have storage quota" even with an Editor share,
-unless the folder is a Workspace **Shared Drive**. The durable fix is the
-human refresh token; re-mint it with:
+### The Google grant lives in the database, not in env files
 
-```bash
-python manage.py drive_auth             # 1: prints the consent URL
-python manage.py drive_auth --code=...  # 2: prints the GOOGLE_DRIVE_REFRESH_TOKEN line
-```
+Drive authenticates as a **personal Google account over OAuth 2.0
+(authorization code, offline access)** — the service account is retired:
+Google bills uploads to the uploader, and service accounts carry *no storage
+quota*, so SA uploads to a personal folder always die with "Service Accounts
+do not have storage quota".
+
+- **Scope**: `https://www.googleapis.com/auth/drive.file` — least privilege;
+  the app creates files in the pre-existing folder (`parents` at creation
+  time) and later serves the files it created. `drive.file` cannot read
+  arbitrary folder metadata, so diagnostics prove the folder with the 1-byte
+  write probe (`drive_probe`) instead of a folder GET.
+- **Persistence**: the admin clicks «تخويل حساب Google» → consent → Google
+  redirects to the callback → the backend trades the code and stores the
+  refresh token in the `DriveGrant` row. React receives only the outcome and
+  the account email — never a token. One live grant: a new consent replaces
+  the old row.
+- **Refresh**: `access_token()` serves the cached bearer until 60 s before
+  expiry, then mints a new one. An `invalid_grant` marks the row `revoked`
+  with an actionable message — the fix is always re-consent.
+- **Scrubbing consent**: the disconnect endpoint revokes at Google (best
+  effort) and deletes the row.
 
 Keep the OAuth consent screen published as **In production** — a Testing app
 expires its refresh tokens after 7 days, which is the usual cause of
-`invalid_grant`. The deep diagnostics end in a real 1-byte write probe
-(`drive_probe`), so `فحص المنظومة` exposes the quota reality itself instead
-of the first real upload doing it.
+`invalid_grant`.
 
 `pyrogram` + `tgcrypto` are only imported on the ingest path; the serving stack
 stays importable (and serverless-safe) without them.

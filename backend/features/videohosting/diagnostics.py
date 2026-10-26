@@ -15,16 +15,14 @@ from django.conf import settings
 from django.utils import timezone
 
 from features.videohosting import packaging
+from features.videohosting.oauthdrive import connected as drive_connected
+from features.videohosting.oauthdrive import access_token as drive_access_token
 from features.videohosting.providers.google_drive import GOOGLE_DRIVE
-from features.videohosting.providers.google_drive import exchange_refresh_token as drive_exchange
-from features.videohosting.providers.google_drive import parse_service_account
-from features.videohosting.providers.google_drive import service_account_token as drive_service_token
 from features.videohosting.providers.google_drive import upload_probe as drive_upload_probe
 from features.videohosting.providers.telegram import TELEGRAM
 
 # Deep (network) checks use a short timeout — a down provider must not hang the admin.
 REQUEST_SECONDS = 8
-DRIVE_FILE_URL = "https://www.googleapis.com/drive/v3/files/{file_id}"
 TELEGRAM_API_URL = "https://api.telegram.org"
 
 SEVERITY_OK = "info"      # the check passed
@@ -47,10 +45,10 @@ HINTS: dict[str, str] = {
     "client_id": "أضف GOOGLE_DRIVE_CLIENT_ID من Google Cloud Console → Credentials",
     "client_secret": "أضف GOOGLE_DRIVE_CLIENT_SECRET لنفس عميل OAuth",
     "root_folder": "أضف GOOGLE_DRIVE_ROOT_FOLDER_ID (من رابط المجلد في Drive) للمجلد الذي ستُرفع إليه الفيديوهات",
-    "auth_mode": "أضف GOOGLE_DRIVE_REFRESH_TOKEN أو GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON — أحدهما يكفي",
-    "service_account_json": "محتوى GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON يجب أن يكون JSON صالحًا (أو مشفّرًا base64)",
-    "drive_token": "أعد توليد refresh token وضع GOOGLE_DRIVE_REFRESH_TOKEN، أو تأكد أن حساب الخدمة صالح ومشارَك مجلد الرفع مع بريده",
-    "drive_folder": "تأكد أن الحساب المفوَّض يملك صلاحية على المجلد وأن معرّف المجلد صحيح",
+    "redirect_uri": "أضف GOOGLE_DRIVE_OAUTH_REDIRECT_URI (مثال: http://localhost:8000/api/admin/video-drive/oauth/callback) وسجّله على عميل OAuth",
+    "oauth_grant": "المسؤول يفتح «تخويل حساب Google» من لوحة الإدارة لربط الحساب صاحب مجلد الرفع",
+    "drive_token": "تخويل Google منسوخ أو منتهي — المسؤول يفتح «تخويل حساب Google» من لوحة الإدارة من جديد",
+    "drive_probe": "تعذّر الكتابة الفعلية إلى المجلد — راجع صلاحيات الحساب المُخوَّل على المجلد",
 }
 
 
@@ -208,15 +206,12 @@ def _bot_api_call(token: str, method: str, params: dict[str, str] | None = None)
 
 
 def drive_env_checks() -> list[Check]:
-    """The Google Drive block in the environment — shallow, offline."""
+    """The Google Drive block in the environment + the persisted grant — offline."""
     client_id = (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip()
     client_secret = (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip()
     folder = (settings.GOOGLE_DRIVE_ROOT_FOLDER_ID or "").strip()
-    refresh_token = (settings.GOOGLE_DRIVE_REFRESH_TOKEN or "").strip()
-    service_account = (settings.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON or "").strip()
-
-    auth_ok = bool(refresh_token or service_account)
-    service_json_ok = not service_account or _service_account_parses(service_account)
+    callback = (settings.GOOGLE_DRIVE_OAUTH_REDIRECT_URI or "").strip()
+    grant = drive_connected()
     return [
         check("client_id", "معرّف عميل OAuth (GOOGLE_DRIVE_CLIENT_ID)", bool(client_id),
               "متوفر." if client_id else "غير مضبوط."),
@@ -224,44 +219,28 @@ def drive_env_checks() -> list[Check]:
               "متوفر." if client_secret else "غير مضبوط."),
         check("root_folder", "مجلد الرفع (GOOGLE_DRIVE_ROOT_FOLDER_ID)", bool(folder),
               f"متوفر: {folder}" if folder else "غير مضبوط."),
-        check("auth_mode", "وضع المصادقة (refresh token أو حساب خدمة)", auth_ok,
-              "refresh token متوفر (OAuth)." if refresh_token
-              else ("حساب خدمة متوفر." if service_account else "لا refresh token ولا حساب خدمة.")),
-        check("service_account_json", "JSON حساب الخدمة صالح (إن وُجد)", service_json_ok,
-              "" if not service_account else ("مُحلَّل بنجاح." if service_json_ok else "ليس JSON صالحًا ولا base64.")),
+        check("redirect_uri", "رابط إعادة التخويل (GOOGLE_DRIVE_OAUTH_REDIRECT_URI)", bool(callback),
+              f"متوفر: {callback}" if callback else "غير مضبوط."),
+        check("oauth_grant", "تخويل حساب Google مُخزَّن (DriveGrant)",
+              bool(grant["connected"]),
+              f"مرتبط بـ {grant['account_email']}." if grant["connected"]
+              else (grant["error_message"] if grant["error_message"] else "لم يُؤدَّ تخويل حساب Google بعد.")),
     ]
 
 
 def drive_deep_checks() -> list[Check]:
-    """Prove each auth mode separately, then the folder, then a real write.
+    """Prove the grant against Google's own API — a live mint, then a real write.
 
-    A service-account mint can mask a dead refresh token, so the two modes
-    surface as individual checks — the admin always sees which one works.
-    A folder GET can pass while every upload still refuses (a service
-    account has no storage quota), so deep runs end in a 1-byte probe.
+    `drive.file` cannot read arbitrary folder metadata, so a folder GET is
+    dropped: the 1-byte write probe IS the folder verdict.
     """
     if _blocking(drive_env_checks()):
         return []
-    checks: list[Check] = []
-    minted = ""
-    refresh = (settings.GOOGLE_DRIVE_REFRESH_TOKEN or "").strip()
-    service_account = parse_service_account(settings.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON or "")
-    if refresh:
-        ok, bearer, detail = drive_exchange(refresh)
-        checks.append(check("drive_token_refresh", "مصادقة refresh token (حصتك الشخصية)", ok, detail))
-        minted = bearer if ok else minted
-    if service_account is not None:
-        ok, bearer, detail = drive_service_token(service_account)
-        checks.append(check("drive_token_service", "مصادقة حساب الخدمة (بلا حصة تخزين)", ok, detail))
-        minted = bearer if ok and not minted else minted
-    if not refresh and service_account is None:
-        checks.append(check("drive_token", "المصادقة مقابل Google", False, "لا refresh token ولا حساب خدمة — راجع مفتاح «auth_mode»."))
-    if not minted:
-        return checks
-    folder_ok, folder_detail = _drive_folder(minted)
-    checks.append(check("drive_folder", "الوصول إلى مجلد الرفع", folder_ok, folder_detail))
-    probe_ok, probe_detail = drive_upload_probe()
-    checks.append(check("drive_probe", "تجربة كتابة فعلية (1 بايت)", probe_ok, probe_detail))
+    token_ok, bearer, detail = drive_access_token()
+    checks = [check("drive_token", "المصادقة مقابل Google (التوكيل المخزَّن)", token_ok, detail)]
+    if token_ok:
+        probe_ok, probe_detail = drive_upload_probe()
+        checks.append(check("drive_probe", "تجربة كتابة فعلية (1 بايت)", probe_ok, probe_detail))
     return checks
 
 
@@ -270,25 +249,6 @@ def drive_group(deep: bool) -> CheckGroup:
     if deep:
         group.checks.extend(drive_deep_checks())
     return group
-
-
-def _drive_folder(bearer: str) -> tuple[bool, str]:
-    """Read the upload folder's metadata with the minted token."""
-    folder = (settings.GOOGLE_DRIVE_ROOT_FOLDER_ID or "").strip()
-    url = DRIVE_FILE_URL.format(file_id=urllib.parse.quote(folder)) + "?fields=name,mimeType"
-    request = urllib.request.Request(url, headers={"Authorization": f"Bearer {bearer}"})
-    try:
-        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except Exception as exc:
-        return False, f"تعذّر الاتصال: {exc}"
-    name = payload.get("name", "")
-    return True, f"المجلد «{name}» متاح." if name else "استجابة سليمة بدون اسم."
-
-
-def _service_account_parses(raw: str) -> bool:
-    """The service-account env value is raw JSON or base64 — both accepted."""
-    return parse_service_account(raw) is not None
 
 
 # --------------------------------------------------------------- provider gates

@@ -193,3 +193,46 @@ class StreamToken(UUIDModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.asset.slug}@{self.expires_at:%Y-%m-%d %H:%M}"
+
+
+class DriveGrant(UUIDModel, TimeStampedModel):
+    """The backend's persisted Google OAuth grant for the upload account.
+
+    The refresh token is a live credential the backend must keep to mint
+    access tokens, so it is stored here — server side only. Nothing from
+    this row ever reaches the frontend: the admin sees the account email
+    and the status, the tokens never leave the Django process.
+    """
+
+    class Status(models.TextChoices):
+        ACTIVE = "active"
+        REVOKED = "revoked"
+
+    account_email = models.CharField(max_length=200, help_text="The Google account that granted consent")
+    refresh_token = models.TextField(help_text="Google's offline-access refresh token")
+    scope = models.TextField(blank=True)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE)
+    error_message = models.TextField(blank=True)
+
+    # The cached access token makes one grant worth one mint per hour, not per request.
+    access_token = models.TextField(blank=True)
+    access_token_expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Drive \u062a\u062e\u0648\u064a\u0644\u0020{self.account_email} ({self.status})"
+
+
+class DriveAuthState(UUIDModel, TimeStampedModel):
+    """One single-use OAuth CSRF state — only its hash is stored, like StreamToken."""
+
+    state_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Drive state@{self.expires_at:%Y-%m-%d %H:%M}"

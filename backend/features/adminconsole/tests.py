@@ -2,17 +2,25 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import io
+import json
 import time
+import urllib.error
+from datetime import timedelta
 from unittest import mock
 
+from django.conf import settings as django_settings
 from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from features.auth import services
 from features.auth.models import User
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
 from features.common.testing import ApiTestCase, FakeRequest, api_client, authenticate, make_admin, make_user
-from features.videohosting import diagnostics, ingest, packaging
+from features.videohosting import diagnostics, ingest, oauthdrive as oauthdrive_module, packaging
 
 
 class FakeTelegramService:
@@ -22,6 +30,18 @@ class FakeTelegramService:
         if on_bytes is not None:
             on_bytes(2048, 2048)  # the real service calls this from its event loop
         return {"is_split": False, "parts": [{"message_id": 11, "file_id": "F", "size_bytes": 2048}]}
+
+
+def _scripted_http(steps):
+    """A urlopen stand-in for the OAuth exchange — (status, headers, body) steps."""
+
+    def call(request, timeout=0):
+        status, headers, body = steps.pop(0)
+        if status >= 400:
+            raise urllib.error.HTTPError(request.full_url, status, "http error", headers, io.BytesIO(body))
+        return io.BytesIO(body)
+
+    return call
 
 
 class AdminConsoleUrlTests(TestCase):
@@ -562,3 +582,97 @@ class AdminConsoleVideoPermissionTests(ApiTestCase):
     def test_student_is_rejected_from_video_diagnostics(self):
         authenticate(self.client, make_user())
         self.assertEqual(self.client.get("/api/admin/video-diagnostics").status_code, 403)
+
+
+class AdminConsoleDriveOAuthTests(ApiTestCase):
+    """The consent endpoints — admin-gated, token-free, and public-callback."""
+
+    def test_start_requires_authentication(self):
+        self.assertIn(self.client.get("/api/admin/video-drive/oauth/start").status_code, (401, 403))
+
+    def test_start_is_rejected_for_students(self):
+        authenticate(self.client, make_user())
+        self.assertEqual(self.client.get("/api/admin/video-drive/oauth/start").status_code, 403)
+
+    def test_start_hands_the_admin_only_the_url(self):
+        authenticate(self.client, make_admin())
+        with mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(django_settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"):
+            response = self.client.get("/api/admin/video-drive/oauth/start")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("accounts.google.com/o/oauth2/v2/auth", response.json()["authUrl"])
+        # A state was banked for the CSRF check — one row per consent click.
+        from features.videohosting.models import DriveAuthState
+        self.assertEqual(DriveAuthState.objects.count(), 1)
+
+    def test_callback_is_public_but_rejects_a_forged_state(self):
+        response = self.client.get("/api/admin/video-drive/oauth/callback", {"state": "forged", "code": "4/0x"})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response["Content-Type"])
+        self.assertIn("فشل", response.content.decode("utf-8"))
+
+    def test_callback_survives_the_origin_gate_like_a_real_google_redirect(self):
+        # A top-level consent redirect carries no Origin header — the bare
+        # client must reach the view instead of the middleware's 403.
+        from django.test import Client
+        response = Client().get(
+            "/api/admin/video-drive/oauth/callback", {"state": "forged", "code": "4/0x"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("فشل", response.content.decode("utf-8"))
+
+    def test_callback_lands_a_page_without_secrets_every_credential_free(self):
+        from features.videohosting.models import DriveAuthState
+        from features.videohosting import oauthdrive
+        raw_state = "state-abc"
+        DriveAuthState.objects.create(
+            state_hash=hashlib.sha256(raw_state.encode()).hexdigest(),
+            expires_at=timezone.now() + timedelta(minutes=5),
+        )
+        token_reply = b'{"access_token": "AT", "refresh_token": "RT", "id_token": "%s", "expires_in": 3600}' % \
+            base64.urlsafe_b64encode(json.dumps({"email": "owner@example.com"}).encode()).rstrip(b"=")
+        scripted = _scripted_http([(200, {}, token_reply)])
+        with mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(django_settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
+             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+            response = self.client.get("/api/admin/video-drive/oauth/callback", {"state": raw_state, "code": "4/0x"})
+        page = response.content.decode("utf-8")
+        self.assertIn("تم ربط", page)
+        self.assertNotIn("RT", page)
+        self.assertNotIn("AT", page)
+
+    def test_status_reports_connection_without_tokens(self):
+        from features.videohosting.models import DriveGrant
+        DriveGrant.objects.create(
+            account_email="owner@example.com", refresh_token="rt-super-secret",
+            access_token="at-super-secret", access_token_expires_at=timezone.now() + timedelta(hours=1),
+        )
+        authenticate(self.client, make_admin())
+        response = self.client.get("/api/admin/video-drive/oauth/status")
+        self.assertEqual(response.status_code, 200)
+        text = json.dumps(response.json())
+        self.assertIn("owner@example.com", text)
+        self.assertNotIn("rt-super-secret", text)
+        self.assertNotIn("at-super-secret", text)
+        self.assertEqual(
+            response.json(),
+            {"connected": True, "accountEmail": "owner@example.com", "status": "active", "error": ""},
+        )
+
+    def test_disconnect_requires_authentication(self):
+        self.assertIn(self.client.post("/api/admin/video-drive/oauth/disconnect", {}).status_code, (401, 403))
+
+    def test_disconnect_drops_the_stored_grant(self):
+        from features.videohosting.models import DriveGrant
+        DriveGrant.objects.create(
+            account_email="owner@example.com", refresh_token="rt",
+            access_token="at", access_token_expires_at=timezone.now() + timedelta(hours=1),
+        )
+        authenticate(self.client, make_admin())
+        with mock.patch.object(oauthdrive_module.urllib.request, "urlopen",
+                               side_effect=AssertionError("disconnect must not hang on Google")):
+            response = self.client.post("/api/admin/video-drive/oauth/disconnect", {})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(DriveGrant.objects.count(), 0)
