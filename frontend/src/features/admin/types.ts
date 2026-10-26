@@ -223,7 +223,7 @@ export const VIDEO_STATUS_LABELS: Record<string, string> = {
   uploading: 'قيد الرفع',
   processing: 'قيد التغليف',
   ready: 'جاهز',
-  staged: 'مرحَّل — بانتظار FFmpeg',
+  staged: 'مرحَّل — بانتظار التغليف',
   error: 'فشل',
 };
 

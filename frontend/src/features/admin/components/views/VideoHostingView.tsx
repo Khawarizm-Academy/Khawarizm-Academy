@@ -10,7 +10,7 @@ import { VIDEO_STAGE_LABELS, type AdminVideoProvider } from '@/features/admin/ty
 /** The select's per-provider footnote; unknown codes simply read no note. */
 const PROVIDER_NOTES: Record<string, string> = {
   telegram: 'تُرفع المقاطع إلى قناة تليجرام الخاصة وتُغلَّف HLS مشفّرًا — يتطلب FFmpeg للتغليف.',
-  google_drive: 'الملف المصدر يُحفظ في مجلد Drive المخصّص — بديل بسيط دون تغليف HLS.',
+  google_drive: 'المصدر يُرفع تدفّقيًّا (resumable) إلى مجلد Drive المخصّص — يُخزَّن ويُرحَّل دون تغليف HLS.',
 };
 
 /** Whether an option is selectable: the registry flag AND the env checks. */
@@ -230,11 +230,25 @@ export const VideoHostingView: React.FC = () => {
               >
                 <option value="">الافتراضي</option>
                 {videoProviders.map((p) => (
-                  <option key={p.code} value={p.code} disabled={!isSelectable(p)}>
+                  <option
+                    key={p.code}
+                    value={p.code}
+                    disabled={!isSelectable(p)}
+                    title={p.reason || undefined}
+                  >
                     {p.name}{isSelectable(p) ? '' : ' — غير جاهز'}
                   </option>
                 ))}
               </select>
+              {/* Every greyed provider states its own blocker right here, so
+                  the dropdown never hides why an option cannot be chosen. */}
+              {videoProviders
+                .filter((p) => !isSelectable(p) && p.code !== provider)
+                .map((p) => (
+                  <div key={p.code} className="admin-detail-empty">
+                    {p.name} غير جاهز — {p.reason || 'تعذّر التحقق من جاهزيته.'}
+                  </div>
+                ))}
               {chosenBlocked && (
                 <div className="admin-form-error">{chosen?.reason ?? 'هذا المزود غير مفعّل.'}</div>
               )}
