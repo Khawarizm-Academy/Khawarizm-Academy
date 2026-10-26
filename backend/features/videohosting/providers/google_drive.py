@@ -311,11 +311,20 @@ class GoogleDriveService:
                         return file_id
                     return ""
             except urllib.error.HTTPError as error:
+                if error.code == 308 and not is_final:
+                    # The protocol's normal "accepted, keep going" answer —
+                    # urllib paints it as an error because its default opener
+                    # has no 308 handler.
+                    return ""
                 message = _drive_error_message(error)
                 if error.code >= 500:
                     last_error = error
                     time.sleep(1)
                     continue
+                if error.code == 308:
+                    raise RuntimeError("Google Drive لم يقبل آخر مقطع — الجلسة لم تكتمل.") from error
+                if error.code == 403 and "permissions" in message.lower():
+                    message += " — وشارك مجلد الرفع مع بريد حساب الخدمة كـ Editor."
                 raise RuntimeError(f"فشل رفع مقطع إلى Drive: {message}") from error
             except Exception as error:
                 last_error = error

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import tempfile
+import urllib.error
 from datetime import timedelta
 from pathlib import Path
 from unittest import mock
@@ -212,6 +213,10 @@ class _ScriptedDriveHTTP:
     def __call__(self, request, timeout=0):
         self.calls.append(request)
         status, headers, payload = self.steps.pop(0)
+        if status == 308:
+            # urllib's default opener has no 308 handler, so a live resume
+            # tick arrives as an HTTPError — the stand-in mirrors that.
+            raise urllib.error.HTTPError(request.full_url, 308, "Resume Incomplete", headers, None)
         return _FakeDriveResponse(status, headers, payload)
 
 
@@ -245,6 +250,27 @@ class GoogleDriveUploadServiceTests(ApiTestCase):
         session_open = [call for call in scripted.calls if "resumable" in call.full_url][0]
         self.assertIn("FOLDER1", session_open.data.decode("utf-8"))
         self.assertEqual(ticks, [(256, 600), (512, 600), (600, 600)])
+
+    def test_a_308_on_the_final_chunk_fails_loudly(self):
+        # An intermediate 308 is the protocol's keep-going; a 308 after the
+        # last chunk means Drive did not finish — name it, never mask it.
+        scripted = _ScriptedDriveHTTP([
+            (200, {}, b'{"access_token": "BEAR"}'),
+            (200, {"Location": "https://upload.session/2"}, b""),
+            (308, {}, b""),
+            (308, {}, b""),
+        ])
+        with mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_REFRESH_TOKEN", "rt"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER1"), \
+             mock.patch.object(settings, "GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", ""), \
+             mock.patch.object(google_drive.urllib.request, "urlopen", scripted):
+            fake_bin = Path(tempfile.mkdtemp()) / "lesson.mp4"
+            fake_bin.write_bytes(b"0" * 600)
+            with self.assertRaises(RuntimeError) as ctx:
+                google_drive.GoogleDriveService().upload_file(str(fake_bin))
+        self.assertIn("آخر مقطع", str(ctx.exception))
 
 
 class ProviderRouteTests(ApiTestCase):
