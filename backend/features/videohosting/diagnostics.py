@@ -15,8 +15,11 @@ from django.conf import settings
 from django.utils import timezone
 
 from features.videohosting import packaging
-from features.videohosting.providers.google_drive import GOOGLE_DRIVE, access_token as drive_access_token
-from features.videohosting.providers.google_drive import parse_service_account, upload_probe as drive_upload_probe
+from features.videohosting.providers.google_drive import GOOGLE_DRIVE
+from features.videohosting.providers.google_drive import exchange_refresh_token as drive_exchange
+from features.videohosting.providers.google_drive import parse_service_account
+from features.videohosting.providers.google_drive import service_account_token as drive_service_token
+from features.videohosting.providers.google_drive import upload_probe as drive_upload_probe
 from features.videohosting.providers.telegram import TELEGRAM
 
 # Deep (network) checks use a short timeout — a down provider must not hang the admin.
@@ -230,21 +233,35 @@ def drive_env_checks() -> list[Check]:
 
 
 def drive_deep_checks() -> list[Check]:
-    """Prove the credentials against Google's own API — token, folder, then a write.
+    """Prove each auth mode separately, then the folder, then a real write.
 
-    Dual-mode: whichever of refresh token / service account mints a token. A
-    folder GET can pass while every upload still refuses (a service account
-    has no storage quota), so deep runs end in a real 1-byte probe.
+    A service-account mint can mask a dead refresh token, so the two modes
+    surface as individual checks — the admin always sees which one works.
+    A folder GET can pass while every upload still refuses (a service
+    account has no storage quota), so deep runs end in a 1-byte probe.
     """
     if _blocking(drive_env_checks()):
         return []
-    okay, bearer, detail = drive_access_token()
-    checks = [check("drive_token", "المصادقة مقابل Google", okay, detail)]
-    if okay:
-        folder_ok, folder_detail = _drive_folder(bearer)
-        checks.append(check("drive_folder", "الوصول إلى مجلد الرفع", folder_ok, folder_detail))
-        probe_ok, probe_detail = drive_upload_probe()
-        checks.append(check("drive_probe", "تجربة كتابة فعلية (1 بايت)", probe_ok, probe_detail))
+    checks: list[Check] = []
+    minted = ""
+    refresh = (settings.GOOGLE_DRIVE_REFRESH_TOKEN or "").strip()
+    service_account = parse_service_account(settings.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON or "")
+    if refresh:
+        ok, bearer, detail = drive_exchange(refresh)
+        checks.append(check("drive_token_refresh", "مصادقة refresh token (حصتك الشخصية)", ok, detail))
+        minted = bearer if ok else minted
+    if service_account is not None:
+        ok, bearer, detail = drive_service_token(service_account)
+        checks.append(check("drive_token_service", "مصادقة حساب الخدمة (بلا حصة تخزين)", ok, detail))
+        minted = bearer if ok and not minted else minted
+    if not refresh and service_account is None:
+        checks.append(check("drive_token", "المصادقة مقابل Google", False, "لا refresh token ولا حساب خدمة — راجع مفتاح «auth_mode»."))
+    if not minted:
+        return checks
+    folder_ok, folder_detail = _drive_folder(minted)
+    checks.append(check("drive_folder", "الوصول إلى مجلد الرفع", folder_ok, folder_detail))
+    probe_ok, probe_detail = drive_upload_probe()
+    checks.append(check("drive_probe", "تجربة كتابة فعلية (1 بايت)", probe_ok, probe_detail))
     return checks
 
 

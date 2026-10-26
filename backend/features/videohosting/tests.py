@@ -506,8 +506,29 @@ class DiagnosticsTests(ApiTestCase):
                                side_effect=AssertionError("fake stand-in — nothing should hit the network")):
             group = diagnostics.drive_group(deep=True)
         check_ids = {c.id for c in group.checks}
-        self.assertIn("drive_token", check_ids)
+        self.assertIn("drive_token_service", check_ids)
+        self.assertNotIn("drive_token_refresh", check_ids)
         self.assertNotIn("drive_folder", check_ids)
+        self.assertNotIn("drive_probe", check_ids)
+
+    def test_deep_reports_each_auth_mode_so_a_dead_token_cannot_hide(self):
+        # The service account mints fine while the refresh token is dead: the
+        # admin must see both verdicts — the fallback must not mask the death.
+        with mock.patch.object(diagnostics, "drive_exchange",
+                               return_value=(False, "", "refresh token منتهي — أعد توليده")) as fake_exchange, \
+             mock.patch.object(diagnostics, "drive_service_token",
+                               return_value=(True, "SA-BEARER", "حساب الخدمة نجح.")) as fake_service, \
+             mock.patch.object(diagnostics, "_drive_folder", return_value=(True, "المجلد جاهز.")), \
+             mock.patch.object(diagnostics, "drive_upload_probe",
+                               return_value=(False, "حساب الخدمة بلا حصة تخزين — python manage.py drive_auth")):
+            group = diagnostics.drive_group(deep=True)
+        by_id = {c.id: c for c in group.checks}
+        self.assertFalse(by_id["drive_token_refresh"].ok, "the dead refresh token must surface as its own failing check")
+        self.assertTrue(by_id["drive_token_service"].ok)
+        self.assertTrue(by_id["drive_folder"].ok)
+        self.assertFalse(by_id["drive_probe"].ok)
+        fake_exchange.assert_called_once()
+        fake_service.assert_called_once()
 
 
 class StagingTests(ApiTestCase):

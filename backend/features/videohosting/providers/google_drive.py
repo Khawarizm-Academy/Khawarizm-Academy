@@ -114,7 +114,7 @@ def exchange_refresh_token(refresh_token: str) -> tuple[bool, str, str]:
         text = _error_body(error)
         if "invalid_grant" in text:
             return False, "", (
-                "refresh token منتهي أو منسحب — أعد توليده (OAuth) وضع GOOGLE_DRIVE_REFRESH_TOKEN جديدًا."
+                "refresh token منتهي أو منسحب — أعد توليده بالأمر python manage.py drive_auth وضع GOOGLE_DRIVE_REFRESH_TOKEN جديدًا."
             )
         return False, "", f"رفض OAuth الطلب: {text[:200] or error}"
     except Exception as exc:
