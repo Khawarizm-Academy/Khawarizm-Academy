@@ -13,6 +13,10 @@ import type {
   AdminUserDetail,
   AdminUserInput,
   AdminUserRow,
+  AdminVideoAsset,
+  AdminVideoDiagnostics,
+  AdminVideoInput,
+  AdminVideoProvider,
   AdminContentSchema,
   AdminContentTypeKey,
   AdminContentPage,
@@ -81,8 +85,18 @@ export const updateContent = (type: AdminContentTypeKey, id: string, values: Rec
 export const deleteContent = (type: AdminContentTypeKey, id: string) =>
   apiDelete<{ deleted: boolean; id: string }>(`/admin/content/${type}/${id}`);
 
-export const fetchVideoProviders = () => apiGet<{ results: any[] }>('/admin/video-providers');
-export const fetchVideoAssets = () => apiGet<{ results: any[] }>('/admin/video-assets');
-export const createVideoAsset = (input: { slug: string; title?: string; provider?: string }) =>
-  apiPost('/admin/video-assets', input);
+/** The video hosting reads — providers carry the select verdict, assets the health columns. */
+export const fetchVideoProviders = async () =>
+  (await apiGet<{ results: AdminVideoProvider[] }>('/admin/video-providers')).results;
+
+export const fetchVideoAssets = async () =>
+  (await apiGet<{ results: AdminVideoAsset[] }>('/admin/video-assets')).results;
+
+/** The staged validation; `deep` also calls each provider's live API. */
+export const fetchVideoDiagnostics = (deep: boolean) =>
+  apiGet<AdminVideoDiagnostics>(`/admin/video-diagnostics${buildQuery({ deep: deep ? 'true' : undefined })}`);
+
+/** Record an asset; the backend refuses an unavailable provider with its reason. */
+export const createVideoAsset = (input: AdminVideoInput) => apiPost<AdminVideoAsset>('/admin/video-assets', input);
+
 export const deleteVideoAsset = (id: string) => apiDelete<{ deleted: boolean; id: string }>(`/admin/video-assets/${id}`);

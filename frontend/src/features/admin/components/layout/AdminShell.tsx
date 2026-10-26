@@ -12,6 +12,7 @@ import { SessionsView } from '@/features/admin/components/views/SessionsView';
 import { AnalyticsView } from '@/features/admin/components/views/AnalyticsView';
 import { ActivityView } from '@/features/admin/components/views/ActivityView';
 import { VideoHostingView } from '@/features/admin/components/views/VideoHostingView';
+import { AdminSystemView } from '@/features/admin/components/views/AdminSystemView';
 import type { AdminSectionKey } from '@/features/admin/types';
 
 /** One view per section, keyed by the `?tab=` value the provider reads. */
@@ -20,6 +21,7 @@ const SECTION_VIEWS: Record<AdminSectionKey, React.FC> = {
   users: UsersView,
   content: ContentView,
   videos: VideoHostingView,
+  system: AdminSystemView,
   sessions: SessionsView,
   analytics: AnalyticsView,
   activity: ActivityView,

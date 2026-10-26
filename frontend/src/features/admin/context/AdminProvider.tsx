@@ -13,6 +13,11 @@ import {
   fetchSessions,
   fetchUserDetail,
   fetchUsers,
+  fetchVideoAssets,
+  fetchVideoProviders,
+  fetchVideoDiagnostics,
+  createVideoAsset as createVideoRequest,
+  deleteVideoAsset as deleteVideoRequest,
   revokeAdminSession,
   updateUserRole,
   createAdminUser,
@@ -36,6 +41,10 @@ import type {
   AdminUserDetail,
   AdminUserRow,
   AdminUserInput,
+  AdminVideoAsset,
+  AdminVideoDiagnostics,
+  AdminVideoInput,
+  AdminVideoProvider,
   AdminContentSchema,
   AdminContentTypeKey,
   AdminContentPage,
@@ -73,6 +82,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deletingContentId, setDeletingContentId] = useState<string | null>(null);
+  const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
+  const [creatingVideo, setCreatingVideo] = useState(false);
+  const [deepDiagnosticsRequested, setDeepDiagnosticsRequested] = useState(false);
   const [contentType, setContentTypeState] = useState<AdminContentTypeKey | null>(null);
   const [contentSearch, setContentSearchState] = useState('');
   const [contentPage, setContentPage] = useState(1);
@@ -106,6 +118,29 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     ['admin', 'user', selectedUserId],
     () => (selectedUserId ? fetchUserDetail(selectedUserId) : Promise.resolve(null)),
     { enabled: selectedUserId !== null }
+  );
+
+  // Video-hosting data loads with the section that shows it — plus the shallow
+  // diagnostics on the overview strip. Deep (live-API) runs wait for consent.
+  const videoReloadNeeded = ['overview', 'videos', 'system'].includes(currentSection);
+  const videoProviders = useCachedData<AdminVideoProvider[]>(
+    ['admin', 'video-providers'],
+    fetchVideoProviders,
+    { enabled: videoReloadNeeded, initialData: [] }
+  );
+  const videoAssets = useCachedData<AdminVideoAsset[]>(['admin', 'video-assets'], fetchVideoAssets, {
+    enabled: videoReloadNeeded,
+    initialData: [],
+  });
+  const videoDiagnostics = useCachedData<AdminVideoDiagnostics>(
+    ['admin', 'video-diagnostics', 'shallow'],
+    () => fetchVideoDiagnostics(false),
+    { enabled: videoReloadNeeded }
+  );
+  const deepDiagnostics = useCachedData<AdminVideoDiagnostics>(
+    ['admin', 'video-diagnostics', 'deep'],
+    () => fetchVideoDiagnostics(true),
+    { enabled: deepDiagnosticsRequested, keepPreviousData: true }
   );
 
   // Content schema is the single source of truth for forms; load it once.
@@ -272,6 +307,58 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Every video create/delete ends with fresh provider verdicts, assets, and
+  // diagnostics so the health cards tell the truth immediately after acting.
+  const refreshVideoData = async () => {
+    await Promise.all([
+      videoProviders.refetch(),
+      videoAssets.refetch(),
+      videoDiagnostics.refetch(),
+    ]);
+  };
+
+  const createVideo = async (input: AdminVideoInput): Promise<boolean> => {
+    setError(null);
+    setCreatingVideo(true);
+    try {
+      await createVideoRequest(input);
+      await refreshVideoData();
+      return true;
+    } catch (thrown) {
+      setError(toMessage(thrown));
+      return false;
+    } finally {
+      setCreatingVideo(false);
+    }
+  };
+
+  const deleteVideo = async (id: string) => {
+    setError(null);
+    setDeletingVideoId(id);
+    try {
+      await deleteVideoRequest(id);
+      await Promise.all([videoAssets.refetch(), videoDiagnostics.refetch()]);
+    } catch (thrown) {
+      setError(toMessage(thrown));
+    } finally {
+      setDeletingVideoId(null);
+    }
+  };
+
+  /** First press arms the deep run (live provider APIs); later presses re-run it. */
+  const runDeepDiagnostics = async () => {
+    setError(null);
+    if (!deepDiagnosticsRequested) {
+      setDeepDiagnosticsRequested(true);
+      return;
+    }
+    try {
+      await deepDiagnostics.refetch();
+    } catch (thrown) {
+      setError(toMessage(thrown));
+    }
+  };
+
   const refresh = async () => {
     setError(null);
     setIsRefreshing(true);
@@ -287,6 +374,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         contentSchema.refetch(),
       ];
       if (activeContentType) refreshers.push(content.refetch());
+      if (videoReloadNeeded) {
+        refreshers.push(
+          videoProviders.refetch(),
+          videoAssets.refetch(),
+          videoDiagnostics.refetch()
+        );
+      }
       await Promise.all(refreshers);
     } finally {
       setIsRefreshing(false);
@@ -297,7 +391,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     overview: overview.isLoading,
     users: users.isLoading,
     content: contentSchema.isLoading || content.isLoading,
-    videos: false,
+    videos: videoProviders.isLoading || videoAssets.isLoading,
+    system: videoDiagnostics.isLoading && !videoDiagnostics.isError,
     sessions: sessions.isLoading,
     analytics: loginSeries.isLoading || devices.isLoading,
     activity: events.isLoading,
@@ -307,7 +402,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     overview: overview.isError,
     users: users.isError,
     content: contentSchema.isError || content.isError,
-    videos: false,
+    videos: videoProviders.isError || videoAssets.isError,
+    system: videoDiagnostics.isError,
     sessions: sessions.isError,
     analytics: loginSeries.isError || devices.isError,
     activity: events.isError,
@@ -373,6 +469,18 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     createContent,
     updateContent,
     deleteContent,
+    videoProviders: videoProviders.data ?? [],
+    videoAssets: videoAssets.data ?? [],
+    deletingVideoId,
+    creatingVideo,
+    createVideo,
+    deleteVideo,
+    videoDiagnostics: videoDiagnostics.data ?? null,
+    deepDiagnostics: deepDiagnosticsRequested ? deepDiagnostics.data ?? null : null,
+    deepDiagnosticsLoading: deepDiagnostics.isFetching && deepDiagnosticsRequested,
+    deepDiagnosticsRequested,
+    runDeepDiagnostics,
+    refreshVideoData,
   };
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;

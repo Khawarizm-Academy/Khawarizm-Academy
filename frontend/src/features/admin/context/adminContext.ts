@@ -14,6 +14,10 @@ import type {
   AdminUserDetail,
   AdminUserRow,
   AdminUserInput,
+  AdminVideoAsset,
+  AdminVideoDiagnostics,
+  AdminVideoInput,
+  AdminVideoProvider,
   AdminContentSchema,
   AdminContentTypeKey,
   AdminContentPage,
@@ -82,6 +86,24 @@ export interface AdminContextValue {
   clearError: () => void;
   /** A failed section load, so the view can render an error state instead of a skeleton. */
   loadErrors: Record<AdminSectionKey, boolean>;
+
+  // -- Video hosting: providers, assets, and the staged diagnostics report --
+  videoProviders: AdminVideoProvider[];
+  videoAssets: AdminVideoAsset[];
+  /** Per-row busy state so only the affected asset spins while deleting. */
+  deletingVideoId: string | null;
+  creatingVideo: boolean;
+  createVideo: (input: AdminVideoInput) => Promise<boolean>;
+  deleteVideo: (id: string) => Promise<void>;
+
+  /** The shallow diagnostics report (offline checks). */
+  videoDiagnostics: AdminVideoDiagnostics | null;
+  /** The deep run — provider APIs — loads only after the admin asks for it. */
+  deepDiagnostics: AdminVideoDiagnostics | null;
+  deepDiagnosticsLoading: boolean;
+  deepDiagnosticsRequested: boolean;
+  runDeepDiagnostics: () => Promise<void>;
+  refreshVideoData: () => Promise<void>;
 
   isRefreshing: boolean;
   refresh: () => Promise<void>;

@@ -1,11 +1,32 @@
 import React from 'react';
+import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { OverviewStatsGrid, type StatDescriptor } from '@/features/admin/components/cards/StatCard';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
 
-/** Console home: three counter rows — users, sessions, auth activity. */
+/** One health chip of the overview strip, straight from the diagnostics summary. */
+const SUMMARY_CHIPS: { key: 'pipeline' | 'telegram' | 'google_drive'; label: string; okNote: string; failNote: string }[] = [
+  { key: 'pipeline', label: 'خط التغليف', okNote: 'FFmpeg متوفر', failNote: 'FFmpeg غير متوفر' },
+  { key: 'telegram', label: 'تليجرام', okNote: 'جاهز للاختيار', failNote: 'غير جاهز — راجع الفحص' },
+  { key: 'google_drive', label: 'Google Drive', okNote: 'جاهز للاختيار', failNote: 'غير جاهز — راجع الفحص' },
+];
+
+/** One verdict chip for the strip (label + tone + one-line state). */
+const HealthChipRow: React.FC<{ label: string; detail: string; ok: boolean }> = ({ label, detail, ok }) => (
+  <div className={`admin-health-chip ${ok ? 'admin-health-ok' : 'admin-health-error'}`}>
+    <span className="admin-health-chip-icon">
+      {ok ? <CheckCircle2 size={17} /> : <XCircle size={17} />}
+    </span>
+    <span className="admin-health-chip-text">
+      <span className="admin-health-chip-name">{label}</span>
+      <span className="admin-health-chip-detail">{detail}</span>
+    </span>
+  </div>
+);
+
+/** Console home: three counter rows — users, sessions, auth activity — plus the video health strip. */
 export const OverviewView: React.FC = () => {
-  const { overview, loadErrors, refresh } = useAdmin();
+  const { overview, loadErrors, refresh, videoDiagnostics, selectSection } = useAdmin();
 
   if (!overview) {
     return (
@@ -45,8 +66,34 @@ export const OverviewView: React.FC = () => {
     { metric: 'competitions', label: 'المسابقات', value: overview.content.competitions, tone: 'gold' },
   ];
 
+  const providerReason = (code: string): string =>
+    videoDiagnostics?.providers.find((provider) => provider.code === code)?.reason ?? 'غير مضبوط';
+
   return (
     <div className="admin-view">
+      <section className="admin-view-section">
+        <div className="admin-section-head">
+          <h2 className="admin-section-title">حالة استضافة الفيديو</h2>
+          <button type="button" className="admin-ghost-btn" onClick={() => selectSection('system')}>
+            <span>الفحص الكامل</span>
+            <ArrowLeft size={14} className="rotate-180" />
+          </button>
+        </div>
+        <div className="admin-health-strip">
+          {SUMMARY_CHIPS.map((chip) => {
+            const ok = videoDiagnostics?.summary[chip.key];
+            return (
+              <HealthChipRow
+                key={chip.key}
+                label={chip.label}
+                detail={ok === undefined ? 'لم يُفحص بعد' : ok ? chip.okNote : providerReason(chip.key) || chip.failNote}
+                ok={ok === true}
+              />
+            );
+          })}
+        </div>
+      </section>
+
       <section className="admin-view-section">
         <h2 className="admin-section-title">المستخدمون</h2>
         <OverviewStatsGrid stats={userStats} />

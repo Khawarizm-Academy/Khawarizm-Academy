@@ -12,7 +12,7 @@ already defines, so there is one definition of "a session row" in the codebase.
 | | |
 | :--- | :--- |
 | **App label** | `adminconsole` |
-| **Routes** | `GET /api/admin/overview`, `GET|POST /api/admin/users`, `GET|PATCH|DELETE /api/admin/users/:id`, `POST /api/admin/users/:id/role`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events`, `GET /api/admin/content/schema`, `GET|POST /api/admin/content/:type`, `PATCH|DELETE /api/admin/content/:type/:id` |
+| **Routes** | `GET /api/admin/overview`, `GET|POST /api/admin/users`, `GET|PATCH|DELETE /api/admin/users/:id`, `POST /api/admin/users/:id/role`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events`, `GET /api/admin/content/schema`, `GET|POST /api/admin/content/:type`, `PATCH|DELETE /api/admin/content/:type/:id`, `GET /api/admin/video-providers`, `GET|POST /api/admin/video-assets`, `DELETE /api/admin/video-assets/:id`, `GET /api/admin/video-diagnostics` |
 | **Owns** | — (reads across features) |
 | **Imports** | `User`, `UserSession`, `AuthEvent` (accounts); `user_profile`, `session_payload`, `session_with_user`; `Course`/`Scholarship`/`EventItem`/`Competition` (content) |
 | **Frontend twin** | `frontend/src/features/admin/` |
@@ -78,6 +78,7 @@ adminconsole/
 | `accounts.AuthEvent` | the daily login series and the recent-activity stream |
 | `accounts.serializers` | the payload shapes, shared with `/api/auth/*` |
 | `courses.Course`, `scholarships.Scholarship`, `events.EventItem`, `competitions.Competition` | the four managed content types |
+| `videohosting` (via `diagnostics.py`) | provider `available`/`reason` gating, asset health columns, and the staged `/admin/video-diagnostics` report |
 
 ## Payload notes
 

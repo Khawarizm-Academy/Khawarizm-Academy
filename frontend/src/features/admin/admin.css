@@ -377,6 +377,10 @@
     @apply inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-danger-500/40 bg-danger-500/10 text-[11px] font-bold font-display text-danger-500 transition-colors hover:bg-danger-500/20 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed;
   }
 
+  .admin-table-video {
+    --admin-cols: 1.5fr 1.7fr 1.35fr 0.9fr 1.15fr auto;
+  }
+
   /* --- Badges --- */
   .admin-badge {
     @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold font-display whitespace-nowrap;
@@ -424,6 +428,10 @@
 
   .admin-badge-inactive {
     @apply border-slate-500/50 bg-slate-500/10 text-slate-400;
+  }
+
+  .admin-badge-staged {
+    @apply border-warning-500/40 bg-warning-500/10 text-warning-500;
   }
 
   /* --- Login series chart --- */
@@ -550,6 +558,154 @@
 
   .admin-toolbar-actions {
     @apply flex flex-wrap items-center gap-2;
+  }
+
+  /* --- Diagnostics: health chips, staged check cards, per-check rows --- */
+
+  /* The three-chip verdict strip (overview + system view share it). */
+  .admin-health-strip {
+    @apply grid gap-3.5;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .admin-health-chip {
+    @apply flex items-center gap-3 p-3.5 rounded-2xl border bg-navy-900/60 transition-colors;
+  }
+
+  .admin-health-chip-icon {
+    @apply size-10 rounded-xl grid place-items-center shrink-0 border;
+  }
+
+  .admin-health-chip-text {
+    @apply flex flex-col gap-0.5 min-w-0;
+  }
+
+  .admin-health-chip-name {
+    @apply text-[13px] font-bold text-slate-100 font-display truncate;
+  }
+
+  .admin-health-chip-detail {
+    @apply text-[11px] font-body truncate;
+  }
+
+  .admin-health-ok {
+    @apply border-emerald-400/40;
+  }
+
+  .admin-health-ok .admin-health-chip-icon {
+    @apply border-emerald-400/40 bg-emerald-400/15 text-emerald-400;
+  }
+
+  .admin-health-ok .admin-health-chip-detail {
+    @apply text-emerald-400;
+  }
+
+  .admin-health-error {
+    @apply border-danger-500/40;
+  }
+
+  .admin-health-error .admin-health-chip-icon {
+    @apply border-danger-500/40 bg-danger-500/15 text-danger-500;
+  }
+
+  .admin-health-error .admin-health-chip-detail {
+    @apply text-danger-500;
+  }
+
+  .admin-health-unknown {
+    @apply border-navy-600/50;
+  }
+
+  .admin-health-unknown .admin-health-chip-icon {
+    @apply border-navy-600 bg-navy-950 text-slate-400;
+  }
+
+  .admin-health-unknown .admin-health-chip-detail {
+    @apply text-slate-500;
+  }
+
+  /* The overall verdict banner (ok green / problem red) with the problem list. */
+  .admin-diag-verdict {
+    @apply flex flex-col gap-2 p-4 rounded-2xl border;
+  }
+
+  .admin-diag-verdict-ok {
+    @apply border-emerald-400/40 bg-emerald-400/10 text-emerald-400;
+  }
+
+  .admin-diag-verdict-error {
+    @apply border-danger-500/40 bg-danger-500/10 text-danger-500;
+  }
+
+  .admin-diag-problem {
+    @apply flex items-start gap-2 text-xs font-body;
+  }
+
+  /* One stage card: its header row, then its checks below. */
+  .admin-diag-group {
+    @apply flex flex-col gap-3 p-4 rounded-2xl border border-navy-600/50 bg-navy-900/50;
+  }
+
+  .admin-diag-group-head {
+    @apply flex flex-wrap items-center justify-between gap-2.5;
+  }
+
+  .admin-diag-group-title {
+    @apply flex items-center gap-2.5 min-w-0;
+  }
+
+  .admin-diag-group-icon {
+    @apply size-8 rounded-lg grid place-items-center shrink-0 border border-gold-400/40 bg-gold-400/10 text-gold-400;
+  }
+
+  .admin-diag-group-name {
+    @apply text-[13px] font-bold text-slate-100 font-display truncate;
+  }
+
+  /* One check line: dot + name left, detail under, hint box when failing. */
+  .admin-check {
+    @apply flex flex-col gap-1.5 rounded-xl border border-navy-600/40 bg-navy-950/40 p-3;
+  }
+
+  .admin-check-line {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .admin-check-name {
+    @apply flex items-center gap-2 min-w-0;
+  }
+
+  .admin-check-label {
+    @apply text-xs font-bold font-display text-slate-200 truncate;
+  }
+
+  .admin-check-detail {
+    @apply block text-[11px] text-slate-400 font-body;
+  }
+
+  .admin-check-dot {
+    @apply size-2 rounded-full shrink-0 mt-1;
+  }
+
+  .admin-check-ok .admin-check-dot {
+    @apply bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)];
+  }
+
+  .admin-check-fail .admin-check-dot {
+    @apply bg-danger-500 shadow-[0_0_8px_rgba(239,68,68,0.5)];
+  }
+
+  .admin-check-warn .admin-check-dot {
+    @apply bg-warning-500 shadow-[0_0_8px_rgba(245,158,11,0.5)];
+  }
+
+  .admin-check-hint {
+    @apply flex items-start gap-1.5 rounded-lg border border-gold-400/30 bg-gold-400/5 px-2.5 py-1.5 text-[11px] font-body text-gold-400;
+  }
+
+  /* The deep-run control and its checked-at stamp. */
+  .admin-diag-meta {
+    @apply flex flex-wrap items-center gap-2.5 text-[11px] font-body text-slate-500;
   }
 
   /* --- User detail modal --- */

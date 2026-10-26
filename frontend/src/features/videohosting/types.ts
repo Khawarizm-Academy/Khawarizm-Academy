@@ -7,7 +7,7 @@
  */
 
 /** Lifecycle of a hosted video, mirrored from the backend `VideoStatus`. */
-export type HostedVideoStatus = 'uploading' | 'processing' | 'ready' | 'error';
+export type HostedVideoStatus = 'uploading' | 'processing' | 'ready' | 'staged' | 'error';
 
 /** One packaged quality variant, lowest bandwidth first. */
 export interface HostedVideoQuality {

@@ -18,13 +18,15 @@ from wherever they are and the tables are the same either way.
 
 ## Purpose
 
-Five sections, selected by `?tab=` so a section is linkable:
+Six sections, selected by `?tab=` so a section is linkable:
 
 | Tab | Answers |
 | :--- | :--- |
-| `overview` | headline counts (users, active sessions, logins, revocations) |
+| `overview` | headline counts (users, active sessions, logins, revocations) + the video health strip |
 | `users` | every account, with role filter, search, and a detail panel (view/edit/delete) |
 | `content` | generic content manager with sub-tabs (courses, scholarships, events, competitions), schema-driven forms |
+| `videos` | hosted video assets: stage (no-FFmpeg aware) new assets, review statuses/errors, delete |
+| `system` | the staged video diagnostics: what works (pipeline / FFmpeg, Telegram, Google Drive), why not, and the fix hint — with an opt-in deep run against the live provider APIs |
 | `sessions` | every device session, active/closed filter, search by mail or IP |
 | `analytics` | the login series chart and the OS / browser / device breakdown |
 | `activity` | the most recent audit rows, filterable by kind |
@@ -39,13 +41,14 @@ admin/
 │   ├── cards/                           Badges, StatCard, LoginSeriesChart,
 │   │                                    DeviceBreakdownLists, UserProfileCard
 │   ├── chrome/                          AdminHeader, AdminSectionNav, AdminNotice
-│   ├── controls/                        AdminSearchBox, RoleSelect
+│   ├── controls/                        AdminSearchBox, RoleSelect, ConfirmAction
 │   ├── layout/                          AdminShell, UsersTable, SessionsTable,
-│   │                                    EventList
+│   │                                    EventList, ContentTable
 │   ├── states/                          AdminEmptyState
 │   ├── toolbar/                         AdminPagination
 │   └── views/                           OverviewView, UsersView, SessionsView,
 │                                        AnalyticsView, ActivityView,
+│                                        VideoHostingView, AdminSystemView,
 │                                        UserDetailPanel
 ├── context/
 │   ├── adminContext.ts                  context + useAdmin() + section registry
@@ -60,9 +63,11 @@ admin/
 
 ## How it works
 
-- **One provider, five sections:** `AdminProvider` loads all five sections'
-  data up front and gates only the *first* load of the active tab with a
+- **One provider, eight sections:** `AdminProvider` loads section data through
+  `useCachedData` and gates only the *first* load of the active tab with a
   `DataSectionSkeleton variant="list"`, so switching tabs never flashes.
+  Video-hosting data loads only while `overview` / `videos` / `system` are
+  open, and the deep diagnostics run only after the admin presses its button.
 - **The section registry is the single source of truth:** `ADMIN_SECTION_KEYS`,
   `SECTION_LABELS`, `SECTION_ICONS`, `EVENT_KIND_LABELS`, and
   `REVOKE_REASON_LABELS` are label/icon maps in `adminContext.ts` /
@@ -82,7 +87,7 @@ admin/
 
 | Source | Provides |
 | :--- | :--- |
-| `data/adminFetchers.ts` | `fetchOverview`, `fetchUsers`, `fetchUserDetail`, `updateUserRole`, `fetchSessions`, `revokeAdminSession`, `fetchLoginSeries`, `fetchDeviceBreakdown`, `fetchEvents`, `createAdminUser`, `updateAdminUser`, `deleteAdminUser`, `fetchContentSchema`, `fetchContent`, `createContent`, `updateContent`, `deleteContent` |
+| `data/adminFetchers.ts` | `fetchOverview`, `fetchUsers`, `fetchUserDetail`, `updateUserRole`, `fetchSessions`, `revokeAdminSession`, `fetchLoginSeries`, `fetchDeviceBreakdown`, `fetchEvents`, `createAdminUser`, `updateAdminUser`, `deleteAdminUser`, `fetchContentSchema`, `fetchContent`, `createContent`, `updateContent`, `deleteContent`, `fetchVideoProviders`, `fetchVideoAssets`, `fetchVideoDiagnostics(deep)`, `createVideoAsset`, `deleteVideoAsset` |
 | `data/adminFormatters.ts` | `formatCount`, `formatDateTime`, `formatShortDateTime`, `formatDayLabel`, `initialsOf`, `SECTION_ICONS`, `METRIC_ICONS`, `REVOKE_REASON_LABELS`, `EVENT_KIND_LABELS` |
 | `@/shared/lib/apiClient` | every request goes through the Bearer + silent-refresh client |
 
@@ -107,6 +112,11 @@ admin/
 | `POST` | `/admin/content/:type` | Create row from schema fields; returns `ContentRow`. |
 | `PATCH` | `/admin/content/:type/:id` | Update subset; returns `ContentRow`. |
 | `DELETE` | `/admin/content/:type/:id` | `{deleted:true,id}`. |
+| `GET` | `/admin/video-providers` | Rows carry `available`/`reason` — the select gate. |
+| `GET` | `/admin/video-assets` | Assets carry `error`/`qualities`/`createdAt`. |
+| `POST` | `/admin/video-assets` | `{slug,title?,provider?}`; refused with an Arabic reason when the provider's env checks fail. |
+| `DELETE` | `/admin/video-assets/:id` | `{deleted:true,id}`. |
+| `GET` | `/admin/video-diagnostics?deep=true` | The staged validation; shallow stays offline, deep calls the providers' APIs. |
 
 ## Related
 

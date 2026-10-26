@@ -203,6 +203,10 @@ Staff-only (`IsAdminRole`), under `/admin`:
 | `GET` | `/admin/content/schema` | `{types, userFields}` — drives every admin form. |
 | `GET` · `POST` | `/admin/content/:type` | Paged rows / create (`courses`, `scholarships`, `events`, `competitions`). |
 | `PATCH` · `DELETE` | `/admin/content/:type/:id` | Edit / remove one content row. |
+| `GET` | `/admin/video-providers` | Registry rows + `available`/`reason` from each provider's env checks. |
+| `GET` · `POST` | `/admin/video-assets` | Asset rows (`error`, `qualities`, `createdAt`) / record one (refused with its reason if the provider's checks fail). |
+| `DELETE` | `/admin/video-assets/:id` | Remove one asset. |
+| `GET` | `/admin/video-diagnostics?deep=true` | Staged video validation — pipeline, Telegram env (+ Bot API on deep), Drive env (+ OAuth/folder on deep). |
 
 ### Video hosting
 
@@ -226,6 +230,25 @@ block. Playback routes carry a minted token — hls.js cannot send an
 
 The stored playlists keep `__TOKEN__` placeholders, so a database dump contains
 no usable URL; only the SHA-256 of each grant is stored.
+
+**Ingest & staging.** `manage.py ingest_video <file> --slug <slug> --package
+auto|force|never` pushes the source into Telegram, then (when the host has
+FFmpeg and is not Vercel) packages the AES-128 HLS ladder. `auto` follows the
+host, `force` requires the packaging host, and `never` — or a missing FFmpeg —
+**stages** the source (`status=staged`, renditions cleared, no master
+playlist): the video is stored safely and can be packaged later by re-running
+with `force` on a machine that has FFmpeg. A staged asset refuses playback
+with a message that names the fix.
+
+**Admin endpoints (under `/api/`).** The console reads the same modules:
+`GET /admin/video-providers` (rows carry `available`/`reason` from the env
+checks — the select gate; Telegram is selectable the moment its checks pass),
+`GET/POST/DELETE /admin/video-assets` (asset rows carry `error`/`qualities`/
+`createdAt`; POST refuses a provider whose checks fail, with its Arabic
+reason), and `GET /admin/video-diagnostics?deep=true` — the staged validation:
+one check per thing that can silently break playback (FFmpeg, the serverless
+guard, each provider's env keys, and on deep runs the live Bot API / Google
+OAuth + folder calls), each failing check naming WHY and its fix.
 
 ---
 
