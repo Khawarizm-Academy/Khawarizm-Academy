@@ -28,6 +28,8 @@ and no route ever exposes a raw Telegram file or a download URL.
 
 ## Routes
 
+Public playback (owner: `views.py`, paths in `urls.py`):
+
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
 | `GET` | `/api/videos/<slug>` | Readiness, duration, and the rendition ladder |
@@ -37,14 +39,22 @@ and no route ever exposes a raw Telegram file or a download URL.
 | `GET` | `/api/stream/<token>/key/<quality>` | AES-128 key for one rendition |
 | `GET` | `/api/stream/<token>/<quality>/<index>.ts` | 302 redirect to Telegram's CDN |
 
+Admin console (`console/` — paths and URL names unchanged since they moved out
+of `adminconsole`): `/api/admin/video-providers`, `-assets[-/detail/upload]`,
+`-diagnostics`, `video-drive/oauth/{start,callback,status,disconnect}`.
+
 ## Data
 
 | Model | Role |
 | :--- | :--- |
-| `VideoAsset` | One video: `slug` business key, status, duration, master playlist, source message |
+| `VideoAsset` | One video: `slug` business key, status, duration, master playlist, source message, tracker (`progress`/`stage`) |
 | `VideoRendition` | One quality (360p/480p/720p): media playlist, bandwidth, **AES key** |
 | `VideoSegment` | One encrypted `.ts`: message id, stable `file_id`, cached `file_path` |
 | `StreamToken` | A grant: SHA-256 `token_hash`, `ip_binding`, `expires_at` |
+| `VideoProvider` | The admin-visible registry row upserted from `SPECS` |
+| `DriveGrant` | The stored Google OAuth grant (refresh token, cached bearer) |
+| `DriveAuthState` | Single-use hashed CSRF states for the consent dance |
+| `ProviderAsset`, `UploadSession` | **Kept as historical records** from the pre-Drive era — no live code path writes them |
 
 Only the token **hash** is stored, so a database dump yields no usable links; the
 raw token is shown once at mint time. `VideoStatus` lives in
@@ -101,27 +111,47 @@ Providers live in `providers/` — one module per host, plus the registry:
 
 ```text
 features/videohosting/
-├── oauthdrive.py       the human grant: consent URL, CSRF state, code exchange,
-│                       refresh-token persistence (DriveGrant), auto-refresh
-├── providers/
-│   ├── __init__.py     registry — SPECS, spec_for(), ensure_defaults(), default_code()
-│   ├── base.py         ProviderSpec — code, name, enablement, capabilities
-│   ├── google_drive.py GOOGLE_DRIVE spec + GoogleDriveService (resumable upload)
-│   │                   — the bearer comes from oauthdrive, never from env
-│   └── telegram.py     TELEGRAM spec + TelegramMediaService + Bot API helpers
+├── urls.py               the public playback routes
+├── views.py              control plane — meta, mint, playlist rewrite, segment redirect
+├── tokens.py             StreamToken mint/resolve (hash-only, IP-bound, expiring)
+├── serializers.py        asset_meta / minted_token / provider_payload shapes
+├── ingest.py             upload → store→stage → package ladder, worker + tracker
+├── packaging.py          FFmpeg AES-128 HLS ladder (local/worker host only)
+├── diagnostics.py        the staged offline→deep system check + provider gate
+├── oauthdrive.py         the human grant: consent URL, CSRF state, code exchange,
+│                         refresh-token persistence (DriveGrant), auto-refresh
+├── console/              the 9 /api/admin/video-* routes (URLs + admin views)
+├── tests/                one module per concern + shared fixtures in helpers.py
+└── providers/
+    ├── __init__.py       registry — SPECS, spec_for(), ensure_defaults(),
+    │                     default_code(), provider_listing()
+    ├── base.py           ProviderSpec + Check/CheckGroup vocabulary
+    ├── google_drive.py   GOOGLE_DRIVE spec + GoogleDriveService (resumable upload)
+    │                     — the bearer comes from oauthdrive, never from env
+    └── telegram.py       TELEGRAM spec + TelegramMediaService + Bot API helpers
 ```
+
+Every module that could once branch on `if code == "google_drive"/"telegram"`
+now delegates to the spec's own hooks: `env_checks`/`deep_checks`/`hints`
+(diagnostics), `ingest.store_source`/`store_package` (ingest),
+`segment_redirect` + `file_path_refresher` (serving).
 
 The specs are the source of truth for the admin-visible `VideoProvider` rows:
 `ensure_defaults()` upserts one row per spec, so a row toggled by hand in the
 admin is re-synced to its spec on the next call.
 
-### Adding a new provider — three steps, no existing logic touched
+### Adding a new provider — four steps, no existing logic touched
 
 1. **`providers/<code>.py`** — a `ProviderSpec` (code, name, enablement,
-   capabilities) and a `credentials()` reading the provider's settings block.
+   capabilities, credentials via its own settings block) plus whatever hooks it
+   needs: `ingest` (a `ProviderIngest` with `store_source`/`store_package`),
+   `env_checks`/`deep_checks` (diagnostics), `segment_redirect` and
+   `file_path_refresher` (serving).
 2. **`config/settings.py`** — `os.environ.get` for its keys; **`.env*`** — a
    placeholder block (commented dev, real values only via host env).
 3. **`providers/__init__.py`** — import the spec and add it to `SPECS`.
+4. Nothing else. Diagnostics, the public provider list, the admin gate, and
+   ingest all consume `SPECS`; no `if/elif` ladder exists to extend.
 
 ## Configuration
 
@@ -175,6 +205,11 @@ stays importable (and serverless-safe) without them.
 ```bash
 python manage.py test features.videohosting
 ```
+
+One module per concern: `tests/test_models.py`, `test_registry.py`,
+`test_routes.py`, `test_drive.py`, `test_diagnostics.py`, `test_staging.py`,
+`test_admin_console.py` (the admin endpoints live on the videohosting app),
+with shared fixtures in `tests/helpers.py`.
 
 Telegram is never contacted: segment rows carry a cached `file_path` and the key
 endpoint serves the stored key, so the full token → master → media → key →
