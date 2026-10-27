@@ -47,11 +47,6 @@ class VideoAsset(UUIDModel, TimeStampedModel):
         VideoProvider, null=True, blank=True, on_delete=models.SET_NULL, related_name="assets"
     )
 
-    # Derived — the player polls readiness without loading the rendition tables.
-    @property
-    def is_ready(self) -> bool:
-        return self.status == VideoStatus.READY
-
     # Admin tracker — what the upload progress bar reads while the worker runs.
     progress = models.PositiveSmallIntegerField(default=0, help_text="Ingest progress 0-100")
     stage = models.CharField(max_length=20, blank=True, help_text="uploading | packaging | publishing")
@@ -222,7 +217,7 @@ class DriveGrant(UUIDModel, TimeStampedModel):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
-        return f"Drive \u062a\u062e\u0648\u064a\u0644\u0020{self.account_email} ({self.status})"
+        return f"تخويل Drive — {self.account_email} ({self.status})"
 
 
 class DriveAuthState(UUIDModel, TimeStampedModel):

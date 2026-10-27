@@ -6,18 +6,22 @@ import os
 import subprocess
 import sys
 from datetime import timedelta
+from io import StringIO
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.contrib import admin
 from django.core.exceptions import FieldDoesNotExist
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from features.auth import firebase, services
+from features.auth import clock, firebase, services
 from features.auth.models import AuthEvent, InstructorProfile, StudentProfile, User, UserSession
 from features.auth.serializers import session_payload, user_profile
+from features.auth.views import login_failure_detail
 from features.common.choices import AuthProvider, Role, SessionRevokeReason
 from features.common.testing import ApiTestCase, FakeRequest, authenticate, make_admin, make_user
 
@@ -492,3 +496,69 @@ class AdminConsoleViewTests(ApiTestCase):
         services.open_session(make_user(email="d1@example.com"), FakeRequest(IPHONE_UA), "password")
         body = self.client.get("/api/admin/analytics/devices").json()
         self.assertTrue(any(row["key"] == "mobile" for row in body["deviceType"]))
+
+
+class ClockDriftTests(TestCase):
+    """The unsynced-dev-clock story: measure, warn, and name the fix.
+
+    Terminal-facing strings stay ASCII/English — the Arabic detail belongs
+    to the 401 the browser shows, not the console.
+    """
+
+    def test_the_command_reports_a_small_drift_and_passes(self):
+        outlet = StringIO()
+        with patch.object(clock, "drift_seconds", return_value=20):
+            call_command("clock_drift", stdout=outlet)
+        self.assertIn("drift: 20 s", outlet.getvalue())
+
+    def test_the_command_warns_and_fails_when_the_lag_breaks_signin(self):
+        outlet = StringIO()
+        with patch.object(clock, "drift_seconds", return_value=67):
+            with self.assertRaises(CommandError):
+                call_command("clock_drift", stdout=outlet)
+        text = outlet.getvalue()
+        self.assertIn("67 s", text)
+        self.assertIn("sync_clock_from_http", text)
+
+    def test_notes_go_silent_when_the_reference_is_unreachable(self):
+        outlet = StringIO()
+        with patch.object(clock, "drift_seconds", return_value=None):
+            call_command("clock_drift", stdout=outlet)
+        self.assertIn("network", outlet.getvalue())
+
+    def test_terminal_output_is_ascii_only(self):
+        # Consoles render RTL text illegibly; dev tooling must never print it.
+        outlet = StringIO()
+        for drift in (5, 20):
+            with patch.object(clock, "drift_seconds", return_value=drift):
+                call_command("clock_drift", stdout=outlet)
+        # 67 s crosses the limit: the command raises after writing its verdict.
+        with self.assertRaises(CommandError):
+            with patch.object(clock, "drift_seconds", return_value=67):
+                call_command("clock_drift", stdout=outlet)
+        self.assertTrue(outlet.getvalue().isascii(), outlet.getvalue())
+
+    def test_warnings_track_the_real_boundaries(self):
+        # At or under 10 s the clock is healthy; past the 45 s limit the
+        # hard warning names the 401; the info band covers 11-45.
+        self.assertEqual(clock.drift_warnings(5), [])
+        self.assertEqual(clock.drift_warnings(None), [])
+        self.assertTrue(all("401" not in line for line in clock.drift_warnings(45)))
+        self.assertTrue(any("401" in line for line in clock.drift_warnings(67)))
+
+    def test_a_lagging_clock_error_names_the_fix_in_the_login_401(self):
+        # The generic 401 turns actionable when Google's message is about the clock.
+        lagging = firebase.FirebaseError("Token used too early, 1792987405 < 1792987472.")
+        self.assertIn("ساعة النظام", login_failure_detail(lagging))
+        self.assertIn("clock_drift", login_failure_detail(lagging))
+        other = firebase.FirebaseError("Invalid ID token.")
+        self.assertEqual(login_failure_detail(other), "تعذر التحقق من الهوية.")
+
+
+class ClockDriftEndpointTests(ApiTestCase):
+    def test_login_returns_the_actionable_clock_detail(self):
+        # The real endpoint shape: 401 + the fix in the detail the UI shows.
+        with patch.object(firebase, "verify_id_token", side_effect=firebase.FirebaseError("Token used too early.")):
+            response = self.client.post("/api/auth/firebase", {"idToken": "irrelevant"}, format="json")
+        self.assertEqual(response.status_code, 401)
+        self.assertIn("ساعة النظام", response.json()["detail"])

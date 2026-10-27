@@ -11,9 +11,17 @@ export const LoginSeriesChart: React.FC<LoginSeriesChartProps> = ({ series }) =>
   const busiest = series.points.reduce((highest, point) => Math.max(highest, point.count), 0);
   // Keep the axis readable: at most ~9 date labels whatever the range is.
   const labelStep = Math.max(1, Math.ceil(series.points.length / 9));
+  // The headline numbers: the range's total, and its single busiest day.
+  const total = series.points.reduce((sum, point) => sum + point.count, 0);
+  const peak = series.points.reduce((top, point) => (point.count > top.count ? point : top), series.points[0]);
 
   return (
     <div className="admin-chart">
+      {total > 0 && (
+        <div className="admin-meta-line mb-3">
+          إجمالي {formatCount(total)} تسجيل دخول · أكثر يوم نشاطًا: {formatDayLabel(peak.date)} ({formatCount(peak.count)})
+        </div>
+      )}
       <div className="admin-chart-bars" role="img" aria-label={`تسجيلات الدخول خلال ${formatCount(series.days)} يومًا`}>
         {series.points.map((point, index) => {
           // Cap at 88% so the busiest bar's own label still fits above it.

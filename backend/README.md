@@ -81,6 +81,24 @@ python manage.py runserver 127.0.0.1:8000
 
 The API is then at `http://127.0.0.1:8000/api/`.
 
+### Run it in Docker (dev)
+
+The container route gets FFmpeg in the box, so the packaging ladder works on
+the dev host too. Code, `.env*` profile files, and `db.sqlite3` ride a bind
+mount — edits never need a rebuild, and BuildKit cache mounts keep rebuilds
+from re-downloading anything the host already has. **The full runbook and the
+low-network modes live in [DOCKER.md](DOCKER.md)**; the one-time start:
+
+```bash
+docker context use default          # this CLI was set to desktop-linux
+sudo systemctl enable --now docker  # the daemon, once
+cd backend
+docker compose up --build -d        # build once, then migrate + runserver
+docker compose logs -f backend
+```
+
+Tear it down with `docker compose down`.
+
 ### Environment
 
 Configuration is split into **profiles** selected by `DJANGO_ENV` (default

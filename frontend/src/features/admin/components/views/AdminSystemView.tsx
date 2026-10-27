@@ -98,7 +98,7 @@ export const AdminSystemView: React.FC = () => {
     <div className="admin-view">
       <div className="admin-toolbar">
         <h2 className="admin-section-title">فحص المنظومة — استضافة الفيديو</h2>
-        <div className="admin-diag-meta">
+        <div className="admin-meta-line">
           <span>{report.deep ? 'فحص عميق (شبكة)' : 'فحص سريع (بيئة)'} · {formatDateTime(report.checkedAt)}</span>
         </div>
       </div>

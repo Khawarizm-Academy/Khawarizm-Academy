@@ -91,6 +91,11 @@
   @apply w-full max-w-[1280px] mx-auto px-4 sm:px-8 pb-28 md:pb-20 pt-2 md:pt-4 flex flex-col gap-8 md:gap-14 relative z-10;
 }
 
+/* One h1 concept for any page section header (dashboard + admin). */
+.view-h1 {
+  @apply text-white text-2xl md:text-3xl font-bold font-display leading-8;
+}
+
 .horizontal-scroll-row {
   @apply flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 -mx-4 px-4 scroll-smooth;
   -ms-overflow-style: none !important;

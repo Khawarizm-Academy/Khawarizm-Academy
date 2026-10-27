@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { AlertTriangle, FileVideo, Trash2, X } from 'lucide-react';
+import { AlertTriangle, FileVideo, RefreshCw, Trash2, X } from 'lucide-react';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
 import { VideoStatusBadge } from '@/features/admin/components/cards/Badges';
 import { ConfirmAction } from '@/features/admin/components/controls/ConfirmAction';
 import { formatShortDateTime } from '@/features/admin/data/adminFormatters';
 import { startDriveOAuth } from '@/features/admin/data/adminFetchers';
+import { vercelUploadTooLarge } from '@/shared/lib/apiClient';
 import { VIDEO_STAGE_LABELS, type AdminVideoProvider } from '@/features/admin/types';
 
 /** The select's per-provider footnote; unknown codes simply read no note. */
@@ -71,6 +72,9 @@ export const VideoHostingView: React.FC = () => {
 
   const chosen = videoProviders.find((p) => p.code === provider);
   const chosenBlocked = Boolean(provider) && (!chosen || !isSelectable(chosen));
+  // A *.vercel.app API rejects bodies over ~4.5 MB at the edge — refuse the
+  // file up front where the admin can read why, not in a CORS-labelled blur.
+  const capBlocked = vercelUploadTooLarge(file);
   const pipelineKnown = videoDiagnostics !== null;
   const pipelineOk = videoDiagnostics?.summary.pipeline ?? true;
   const busy = videoUpload?.phase === 'sending' || videoUpload?.phase === 'tracking';
@@ -97,7 +101,7 @@ export const VideoHostingView: React.FC = () => {
 
   const handleUpload = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (missingFile || busy || chosenBlocked) return;
+    if (missingFile || busy || chosenBlocked || capBlocked) return;
     const uploaded = await uploadVideo({
       slug: form.slug,
       title: form.title,
@@ -116,6 +120,7 @@ export const VideoHostingView: React.FC = () => {
         <h2 className="admin-section-title">استضافة الفيديو</h2>
         <div className="admin-toolbar-actions">
           <button type="button" className="admin-ghost-btn" onClick={() => refreshVideoData()}>
+            <RefreshCw size={15} />
             <span>تحديث البيانات</span>
           </button>
         </div>
@@ -211,6 +216,12 @@ export const VideoHostingView: React.FC = () => {
               </>
             )}
           </label>
+          {capBlocked && (
+            <div className="admin-form-error">
+              {formatBytes(file?.size ?? 0)} أكبر من حد الخادم السحابي (4.5 MB) — ارفع من جهاز التغليف عبر
+              <span className="admin-mono"> manage.py ingest_video</span> أو انشر الخادم على VM بدل Vercel.
+            </div>
+          )}
 
           <div className="admin-form-grid">
             <div className="admin-field">
@@ -298,7 +309,7 @@ export const VideoHostingView: React.FC = () => {
           </div>
 
           <div className="admin-form-footer">
-            <button type="submit" className="admin-primary-btn" disabled={busy || missingFile || chosenBlocked}>
+            <button type="submit" className="admin-primary-btn" disabled={busy || missingFile || chosenBlocked || capBlocked}>
               <span>{busy ? 'جارٍ تنفيذ الرفع…' : 'رفع الفيديو'}</span>
             </button>
           </div>

@@ -1,11 +1,4 @@
-.venv/
-venv/
-env/
-__pycache__/
-*.py[cod]
-*.sqlite3
-*.sqlite3-journal
-*.sqlite3-wal
-*.sqlite3-shm
-staticfiles/
-.env
+# The image itself needs only the dependency lock; everything else (code,
+# env files, database, venv) is bind-mounted at runtime by docker-compose.yml.
+*
+!requirements.txt

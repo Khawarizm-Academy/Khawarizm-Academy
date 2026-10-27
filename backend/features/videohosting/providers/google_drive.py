@@ -1,8 +1,9 @@
-# Google Drive provider <- the providers registry, resumable upload helpers
-# Drive stores the video files: the backend resumable-uploads into a Drive
-# folder with the human OAuth grant persisted in DriveGrant (the service
-# account carried no storage quota — it was retired). The bearer mints in
-# features/videohosting/oauthdrive.py; this module never sees the token.
+# Google Drive provider <- identity + ingest hooks + diagnostic checks.
+# Drive stores the video files: resumable-uploads into a Drive folder using
+# the human OAuth grant persisted in DriveGrant (the service account carried
+# no storage quota — it was retired). This module owns the upload service,
+# the 1-byte write probe for deep checks, and every hint that explains why
+# configuration may fail.
 import json
 import os
 import time
@@ -11,45 +12,31 @@ import urllib.request
 
 from django.conf import settings
 
-from features.videohosting.oauthdrive import access_token as oauth_access_token
-from features.videohosting.providers.base import ProviderSpec
-GOOGLE_DRIVE = ProviderSpec(
-    code="google_drive",
-    name="Google Drive",
-    is_enabled=True,
-    is_default=True,
-    capabilities={
-        "resumableUpload": True,
-        "privateAccess": True,
-        "requiresAuth": True,
-        "playback": "provider_managed_or_limited",
-    },
+from features.videohosting.drive_oauth import access_token as oauth_access_token, connected as oauth_connected
+from features.videohosting.providers.base import (
+    ProviderSpec,
+    Check,
+    check,
+    _identity,
+    blocking_checks,
 )
 
-# Every env key the Drive integration needs; the bucket comes from the
-# persisted OAuth grant, so a half-configured environment raises naming the
-# exact keys to set instead of failing inside a random HTTP call.
+
+# Google env keys, Drive endpoint, and the resumable-chunk constants.
 REQUIRED_SETTINGS = (
     "GOOGLE_DRIVE_CLIENT_ID",
     "GOOGLE_DRIVE_CLIENT_SECRET",
     "GOOGLE_DRIVE_ROOT_FOLDER_ID",
 )
-
 DRIVE_UPLOAD_SESSION_URL = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id"
-
-# Drive's resumable protocol rejects chunks that are not multiples of this.
-CHUNK_BYTES = 256 * 1024
+CHUNK_BYTES = 256 * 1024            # Drive's resumable protocol requires multiples of this
 RETRIES_PER_CHUNK = 3
 REQUEST_SECONDS = 30
 
 
+# The configured credentials and the muted bearer every Drive call reads through.
 def credentials() -> dict[str, str]:
-    """The configured Drive credentials, failing loudly and naming each missing key.
-
-    config/settings.py is the only place env values are read; provider code
-    accesses them here, so a half-configured environment raises with the exact
-    keys to set instead of failing later inside a random HTTP call.
-    """
+    """The configured Drive credentials, failing loudly and naming each missing key."""
     values = {key: getattr(settings, key) or "" for key in REQUIRED_SETTINGS}
     missing = [key for key in REQUIRED_SETTINGS if not values[key]]
     if missing:
@@ -70,7 +57,6 @@ def _error_body(error: urllib.error.HTTPError) -> str:
 
 
 def _drive_error_message(error: urllib.error.HTTPError) -> str:
-    """Google's error JSON in one line, or the bare HTTP wording."""
     try:
         payload = json.loads(_error_body(error))
         return payload.get("error", {}).get("message") or str(error)
@@ -79,18 +65,17 @@ def _drive_error_message(error: urllib.error.HTTPError) -> str:
 
 
 def _403_hint(message: str) -> str:
-    """One Arabic fix per known Drive 403 — a read-only share."""
     if "permissions" in message.lower():
         return message + " — وشارك مجلد الرفع مع الحساب المُخوَّل كـ Editor."
     return message
 
 
+# The upload service: resumable session, chunked streaming, progress ticks.
 class GoogleDriveService:
     """Stores one file in the configured Drive folder via a resumable session.
 
-    Plain HTTPS — no heavyweight SDK. The upload streams in 256 KiB chunks
-    under Drive's resumable protocol, so `on_bytes(sent, total)` receives a
-    real byte tick per chunk for the ingest's progress tracker.
+    Plain HTTPS — no heavyweight SDK. Streams in 256 KiB chunks under
+    Drive's resumable protocol, so `on_bytes(sent, total)` ticks progress.
     """
 
     def __init__(self) -> None:
@@ -98,11 +83,7 @@ class GoogleDriveService:
         self._bearer = ""
 
     def upload_file(self, file_path: str, caption: str = "", on_bytes=None) -> dict[str, object]:
-        """One resumable upload; returns the parts the ingest stores.
-
-        The shape mirrors TelegramMediaService.upload_file so the ingest can
-        treat both providers with the same vocabulary.
-        """
+        """One resumable upload; returns the parts the ingest stores."""
         self._token()
         session_url = self._start_session(file_path, caption)
         file_id = self._stream_chunks(file_path, session_url, on_bytes)
@@ -115,24 +96,14 @@ class GoogleDriveService:
         self._bearer = bearer
 
     def _start_session(self, file_path: str, caption: str) -> str:
-        """POST the file's metadata and take back the resumable upload URL."""
-        metadata = {
-            "name": os.path.basename(file_path),
-            "description": caption,
-            "parents": [self.folder_id],
-        }
-        request = urllib.request.Request(  # noqa: S310 — fixed Drive host
-            DRIVE_UPLOAD_SESSION_URL,
-            data=json.dumps(metadata).encode("utf-8"),
-            method="POST",
-            headers={
-                "Authorization": f"Bearer {self._bearer}",
-                "Content-Type": "application/json",
-                "X-Upload-Content-Type": "application/octet-stream",
-            },
+        metadata = {"name": os.path.basename(file_path), "description": caption, "parents": [self.folder_id]}
+        request = urllib.request.Request(  # noqa: S310 — fixed host
+            DRIVE_UPLOAD_SESSION_URL, data=json.dumps(metadata).encode("utf-8"), method="POST",
+            headers={"Authorization": f"Bearer {self._bearer}", "Content-Type": "application/json",
+                     "X-Upload-Content-Type": "application/octet-stream"},
         )
         try:
-            with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
+            with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310
                 session_url = response.headers.get("Location", "")
         except urllib.error.HTTPError as error:
             message = _drive_error_message(error)
@@ -148,7 +119,6 @@ class GoogleDriveService:
         return session_url
 
     def _stream_chunks(self, file_path: str, session_url: str, on_bytes) -> str:
-        """PUT chunk after chunk, ticking progress; the final PUT returns the id."""
         size = os.path.getsize(file_path)
         uploaded = 0
         file_id = ""
@@ -166,11 +136,6 @@ class GoogleDriveService:
         return file_id
 
     def _put_chunk(self, session_url: str, chunk: bytes, start: int, end: int, size: int, is_final: bool) -> str:
-        """One resumable PUT — "" for intermediate chunks, the id for the last.
-
-        A failed intermediate chunk is re-PUT within the same session (that is
-        exactly what the protocol's resume support is for).
-        """
         headers = {
             "Authorization": f"Bearer {self._bearer}",
             "Content-Length": str(len(chunk)),
@@ -180,7 +145,7 @@ class GoogleDriveService:
         for attempt in range(RETRIES_PER_CHUNK):
             try:
                 request = urllib.request.Request(session_url, data=chunk, method="PUT", headers=headers)  # type: ignore[arg-type]
-                with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
+                with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310
                     if is_final:
                         payload = json.loads(response.read().decode("utf-8"))
                         file_id = str(payload.get("id", ""))
@@ -190,9 +155,6 @@ class GoogleDriveService:
                     return ""
             except urllib.error.HTTPError as error:
                 if error.code == 308 and not is_final:
-                    # The protocol's normal "accepted, keep going" answer —
-                    # urllib paints it as an error because its default opener
-                    # has no 308 handler.
                     return ""
                 message = _drive_error_message(error)
                 if error.code >= 500:
@@ -210,13 +172,42 @@ class GoogleDriveService:
         raise RuntimeError(f"تعذّر رفع مقطع إلى Drive: {last_error}")
 
 
-def upload_probe() -> tuple[bool, str]:
-    """One real 1-byte write into the folder, deleted after — (ok, detail).
+# Diagnostics hooks — env gating offline, live probes on deep runs.
+def _drive_env_checks() -> list[Check]:
+    client_id = (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip()
+    client_secret = (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip()
+    folder = (settings.GOOGLE_DRIVE_ROOT_FOLDER_ID or "").strip()
+    callback = (settings.GOOGLE_DRIVE_OAUTH_REDIRECT_URI or "").strip()
+    grant = oauth_connected()
+    return [
+        check("client_id", "معرّف عميل OAuth (GOOGLE_DRIVE_CLIENT_ID)", bool(client_id),
+              "متوفر." if client_id else "غير مضبوط."),
+        check("client_secret", "سر العميل (GOOGLE_DRIVE_CLIENT_SECRET)", bool(client_secret),
+              "متوفر." if client_secret else "غير مضبوط."),
+        check("root_folder", "مجلد الرفع (GOOGLE_DRIVE_ROOT_FOLDER_ID)", bool(folder),
+              f"متوفر: {folder}" if folder else "غير مضبوط."),
+        check("redirect_uri", "رابط إعادة التخويل (GOOGLE_DRIVE_OAUTH_REDIRECT_URI)", bool(callback),
+              f"متوفر: {callback}" if callback else "غير مضبوط."),
+        check("oauth_grant", "تخويل حساب Google مُخزَّن (DriveGrant)",
+              bool(grant["connected"]),
+              f"مرتبط بـ {grant['account_email']}." if grant["connected"]
+              else (grant["error_message"] if grant["error_message"] else "لم يُؤدَّ تخويل حساب Google بعد.")),
+    ]
 
-    The token and folder walks can both pass while every upload still fails
-    (a service account owns no storage quota), so the deep check proves the
-    folder actually accepts bytes before calling Drive ready.
-    """
+
+def _drive_deep_checks() -> list[Check]:
+    if blocking_checks(_drive_env_checks()):
+        return []
+    token_ok, bearer, detail = access_token()
+    checks = [check("drive_token", "المصادقة مقابل Google (التوكيل المخزَّن)", token_ok, detail)]
+    if token_ok:
+        probe_ok, probe_detail = upload_probe()
+        checks.append(check("drive_probe", "تجربة كتابة فعلية (1 بايت)", probe_ok, probe_detail))
+    return checks
+
+
+def upload_probe() -> tuple[bool, str]:
+    """One real 1-byte write into the folder, deleted after — (ok, detail)."""
     okay, bearer, detail = access_token()
     if not okay:
         return False, detail
@@ -225,20 +216,18 @@ def upload_probe() -> tuple[bool, str]:
     except ValueError as exc:
         return False, str(exc)
     metadata = {"name": ".ingest-probe", "description": "videohosting deep-check probe", "parents": [folder_id]}
-    open_request = urllib.request.Request(  # noqa: S310 — fixed Drive host
-        DRIVE_UPLOAD_SESSION_URL,
-        data=json.dumps(metadata).encode("utf-8"),
-        method="POST",
+    open_req = urllib.request.Request(  # noqa: S310
+        DRIVE_UPLOAD_SESSION_URL, data=json.dumps(metadata).encode("utf-8"), method="POST",
         headers={"Authorization": f"Bearer {bearer}", "Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(open_request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
+        with urllib.request.urlopen(open_req, timeout=REQUEST_SECONDS) as response:  # noqa: S310
             session_url = response.headers.get("Location", "")
-        put_request = urllib.request.Request(  # noqa: S310 — fixed Drive host
+        put_req = urllib.request.Request(  # noqa: S310
             session_url, data=b"0", method="PUT",
             headers={"Authorization": f"Bearer {bearer}", "Content-Length": "1", "Content-Range": "bytes 0-0/1"},
         )
-        with urllib.request.urlopen(put_request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed host
+        with urllib.request.urlopen(put_req, timeout=REQUEST_SECONDS) as response:  # noqa: S310
             file_id = str(json.loads(response.read().decode("utf-8")).get("id", ""))
     except urllib.error.HTTPError as error:
         return False, _drive_error_message(error) if error.code != 403 else _403_hint(_drive_error_message(error))
@@ -246,13 +235,57 @@ def upload_probe() -> tuple[bool, str]:
         return False, f"تعذّر الاتصال بـ Drive: {exc}"
     if not session_url or not file_id:
         return False, "لم يكتمل probe الرفع — راجع عناوين ردّ Google."
-    delete_request = urllib.request.Request(  # noqa: S310 — fixed Drive host
+    delete_req = urllib.request.Request(  # noqa: S310
         f"https://www.googleapis.com/drive/v3/files/{file_id}", method="DELETE",
         headers={"Authorization": f"Bearer {bearer}"},
     )
     cleaned = "وتم حذفه."
     try:
-        urllib.request.urlopen(delete_request, timeout=REQUEST_SECONDS)  # noqa: S310 — fixed host
+        urllib.request.urlopen(delete_req, timeout=REQUEST_SECONDS)  # noqa: S310
     except Exception:
         cleaned = "(تعذّر حذفه تلقائيًّا — احذفه يدويًّا.)"
     return True, f"كتب 1 بايت في المجلد {cleaned}"
+
+
+# The spec's store-source leg — staged only, no HLS packaging.
+class _DriveIngest:
+    """Google Drive store-source leg — staged only, no HLS packaging."""
+
+    @staticmethod
+    def store_source(service: "GoogleDriveService", asset, source, upload_args: dict | None) -> dict:
+        """Publish the source and return row fields to write back."""
+        uploaded = service.upload_file(str(source), caption=f"source · {asset.slug}", **(upload_args or {}))
+        part = uploaded["parts"][0]
+        return {
+            "source_file_id": str(part["file_id"]),
+            "source_size_bytes": part["size_bytes"],
+            "source_file_name": (getattr(asset, "source_file_name", "") or str(source.name)),
+        }
+
+
+# The spec — declared last so every symbol above is already defined.
+GOOGLE_DRIVE = ProviderSpec(
+    code="google_drive",
+    name="Google Drive",
+    is_enabled=True,
+    is_default=True,
+    capabilities={
+        "resumableUpload": True,
+        "privateAccess": True,
+        "requiresAuth": True,
+        "playback": "provider_managed_or_limited",
+    },
+    segment_redirect=_identity,     # Drive does not use CDN redirects like Telegram
+    ingest=_DriveIngest(),         # store_source only; no HLS packaging
+    env_checks=_drive_env_checks,
+    deep_checks=_drive_deep_checks,
+    hints={
+        "client_id": "أضف GOOGLE_DRIVE_CLIENT_ID من Google Cloud Console → Credentials",
+        "client_secret": "أضف GOOGLE_DRIVE_CLIENT_SECRET لنفس عميل OAuth",
+        "root_folder": "أضف GOOGLE_DRIVE_ROOT_FOLDER_ID (من رابط المجلد في Drive) للمجلد الذي ستُرفع إليه الفيديوهات",
+        "redirect_uri": "أضف GOOGLE_DRIVE_OAUTH_REDIRECT_URI (مثال: http://localhost:8000/api/admin/video-drive/oauth/callback) وسجّله على عميل OAuth",
+        "oauth_grant": "المسؤول يفتح «تخويل حساب Google» من لوحة الإدارة لربط الحساب صاحب مجلد الرفع",
+        "drive_token": "تخويل Google منسوخ أو منتهي — المسؤول يفتح «تخويل حساب Google» من لوحة الإدارة من جديد",
+        "drive_probe": "تعذّر الكتابة الفعلية إلى المجلد — راجع صلاحيات الحساب المُخوَّل على المجلد",
+    },
+)

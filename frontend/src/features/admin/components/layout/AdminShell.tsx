@@ -13,6 +13,7 @@ import { AnalyticsView } from '@/features/admin/components/views/AnalyticsView';
 import { ActivityView } from '@/features/admin/components/views/ActivityView';
 import { VideoHostingView } from '@/features/admin/components/views/VideoHostingView';
 import { AdminSystemView } from '@/features/admin/components/views/AdminSystemView';
+import { SECTION_LABELS } from '@/features/admin/types';
 import type { AdminSectionKey } from '@/features/admin/types';
 
 /** One view per section, keyed by the `?tab=` value the provider reads. */
@@ -42,12 +43,18 @@ export const AdminShell: React.FC = () => {
       <AdminSectionNav currentSection={currentSection} onSelect={selectSection} />
 
       <main className="admin-main">
-        <AdminHeader />
+        <div className="animate-fade-in-down">
+          <AdminHeader />
+        </div>
         <AdminNotice message={error} onDismiss={clearError} />
 
-        <div className="admin-container">
+        <div className="content-container animate-fade-in-up animation-delay-100">
+          <h1 className="view-h1">{SECTION_LABELS[currentSection]}</h1>
           <AdminMobileTabs currentSection={currentSection} onSelect={selectSection} />
-          <ActiveView />
+          {/* Wrap the active view so every section gets the same entrance treatment */}
+          <section className="animate-fade-in-up animation-delay-200">
+            <ActiveView />
+          </section>
         </div>
       </main>
 

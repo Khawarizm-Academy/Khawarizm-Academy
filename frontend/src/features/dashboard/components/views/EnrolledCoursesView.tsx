@@ -92,7 +92,7 @@ export const EnrolledCoursesView: React.FC<EnrolledCoursesViewProps> = ({
     >
       {/* Title block */}
       <div className="dash-view-heading">
-        <h1 className="dash-view-h1">دوراتي المسجّلة</h1>
+        <h1 className="view-h1">دوراتي المسجّلة</h1>
         <p className="dash-view-sub">
           {totalCount === 0
             ? 'لا توجد دورات مسجّلة حاليًا'

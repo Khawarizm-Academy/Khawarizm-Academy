@@ -1,7 +1,6 @@
-# Provider registry <- /api/videohosting/providers, ingest, adminconsole
+# Provider registry <- /api/videohosting/providers, ingest, admin console.
 # One module per provider lives under providers/, each declaring a ProviderSpec.
-# Adding a provider touches no existing logic — see the three steps at the
-# bottom of this docstring.
+# Adding a provider = one module here + one SPECS entry — see the README.
 from __future__ import annotations
 
 from django.conf import settings
@@ -10,8 +9,8 @@ from features.videohosting.models import VideoProvider
 from features.videohosting.providers.base import ProviderSpec
 from features.videohosting.providers.google_drive import GOOGLE_DRIVE
 from features.videohosting.providers.telegram import TELEGRAM
+from features.videohosting.serializers import provider_payload
 
-# Every hosting provider the backend knows, one spec per module.
 SPECS: tuple[ProviderSpec, ...] = (GOOGLE_DRIVE, TELEGRAM)
 
 
@@ -27,11 +26,12 @@ def ensure_defaults() -> None:
     decided in code and reviewed in git, not drifted in the admin.
     """
     for spec in SPECS:
-        row, _ = VideoProvider.objects.get_or_create(code=spec.code, defaults=spec.row_defaults())
-        changes = {key: value for key, value in spec.row_defaults().items() if getattr(row, key) != value}
+        defaults = spec.row_defaults()
+        row, _ = VideoProvider.objects.get_or_create(code=spec.code, defaults=defaults)
+        changes = {k: v for k, v in defaults.items() if getattr(row, k) != v}
         if changes:
-            for key, value in changes.items():
-                setattr(row, key, value)
+            for k, v in changes.items():
+                setattr(row, k, v)
             row.save(update_fields=list(changes))
 
 
@@ -40,7 +40,20 @@ def default_code() -> str:
     return settings.VIDEO_HOSTING_DEFAULT_PROVIDER
 
 
-# Adding a new provider — three steps, one file each:
-#   1. providers/<code>.py — a ProviderSpec + a credentials() reading its settings.
-#   2. config/settings.py — os.environ.get for its keys; .env* — placeholder block.
-#   3. here — import the spec and add it to SPECS.
+def provider_listing(include_gate: bool = True) -> list[dict]:
+    """A unified provider listing used by both public and admin endpoints.
+
+    When `include_gate` is True, each entry carries ``available`` and ``reason``
+    drawn from the spec's own env checks — keeping the two callers identical.
+    """
+    ensure_defaults()
+    results = []
+    for p in VideoProvider.objects.all():
+        entry = provider_payload(p)
+        if include_gate:
+            spec = spec_for(p.code)
+            available = spec.available() if spec else False
+            entry["available"] = available
+            entry["reason"] = "" if available else "مزود غير مكتمل الإعداد" if spec is None else spec.reason()
+        results.append(entry)
+    return results

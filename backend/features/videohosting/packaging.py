@@ -18,6 +18,8 @@ RENDITIONS = (
     {"quality": "720p", "height": 720, "video_bitrate_kbps": 2500, "audio_bitrate_kbps": 128},
 )
 SEGMENT_SECONDS = 6
+# The placeholder tokens the stored playlists carry; serving rewrites it per request.
+TOKEN_PLACEHOLDER = "__TOKEN__"
 
 
 class PackagingError(RuntimeError):
@@ -102,7 +104,7 @@ def _pack_rendition(source: Path, work_dir: Path, spec: dict, duration_seconds: 
 
     # The key URI points at the gated backend endpoint; __TOKEN__ is injected at serve time.
     key_info = work_dir / f"{quality}.keyinfo"
-    key_info.write_text(f"/api/stream/__TOKEN__/key/{quality}\n{key_file}\n")
+    key_info.write_text(f"/api/stream/{TOKEN_PLACEHOLDER}/key/{quality}\n{key_file}\n")
 
     playlist_path = out_dir / "index.m3u8"
     _run([
@@ -155,7 +157,7 @@ def _master_playlist(renditions: list[PackagedRendition]) -> str:
     lines = ["#EXTM3U", "#EXT-X-VERSION:3"]
     for rendition in sorted(renditions, key=lambda item: item.bandwidth_bps):
         lines.append(f"#EXT-X-STREAM-INF:BANDWIDTH={rendition.bandwidth_bps},RESOLUTION={rendition.width}x{rendition.height}")
-        lines.append(f"/api/stream/__TOKEN__/{rendition.quality}/index.m3u8")
+        lines.append(f"/api/stream/{TOKEN_PLACEHOLDER}/{rendition.quality}/index.m3u8")
     return "\n".join(lines) + "\n"
 
 
