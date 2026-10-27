@@ -22,6 +22,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   'auth/email-already-in-use': 'هذا البريد الإلكتروني مسجّل بالفعل.',
   'auth/weak-password': 'كلمة المرور قصيرة جدًا (٦ أحرف على الأقل).',
   'auth/popup-closed-by-user': 'تم إغلاق نافذة الدخول قبل الإكمال.',
+  'auth/network-request-failed': 'تعذر الوصول إلى خوادم تسجيل الدخول — تحقق من اتصالك بالإنترنت ثم أعد المحاولة.',
+  'auth/popup-blocked': 'المتصفح منع نافذة الدخول — اسمح بالنوافذ المنبثقة لهذا الموقع ثم أعد المحاولة.',
+  'auth/cancelled-popup-request': 'صلة دخول معلّقة — انتظر ثوانٍ ثم أعد المحاولة.',
 };
 
 /** The one real auth card: credentials, social sign-in, and a create-account toggle. */

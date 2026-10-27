@@ -18,6 +18,16 @@ export interface Credentials {
 
 let cachedAuth: import('firebase/auth').Auth | null = null;
 
+/** Seconds the popup may take to settle; a stalled connection to the auth host never settles on its own. */
+const POPUP_SETTLE_MS = 90_000;
+
+/** The `{code}` shaped error the login card translates through its message map. */
+function codeError(code: string): Error {
+  const err = new Error(code);
+  (err as { code?: string }).code = code;
+  return err;
+}
+
 /** Initialize (once) and return the Firebase auth instance. */
 async function client(config: AuthConfig) {
   const { initializeApp, getApps, getApp } = await import('firebase/app');
@@ -58,6 +68,18 @@ export async function firebaseIdToken(
   }
 
   const { signInWithPopup } = await import('firebase/auth');
-  const result = await signInWithPopup(auth, await socialProvider(provider));
-  return result.user.getIdToken();
+  // A popup that cannot reach the auth host hangs forever — race it against the settle deadline.
+  let settle = 0;
+  const deadline = new Promise<never>((_, reject) => {
+    settle = window.setTimeout(() => reject(codeError('auth/network-request-failed')), POPUP_SETTLE_MS);
+  });
+  try {
+    const result = await Promise.race([
+      signInWithPopup(auth, await socialProvider(provider)),
+      deadline,
+    ]);
+    return result.user.getIdToken();
+  } finally {
+    window.clearTimeout(settle);
+  }
 }

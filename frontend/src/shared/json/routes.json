@@ -91,7 +91,6 @@
     "path": "/admin",
     "title": "لوحة الإدارة — أكاديمية خوارزم",
     "description": "إدارة المستخدمين والأجهزة وتحليلات الدخول.",
-    "activeTab": "overview",
     "hideShell": true,
     "requiresAdmin": true,
     "skeletonVariant": "dashboard"
