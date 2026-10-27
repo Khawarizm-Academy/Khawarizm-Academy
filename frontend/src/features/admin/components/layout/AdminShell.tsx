@@ -13,6 +13,7 @@ import { AnalyticsView } from '@/features/admin/components/views/AnalyticsView';
 import { ActivityView } from '@/features/admin/components/views/ActivityView';
 import { VideoHostingView } from '@/features/admin/components/views/VideoHostingView';
 import { AdminSystemView } from '@/features/admin/components/views/AdminSystemView';
+import { SECTION_LABELS } from '@/features/admin/types';
 import type { AdminSectionKey } from '@/features/admin/types';
 
 /** One view per section, keyed by the `?tab=` value the provider reads. */
@@ -25,18 +26,6 @@ const SECTION_VIEWS: Record<AdminSectionKey, React.FC> = {
   sessions: SessionsView,
   analytics: AnalyticsView,
   activity: ActivityView,
-};
-
-/** Map each section key to the Arabic display label used as the page h1. */
-const SECTION_LABELS: Record<AdminSectionKey, string> = {
-  overview: 'النظرة العامة',
-  users: 'إدارة المستخدمين',
-  content: 'المحتوى',
-  videos: 'استضافة الفيديو',
-  system: 'فحص المنظومة',
-  sessions: 'الجلسات والأجهزة',
-  analytics: 'تحليلات الدخول',
-  activity: 'سجل الأحداث',
 };
 
 /** Console chrome: sticky rail, top bar, section pills, and the detail modal. */
