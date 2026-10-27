@@ -48,17 +48,13 @@ def provider_listing(include_gate: bool = True) -> list[dict]:
     ensure_defaults()
     results = []
     for p in VideoProvider.objects.all():
-        spec = spec_for(p.code)
-        if spec is None:
-            results.append({"code": p.code, "name": p.name, "enabled": p.is_enabled, "isDefault": p.is_default})
-            continue
-        available = spec.available()
-        reason = "" if available else spec.reason()
-        results.append({
-            **provider_payload(p),
-            "available": include_gate and available,
-            "reason": include_gate and reason,
-        })
+        entry = provider_payload(p)
+        if include_gate:
+            spec = spec_for(p.code)
+            available = spec.available() if spec else False
+            entry["available"] = available
+            entry["reason"] = "" if available else "مزود غير مكتمل الإعداد" if spec is None else spec.reason()
+        results.append(entry)
     return results
 
 

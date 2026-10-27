@@ -35,7 +35,9 @@ NOT_READY_BY_STATUS = {
 NOT_READY = {"detail": "الفيديو غير جاهز للعرض"}
 
 # Placeholder living in every stored playlist; rewritten with the caller's token.
-TOKEN_PLACEHOLDER = "__TOKEN__"
+# Owned by packaging.py (it bakes the URIs); imported here for serve-time rewriting.
+from features.videohosting.packaging import TOKEN_PLACEHOLDER
+
 # Manifests and keys carry the token, so they must never be cached by a proxy.
 NO_STORE = "no-store"
 
@@ -171,9 +173,6 @@ def segment_view(request: Any, token: str, quality: str, index: int):
 @permission_classes([IsAuthenticated])
 def video_providers_list(request: Any) -> Response:
     """Public provider listing — uses the same logic as admin, just without gate info."""
-    from features.videohosting import providers as vh_providers
-    from features.videohosting.serializers import provider_payload
-    vh_providers.ensure_defaults()
-    providers = list(vh_providers.VideoProvider.objects.all())
-    return Response({"results": [provider_payload(p) for p in providers]})
+    from features.videohosting.providers import provider_listing
+    return Response({"results": provider_listing(include_gate=False)})
 

@@ -53,6 +53,11 @@ class CheckGroup:
     provider: str  # "" for the pipeline group
     checks: list[Check] = field(default_factory=list)
 
+    @property
+    def ok(self) -> bool:
+        """No error-severity check is failing."""
+        return not any(c.severity == SEVERITY_ERROR and not c.ok for c in self.checks)
+
     def payload(self, hints: dict[str, str]) -> dict[str, Any]:
         blocking = [c for c in self.checks if not c.ok and c.severity == SEVERITY_ERROR]
         warnings = [c for c in self.checks if not c.ok and c.severity == SEVERITY_WARN]

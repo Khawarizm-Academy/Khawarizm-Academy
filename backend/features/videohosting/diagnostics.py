@@ -115,50 +115,10 @@ def provider_reason(code: str) -> str:
 from features.videohosting.providers import SPECS  # noqa: E402
 
 
-def telegram_group(deep: bool = False) -> object:
-    """Return the Telegram CheckGroup with payload dict keys (for test assertions)."""
-    from features.videohosting.providers.base import CheckGroup
-    for sp in SPECS:
-        if sp.code == "telegram":
-            cg = sp.check_group(deep=deep)
-            return _legacy_cg(cg, sp.hints)
-    raise ValueError(f"Telegram spec not found")
-
-
 def drive_group(deep: bool = False) -> object:
-    for sp in SPECS:
-        if sp.code == "google_drive":
-            cg = sp.check_group(deep=deep)
-            return _legacy_cg(cg, sp.hints)
-    raise ValueError(f"Google Drive spec not found")
+    """The Drive CheckGroup — tests assert on its raw Check objects."""
+    spec = spec_for("google_drive")
+    if spec is None:
+        raise ValueError("Google Drive spec not found")
+    return spec.check_group(deep=deep)
 
-
-def _legacy_cg(cg, hints: dict) -> object:
-    """Return an object whose .checks list holds Check instances (for test assertions)."""
-    class _LegacyGroup:
-        def __init__(self):
-            self.id = cg.id
-            self.label = cg.label
-            self.provider = cg.provider
-            self.checks = list(cg.checks)  # raw Check objects
-            self._ok = not any(
-                c.severity == SEVERITY_ERROR and not c.ok for c in cg.checks
-            )
-        @property
-        def ok(self):
-            return self._ok
-    return _LegacyGroup()
-
-
-# ── Re-exported accessors that tests patch via diagnostics.* ──────────
-def _get_drive_accessor(name: str):
-    """Import from google_drive module at call time (avoids circular deps at parse)."""
-    def _call(*a, **kw):
-        from features.videohosting.providers.google_drive import access_token, upload_probe
-        funcs = {"access_token": access_token, "upload_probe": upload_probe}
-        return funcs[name](*a, **kw)
-    return _call
-
-
-drive_access_token = _get_drive_accessor("access_token")
-drive_upload_probe = _get_drive_accessor("upload_probe")

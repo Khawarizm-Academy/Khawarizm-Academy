@@ -47,11 +47,6 @@ class VideoAsset(UUIDModel, TimeStampedModel):
         VideoProvider, null=True, blank=True, on_delete=models.SET_NULL, related_name="assets"
     )
 
-    # Derived — the player polls readiness without loading the rendition tables.
-    @property
-    def is_ready(self) -> bool:
-        return self.status == VideoStatus.READY
-
     # Admin tracker — what the upload progress bar reads while the worker runs.
     progress = models.PositiveSmallIntegerField(default=0, help_text="Ingest progress 0-100")
     stage = models.CharField(max_length=20, blank=True, help_text="uploading | packaging | publishing")
