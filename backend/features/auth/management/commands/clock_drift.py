@@ -1,5 +1,6 @@
-# Compare the local clock with real time and say what to fix — the WSL
-# drift that made every login 401 ("Token used too early") lives right here.
+# Compare the local clock with real time and say what to fix -- on a network
+# that blocks NTP (UDP/123) the unsynced dev clock fails every sign-in
+# ("Token used too early") and this command measures exactly that.
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand, CommandError
@@ -22,10 +23,12 @@ class Command(BaseCommand):
                 raise CommandError(clock.CLOCK_FIX)
             return
         if drift is None:
-            self.stdout.write(style.WARNING("تعذّر قياس التوقيت — الشبكة غير متاحة الآن؛ أعد المحاولة لاحقًا."))
+            self.stdout.write(style.WARNING("Could not measure the clock -- the network is unreachable; try again later."))
             return
-        self.stdout.write(self.style.SUCCESS(f"تفاوت الساعة: {drift} ثانية."))
+        # Terminal output stays ASCII -- the actionable Arabic detail lives in
+        # the 401 the browser shows, not here.
+        self.stdout.write(self.style.SUCCESS(f"Clock drift: {drift} s."))
         for line in clock.drift_warnings(drift):
             self.stdout.write(self.style.WARNING(line))
         if drift > clock.DRIFT_LIMIT_SECONDS:
-            raise CommandError(f"ساعة النظام متأخرة {drift} ثانية — " + clock.CLOCK_FIX)
+            raise CommandError(f"System clock lags by {drift} s -- " + clock.CLOCK_FIX)

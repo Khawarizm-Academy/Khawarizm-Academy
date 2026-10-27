@@ -21,7 +21,7 @@ def login_failure_detail(error: Exception) -> str:
     """The one-line Arabic rejection reason; the clock story names its fix."""
     text = str(error).lower()
     if "too early" in text or "clock" in text or "used while invalid" in text:
-        return "تعذر التحقق من الهوية — ساعة النظام متأخرة عن الساعة الحقيقية. شغّل `manage.py clock_drift` أو `wsl --shutdown` ثم أعد المحاولة."
+        return "تعذر التحقق من الهوية — ساعة النظام متأخرة عن الساعة الحقيقية. شغّل `manage.py clock_drift` للتأكد، وزامِن الساعة بـ `sudo backend/scripts/sync_clock_from_http.sh` ثم أعد المحاولة."
     return "تعذر التحقق من الهوية."
 
 
@@ -54,7 +54,8 @@ def firebase_login(request):
         identity = firebase.verify_id_token(id_token)
     except firebase.FirebaseError as exc:
         services.record_event(AuthEventKind.REJECTED, request=request, detail=str(exc)[:200])
-        # The lagging-WSL-clock failure reads as a mystery otherwise — name it.
+        # The lags-behind-realtime dev clock (NTP-blocked networks) reads as a
+        # mystery otherwise — name it.
         detail = login_failure_detail(exc)
         return Response({"detail": detail}, status=status.HTTP_401_UNAUTHORIZED)
     user = services.upsert_firebase_user(identity)

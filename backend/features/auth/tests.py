@@ -499,13 +499,17 @@ class AdminConsoleViewTests(ApiTestCase):
 
 
 class ClockDriftTests(TestCase):
-    """The lagging-wsl-clock story: measure, warn, and name the fix."""
+    """The unsynced-dev-clock story: measure, warn, and name the fix.
+
+    Terminal-facing strings stay ASCII/English — the Arabic detail belongs
+    to the 401 the browser shows, not the console.
+    """
 
     def test_the_command_reports_a_small_drift_and_passes(self):
         outlet = StringIO()
         with patch.object(clock, "drift_seconds", return_value=20):
             call_command("clock_drift", stdout=outlet)
-        self.assertIn("20 ثانية", outlet.getvalue())
+        self.assertIn("drift: 20 s", outlet.getvalue())
 
     def test_the_command_warns_and_fails_when_the_lag_breaks_signin(self):
         outlet = StringIO()
@@ -513,14 +517,26 @@ class ClockDriftTests(TestCase):
             with self.assertRaises(CommandError):
                 call_command("clock_drift", stdout=outlet)
         text = outlet.getvalue()
-        self.assertIn("67 ثانية", text)
-        self.assertIn("wsl --shutdown", text)
+        self.assertIn("67 s", text)
+        self.assertIn("sync_clock_from_http", text)
 
     def test_notes_go_silent_when_the_reference_is_unreachable(self):
         outlet = StringIO()
         with patch.object(clock, "drift_seconds", return_value=None):
             call_command("clock_drift", stdout=outlet)
-        self.assertIn("الشبكة", outlet.getvalue())
+        self.assertIn("network", outlet.getvalue())
+
+    def test_terminal_output_is_ascii_only(self):
+        # Consoles render RTL text illegibly; dev tooling must never print it.
+        outlet = StringIO()
+        for drift in (5, 20):
+            with patch.object(clock, "drift_seconds", return_value=drift):
+                call_command("clock_drift", stdout=outlet)
+        # 67 s crosses the limit: the command raises after writing its verdict.
+        with self.assertRaises(CommandError):
+            with patch.object(clock, "drift_seconds", return_value=67):
+                call_command("clock_drift", stdout=outlet)
+        self.assertTrue(outlet.getvalue().isascii(), outlet.getvalue())
 
     def test_warnings_track_the_real_boundaries(self):
         # At or under 10 s the clock is healthy; past the 45 s limit the
