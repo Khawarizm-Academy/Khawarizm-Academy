@@ -7,7 +7,7 @@
 # this module owns only the pipeline group and the runner that aggregates them.
 from __future__ import annotations
 
-import urllib.request
+import urllib.request  # tests patch urlopen through this namespace for deep runs
 from typing import Any
 
 from django.conf import settings
@@ -15,13 +15,7 @@ from django.utils import timezone
 
 from features.videohosting import packaging
 from features.videohosting.providers import SPECS, spec_for
-
-
-SEVERITY_OK = "info"      # the check passed
-SEVERITY_WARN = "warn"    # degraded but not blocking (e.g. no stream bot)
-SEVERITY_ERROR = "error"  # blocking — this provider or the pipeline cannot serve
-
-REQUEST_SECONDS = 8
+from features.videohosting.providers.base import SEVERITY_ERROR, SEVERITY_OK
 
 
 def _pipeline_group() -> dict[str, Any]:
@@ -53,25 +47,17 @@ def run(deep: bool = False) -> dict[str, Any]:
     """The full staged validation — the admin diagnostics payload.
 
     Shallow runs stay offline (env + packaging host); `deep` adds live API
-    calls per each provider's own deep_checks, so the admin sees exactly which
+    calls per each provider's own deep_hooks, so the admin sees exactly which
     stage breaks and why.
     """
     groups = [_pipeline_group()]
-    # Provider list mirrors SPECS order; group/order of groups preserves legacy
-    # output: pipeline → telegram → google_drive.
     providers = []
     for spec in SPECS:
-        cg = spec.check_group(deep=deep)
-        available = spec.available(deep)
-        providers.append({
-            **cg.payload(spec.hints),
-            "code": spec.code,
-            "available": available,
-            "reason": "" if available else spec.reason(),
-        })
-    # Groups appended in Telegram-first order to match the legacy payload.
-    for spec in reversed(SPECS):
-        groups.append(spec.check_group(deep=deep).payload(spec.hints))
+        payload = spec.check_group(deep=deep).payload(spec.hints)
+        # One group payload serves both lists, so the env checks run once per spec.
+        groups.append(payload)
+        providers.append({**payload, "code": spec.code, "available": payload["ok"],
+                          "reason": "" if payload["ok"] else spec.reason()})
     problems = [
         f"{g['label']} — {item['label']}: {item['detail']}"
         for g in groups
@@ -82,19 +68,15 @@ def run(deep: bool = False) -> dict[str, Any]:
         "checkedAt": timezone.now().isoformat(),
         "deep": deep,
         "okOverall": not problems,
-        "summary": {
-            "pipeline": groups[0]["ok"],
-            "telegram": any(p["code"] == "telegram" for p in providers if p.get("available")),
-            "google_drive": any(p["code"] == "google_drive" for p in providers if p.get("available")),
-        },
+        "summary": {**{p["code"]: p["available"] for p in providers}, "pipeline": groups[0]["ok"]},
         "problems": problems,
         "groups": groups,
         "providers": providers,
     }
 
 
-# Legacy gate helpers kept thin — they delegate to spec.available() / spec.reason().
-# Old callers may still reference these symbols, so we keep them around.
+# The provider gate's access point: the console resolves upload targets through
+# it, and the admin-console tests patch it to fake availability.
 def provider_available(code: str, deep: bool = False) -> bool:
     """A provider is selectable when none of its blocking checks fail."""
     spec = spec_for(code)
@@ -109,16 +91,3 @@ def provider_reason(code: str) -> str:
     if spec is None:
         return "مزوّد غير معروف."
     return spec.reason()
-
-
-# ── legacy compat (tests call these directly) ────────────────────────
-from features.videohosting.providers import SPECS  # noqa: E402
-
-
-def drive_group(deep: bool = False) -> object:
-    """The Drive CheckGroup — tests assert on its raw Check objects."""
-    spec = spec_for("google_drive")
-    if spec is None:
-        raise ValueError("Google Drive spec not found")
-    return spec.check_group(deep=deep)
-

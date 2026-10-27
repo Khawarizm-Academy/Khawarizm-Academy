@@ -1,7 +1,6 @@
-# Provider registry <- /api/videohosting/providers, ingest, adminconsole.
+# Provider registry <- /api/videohosting/providers, ingest, admin console.
 # One module per provider lives under providers/, each declaring a ProviderSpec.
-# Adding a provider touches no existing logic — see the three steps at the
-# bottom of this docstring.
+# Adding a provider = one module here + one SPECS entry — see the README.
 from __future__ import annotations
 
 from django.conf import settings
@@ -10,6 +9,7 @@ from features.videohosting.models import VideoProvider
 from features.videohosting.providers.base import ProviderSpec
 from features.videohosting.providers.google_drive import GOOGLE_DRIVE
 from features.videohosting.providers.telegram import TELEGRAM
+from features.videohosting.serializers import provider_payload
 
 SPECS: tuple[ProviderSpec, ...] = (GOOGLE_DRIVE, TELEGRAM)
 
@@ -26,8 +26,9 @@ def ensure_defaults() -> None:
     decided in code and reviewed in git, not drifted in the admin.
     """
     for spec in SPECS:
-        row, _ = VideoProvider.objects.get_or_create(code=spec.code, defaults=spec.row_defaults())
-        changes = {k: v for k, v in spec.row_defaults().items() if getattr(row, k) != v}
+        defaults = spec.row_defaults()
+        row, _ = VideoProvider.objects.get_or_create(code=spec.code, defaults=defaults)
+        changes = {k: v for k, v in defaults.items() if getattr(row, k) != v}
         if changes:
             for k, v in changes.items():
                 setattr(row, k, v)
@@ -56,8 +57,3 @@ def provider_listing(include_gate: bool = True) -> list[dict]:
             entry["reason"] = "" if available else "مزود غير مكتمل الإعداد" if spec is None else spec.reason()
         results.append(entry)
     return results
-
-
-# Added in the refactor: one import brings everything; no other module ever
-# needs to know about Telegram vs Drive internals.
-from features.videohosting.serializers import provider_payload  # noqa: E402 — after SPECS so import order works

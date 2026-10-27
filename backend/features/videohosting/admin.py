@@ -5,6 +5,8 @@ from __future__ import annotations
 from django.contrib import admin
 
 from features.videohosting.models import (
+    DriveAuthState,
+    DriveGrant,
     ProviderAsset,
     StreamToken,
     UploadSession,
@@ -83,3 +85,19 @@ class StreamTokenAdmin(admin.ModelAdmin):
     list_filter = ("expires_at",)
     search_fields = ("asset__slug",)
     readonly_fields = ("token_hash",)
+
+
+@admin.register(DriveGrant)
+class DriveGrantAdmin(admin.ModelAdmin):
+    """The human grant ledger — the credentials themselves stay read-only."""
+
+    list_display = ("account_email", "status", "scope", "access_token_expires_at", "created_at")
+    list_filter = ("status",)
+    search_fields = ("account_email",)
+    readonly_fields = ("refresh_token", "access_token")
+
+
+@admin.register(DriveAuthState)
+class DriveAuthStateAdmin(admin.ModelAdmin):
+    list_display = ("state_hash", "expires_at", "created_at")
+    list_filter = ("expires_at",)

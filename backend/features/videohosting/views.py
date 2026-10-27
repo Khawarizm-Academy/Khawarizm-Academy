@@ -18,7 +18,8 @@ from rest_framework.response import Response
 from features.auth.device import client_ip
 from features.videohosting import tokens
 from features.videohosting.models import VideoAsset, VideoSegment
-from features.videohosting.providers import default_code, spec_for
+from features.videohosting.packaging import TOKEN_PLACEHOLDER
+from features.videohosting.providers import provider_listing, spec_for
 from features.videohosting.serializers import asset_meta, minted_token
 
 ASSET_NOT_FOUND = {"detail": "الفيديو غير موجود"}
@@ -33,10 +34,6 @@ NOT_READY_BY_STATUS = {
     "error": {"detail": "فشلت معالجة الفيديو — راجع لوحة الإدارة"},
 }
 NOT_READY = {"detail": "الفيديو غير جاهز للعرض"}
-
-# Placeholder living in every stored playlist; rewritten with the caller's token.
-# Owned by packaging.py (it bakes the URIs); imported here for serve-time rewriting.
-from features.videohosting.packaging import TOKEN_PLACEHOLDER
 
 # Manifests and keys carry the token, so they must never be cached by a proxy.
 NO_STORE = "no-store"
@@ -154,17 +151,11 @@ def segment_view(request: Any, token: str, quality: str, index: int):
             spec = spec_for(provider.code)
             if spec is not None:
                 url = spec.segment_redirect(fp)
-        # Fallback for assets created before provider assignment:
-        # assume Telegram (the only provider that produces HLS segments).
+        # Assets created before provider assignment are Telegram-segmented —
+        # the only provider that produced HLS segments.
         if url is None and provider is None:
-            # Fallback for assets created before provider assignment:
-            # assume Telegram (the only provider that produces HLS segments).
-            from features.videohosting.providers import SPECS
-            for sp in SPECS:
-                # The CDN redirect transforms a file path; identity leaves it unchanged.
-                if sp.segment_redirect("check") != "check":
-                    url = sp.segment_redirect(fp)
-                    break
+            telegram = spec_for("telegram")
+            url = telegram.segment_redirect(fp) if telegram else None
     response["Location"] = url or segment.file_path or ""
     return response
 
@@ -173,6 +164,5 @@ def segment_view(request: Any, token: str, quality: str, index: int):
 @permission_classes([IsAuthenticated])
 def video_providers_list(request: Any) -> Response:
     """Public provider listing — uses the same logic as admin, just without gate info."""
-    from features.videohosting.providers import provider_listing
     return Response({"results": provider_listing(include_gate=False)})
 

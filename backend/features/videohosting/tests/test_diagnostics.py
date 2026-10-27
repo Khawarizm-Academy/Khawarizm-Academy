@@ -7,7 +7,7 @@ from unittest import mock
 from features.common.testing import ApiTestCase
 from features.videohosting import diagnostics
 from features.videohosting.models import DriveGrant
-from features.videohosting.providers import google_drive
+from features.videohosting.providers import google_drive, spec_for
 
 from features.videohosting.tests.helpers import drive_grant
 
@@ -54,7 +54,7 @@ class DiagnosticsTests(ApiTestCase):
              mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"), \
              mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
              mock.patch.object(diagnostics.urllib.request, "urlopen", boom):
-            group = diagnostics.drive_group(deep=True)
+            group = spec_for("google_drive").check_group(deep=True)
         check_ids = {c.id for c in group.checks}
         self.assertEqual(check_ids, {"client_id", "client_secret", "root_folder", "redirect_uri", "oauth_grant"})
 
@@ -70,7 +70,7 @@ class DiagnosticsTests(ApiTestCase):
                                return_value=(True, "BEAR", "استخدم access token المخزَّن.")) as fake_token, \
              mock.patch.object(google_drive, "upload_probe",
                                return_value=(False, "تعذّر الكتابة — راجع صلاحيات الحساب")) as fake_probe:
-            group = diagnostics.drive_group(deep=True)
+            group = spec_for("google_drive").check_group(deep=True)
         by_id = {c.id: c for c in group.checks}
         self.assertTrue(by_id["drive_token"].ok)
         self.assertFalse(by_id["drive_probe"].ok)

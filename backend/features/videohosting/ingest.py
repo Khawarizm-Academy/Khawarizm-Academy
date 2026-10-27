@@ -36,7 +36,7 @@ FULL_SPAN = (0, 99)
 SECONDS_BETWEEN_FLUSHES = 1.0
 
 
-# ── ProgressTracker ────────────────────────────────────────────────────
+# The tracker: merges provider byte ticks into the asset's one progress bar.
 class ProgressTracker:
     """Merges provider byte ticks into the asset's one progress bar.
 
@@ -109,7 +109,8 @@ class ProgressTracker:
         VideoAsset.objects.filter(pk=self.asset_id).update(progress=percent, stage=stage)
 
 
-# ── packaging decision ────────────────────────────────────────────────
+# The packaging decision: "auto" packages when the host can, "force" requires
+# the packaging host, "never" stages the source so it can be packaged later.
 def _should_package(package: str) -> bool:
     if package == "force":
         return True
@@ -118,7 +119,7 @@ def _should_package(package: str) -> bool:
     return packaging.ffmpeg_available() and not settings.IS_VERCEL
 
 
-# ── public API ─────────────────────────────────────────────────────────
+# The public track: one ingest, one asset row; raises on failure except as noted.
 def ingest_file(
     file_path: str | Path,
     slug: str,
@@ -198,8 +199,6 @@ def ingest_file(
         asset.renditions.all().delete()  # re-uploaded assets need a fresh ladder
         asset.status = status
         save_keys = [*stored.keys(), *fields.keys(), "status", "updated_at"]
-        if "duration_seconds" in fields:
-            save_keys.append("duration_seconds")
         asset.save(update_fields=save_keys)
 
         # Create ORM rows for each published rendition.
@@ -223,12 +222,11 @@ def ingest_file(
     return asset
 
 
-# Re-exports kept at module level so tests can mock via ingest.TelegramMediaService.
+# The service re-exports are the ingest test seam — tests patch ingest.TelegramMediaService.
 from features.videohosting.providers.telegram import TelegramMediaService  # noqa: E402,F401
 from features.videohosting.providers.google_drive import GoogleDriveService  # noqa: E402,F401
 
 
-# ── utility ────────────────────────────────────────────────────────────
 def _await_if_needed(coro_or_val):
     """Return the value now, or await a coroutine in the running context."""
     if asyncio.iscoroutine(coro_or_val):

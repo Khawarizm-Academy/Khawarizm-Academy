@@ -13,7 +13,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from features.common.testing import ApiTestCase
-from features.videohosting import oauthdrive
+from features.videohosting import drive_oauth
 from features.videohosting.models import DriveAuthState, DriveGrant
 from features.videohosting.providers import google_drive
 
@@ -149,10 +149,10 @@ class DriveOAuthTests(ApiTestCase):
     """The consent dance — state CSRF, exchange, persistence, and the refresh."""
 
     def test_consent_url_banks_a_single_use_state(self):
-        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"):
-            url = oauthdrive.consent_url()
+        with mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"):
+            url = drive_oauth.consent_url()
         self.assertIn("accounts.google.com/o/oauth2/v2/auth", url)
         query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
         self.assertEqual(query["access_type"], ["offline"])
@@ -160,7 +160,7 @@ class DriveOAuthTests(ApiTestCase):
         self.assertIn("drive.file", query["scope"][0])
         self.assertIn("redirect_uri=http%3A%2F%2Fcb", url)
         # Only the state's hash is stored — the raw value rides the URL alone.
-        self.assertTrue(DriveAuthState.objects.filter(state_hash=oauthdrive._hash(query["state"][0])).exists())
+        self.assertTrue(DriveAuthState.objects.filter(state_hash=drive_oauth._hash(query["state"][0])).exists())
         self.assertFalse(DriveAuthState.objects.filter(state_hash=query["state"][0]).exists())
 
     def test_complete_rejects_an_unknown_state_without_touching_the_network(self):
@@ -168,16 +168,16 @@ class DriveOAuthTests(ApiTestCase):
             raise AssertionError("a bad state must die before any Google call")
 
         DriveGrant.objects.all().delete()
-        with mock.patch.object(oauthdrive.urllib.request, "urlopen", boom):
-            okay, email, detail = oauthdrive.complete("forged", "4/0CODE")
+        with mock.patch.object(drive_oauth.urllib.request, "urlopen", boom):
+            okay, email, detail = drive_oauth.complete("forged", "4/0CODE")
         self.assertFalse(okay)
         self.assertIn("state", detail)
         self.assertEqual(DriveGrant.objects.count(), 0)
 
     def test_complete_rejects_an_expired_state(self):
         raw = "expired-state"
-        DriveAuthState.objects.create(state_hash=oauthdrive._hash(raw), expires_at=timezone.now() - timedelta(seconds=1))
-        okay, _email, detail = oauthdrive.complete(raw, "4/0CODE")
+        DriveAuthState.objects.create(state_hash=drive_oauth._hash(raw), expires_at=timezone.now() - timedelta(seconds=1))
+        okay, _email, detail = drive_oauth.complete(raw, "4/0CODE")
         self.assertFalse(okay)
         self.assertIn("state", detail)
 
@@ -190,12 +190,12 @@ class DriveOAuthTests(ApiTestCase):
                 "id_token": google_id_token("owner@example.com"),
             }).encode("utf-8")),
         ])
-        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
-             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+        with mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
+             mock.patch.object(drive_oauth.urllib.request, "urlopen", scripted):
             state = banked_state()
-            okay, email, detail = oauthdrive.complete(state, "4/0CODE")
+            okay, email, detail = drive_oauth.complete(state, "4/0CODE")
         self.assertTrue(okay)
         self.assertEqual(email, "owner@example.com")
         grant = DriveGrant.objects.get()
@@ -207,7 +207,7 @@ class DriveOAuthTests(ApiTestCase):
         self.assertEqual(DriveAuthState.objects.count(), 0)
         # The state is spent: a replayed callback fails without a new exchange.
         self.assertEqual(len(scripted.calls), 1)
-        replay_okay, _email, replayed_detail = oauthdrive.complete(state, "4/0CODE")
+        replay_okay, _email, replayed_detail = drive_oauth.complete(state, "4/0CODE")
         self.assertFalse(replay_okay)
         self.assertIn("state", replayed_detail)
 
@@ -221,12 +221,12 @@ class DriveOAuthTests(ApiTestCase):
                 "id_token": google_id_token("owner@example.com"),
             }).encode("utf-8")),
         ])
-        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
-             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+        with mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
+             mock.patch.object(drive_oauth.urllib.request, "urlopen", scripted):
             state = banked_state()
-            okay, _email, _detail = oauthdrive.complete(state, "4/0CODE")
+            okay, _email, _detail = drive_oauth.complete(state, "4/0CODE")
         self.assertTrue(okay)
         grant = DriveGrant.objects.get()
         self.assertEqual(grant.refresh_token, "rt-fixed")
@@ -236,19 +236,19 @@ class DriveOAuthTests(ApiTestCase):
         scripted = ScriptedDriveHTTP([(
             400, {}, json.dumps({"error": "invalid_grant", "error_description": "Code was already redeemed."}).encode("utf-8"),
         )])
-        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
-             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+        with mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
+             mock.patch.object(drive_oauth.urllib.request, "urlopen", scripted):
             state = banked_state()
-            okay, _email, detail = oauthdrive.complete(state, "4/0SPENT")
+            okay, _email, detail = drive_oauth.complete(state, "4/0SPENT")
         self.assertFalse(okay)
         self.assertIn("already redeemed", detail)
         self.assertEqual(DriveGrant.objects.count(), 0)
 
     def test_access_token_requires_a_stored_grant(self):
         DriveGrant.objects.all().delete()
-        okay, bearer, detail = oauthdrive.access_token()
+        okay, bearer, detail = drive_oauth.access_token()
         self.assertFalse(okay)
         self.assertEqual(bearer, "")
         self.assertIn("تخويل", detail)
@@ -259,8 +259,8 @@ class DriveOAuthTests(ApiTestCase):
         def boom(*args, **kwargs):
             raise AssertionError("a fresh cached token must not refresh over the network")
 
-        with mock.patch.object(oauthdrive.urllib.request, "urlopen", boom):
-            okay, bearer, _detail = oauthdrive.access_token()
+        with mock.patch.object(drive_oauth.urllib.request, "urlopen", boom):
+            okay, bearer, _detail = drive_oauth.access_token()
         self.assertTrue(okay)
         self.assertEqual(bearer, "BEAR")
 
@@ -269,10 +269,10 @@ class DriveOAuthTests(ApiTestCase):
         grant.access_token_expires_at = timezone.now() - timedelta(seconds=1)
         grant.save(update_fields=["access_token_expires_at"])
         scripted = ScriptedDriveHTTP([(200, {}, json.dumps({"access_token": "AT-3", "expires_in": 3600}).encode("utf-8"))])
-        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
-            okay, bearer, _detail = oauthdrive.access_token()
+        with mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(drive_oauth.urllib.request, "urlopen", scripted):
+            okay, bearer, _detail = drive_oauth.access_token()
         self.assertTrue(okay)
         self.assertEqual(bearer, "AT-3")
         grant.refresh_from_db()
@@ -288,10 +288,10 @@ class DriveOAuthTests(ApiTestCase):
         scripted = ScriptedDriveHTTP([(
             400, {}, json.dumps({"error": "invalid_grant", "error_description": "Token has been expired or revoked."}).encode("utf-8"),
         )])
-        with mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(oauthdrive.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
-            okay, _bearer, detail = oauthdrive.access_token()
+        with mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
+             mock.patch.object(drive_oauth.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
+             mock.patch.object(drive_oauth.urllib.request, "urlopen", scripted):
+            okay, _bearer, detail = drive_oauth.access_token()
         self.assertFalse(okay)
         self.assertIn("تخويل", detail)
         grant.refresh_from_db()
@@ -300,7 +300,7 @@ class DriveOAuthTests(ApiTestCase):
 
     def test_connected_reports_email_and_status_only(self):
         drive_grant()
-        payload = oauthdrive.connected()
+        payload = drive_oauth.connected()
         self.assertEqual(payload["connected"], True)
         self.assertEqual(payload["account_email"], "owner@example.com")
         text = json.dumps(payload)
@@ -312,6 +312,6 @@ class DriveOAuthTests(ApiTestCase):
             raise AssertionError("the best-effort Google revoke must swallow network failures")
 
         drive_grant()
-        with mock.patch.object(oauthdrive.urllib.request, "urlopen", boom):
-            oauthdrive.revoke()
+        with mock.patch.object(drive_oauth.urllib.request, "urlopen", boom):
+            drive_oauth.revoke()
         self.assertEqual(DriveGrant.objects.count(), 0)

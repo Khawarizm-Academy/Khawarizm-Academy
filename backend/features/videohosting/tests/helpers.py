@@ -8,7 +8,6 @@ import json
 import urllib.error
 import urllib.parse
 from datetime import timedelta
-from pathlib import Path
 
 from django.utils import timezone
 
@@ -69,9 +68,9 @@ def google_id_token(email: str) -> str:
 
 def banked_state() -> str:
     """Run consent_url() and hand back the raw CSRF state it banked."""
-    from features.videohosting import oauthdrive
+    from features.videohosting import drive_oauth
 
-    url = oauthdrive.consent_url()
+    url = drive_oauth.consent_url()
     return urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["state"][0]
 
 

@@ -217,7 +217,7 @@ class DriveGrant(UUIDModel, TimeStampedModel):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
-        return f"Drive \u062a\u062e\u0648\u064a\u0644\u0020{self.account_email} ({self.status})"
+        return f"تخويل Drive — {self.account_email} ({self.status})"
 
 
 class DriveAuthState(UUIDModel, TimeStampedModel):

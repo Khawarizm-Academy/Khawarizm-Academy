@@ -12,7 +12,7 @@ import urllib.request
 
 from django.conf import settings
 
-from features.videohosting.oauthdrive import access_token as oauth_access_token
+from features.videohosting.drive_oauth import access_token as oauth_access_token, connected as oauth_connected
 from features.videohosting.providers.base import (
     ProviderSpec,
     Check,
@@ -22,7 +22,7 @@ from features.videohosting.providers.base import (
 )
 
 
-# ── constants ──────────────────────────────────────────────────────────
+# Google env keys, Drive endpoint, and the resumable-chunk constants.
 REQUIRED_SETTINGS = (
     "GOOGLE_DRIVE_CLIENT_ID",
     "GOOGLE_DRIVE_CLIENT_SECRET",
@@ -34,7 +34,7 @@ RETRIES_PER_CHUNK = 3
 REQUEST_SECONDS = 30
 
 
-# ── credentials & token (public utilities) ─────────────────────────────
+# The configured credentials and the muted bearer every Drive call reads through.
 def credentials() -> dict[str, str]:
     """The configured Drive credentials, failing loudly and naming each missing key."""
     values = {key: getattr(settings, key) or "" for key in REQUIRED_SETTINGS}
@@ -70,7 +70,7 @@ def _403_hint(message: str) -> str:
     return message
 
 
-# ── upload service ─────────────────────────────────────────────────────
+# The upload service: resumable session, chunked streaming, progress ticks.
 class GoogleDriveService:
     """Stores one file in the configured Drive folder via a resumable session.
 
@@ -172,7 +172,7 @@ class GoogleDriveService:
         raise RuntimeError(f"تعذّر رفع مقطع إلى Drive: {last_error}")
 
 
-# ── diagnostics hooks ────────────────────────────────────────────────
+# Diagnostics hooks — env gating offline, live probes on deep runs.
 def _drive_env_checks() -> list[Check]:
     client_id = (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip()
     client_secret = (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip()
@@ -204,12 +204,6 @@ def _drive_deep_checks() -> list[Check]:
         probe_ok, probe_detail = upload_probe()
         checks.append(check("drive_probe", "تجربة كتابة فعلية (1 بايت)", probe_ok, probe_detail))
     return checks
-
-
-def oauth_connected() -> dict:
-    """The auth-bound connection state — called by diagnostics only."""
-    from features.videohosting.oauthdrive import connected as _conn
-    return _conn()
 
 
 def upload_probe() -> tuple[bool, str]:
@@ -253,8 +247,8 @@ def upload_probe() -> tuple[bool, str]:
     return True, f"كتب 1 بايت في المجلد {cleaned}"
 
 
-# ── ingest hook ───────────────────────────────────────────────────────
-class _DrProviderIngest:
+# The spec's store-source leg — staged only, no HLS packaging.
+class _DriveIngest:
     """Google Drive store-source leg — staged only, no HLS packaging."""
 
     @staticmethod
@@ -269,7 +263,7 @@ class _DrProviderIngest:
         }
 
 
-# ── THE spec (last — all symbols above are now available) ─────────────
+# The spec — declared last so every symbol above is already defined.
 GOOGLE_DRIVE = ProviderSpec(
     code="google_drive",
     name="Google Drive",
@@ -282,7 +276,7 @@ GOOGLE_DRIVE = ProviderSpec(
         "playback": "provider_managed_or_limited",
     },
     segment_redirect=_identity,     # Drive does not use CDN redirects like Telegram
-    ingest=_DrProviderIngest(),     # store_source only; no HLS packaging
+    ingest=_DriveIngest(),         # store_source only; no HLS packaging
     env_checks=_drive_env_checks,
     deep_checks=_drive_deep_checks,
     hints={

@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from features.common.testing import ApiTestCase, api_client, authenticate, make_admin, make_user
-from features.videohosting import diagnostics, ingest, oauthdrive, packaging
+from features.videohosting import diagnostics, drive_oauth, ingest, packaging
 from features.videohosting.models import DriveAuthState, DriveGrant, VideoAsset
 
 from features.videohosting.tests.helpers import FakeTelegramService, ScriptedDriveHTTP
@@ -37,7 +37,7 @@ class AdminConsoleVideoTests(ApiTestCase):
 
     def test_diagnostics_payload_names_every_group(self):
         body = self.client.get("/api/admin/video-diagnostics").json()
-        self.assertEqual([g["id"] for g in body["groups"]], ["pipeline", "telegram", "google_drive"])
+        self.assertEqual([g["id"] for g in body["groups"]], ["pipeline", "google_drive", "telegram"])
         self.assertEqual([p["code"] for p in body["providers"]], ["google_drive", "telegram"])
         self.assertIsInstance(body["okOverall"], bool)
         self.assertIn("problems", body)
@@ -266,7 +266,7 @@ class AdminConsoleDriveOAuthTests(ApiTestCase):
         with mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
              mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
              mock.patch.object(django_settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
-             mock.patch.object(oauthdrive.urllib.request, "urlopen", scripted):
+             mock.patch.object(drive_oauth.urllib.request, "urlopen", scripted):
             response = self.client.get("/api/admin/video-drive/oauth/callback", {"state": raw_state, "code": "4/0x"})
         page = response.content.decode("utf-8")
         self.assertIn("تم ربط", page)
@@ -299,7 +299,7 @@ class AdminConsoleDriveOAuthTests(ApiTestCase):
             access_token="at", access_token_expires_at=timezone.now() + timedelta(hours=1),
         )
         authenticate(self.client, make_admin())
-        with mock.patch.object(oauthdrive.urllib.request, "urlopen",
+        with mock.patch.object(drive_oauth.urllib.request, "urlopen",
                                side_effect=AssertionError("disconnect must not hang on Google")):
             response = self.client.post("/api/admin/video-drive/oauth/disconnect", {})
         self.assertEqual(response.status_code, 200)

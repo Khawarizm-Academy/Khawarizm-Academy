@@ -118,8 +118,8 @@ features/videohosting/
 ├── ingest.py             upload → store→stage → package ladder, worker + tracker
 ├── packaging.py          FFmpeg AES-128 HLS ladder (local/worker host only)
 ├── diagnostics.py        the staged offline→deep system check + provider gate
-├── oauthdrive.py         the human grant: consent URL, CSRF state, code exchange,
-│                         refresh-token persistence (DriveGrant), auto-refresh
+├── drive_oauth.py         the human grant: consent URL, CSRF state, code exchange,
+│                           refresh-token persistence (DriveGrant), auto-refresh
 ├── console/              the 9 /api/admin/video-* routes (URLs + admin views)
 ├── tests/                one module per concern + shared fixtures in helpers.py
 └── providers/
@@ -127,7 +127,7 @@ features/videohosting/
     │                     default_code(), provider_listing()
     ├── base.py           ProviderSpec + Check/CheckGroup vocabulary
     ├── google_drive.py   GOOGLE_DRIVE spec + GoogleDriveService (resumable upload)
-    │                     — the bearer comes from oauthdrive, never from env
+    │                     — the bearer comes from drive_oauth, never from env
     └── telegram.py       TELEGRAM spec + TelegramMediaService + Bot API helpers
 ```
 

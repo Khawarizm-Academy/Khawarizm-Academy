@@ -6,9 +6,10 @@ import asyncio
 import json
 import os
 import time
-from pathlib import Path
-from typing import AsyncGenerator, Callable, Dict, Union
+import urllib.parse
 import urllib.request
+from pathlib import Path
+from typing import Callable, Dict, Union
 
 from django.conf import settings
 
@@ -16,19 +17,18 @@ from features.videohosting.providers.base import (
     ProviderSpec,
     Check,
     check,
-    _identity,
+    SEVERITY_WARN,
     blocking_checks,
 )
 
 
-# ── constants ──────────────────────────────────────────────────────────
-GET_MESSAGES_BATCH_SIZE = 100       # messages.getMessages accepts up to 100 ids
+# The storage thresholds and retryable conditions in one record.
 CHUNK_SIZE = 1024 * 1024            # streaming chunk size — matches Pyrogram 1 MiB
 SPLIT_THRESHOLD_BYTES = 1950 * 1024 * 1024   # bot upload cap; larger files split first
 RETRYABLE_ERRORS = (OSError, TimeoutError)     # connection blips — safe to reconnect
 
 
-# ── service ────────────────────────────────────────────────────────────
+# The Pyrogram-backed media service: persistent client, event-loop safe.
 class TelegramMediaService:
     """Persistent Pyrogram client bound to one event loop (ingest + relay paths)."""
 
@@ -109,8 +109,6 @@ class TelegramMediaService:
                 await asyncio.sleep(1 + attempt)
         raise last_error  # type: ignore[misc]
 
-    # ----------------------------------------------------------------- upload
-
     async def upload_file(self, file_path: str, caption: str = "", on_bytes: Callable[[int, int], None] | None = None) -> Dict[str, object]:
         """Upload one file (>2GB auto-split) and return catalog rows."""
         size = os.path.getsize(file_path)
@@ -180,7 +178,7 @@ class TelegramMediaService:
                 os.rmdir(split_dir)
 
 
-# ── helpers (public, used by the control plane and diagnostics) ────────
+# Bot API path helpers — the control plane's serving-side access to Telegram.
 def resolve_file_path_http(file_id: str) -> str:
     """Refresh a Bot API file path over plain HTTPS — no Pyrogram, serverless-safe."""
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_STREAM_TOKEN or settings.TELEGRAM_BOT_TOKEN}/getFile?file_id={file_id}"
@@ -197,7 +195,7 @@ def telegram_file_url(file_path: str) -> str:
     return f"https://api.telegram.org/file/bot{token}/{file_path}"
 
 
-# ── diagnostics hooks ────────────────────────────────────────────────
+# Diagnostics hooks — env gating offline, live Bot API probes on deep runs.
 def _telegram_env_checks() -> list[Check]:
     api_id = (settings.TELEGRAM_API_ID or "").strip()
     api_hash = (settings.TELEGRAM_API_HASH or "").strip()
@@ -215,7 +213,7 @@ def _telegram_env_checks() -> list[Check]:
         check("stream_token", "روبوت التوجيه للعرض (TELEGRAM_STREAM_TOKEN)", bool(stream_token),
               "متوفر — روابط المقاطع تُبنى به (قراءة فقط)." if stream_token
               else "غير مضبوط — روابط التوجيه ستستخدم روبوت الرفع الأقوى صلاحية.",
-              severity="warn"),
+              severity=SEVERITY_WARN),
         check("channel_id", "قناة التخزين (TELEGRAM_CHANNEL_ID)", channel_ok,
               f"مضبوط: {channel}" if channel_ok else "غير مضبوط."),
         check("channel_format", "صيغة معرّف القناة صحيحة", channel_ok,
@@ -238,7 +236,6 @@ def _telegram_deep_checks() -> list[Check]:
 
 
 def _bot_api_call(token: str, method: str, params: dict[str, str] | None = None) -> tuple[bool, str]:
-    import urllib.parse
     query = f"?{urllib.parse.urlencode(params)}" if params else ""
     url = f"https://api.telegram.org/bot{token}/{method}{query}"
     try:
@@ -253,8 +250,8 @@ def _bot_api_call(token: str, method: str, params: dict[str, str] | None = None)
     return True, f"استجابة سليمة{f' — {name}' if name else ''}."
 
 
-# ── ingest hooks ─────────────────────────────────────────────────────
-class _TeleProviderIngest:
+# The spec's ingest legs: the source publish and the packaged-segment publish.
+class _TelegramIngest:
     """The Telegram-specific legs of an ingest."""
 
     @staticmethod
@@ -301,7 +298,7 @@ class _TeleProviderIngest:
         return renditions
 
 
-# ── THE spec (last — all symbols above are now available) ──────────────
+# The spec — declared last so every symbol above is already defined.
 TELEGRAM = ProviderSpec(
     code="telegram",
     name="Telegram",
@@ -315,7 +312,7 @@ TELEGRAM = ProviderSpec(
     },
     segment_redirect=telegram_file_url,
     file_path_refresher=resolve_file_path_http,
-    ingest=_TeleProviderIngest(),
+    ingest=_TelegramIngest(),
     env_checks=_telegram_env_checks,
     deep_checks=_telegram_deep_checks,
     hints={

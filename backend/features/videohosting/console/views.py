@@ -1,8 +1,4 @@
-"""Admin console video endpoints — moved from features/adminconsole.
-
-All 9 ``/api/admin/video-*`` routes live here; paths and URL names are
-identical to the original so ``adminFetchers.ts`` needs no changes.
-"""
+"""Admin console video endpoints — providers, assets, uploads, Drive OAuth, diagnostics."""
 
 from __future__ import annotations
 
@@ -20,25 +16,17 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from features.auth.permissions import IsAdminRole
-
-from features.videohosting import ingest, oauthdrive
-from features.videohosting.models import VideoAsset
+from features.videohosting import diagnostics, drive_oauth, ingest
+from features.videohosting.models import VideoAsset, VideoProvider
 from features.videohosting.providers import ensure_defaults, provider_listing
 
 
-# ── helpers ────────────────────────────────────────────────────────────
 def _resolve_provider(provider_code):
     """Resolve one provider code against the registry and its env checks.
 
     Returns ``(provider, None)`` on success or ``(None, ready Response)``.
     An unknown code fails loudly instead of silently falling back.
-
-    Uses ``diagnostics.provider_available()`` so the existing test patching
-    strategy still works without touching every consumer.
     """
-    from features.videohosting import diagnostics as vh_diag
-    from features.videohosting.models import VideoProvider
-
     if not provider_code:
         provider = VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
         return provider, None
@@ -46,9 +34,9 @@ def _resolve_provider(provider_code):
     if provider is None:
         return None, Response({"detail": f"مزود غير معروف: {provider_code}."}, status=status.HTTP_400_BAD_REQUEST)
     # The provider becomes selectable the moment its own env checks pass.
-    if not vh_diag.provider_available(provider.code):
+    if not diagnostics.provider_available(provider.code):
         return None, Response(
-            {"detail": f"الرفع عبر {provider.name} غير جاهز — {vh_diag.provider_reason(provider.code)}"},
+            {"detail": f"الرفع عبر {provider.name} غير جاهز — {diagnostics.provider_reason(provider.code)}"},
             status=status.HTTP_400_BAD_REQUEST,
         )
     return provider, None
@@ -75,7 +63,19 @@ def _asset_row(asset, *, include_error: bool = False) -> dict:
 VIDEO_UPLOAD_MAX_BYTES = 2 ** 31     # Bot uploads cap at ~2GB
 
 
-# ── route views ────────────────────────────────────────────────────────
+def _login_page(okay: bool, detail: str) -> HttpResponse:
+    """The tiny neutral landing page Google's redirect ends on."""
+    body = (
+        "<!doctype html><html lang=ar dir=rtl><meta charset=utf-8><title>تخويل Google Drive</title>"
+        f"<body style='font-family:sans-serif;text-align:center;padding:4rem'>"
+        f"<h2>{'✓ تم ربط حساب Google' if okay else '✗ فشل التخويل'}</h2>"
+        f"<p>{detail[:200]}</p>"
+        "<p>أغلق هذه الصفحة، ثم أعد «فحص المنظومة» من لوحة الإدارة.</p>"
+        "<script>setTimeout(close,4000)</script></body></html>"
+    )
+    return HttpResponse(body, content_type="text/html; charset=utf-8")
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_providers(request):
@@ -119,7 +119,7 @@ def video_assets(request):
 def video_drive_oauth_start(request):
     """Open the consent dance — Google's URL for the admin's browser."""
     try:
-        return Response({"authUrl": oauthdrive.consent_url()})
+        return Response({"authUrl": drive_oauth.consent_url()})
     except ValueError as exc:
         return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -128,17 +128,17 @@ def video_drive_oauth_start(request):
 @permission_classes([AllowAny])
 def video_drive_oauth_callback(request):
     """Google's redirect target — validates state, mints grant, shows result."""
-    okay, email, detail = oauthdrive.complete(
+    okay, email, detail = drive_oauth.complete(
         request.query_params.get("state") or "", request.query_params.get("code") or ""
     )
-    return HttpResponseLoginPage(okay, detail)
+    return _login_page(okay, detail)
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_drive_oauth_status(request):
     """The admin-safe connection state — account email, no tokens."""
-    grant = oauthdrive.connected()
+    grant = drive_oauth.connected()
     return Response({
         "connected": grant["connected"],
         "accountEmail": grant["account_email"],
@@ -151,21 +151,8 @@ def video_drive_oauth_status(request):
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_drive_oauth_disconnect(request):
     """Revoke the grant at Google and drop the persisted credential."""
-    oauthdrive.revoke()
+    drive_oauth.revoke()
     return Response({"connected": False})
-
-
-def HttpResponseLoginPage(okay: bool, detail: str) -> HttpResponse:
-    """The tiny neutral landing page Google's redirect ends on."""
-    body = (
-        "<!doctype html><html lang=ar dir=rtl><meta charset=utf-8><title>تخويل Google Drive</title>"
-        f"<body style='font-family:sans-serif;text-align:center;padding:4rem'>"
-        f"<h2>{'✓ تم ربط حساب Google' if okay else '✗ فشل التخويل'}</h2>"
-        f"<p>{detail[:200]}</p>"
-        "<p>أغلق هذه الصفحة، ثم أعد «فحص المنظومة» من لوحة الإدارة.</p>"
-        "<script>setTimeout(close,4000)</script></body></html>"
-    )
-    return HttpResponse(body, content_type="text/html; charset=utf-8")
 
 
 @api_view(["POST"])
@@ -241,6 +228,5 @@ def video_asset_detail(request, asset_id):
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_diagnostics(request):
     """Staged validation — shallow (default) or deep (live API probes)."""
-    from features.videohosting import diagnostics
     deep = (request.query_params.get("deep") or "").lower() in {"1", "true", "yes"}
     return Response(diagnostics.run(deep=deep))
