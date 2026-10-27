@@ -1,0 +1,23 @@
+# Dev backend - one container, live code, the same .env profile files.
+services:
+  backend:
+    image: khawarizm-backend:dev
+    build: .
+    command: bash -lc "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      # Live development: the whole backend dir is the container's /app, so
+      # code edits, .env.* files, and db.sqlite3 are shared, never copied.
+      - .:/app
+      # Keep host-side artifacts off the image's Python.
+      - /app/.venv
+      - /app/__pycache__
+    environment:
+      DJANGO_ENV: development
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s

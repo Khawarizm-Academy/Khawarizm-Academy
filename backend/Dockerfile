@@ -1,32 +1,21 @@
-# Deploy the API on a host with a real, persistent disk (Railway, Render, Fly,
-# any Docker platform) so SQLite stays a single durable file — no database
-# server required. Mount a volume at /data and the file survives restarts.
-#
-#   docker build -t khawarizm-api .
-#   docker run -p 8000:8000 -v khawarizm-data:/data \
-#     -e DJANGO_ENV=production -e DJANGO_SECRET_KEY=<a-long-random-string> \
-#     -e DJANGO_ALLOWED_HOSTS=<your-host> \
-#     khawarizm-api
-#
-# On these hosts Vercel's per-instance read-only bundle does not apply, and
-# SQLITE_PATH pins the database to the mounted volume.
-FROM python:3.12-slim
+# Dev image - Django + the full ingest toolchain in one box.
+# Code, .env.* profile files, and the SQLite db are NOT baked in: they arrive
+# via the compose bind mount, so edits, config, and data never need a rebuild.
+FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DJANGO_ENV=production \
-    SQLITE_PATH=/data/db.sqlite3
+    PIP_NO_CACHE_DIR=1
+
+# ffmpeg powers the HLS packaging (the one thing this image adds that a bare
+# venv never had locally); gcc + python3-dev compile TgCrypto (no cp314 wheel);
+# curl serves the compose healthcheck.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg gcc python3-dev curl && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
 
 WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-RUN python manage.py collectstatic --noinput
-
 EXPOSE 8000
-
-# Migrate on boot (creates the file on first run), then serve with gunicorn.
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 60"]
