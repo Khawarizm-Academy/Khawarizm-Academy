@@ -62,9 +62,6 @@ export const updateUserRole = (userId: string, role: AuthRole) =>
 export const revokeAdminSession = (sessionId: string) =>
   apiPost<AdminSessionWithUser>(`/admin/sessions/${sessionId}/revoke`);
 
-export const createAdminUser = (input: AdminUserInput) =>
-  apiPost<AdminUserRow>('/admin/users', input);
-
 export const updateAdminUser = (userId: string, input: Partial<AdminUserInput>) =>
   apiPatch<AdminUserRow>(`/admin/users/${userId}`, input);
 

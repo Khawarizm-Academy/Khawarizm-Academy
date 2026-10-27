@@ -2,6 +2,37 @@ import type { AdminField } from '@/features/admin/types';
 
 export type AdminFormValue = string | boolean;
 
+/** The reading order of an editor plate: required → prose → structured values. */
+export const FIELD_GROUP_ORDER = ['required', 'prose', 'structured'] as const;
+
+export type FieldGroupKey = (typeof FIELD_GROUP_ORDER)[number];
+
+/** Arabic plate titles identical across every schema form. */
+export const FIELD_GROUP_LABELS: Record<FieldGroupKey, string> = {
+  required: 'البيانات الأساسية',
+  prose: 'التفاصيل والوصف',
+  structured: 'بيانات تقنية',
+};
+
+const PROSE_KINDS: AdminField['kind'][] = ['text', 'textarea', 'url', 'select'];
+
+/**
+ * Split a schema into the editor's stacks: what must exist before saving, the
+ * descriptive prose fields, then numbers / toggles / JSON. Data-driven, so a
+ * new backend schema needs no editor change.
+ */
+export const groupEditorFields = (fields: AdminField[]): Record<FieldGroupKey, AdminField[]> => {
+  const groups: Record<FieldGroupKey, AdminField[]> = { required: [], prose: [], structured: [] };
+  for (const field of fields) {
+    const bucket = ((): FieldGroupKey => {
+      if (field.required) return 'required';
+      return PROSE_KINDS.includes(field.kind) ? 'prose' : 'structured';
+    })();
+    groups[bucket].push(field);
+  }
+  return groups;
+};
+
 function toFormValue(field: AdminField, raw: unknown): AdminFormValue {
   if (field.kind === 'bool') return Boolean(raw);
   if (field.kind === 'json') return raw == null ? '' : JSON.stringify(raw, null, 2);
@@ -18,6 +49,19 @@ export const toFormValues = (fields: AdminField[], source: Record<string, unknow
 interface PayloadResult {
   payload: Record<string, unknown>;
   error: string | null;
+}
+
+/** What blocks moving to the next step: a required field the step still leaves empty. */
+export function stepGuardError(
+  fields: AdminField[],
+  formValues: Record<string, AdminFormValue>
+): string | null {
+  for (const field of fields) {
+    if (!field.required || field.kind === 'bool') continue;
+    if (String(formValues[field.name] ?? '').trim() !== '') continue;
+    return `الحقل «${field.label}» إلزامي — أكمله قبل الانتقال إلى الخطوة التالية.`;
+  }
+  return null;
 }
 
 /** Turn form values into a payload; creates require non-empty, edits clear text-like fields when empty. */

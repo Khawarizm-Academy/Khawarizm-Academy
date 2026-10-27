@@ -1,6 +1,7 @@
 import React from 'react';
-import { BookOpen, User } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { useNavigate } from '@/app/routerContext';
+import { UserAvatar } from '@/shared/components/Artwork/UserAvatar';
 import {
   CATALOG_COURSES_ROUTE,
   COURSE_CERTIFICATE_ROUTE,
@@ -68,9 +69,8 @@ export const DashboardMain: React.FC = () => {
     handleNotificationAction,
   } = useDashboard();
 
-  // The real signed-in learner's first name and monogram, so no chrome invents one.
+  // The real signed-in learner's first name, so no chrome invents one.
   const firstName = user?.fullName.trim().split(/\s+/)[0] ?? '';
-  const userInitials = user?.avatarInitials ?? '';
 
   /** Resume jumps straight into the real Course Player. */
   const resumeCourse = (course: EnrolledCourse) => {
@@ -124,7 +124,7 @@ export const DashboardMain: React.FC = () => {
             title={
               <MobileTitle
                 label={`مرحبًا، ${firstName}`}
-                avatar={<User size={18} className="text-blue-400" />}
+                avatar={<UserAvatar src={user?.avatarUrl} initials={user?.avatarInitials ?? ''} className="dash-avatar" />}
               />
             }
             onNotificationsClick={() => selectView('notifications')}
@@ -138,7 +138,7 @@ export const DashboardMain: React.FC = () => {
             title={
               <MobileTitle
                 label="الملف الشخصي"
-                avatar={<span className="text-gold-400 text-xs font-bold font-display">{userInitials}</span>}
+                avatar={<UserAvatar src={user?.avatarUrl} initials={user?.avatarInitials ?? ''} className="dash-avatar" />}
                 avatarClassName="size-8.5 border-gold-400"
                 labelClassName="text-white text-base"
               />

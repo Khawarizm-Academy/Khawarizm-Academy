@@ -1,16 +1,11 @@
 import React from 'react';
+import { ChartColumn, MonitorCheck } from 'lucide-react';
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { LoginSeriesChart } from '@/features/admin/components/cards/LoginSeriesChart';
 import { DeviceBreakdownLists } from '@/features/admin/components/cards/DeviceBreakdownLists';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
-import type { AdminLoginRange } from '@/features/admin/types';
-
-const RANGES: Array<{ id: AdminLoginRange; label: string }> = [
-  { id: '7', label: '٧ أيام' },
-  { id: '14', label: '١٤ يومًا' },
-  { id: '30', label: '٣٠ يومًا' },
-];
+import { LOGIN_RANGES } from '@/features/admin/types';
 
 /** Analytics section: daily logins plus the fleet's OS / browser / device shares. */
 export const AnalyticsView: React.FC = () => {
@@ -20,9 +15,12 @@ export const AnalyticsView: React.FC = () => {
     <div className="admin-view">
       <section className="admin-view-section">
         <div className="admin-section-head">
-          <h2 className="admin-section-title">تسجيلات الدخول اليومية</h2>
+          <h2 className="admin-section-title">
+            <ChartColumn size={15} className="admin-section-title-icon" />
+            <span className="admin-section-title-text">تسجيلات الدخول اليومية</span>
+          </h2>
           <SlidingSegmentedControl
-            options={RANGES}
+            options={LOGIN_RANGES}
             value={loginRange}
             onChange={setLoginRange}
             tone="gold"
@@ -34,8 +32,13 @@ export const AnalyticsView: React.FC = () => {
           <LoginSeriesChart series={loginSeries} />
         ) : (
           <AdminEmptyState
+            icon={ChartColumn}
             title={loadErrors.analytics ? 'تعذّر تحميل التحليلات' : 'لا توجد تسجيلات دخول بعد'}
-            hint="ستظهر المنحنى اليومي هنا بعد أول تسجيل دخول."
+            hint={
+              loadErrors.analytics
+                ? 'تعذّر الوصول إلى الخادم؛ أعد المحاولة بعد لحظات.'
+                : 'ستُرسم السلسلة اليومية هنا بعد أول تسجيل دخول.'
+            }
             isError={loadErrors.analytics}
             onRetry={refresh}
           />
@@ -43,12 +46,16 @@ export const AnalyticsView: React.FC = () => {
       </section>
 
       <section className="admin-view-section">
-        <h2 className="admin-section-title">توزيع الأجهزة</h2>
+        <h2 className="admin-section-title">
+          <MonitorCheck size={15} className="admin-section-title-icon" />
+          <span className="admin-section-title-text">توزيع أجهزة الجمهور</span>
+        </h2>
         {devices ? (
           <DeviceBreakdownLists breakdown={devices} />
         ) : (
           <AdminEmptyState
-            title={loadErrors.analytics ? 'تعذّر تحميل التوزيع' : 'لا توجد بيانات أجهزة بعد'}
+            icon={MonitorCheck}
+            title={loadErrors.analytics ? 'تعذّر تحميل توزيع الأجهزة' : 'لا توجد بيانات أجهزة بعد'}
             isError={loadErrors.analytics}
             onRetry={refresh}
           />

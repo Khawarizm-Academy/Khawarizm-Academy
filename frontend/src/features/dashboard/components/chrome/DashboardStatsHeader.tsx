@@ -1,5 +1,7 @@
 import React from 'react';
-import { Bell, Bookmark, User, type LucideIcon } from 'lucide-react';
+import { Bell, Bookmark, type LucideIcon } from 'lucide-react';
+import { useAuth } from '@/features/auth/context/authContext';
+import { UserAvatar } from '@/shared/components/Artwork/UserAvatar';
 
 export interface StatChipItem {
   icon: LucideIcon;
@@ -63,7 +65,10 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
   onAvatarClick,
   onSavedClick,
   isSavedActive = false,
-}) => (
+}) => {
+  const { user } = useAuth();
+
+  return (
   <div dir="rtl" className="dash-stats-head">
     {/* Mobile header matching the Figma mobile screenshot */}
     <div className="dash-mtop">
@@ -73,9 +78,7 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
         onClick={onAvatarClick}
         className="dash-mtop-title cursor-pointer group"
       >
-        <div className="dash-avatar">
-          <User size={18} className="text-blue-400" />
-        </div>
+        <UserAvatar src={user?.avatarUrl} initials={user?.avatarInitials ?? ''} className="dash-avatar" />
         <span className="dash-mtop-label group-hover:text-sky-300 transition-colors">
           مرحبًا، {studentName}
         </span>
@@ -124,4 +127,5 @@ export const DashboardStatsHeader: React.FC<DashboardStatsHeaderProps> = ({
       </div>
     </div>
   </div>
-);
+  );
+};

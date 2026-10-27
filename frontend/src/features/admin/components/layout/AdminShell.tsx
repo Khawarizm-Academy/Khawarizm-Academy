@@ -2,9 +2,10 @@ import React from 'react';
 import { useAuth } from '@/features/auth/context/authContext';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { AdminHeader } from '@/features/admin/components/chrome/AdminHeader';
+import { AdminPageHead } from '@/features/admin/components/chrome/AdminPageHead';
 import { AdminMobileTabs, AdminSectionNav } from '@/features/admin/components/chrome/AdminSectionNav';
 import { AdminNotice } from '@/features/admin/components/chrome/AdminNotice';
-import { UserDetailPanel } from '@/features/admin/components/views/UserDetailPanel';
+import { UserDetailPage } from '@/features/admin/components/views/UserDetailPage';
 import { OverviewView } from '@/features/admin/components/views/OverviewView';
 import { UsersView } from '@/features/admin/components/views/UsersView';
 import { ContentView } from '@/features/admin/components/views/ContentView';
@@ -28,10 +29,10 @@ const SECTION_VIEWS: Record<AdminSectionKey, React.FC> = {
   activity: ActivityView,
 };
 
-/** Console chrome: sticky rail, top bar, section pills, and the detail modal. */
+/** Console chrome: rail, top bar, page head, mobile pills, and the account page. */
 export const AdminShell: React.FC = () => {
   const { user } = useAuth();
-  const { currentSection, selectSection, error, clearError } = useAdmin();
+  const { currentSection, selectSection, selectedUserId, error, clearError } = useAdmin();
 
   // The route guard already redirects visitors; this only guards a session that ends mid-view.
   if (!user) return null;
@@ -40,25 +41,41 @@ export const AdminShell: React.FC = () => {
 
   return (
     <div className="admin-page">
-      <AdminSectionNav currentSection={currentSection} onSelect={selectSection} />
+      {/* Rail first, so RTL puts it on the far right */}
+      <AdminSectionNav
+        currentSection={currentSection}
+        onSelect={selectSection}
+        operator={{ fullName: user.fullName, email: user.email, avatarUrl: user.avatarUrl, role: user.role }}
+      />
 
       <main className="admin-main">
-        <div className="animate-fade-in-down">
-          <AdminHeader />
-        </div>
+        <AdminHeader />
         <AdminNotice message={error} onDismiss={clearError} />
 
-        <div className="content-container animate-fade-in-up animation-delay-100">
-          <h1 className="view-h1">{SECTION_LABELS[currentSection]}</h1>
-          <AdminMobileTabs currentSection={currentSection} onSelect={selectSection} />
-          {/* Wrap the active view so every section gets the same entrance treatment */}
-          <section className="animate-fade-in-up animation-delay-200">
-            <ActiveView />
-          </section>
+        <div className="admin-container">
+          {/* A selected account takes over the whole content column as its own page */}
+          {selectedUserId !== null ? (
+            <UserDetailPage />
+          ) : (
+            <>
+              <div className="animate-fade-in-up">
+                <AdminPageHead />
+              </div>
+
+              {/* The pills strip is the only section nav below the desktop rail */}
+              <div className="lg:hidden">
+                <AdminMobileTabs currentSection={currentSection} onSelect={selectSection} />
+              </div>
+
+              {/* Every section window gets the same h1 rhythm: registry answers it */}
+              <section className="animate-fade-in-up animation-delay-100">
+                <h2 className="sr-only">{SECTION_LABELS[currentSection]}</h2>
+                <ActiveView />
+              </section>
+            </>
+          )}
         </div>
       </main>
-
-      <UserDetailPanel />
     </div>
   );
 };

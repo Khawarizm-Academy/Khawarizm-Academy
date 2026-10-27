@@ -109,8 +109,6 @@ export interface AdminContextValue {
   videoAssets: AdminVideoAsset[];
   /** Per-row busy state so only the affected asset spins while deleting. */
   deletingVideoId: string | null;
-  creatingVideo: boolean;
-  createVideo: (input: AdminVideoInput) => Promise<boolean>;
   deleteVideo: (id: string) => Promise<void>;
 
   /** The one video currently uploading, from HTTP bytes to final ingest. */
@@ -131,7 +129,6 @@ export interface AdminContextValue {
   refresh: () => Promise<void>;
   changeRole: (userId: string, role: AuthRole) => Promise<void>;
   revokeSession: (sessionId: string) => Promise<void>;
-  createUser: (input: AdminUserInput) => Promise<boolean>;
   updateUser: (userId: string, input: Partial<AdminUserInput>) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
   createContent: (values: Record<string, unknown>) => Promise<boolean>;

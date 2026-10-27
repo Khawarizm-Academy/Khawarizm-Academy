@@ -1,5 +1,6 @@
 import React from 'react';
 import { Eye } from 'lucide-react';
+import { UserAvatar } from '@/shared/components/Artwork/UserAvatar';
 import { ActiveBadge } from '@/features/admin/components/cards/Badges';
 import { RoleSelect } from '@/features/admin/components/controls/RoleSelect';
 import { formatCount, formatLastSeenShort, formatShortDateTime, initialsOf } from '@/features/admin/data/adminFormatters';
@@ -50,7 +51,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
         <div className="admin-cell admin-cell-user">
           <span className="admin-cell-label">المستخدم</span>
           <span className="admin-user">
-            <span className="admin-user-avatar">{initialsOf(row.fullName, row.email.slice(0, 1))}</span>
+            <UserAvatar src={row.avatarUrl} initials={initialsOf(row.fullName, row.email.slice(0, 1))} className="admin-user-avatar" />
             <span className="admin-user-text">
               <span className="admin-user-name">{row.fullName}</span>
               <span className="admin-user-email">{row.email}</span>

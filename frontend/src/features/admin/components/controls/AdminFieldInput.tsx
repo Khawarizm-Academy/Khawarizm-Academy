@@ -1,8 +1,10 @@
 import React from 'react';
 import type { AdminField, AdminFieldKind } from '@/features/admin/types';
+import type { AdminFormValue } from '@/features/admin/data/adminContentForm';
 import { AdminToggle } from '@/features/admin/components/controls/AdminToggle';
+import { fieldIcon } from '@/features/admin/data/fieldIcons';
 
-export type AdminFormValue = string | boolean;
+export type { AdminFormValue };
 
 interface AdminFieldInputProps {
   field: AdminField;
@@ -17,52 +19,80 @@ type FieldRender = (props: AdminFieldInputProps) => React.ReactNode;
 
 const fieldId = (field: AdminField) => `admin-field-${field.name}`;
 
-const FieldShell: React.FC<{ field: AdminField; children: React.ReactNode }> = ({ field, children }) => (
-  <div className="admin-field">
-    <label className="admin-field-label" htmlFor={fieldId(field)}>
-      {field.label}
-      {field.required && (
-        <span className="admin-required" aria-hidden="true">
-          *
-        </span>
-      )}
-    </label>
-    {children}
-  </div>
+/** Values that read left-to-right even inside this RTL console: codes and Latin text. */
+const LTR_NAMES = new Set(['email', 'url', 'link', 'imageUrl', 'slug', 'key', 'phone', 'timezone']);
+const LTR_KINDS: AdminFieldKind[] = ['number', 'decimal', 'json'];
+
+const isLtrField = (field: AdminField): boolean =>
+  LTR_NAMES.has(field.name) || LTR_KINDS.includes(field.kind);
+
+/** Small typing aids for the Latin-format inputs; everything else stays bare. */
+const PLACEHOLDERS: Record<string, string> = {
+  email: 'name@example.com',
+  url: 'https://…',
+  slug: 'example-course-code',
+};
+
+/** The labeled icon above every field, so the schema reads like a real editor. */
+const FieldLabel: React.FC<{ field: AdminField }> = ({ field }) => (
+  <label className="admin-field-label" htmlFor={fieldId(field)}>
+    {React.createElement(fieldIcon(field), { size: 13, className: 'admin-field-label-icon' })}
+    <span>{field.label}</span>
+    {field.required && (
+      <span className="admin-required" aria-hidden="true">
+        *
+      </span>
+    )}
+  </label>
 );
 
-const textField = (type: 'text' | 'url'): FieldRender => ({ field, value, disabled, readOnly, onChange }) => (
-  <FieldShell field={field}>
-    <input
-      id={fieldId(field)}
-      type={type}
-      dir={type === 'url' ? 'ltr' : undefined}
-      className={readOnly ? 'admin-input admin-input-readonly' : 'admin-input'}
-      value={String(value ?? '')}
-      disabled={disabled}
-      readOnly={readOnly}
-      onChange={(event) => onChange(event.target.value)}
-    />
-  </FieldShell>
-);
+/** Arabic-text inputs keep the icon on the start edge; Latin ones open LTR cleanly. */
+const textLikeField = (type: 'text' | 'url'): FieldRender => ({ field, value, disabled, readOnly, onChange }) => {
+  const ltr = isLtrField(field);
+  return (
+    <div className="admin-field">
+      <FieldLabel field={field} />
+      <div className="relative">
+        {!ltr && (
+          <span className="admin-field-glyph">
+            {React.createElement(fieldIcon(field), { size: 15 })}
+          </span>
+        )}
+        <input
+          id={fieldId(field)}
+          type={type}
+          dir={ltr ? 'ltr' : undefined}
+          placeholder={PLACEHOLDERS[field.name] ?? undefined}
+          className={`admin-input ${ltr ? 'text-left' : 'ps-10'}`}
+          value={String(value ?? '')}
+          disabled={disabled}
+          readOnly={readOnly}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </div>
+    </div>
+  );
+};
 
 const numberField = (step: string): FieldRender => ({ field, value, disabled, onChange }) => (
-  <FieldShell field={field}>
+  <div className="admin-field">
+    <FieldLabel field={field} />
     <input
       id={fieldId(field)}
       type="number"
       step={step}
       dir="ltr"
-      className="admin-input"
+      className="admin-input text-left"
       value={String(value ?? '')}
       disabled={disabled}
       onChange={(event) => onChange(event.target.value)}
     />
-  </FieldShell>
+  </div>
 );
 
 const textareaField: FieldRender = ({ field, value, disabled, onChange }) => (
-  <FieldShell field={field}>
+  <div className="admin-field sm:col-span-2">
+    <FieldLabel field={field} />
     <textarea
       id={fieldId(field)}
       className="admin-textarea"
@@ -70,11 +100,12 @@ const textareaField: FieldRender = ({ field, value, disabled, onChange }) => (
       disabled={disabled}
       onChange={(event) => onChange(event.target.value)}
     />
-  </FieldShell>
+  </div>
 );
 
 const jsonField: FieldRender = ({ field, value, disabled, onChange }) => (
-  <FieldShell field={field}>
+  <div className="admin-field sm:col-span-2">
+    <FieldLabel field={field} />
     <textarea
       id={fieldId(field)}
       dir="ltr"
@@ -84,14 +115,15 @@ const jsonField: FieldRender = ({ field, value, disabled, onChange }) => (
       disabled={disabled}
       onChange={(event) => onChange(event.target.value)}
     />
-  </FieldShell>
+  </div>
 );
 
 const selectField: FieldRender = ({ field, value, disabled, onChange }) => (
-  <FieldShell field={field}>
+  <div className="admin-field">
+    <FieldLabel field={field} />
     <select
       id={fieldId(field)}
-      className="admin-select admin-select-full"
+      className="admin-input"
       value={String(value ?? '')}
       disabled={disabled}
       onChange={(event) => onChange(event.target.value)}
@@ -103,18 +135,16 @@ const selectField: FieldRender = ({ field, value, disabled, onChange }) => (
         </option>
       ))}
     </select>
-  </FieldShell>
-);
-
-const boolField: FieldRender = ({ field, value, disabled, onChange }) => (
-  <div className="admin-field">
-    <AdminToggle label={field.label} checked={Boolean(value)} disabled={disabled} onChange={onChange} />
   </div>
 );
 
+const boolField: FieldRender = ({ field, value, disabled, onChange }) => (
+  <AdminToggle label={field.label} checked={Boolean(value)} disabled={disabled} onChange={onChange} />
+);
+
 const FIELD_RENDERERS: Record<AdminFieldKind, FieldRender> = {
-  text: textField('text'),
-  url: textField('url'),
+  text: textLikeField('text'),
+  url: textLikeField('url'),
   textarea: textareaField,
   number: numberField('1'),
   decimal: numberField('0.01'),

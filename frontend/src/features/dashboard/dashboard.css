@@ -112,12 +112,8 @@
     @apply self-stretch flex flex-col justify-start items-start gap-4 pt-4 border-t border-navy-600/40;
   }
 
-  .dash-brand-mark {
-    @apply size-9 bg-gold-400 rounded-[10px] inline-flex flex-col justify-center items-center shadow-[0_0_12px_rgba(229,182,92,0.4)] group-hover:scale-105 transition-transform shrink-0;
-  }
-
-  .dash-brand-glyph {
-    @apply text-navy-950 text-xl font-black font-display leading-none;
+  .dash-brand-mark-img {
+    @apply size-9 rounded-[10px] object-cover shrink-0 shadow-[0_0_12px_rgba(229,182,92,0.4)] group-hover:scale-105 transition-transform;
   }
 
   .dash-brand-name {

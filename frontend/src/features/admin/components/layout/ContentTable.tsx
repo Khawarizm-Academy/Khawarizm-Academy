@@ -46,7 +46,7 @@ export const ContentTable: React.FC<ContentTableProps> = ({
             </button>
             <ConfirmAction
               label=""
-              confirmLabel="تأكيد الحذف"
+              confirmLabel="نعم، احذف"
               icon={Trash2}
               busy={deletingId === row.id}
               onConfirm={() => onDelete(row.id)}

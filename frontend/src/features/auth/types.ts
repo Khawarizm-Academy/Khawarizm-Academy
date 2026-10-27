@@ -20,6 +20,7 @@ export interface AuthUser {
   phone: string;
   role: AuthRole;
   isAdmin: boolean;
+  isActive: boolean;
   membershipStatus: string;
   avatarInitials: string;
   avatarUrl: string;
@@ -79,6 +80,7 @@ export const EMPTY_AUTH_USER: AuthUser = {
   phone: '',
   role: 'student',
   isAdmin: false,
+  isActive: true,
   membershipStatus: '',
   avatarInitials: '',
   avatarUrl: '',

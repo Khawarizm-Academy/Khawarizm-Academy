@@ -17,12 +17,10 @@ import {
   fetchVideoAssets,
   fetchVideoProviders,
   fetchVideoDiagnostics,
-  createVideoAsset as createVideoRequest,
   deleteVideoAsset as deleteVideoRequest,
   uploadVideoAsset as uploadVideoRequest,
   revokeAdminSession,
   updateUserRole,
-  createAdminUser,
   updateAdminUser,
   deleteAdminUser,
   fetchContentSchema,
@@ -79,13 +77,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [sessionPage, setSessionPage] = useState(1);
   const [loginRange, setLoginRange] = useState<AdminLoginRange>('14');
   const [eventKind, setEventKind] = useState<AdminEventKind | 'all'>('all');
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deletingContentId, setDeletingContentId] = useState<string | null>(null);
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
-  const [creatingVideo, setCreatingVideo] = useState(false);
   const [deepDiagnosticsRequested, setDeepDiagnosticsRequested] = useState(false);
   const [videoUpload, setVideoUpload] = useState<VideoUploadState | null>(null);
   const [contentType, setContentTypeState] = useState<AdminContentTypeKey | null>(null);
@@ -93,6 +89,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [contentPage, setContentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // The open account lives in the URL: /admin?tab=users&user=<id> — bookmarks,
+  // refresh, and browser-back all keep the same account page.
+  const selectedUserId = queryParams.get('user');
 
   const overview = useCachedData<AdminOverview>(['admin', 'overview'], fetchOverview);
   const users = useCachedData<Paged<AdminUserRow>>(
@@ -200,7 +200,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     (section: AdminSectionKey) => navigate(`/admin?tab=${section}`),
     [navigate]
   );
-  const selectUser = useCallback((userId: string | null) => setSelectedUserId(userId), []);
+  const selectUser = useCallback(
+    (userId: string | null) =>
+      navigate(userId ? `/admin?tab=users&user=${userId}` : `/admin?tab=${currentSection}`),
+    [navigate, currentSection]
+  );
   const clearError = useCallback(() => setError(null), []);
 
   const changeRole = async (userId: string, role: AuthRole) => {
@@ -226,18 +230,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setError(toMessage(thrown));
     } finally {
       setRevokingSessionId(null);
-    }
-  };
-
-  const createUser = async (input: AdminUserInput): Promise<boolean> => {
-    setError(null);
-    try {
-      await createAdminUser(input);
-      await Promise.all([users.refetch(), overview.refetch()]);
-      return true;
-    } catch (thrown) {
-      setError(toMessage(thrown));
-      return false;
     }
   };
 
@@ -318,21 +310,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       videoAssets.refetch(),
       videoDiagnostics.refetch(),
     ]);
-  };
-
-  const createVideo = async (input: AdminVideoInput): Promise<boolean> => {
-    setError(null);
-    setCreatingVideo(true);
-    try {
-      await createVideoRequest(input);
-      await refreshVideoData();
-      return true;
-    } catch (thrown) {
-      setError(toMessage(thrown));
-      return false;
-    } finally {
-      setCreatingVideo(false);
-    }
   };
 
   // The backend 202s as soon as the file lands on disk and ingests on a worker
@@ -521,7 +498,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     refresh,
     changeRole,
     revokeSession,
-    createUser,
     updateUser,
     deleteUser,
     createContent,
@@ -530,8 +506,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     videoProviders: videoProviders.data ?? [],
     videoAssets: videoAssets.data ?? [],
     deletingVideoId,
-    creatingVideo,
-    createVideo,
     deleteVideo,
     videoUpload,
     uploadVideo,

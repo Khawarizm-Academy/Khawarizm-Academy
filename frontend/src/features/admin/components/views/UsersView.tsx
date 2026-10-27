@@ -1,23 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
-import { UserPlus } from 'lucide-react';
+import { UserRoundSearch } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/authContext';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { AdminSearchBox } from '@/features/admin/components/controls/AdminSearchBox';
 import { UsersTable } from '@/features/admin/components/layout/UsersTable';
 import { AdminPagination } from '@/features/admin/components/toolbar/AdminPagination';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
-import { CreateUserModal } from '@/features/admin/components/overlays/CreateUserModal';
-import type { AdminRoleFilter } from '@/features/admin/types';
+import { ROLE_FILTERS } from '@/features/admin/types';
 
-const ROLE_FILTERS: Array<{ id: AdminRoleFilter; label: string }> = [
-  { id: 'all', label: 'الكل' },
-  { id: 'student', label: 'طلاب' },
-  { id: 'instructor', label: 'مدرّبون' },
-  { id: 'admin', label: 'مشرفون' },
-];
-
-/** Users section: search + role filter over the paged table; a row opens the detail. */
+/** Users section: search + role filter over the paged table; a row opens the inspector. */
 export const UsersView: React.FC = () => {
   const { user } = useAuth();
   const {
@@ -33,7 +25,6 @@ export const UsersView: React.FC = () => {
     changingRoleId,
     changeRole,
   } = useAdmin();
-  const [isCreating, setIsCreating] = useState(false);
 
   const isSearching = Boolean(userSearch) || userRole !== 'all';
 
@@ -43,8 +34,8 @@ export const UsersView: React.FC = () => {
         <AdminSearchBox
           value={userSearch}
           onChange={setUserSearch}
-          placeholder="ابحث بالاسم أو البريد…"
-          label="بحث في المستخدمين"
+          placeholder="ابحث بالاسم أو البريد الإلكتروني…"
+          label="بحث في الحسابات"
         />
         <div className="admin-toolbar-actions">
           <SlidingSegmentedControl
@@ -54,10 +45,6 @@ export const UsersView: React.FC = () => {
             tone="blue"
             aria-label="تصفية حسب الدور"
           />
-          <button type="button" className="admin-primary-btn" onClick={() => setIsCreating(true)}>
-            <UserPlus size={15} />
-            <span>مستخدم جديد</span>
-          </button>
         </div>
       </div>
 
@@ -79,13 +66,25 @@ export const UsersView: React.FC = () => {
         </>
       ) : (
         <AdminEmptyState
-          title={loadErrors.users ? 'تعذّر تحميل المستخدمين' : isSearching ? 'لا توجد نتائج مطابقة' : 'لا يوجد مستخدمون بعد'}
-          hint={isSearching ? 'جرّب تعديل البحث أو الفلتر.' : undefined}
+          icon={UserRoundSearch}
+          title={
+            loadErrors.users
+              ? 'تعذّر تحميل الحسابات'
+              : isSearching
+              ? 'لا توجد حسابات تطابق البحث'
+              : 'لا توجد حسابات بعد'
+          }
+          hint={
+            loadErrors.users
+              ? 'تعذّر الوصول إلى الخادم؛ أعد المحاولة بعد لحظات.'
+              : isSearching
+              ? 'جرّب تعديل كلمة البحث أو اختيار دور آخر.'
+              : 'تظهر الحسابات هنا فور تسجيل أول مستخدم على المنصة.'
+          }
           isError={loadErrors.users}
           onRetry={refresh}
         />
       )}
-      {isCreating && <CreateUserModal onClose={() => setIsCreating(false)} />}
     </div>
   );
 };

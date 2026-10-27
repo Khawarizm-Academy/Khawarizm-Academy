@@ -1,5 +1,6 @@
 import React from 'react';
 import { Ban, Loader2 } from 'lucide-react';
+import { UserAvatar } from '@/shared/components/Artwork/UserAvatar';
 import { SessionStatusBadge } from '@/features/admin/components/cards/Badges';
 import { formatLastSeenShort, initialsOf } from '@/features/admin/data/adminFormatters';
 import { DEVICE_LABELS, ROLE_LABELS, type AdminSessionWithUser } from '@/features/admin/types';
@@ -30,7 +31,7 @@ export const SessionsTable: React.FC<SessionsTableProps> = ({ rows, revokingSess
           <div className="admin-cell admin-cell-user">
             <span className="admin-cell-label">المستخدم</span>
             <span className="admin-user">
-              <span className="admin-user-avatar">{initialsOf(row.user.fullName, row.user.email.slice(0, 1))}</span>
+              <UserAvatar src={row.user.avatarUrl} initials={initialsOf(row.user.fullName, row.user.email.slice(0, 1))} className="admin-user-avatar" />
               <span className="admin-user-text">
                 <span className="admin-user-name">{row.user.fullName}</span>
                 <span className="admin-user-email">

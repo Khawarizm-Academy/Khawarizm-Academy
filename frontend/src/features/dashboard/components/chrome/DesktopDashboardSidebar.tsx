@@ -2,6 +2,8 @@ import React from 'react';
 import { Bell, Bookmark } from 'lucide-react';
 import { useNavigate } from '@/app/routerContext';
 import { DASHBOARD_NAV, NAV_TARGETS } from '@/shared/lib/navigation';
+import { UserAvatar } from '@/shared/components/Artwork/UserAvatar';
+import brandIcon from '@/assets/brand/generated/icon-192.png';
 import { useAuth } from '@/features/auth/context/authContext';
 import { ROLE_LABELS } from '@/features/auth/types';
 
@@ -30,9 +32,7 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
             title="أكاديمية خوارزم"
             className="dash-side-row group"
           >
-            <div className="dash-brand-mark">
-              <span className="dash-brand-glyph">خ</span>
-            </div>
+            <img src={brandIcon} alt="شعار أكاديمية خوارزم" className="dash-brand-mark-img" />
             <span className="dash-brand-name">أكاديمية خوارزم</span>
           </button>
 
@@ -67,11 +67,7 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
             title="الملف الشخصي"
             className="dash-side-row group"
           >
-            <div className="dash-avatar size-10">
-              <span className="text-sky-300 font-bold text-sm font-display">
-                {user?.avatarInitials}
-              </span>
-            </div>
+            <UserAvatar src={user?.avatarUrl} initials={user?.avatarInitials ?? ''} className="dash-avatar size-10" />
             <div className="dash-user-names">
               <span className="dash-user-name">{user?.fullName}</span>
               <span className="dash-user-role">{user ? ROLE_LABELS[user.role] : ''}</span>

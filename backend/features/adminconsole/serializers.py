@@ -181,6 +181,7 @@ def user_row(user: User) -> dict[str, Any]:
         "id": str(user.id),
         "email": user.email,
         "fullName": user.full_name,
+        "avatarUrl": user.avatar_url,
         "role": user.role,
         "isActive": user.is_active,
         "isStaff": user.is_staff,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Cloud, Film, Loader2, RefreshCw, Send, XCircle } from 'lucide-react';
+import { CheckCircle2, Cloud, Film, ListChecks, Loader2, RefreshCw, Send, Stethoscope, XCircle, type LucideIcon } from 'lucide-react';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { SeverityBadge } from '@/features/admin/components/cards/Badges';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
@@ -7,7 +7,7 @@ import { formatDateTime } from '@/features/admin/data/adminFormatters';
 import type { AdminDiagnosticGroup } from '@/features/admin/types';
 
 /** One icon per diagnostics group id (provider code, or the id for the pipeline). */
-const GROUP_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
+const GROUP_ICONS: Record<string, LucideIcon> = {
   pipeline: Film,
   telegram: Send,
   google_drive: Cloud,
@@ -59,7 +59,11 @@ const DiagnosticsGroup: React.FC<{ group: AdminDiagnosticGroup }> = ({ group }) 
               <SeverityBadge severity={item.severity} ok={item.ok} />
             </div>
             <span className="admin-check-detail">{item.detail}</span>
-            {item.hint && <span className="admin-check-hint">الحل: {item.hint}</span>}
+            {item.hint && (
+              <span className="admin-check-hint font-body">
+                الحل: {item.hint}
+              </span>
+            )}
           </div>
         ))}
       </div>
@@ -82,8 +86,13 @@ export const AdminSystemView: React.FC = () => {
   if (!videoDiagnostics) {
     return (
       <AdminEmptyState
-        title={loadErrors.system ? 'تعذّر تحميل الفحص' : 'لا يوجد فحص بعد'}
-        hint={loadErrors.system ? 'تعذّر الوصول إلى الخادم.' : 'اضغط تحديث لإعادة الفحص.'}
+        icon={Stethoscope}
+        title={loadErrors.system ? 'تعذّر تحميل نتيجة الفحص' : 'لم يُشغَّل الفحص بعد'}
+        hint={
+          loadErrors.system
+            ? 'تعذّر الوصول إلى الخادم؛ أعد المحاولة بعد لحظات.'
+            : 'اضغط تحديث الأقسام من الشريط العلوي لتشغيل الفحص السريع.'
+        }
         isError={loadErrors.system}
         onRetry={refresh}
       />
@@ -93,13 +102,18 @@ export const AdminSystemView: React.FC = () => {
   // The deep run replaces the shallow detail only once the admin asked for it;
   // until then the shallow report is the one on display.
   const report = deepDiagnosticsRequested && !deepDiagnostics ? videoDiagnostics : deepDiagnostics ?? videoDiagnostics;
+  const problemCount = report.problems.length;
 
   return (
     <div className="admin-view">
       <div className="admin-toolbar">
-        <h2 className="admin-section-title">فحص المنظومة — استضافة الفيديو</h2>
+        <h2 className="admin-section-title">
+          <Stethoscope size={15} className="admin-section-title-icon" />
+          <span className="admin-section-title-text">فحص المنظومة</span>
+          <span className="admin-section-title-sub">استضافة الفيديو: الخط والمُزوّدون</span>
+        </h2>
         <div className="admin-meta-line">
-          <span>{report.deep ? 'فحص عميق (شبكة)' : 'فحص سريع (بيئة)'} · {formatDateTime(report.checkedAt)}</span>
+          <span>{report.deep ? 'فحص عميق (شبكة) ·' : 'فحص سريع (بيئة) ·'} {formatDateTime(report.checkedAt)}</span>
         </div>
       </div>
 
@@ -109,8 +123,10 @@ export const AdminSystemView: React.FC = () => {
             {report.okOverall ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
             <span>
               {report.okOverall
-                ? 'كل الفحوصات الأساسية سليمة — استضافة الفيديو تعمل.'
-                : `وجد الفحص ${report.problems.length.toLocaleString('ar-EG')} ${report.problems.length === 1 ? 'مشكلة' : 'مشاكل'} بالأسفل.`}
+                ? 'كل الفحوصات سليمة — استضافة الفيديو تعمل بالشكل الصحيح.'
+                : problemCount === 1
+                ? 'وجد الفحص مشكلة واحدة — تفاصيلها في الأسفل.'
+                : `وجد الفحص ${problemCount.toLocaleString('ar-EG')} مشكلات — تفاصيلها في الأسفل.`}
             </span>
           </div>
           {report.problems.map((problem) => (
@@ -124,7 +140,11 @@ export const AdminSystemView: React.FC = () => {
 
       <section className="admin-view-section">
         <div className="admin-section-head">
-          <h2 className="admin-section-title">الخلاصة</h2>
+          <h2 className="admin-section-title">
+            <ListChecks size={15} className="admin-section-title-icon" />
+            <span className="admin-section-title-text">الخلاصة</span>
+            <span className="admin-section-title-sub">حالة كل مكوّن في لمحة واحدة</span>
+          </h2>
           <button type="button" className="admin-primary-btn" onClick={runDeepDiagnostics} disabled={deepDiagnosticsLoading}>
             {deepDiagnosticsLoading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
             <span>{deepDiagnosticsRequested ? 'إعادة الفحص العميق' : 'تشغيل الفحص العميق'}</span>
@@ -132,25 +152,37 @@ export const AdminSystemView: React.FC = () => {
         </div>
         <div className="admin-health-strip">
           <HealthChip
-            label="خط التغليف"
-            detail={report.summary.pipeline ? 'FFmpeg متوفر — التغليف يعمل' : 'FFmpeg غير متوفر — الرفع سيُرحّل المصدر فقط'}
+            label="خط التغليف (FFmpeg)"
+            detail={report.summary.pipeline ? 'متوفر على الخادم — التغليف يعمل' : 'غير متوفر — المصادر تُحفظ مرحَّلًا دون تغليف'}
             ok={report.summary.pipeline}
           />
           <HealthChip
             label="تليجرام"
-            detail={report.summary.telegram ? 'جاهز للاختيار' : (report.providers.find((p) => p.code === 'telegram')?.reason || 'غير مضبوط')}
+            detail={
+              report.summary.telegram
+                ? 'جاهز لاختياره عند الرفع'
+                : (report.providers.find((p) => p.code === 'telegram')?.reason || 'غير مُعدّ بعد')
+            }
             ok={report.summary.telegram}
           />
           <HealthChip
             label="Google Drive"
-            detail={report.summary.google_drive ? 'جاهز للاختيار' : (report.providers.find((p) => p.code === 'google_drive')?.reason || 'غير مضبوط')}
+            detail={
+              report.summary.google_drive
+                ? 'جاهز لاختياره عند الرفع'
+                : (report.providers.find((p) => p.code === 'google_drive')?.reason || 'غير مُعدّ بعد')
+            }
             ok={report.summary.google_drive}
           />
         </div>
       </section>
 
       <section className="admin-view-section">
-        <h2 className="admin-section-title">الفحوصات المرحلية</h2>
+        <h2 className="admin-section-title">
+          <ListChecks size={15} className="admin-section-title-icon" />
+          <span className="admin-section-title-text">الفحوصات المرحلية</span>
+          <span className="admin-section-title-sub">كل مرحلة بتفاصيل نتائجها وحلّها عند الفشل</span>
+        </h2>
         <div className="flex flex-col gap-4">
           {report.groups.map((group) => (
             <DiagnosticsGroup key={group.id} group={group} />
@@ -159,11 +191,10 @@ export const AdminSystemView: React.FC = () => {
       </section>
 
       {!report.deep && (
-        <section className="admin-view-section">
-          <p className="admin-check-hint">
-            الفحص العميق يتصل بـ Bot API و Google API للتأكد من الشهادات نفسها — شغّله بعد تعديل الإعدادات.
-          </p>
-        </section>
+        <p className="admin-check-hint font-body">
+          الفحص العميق يتواصل مع تليجرام Bot API و Google API للتحقق من بيانات الربط نفسها — شغّله بعد تعديل الإعدادات
+          مباشرة ليؤكد أن التغييرات انتفعت.
+        </p>
       )}
     </div>
   );
