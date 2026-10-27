@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, FileVideo, Trash2, X } from 'lucide-react';
+import { AlertTriangle, FileVideo, RefreshCw, Trash2, X } from 'lucide-react';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
 import { VideoStatusBadge } from '@/features/admin/components/cards/Badges';
@@ -120,6 +120,7 @@ export const VideoHostingView: React.FC = () => {
         <h2 className="admin-section-title">استضافة الفيديو</h2>
         <div className="admin-toolbar-actions">
           <button type="button" className="admin-ghost-btn" onClick={() => refreshVideoData()}>
+            <RefreshCw size={15} />
             <span>تحديث البيانات</span>
           </button>
         </div>

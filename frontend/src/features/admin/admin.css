@@ -715,8 +715,8 @@
     @apply flex items-start gap-1.5 rounded-lg border border-gold-400/30 bg-gold-400/5 px-2.5 py-1.5 text-[11px] font-body text-gold-400;
   }
 
-  /* The deep-run control and its checked-at stamp. */
-  .admin-diag-meta {
+  /* A small quiet meta line — diagnostics stamps, chart footers. */
+  .admin-meta-line {
     @apply flex flex-wrap items-center gap-2.5 text-[11px] font-body text-slate-500;
   }
 
