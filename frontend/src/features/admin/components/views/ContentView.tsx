@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Shapes } from 'lucide-react';
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { AdminSearchBox } from '@/features/admin/components/controls/AdminSearchBox';
@@ -37,7 +37,13 @@ export const ContentView: React.FC = () => {
   if (!activeType) {
     return (
       <AdminEmptyState
+        icon={Shapes}
         title={loadErrors.content ? 'تعذّر تحميل أنواع المحتوى' : 'لا توجد أنواع محتوى'}
+        hint={
+          loadErrors.content
+            ? 'تعذّر الوصول إلى الخادم؛ أعد المحاولة بعد لحظات.'
+            : 'يجب أن يعرّف الخادم الأنواع المدعومة (دورات، منح…) في المخطط.'
+        }
         isError={loadErrors.content}
         onRetry={refresh}
       />
@@ -61,7 +67,7 @@ export const ContentView: React.FC = () => {
         <AdminSearchBox
           value={contentSearch}
           onChange={setContentSearch}
-          placeholder="ابحث في المحتوى…"
+          placeholder="ابحث بالعنوان أو المعرّف…"
           label="بحث في المحتوى"
         />
         <div className="admin-toolbar-actions">
@@ -71,7 +77,7 @@ export const ContentView: React.FC = () => {
             onClick={() => setFormState({ open: true, row: null })}
           >
             <Plus size={15} />
-            <span>إضافة</span>
+            <span>إضافة عنصر</span>
           </button>
         </div>
       </div>
@@ -94,14 +100,21 @@ export const ContentView: React.FC = () => {
         </>
       ) : (
         <AdminEmptyState
+          icon={Shapes}
           title={
             loadErrors.content
               ? 'تعذّر تحميل المحتوى'
               : isSearching
-              ? 'لا توجد نتائج مطابقة'
-              : 'لا توجد عناصر بعد'
+              ? 'لا توجد عناصر تطابق البحث'
+              : `لا يوجد محتوى في «${activeType.label}» بعد`
           }
-          hint={isSearching ? 'جرّب تعديل البحث أو الفلتر.' : undefined}
+          hint={
+            loadErrors.content
+              ? 'تعذّر الوصول إلى الخادم؛ أعد المحاولة بعد لحظات.'
+              : isSearching
+              ? 'جرّب تعديل كلمة البحث.'
+              : 'أضف أول عنصر من زر «إضافة عنصر» في الأعلى ليظهر هنا.'
+          }
           isError={loadErrors.content}
           onRetry={refresh}
         />

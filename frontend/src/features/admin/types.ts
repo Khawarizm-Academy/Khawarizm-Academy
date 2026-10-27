@@ -184,12 +184,97 @@ export interface LoginSeries {
 /** The console's sections; each one is a `?tab=` value. */
 export type AdminSectionKey = 'overview' | 'users' | 'content' | 'videos' | 'system' | 'sessions' | 'analytics' | 'activity';
 
-export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ['overview', 'users', 'content', 'videos', 'system', 'sessions', 'analytics', 'activity'];
+/** One rail group: a quiet label above its related sections. */
+export interface AdminNavGroup {
+  id: string;
+  label: string;
+  sections: AdminSectionKey[];
+}
+
+export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
+  { id: 'platform', label: 'المنصة', sections: ['overview', 'users', 'sessions'] },
+  { id: 'publishing', label: 'المحتوى والفيديو', sections: ['content', 'videos', 'system'] },
+  { id: 'insight', label: 'المتابعة', sections: ['analytics', 'activity'] },
+];
+
+export const EVENT_KIND_LABELS: Record<AdminEventKind, string> = {
+  login: 'دخول',
+  logout: 'خروج',
+  refresh: 'تجديد',
+  revoked: 'إبطال',
+  rejected: 'مرفوض',
+};
+
+export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ADMIN_NAV_GROUPS.flatMap((group) => group.sections);
+
+/** The h1 + one-line description under every section name. */
+export const SECTION_DETAILS: Record<AdminSectionKey, { title: string; sub: string }> = {
+  overview: {
+    title: 'نظرة عامة',
+    sub: 'مؤشرات المنصة لحظة بلحظة: الحسابات والجلسات ونشاط الدخول.',
+  },
+  users: {
+    title: 'الحسابات',
+    sub: 'كل حساب مسجّل مع دوره وحالته — افتح الحساب لتعديل بياناته أو إدارة أجهزته.',
+  },
+  content: {
+    title: 'إدارة المحتوى',
+    sub: 'الدورات والمنح والفعاليات والمسابقات — إضافة وتعديل وأرشفة من مكان واحد.',
+  },
+  videos: {
+    title: 'استضافة الفيديو',
+    sub: 'أصول الفيديو المخزّنة، وخط الرفع والتغليف الذي يشغّلها داخل المنصة.',
+  },
+  system: {
+    title: 'فحص المنظومة',
+    sub: 'صحة خط التغليف واتصال مُزوّدي الاستضافة قبل اعتمادها للطلاب.',
+  },
+  sessions: {
+    title: 'الجلسات',
+    sub: 'كل الأجهزة التي دخلت على المنصة، مع إنهاء أي جلسة عن بُعد.',
+  },
+  analytics: {
+    title: 'التحليلات',
+    sub: 'تسجيلات الدخول اليومية وتوزيع أجهزة الجمهور عبر الإطار الزمني.',
+  },
+  activity: {
+    title: 'سجل النشاط',
+    sub: 'أحدث أحداث الدخول والخروج والتجديد والإبطال على مستوى المنصة.',
+  },
+};
 
 /** Filter values shared by the tables. */
 export type AdminRoleFilter = AuthRole | 'all';
 export type AdminActiveFilter = 'all' | 'active' | 'inactive';
 export type AdminLoginRange = '7' | '14' | '30';
+
+/** The option lists every segmented filter renders; ids are the API's own values. */
+export const ROLE_FILTERS: Array<{ id: AdminRoleFilter; label: string }> = [
+  { id: 'all', label: 'الكل' },
+  { id: 'student', label: 'طلاب' },
+  { id: 'instructor', label: 'مدربون' },
+  { id: 'admin', label: 'مشرفون' },
+];
+
+export const ACTIVE_FILTERS: Array<{ id: AdminActiveFilter; label: string }> = [
+  { id: 'all', label: 'كل الجلسات' },
+  { id: 'active', label: 'نشطة الآن' },
+  { id: 'inactive', label: 'منتهية' },
+];
+
+export const LOGIN_RANGES: Array<{ id: AdminLoginRange; label: string }> = [
+  { id: '7', label: 'آخر ٧ أيام' },
+  { id: '14', label: 'آخر ١٤ يومًا' },
+  { id: '30', label: 'آخر ٣٠ يومًا' },
+];
+
+export const EVENT_KIND_FILTERS: Array<{ id: AdminEventKind | 'all'; label: string }> = [
+  { id: 'all', label: 'كل الأحداث' },
+  ...(['login', 'logout', 'refresh', 'revoked', 'rejected'] as AdminEventKind[]).map((kind) => ({
+    id: kind,
+    label: EVENT_KIND_LABELS[kind],
+  })),
+];
 
 /** Arabic labels for every section, event kind, and revoke reason. */
 export const SECTION_LABELS: Record<AdminSectionKey, string> = {
@@ -203,13 +288,7 @@ export const SECTION_LABELS: Record<AdminSectionKey, string> = {
   activity: 'سجل النشاط',
 };
 
-export const EVENT_KIND_LABELS: Record<AdminEventKind, string> = {
-  login: 'دخول',
-  logout: 'خروج',
-  refresh: 'تجديد',
-  revoked: 'إبطال',
-  rejected: 'مرفوض',
-};
+
 
 export const REVOKE_REASON_LABELS: Record<string, string> = {
   logout: 'سجّل الخروج',

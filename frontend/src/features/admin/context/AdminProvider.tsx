@@ -17,12 +17,10 @@ import {
   fetchVideoAssets,
   fetchVideoProviders,
   fetchVideoDiagnostics,
-  createVideoAsset as createVideoRequest,
   deleteVideoAsset as deleteVideoRequest,
   uploadVideoAsset as uploadVideoRequest,
   revokeAdminSession,
   updateUserRole,
-  createAdminUser,
   updateAdminUser,
   deleteAdminUser,
   fetchContentSchema,
@@ -85,7 +83,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deletingContentId, setDeletingContentId] = useState<string | null>(null);
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
-  const [creatingVideo, setCreatingVideo] = useState(false);
   const [deepDiagnosticsRequested, setDeepDiagnosticsRequested] = useState(false);
   const [videoUpload, setVideoUpload] = useState<VideoUploadState | null>(null);
   const [contentType, setContentTypeState] = useState<AdminContentTypeKey | null>(null);
@@ -229,18 +226,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const createUser = async (input: AdminUserInput): Promise<boolean> => {
-    setError(null);
-    try {
-      await createAdminUser(input);
-      await Promise.all([users.refetch(), overview.refetch()]);
-      return true;
-    } catch (thrown) {
-      setError(toMessage(thrown));
-      return false;
-    }
-  };
-
   const updateUser = async (userId: string, input: Partial<AdminUserInput>): Promise<boolean> => {
     setError(null);
     try {
@@ -318,21 +303,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       videoAssets.refetch(),
       videoDiagnostics.refetch(),
     ]);
-  };
-
-  const createVideo = async (input: AdminVideoInput): Promise<boolean> => {
-    setError(null);
-    setCreatingVideo(true);
-    try {
-      await createVideoRequest(input);
-      await refreshVideoData();
-      return true;
-    } catch (thrown) {
-      setError(toMessage(thrown));
-      return false;
-    } finally {
-      setCreatingVideo(false);
-    }
   };
 
   // The backend 202s as soon as the file lands on disk and ingests on a worker
@@ -521,7 +491,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     refresh,
     changeRole,
     revokeSession,
-    createUser,
     updateUser,
     deleteUser,
     createContent,
@@ -530,8 +499,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     videoProviders: videoProviders.data ?? [],
     videoAssets: videoAssets.data ?? [],
     deletingVideoId,
-    creatingVideo,
-    createVideo,
     deleteVideo,
     videoUpload,
     uploadVideo,

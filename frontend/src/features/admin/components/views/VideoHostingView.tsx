@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, FileVideo, RefreshCw, Trash2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Cloud, FileVideo, RefreshCw, Link2, Trash2, X } from 'lucide-react';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
 import { VideoStatusBadge } from '@/features/admin/components/cards/Badges';
@@ -11,8 +11,10 @@ import { VIDEO_STAGE_LABELS, type AdminVideoProvider } from '@/features/admin/ty
 
 /** The select's per-provider footnote; unknown codes simply read no note. */
 const PROVIDER_NOTES: Record<string, string> = {
-  telegram: 'تُرفع المقاطع إلى قناة تليجرام الخاصة وتُغلَّف HLS مشفّرًا — يتطلب FFmpeg للتغليف.',
-  google_drive: 'المصدر يُرفع تدفّقيًّا (resumable) إلى مجلد Drive المخصّص — يُخزَّن ويُرحَّل دون تغليف HLS.',
+  telegram:
+    'تُرفع المصادر إلى قناة الأكاديمية على تليجرام، ثم تُغلَّف بصيغة HLS مشفّرة قابلة للتشغيل داخل المنصة — التغليف يتطلب FFmpeg.',
+  google_drive:
+    'المصدر يُرفع تدفّقيًّا (resumable) إلى مجلد Google Drive المخصّص، ويُخزَّن كما هو دون تغليف HLS.',
 };
 
 /** Whether an option is selectable: the registry flag AND the env checks. */
@@ -38,6 +40,14 @@ const formatBytes = (bytes: number): string => {
 /** The tracker's second line; an unknown stage falls back to its own text. */
 const stageLabel = (stage: string): string => VIDEO_STAGE_LABELS[stage] ?? stage;
 
+/** Google Drive's blocker is a missing consent — its one remedy button. */
+const DriveLinkButton: React.FC<{ busy: boolean; onClick: () => void }> = ({ busy, onClick }) => (
+  <button type="button" className="btn-outline-blue py-1.5 px-3 text-xs" onClick={onClick} disabled={busy}>
+    <Cloud size={14} />
+    <span>{busy ? 'جارٍ تجهيز عملية الربط…' : 'ربط حساب Google'}</span>
+  </button>
+);
+
 /** استضافة الفيديو: file upload with a live tracker + the fleet of stored assets. */
 export const VideoHostingView: React.FC = () => {
   const {
@@ -60,7 +70,7 @@ export const VideoHostingView: React.FC = () => {
 
   /** Drive's blocker is a missing consent, not a config edit — open Google's
       URL (public id only) and let Django hold whatever comes back. */
-  const authorizeDrive = async () => {
+  const linkDrive = async () => {
     setAuthorizingDrive(true);
     try {
       const { authUrl } = await startDriveOAuth();
@@ -117,10 +127,12 @@ export const VideoHostingView: React.FC = () => {
   return (
     <div className="admin-view">
       <div className="admin-toolbar">
-        <h2 className="admin-section-title">استضافة الفيديو</h2>
+        <span className="admin-meta-line">
+          {videoProviders.filter(isSelectable).length} مُزوّد جاهز · {videoAssets.length} أصل مخزَّن
+        </span>
         <div className="admin-toolbar-actions">
-          <button type="button" className="admin-ghost-btn" onClick={() => refreshVideoData()}>
-            <RefreshCw size={15} />
+          <button type="button" className="btn-outline-blue py-1.5 px-4 text-xs" onClick={() => refreshVideoData()}>
+            <RefreshCw size={14} />
             <span>تحديث البيانات</span>
           </button>
         </div>
@@ -128,8 +140,9 @@ export const VideoHostingView: React.FC = () => {
 
       {loadErrors.videos && (
         <AdminEmptyState
-          title="تعذّر تحميل بيانات الفيديو"
-          hint="تعذّر الوصول إلى الخادم."
+          icon={Cloud}
+          title="تعذّر تحميل أصول الفيديو"
+          hint="تعذّر الوصول إلى الخادم؛ أعد المحاولة بعد لحظات."
           isError
           onRetry={refreshVideoData}
         />
@@ -139,25 +152,29 @@ export const VideoHostingView: React.FC = () => {
         <div className="admin-diag-verdict admin-diag-verdict-error">
           <div className="flex items-center gap-2 text-xs font-bold font-display">
             <AlertTriangle size={16} className="shrink-0" />
-            <span>FFmpeg غير متوفر على هذا الخادم — الفيديو الجديد يُرحَّل "مرحَّلًا" ويغلَّف لاحقًا من جهاز يشغّل FFmpeg. راجع قسم «فحص المنظومة».</span>
+            <span>
+              FFmpeg غير متوفر على هذا الخادم — المصادر الجديدة تُحفظ مرحَّلةً دون تغليف، ويُغلَّف كل ملف لاحقًا من جهاز
+              مثبَّت عليه FFmpeg. راجع تبويب «فحص المنظومة».
+            </span>
           </div>
         </div>
       )}
 
       {videoUpload && (
         <section className="admin-view-section">
-          <h2 className="admin-section-title">متابعة الرفع</h2>
+          <h2 className="admin-section-title">
+            <FileVideo size={15} className="admin-section-title-icon" />
+            <span className="admin-section-title-text">متابعة الرفع الحالي</span>
+          </h2>
           <div className={`admin-upload-tracker ${videoUpload.error ? 'admin-upload-tracker-error' : ''}`}>
             <div className="admin-upload-tracker-head">
               <FileVideo size={18} className="shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="admin-upload-tracker-name">{videoUpload.fileName}</div>
-                <div className="admin-upload-tracker-stage">
-                  {stageLabel(videoUpload.stage)}
-                </div>
+                <div className="admin-upload-tracker-stage">{stageLabel(videoUpload.stage)}</div>
               </div>
-              <span className="admin-mono admin-upload-tracker-percent">{percent}%</span>
-              <button type="button" className="admin-ghost-btn" onClick={clearVideoUpload} aria-label="إخفاء المتابعة">
+              <span className="admin-upload-tracker-percent">{percent}%</span>
+              <button type="button" className="admin-icon-btn" onClick={clearVideoUpload} aria-label="إخفاء المتابعة">
                 <X size={16} />
               </button>
             </div>
@@ -168,18 +185,22 @@ export const VideoHostingView: React.FC = () => {
               />
             </div>
             {videoUpload.phase === 'done' && (
-              <div className="admin-upload-tracker-verdict admin-upload-tracker-verdict-ok">اكتمل بنجاح ✓</div>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold font-display text-emerald-400">
+                <CheckCircle2 size={14} />
+                <span>اكتمل الرفع بنجاح — أصبح الفيديو متاحًا للاستخدام.</span>
+              </div>
             )}
-            {videoUpload.phase === 'error' && (
-              <div className="admin-form-error">{videoUpload.error}</div>
-            )}
+            {videoUpload.phase === 'error' && <div className="admin-form-error">{videoUpload.error}</div>}
           </div>
         </section>
       )}
 
       <section className="admin-view-section">
-        <h2 className="admin-section-title">رفع فيديو جديد</h2>
-        <form onSubmit={handleUpload} className="admin-detail-section">
+        <h2 className="admin-section-title">
+          <Link2 size={15} className="admin-section-title-icon" />
+          <span className="admin-section-title-text">إضافة فيديو جديد</span>
+        </h2>
+        <form onSubmit={handleUpload} className="admin-detail-section gap-4">
           <label
             className={`admin-dropzone ${dragging ? 'admin-dropzone-drag' : ''}`}
             onDragOver={(event) => {
@@ -203,52 +224,86 @@ export const VideoHostingView: React.FC = () => {
                 <FileVideo size={20} className="shrink-0" />
                 <div className="min-w-0">
                   <div className="admin-dropzone-name">{file.name}</div>
-                  <div className="admin-dropzone-hint">{formatBytes(file.size)} — اضغط للاستبدال</div>
+                  <div className="admin-dropzone-hint">{formatBytes(file.size)} — اضغط لاختيار ملف آخر</div>
                 </div>
               </>
             ) : (
               <>
                 <FileVideo size={20} className="shrink-0" />
                 <div>
-                  <div className="admin-dropzone-name">اسحب الفيديو هنا أو اضغط للاختيار</div>
-                  <div className="admin-dropzone-hint">حتى 2GB — يُغلَّف HLS تلقائيًّا بعد الرفع إن توفر FFmpeg</div>
+                  <div className="admin-dropzone-name">اسحب ملف الفيديو إلى هنا، أو اضغط لاختياره</div>
+                  <div className="admin-dropzone-hint">
+                    حتى 2 GB — يُغلَّف بصيغة HLS تلقائيًا بعد الرفع إن توفر FFmpeg على الخادم
+                  </div>
                 </div>
               </>
             )}
           </label>
           {capBlocked && (
             <div className="admin-form-error">
-              {formatBytes(file?.size ?? 0)} أكبر من حد الخادم السحابي (4.5 MB) — ارفع من جهاز التغليف عبر
-              <span className="admin-mono"> manage.py ingest_video</span> أو انشر الخادم على VM بدل Vercel.
+              {formatBytes(file?.size ?? 0)} أكبر من حد الاستضافة السحابية (4.5 MB) — ارفع الملف من جهاز إداري عبر
+              <span className="admin-mono mx-1">manage.py ingest_video</span>
+              أو انشر الخادم على استضافة تسمح بالملفات الكبيرة.
             </div>
           )}
 
-          <div className="admin-form-grid">
-            <div className="admin-field">
-              <label className="admin-field-label" htmlFor="video-slug">معرّف الفيديو (slug)</label>
-              <input
-                id="video-slug"
-                className="admin-input admin-mono"
-                value={form.slug}
-                onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                placeholder="course-1--lesson-1"
-                required
-              />
+          <div className="admin-form-section">
+            <header className="admin-form-section-head">
+              <span className="admin-form-section-icon">
+                <FileVideo size={14} />
+              </span>
+              <span className="admin-form-section-title">بيانات الأصل</span>
+              <span className="admin-form-section-count">يُعبّأ الاسم تلقائيًا من الملف</span>
+            </header>
+            <div className="admin-form-grid">
+              <div className="admin-field">
+                <label className="admin-field-label" htmlFor="video-slug">
+                  معرّف الفيديو (slug)
+                  <span className="admin-required" aria-hidden="true">
+                    *
+                  </span>
+                </label>
+                <input
+                  id="video-slug"
+                  dir="ltr"
+                  className="admin-input text-left admin-mono"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  placeholder="course-1--lesson-1"
+                  required
+                />
+                <span className="admin-detail-empty">يُكتب بالحروف والأرقام فقط، ويُستخدم في روابط المشغّل داخل الدورات.</span>
+              </div>
+              <div className="admin-field">
+                <label className="admin-field-label" htmlFor="video-title">
+                  عنوان الفيديو
+                </label>
+                <input
+                  id="video-title"
+                  className="admin-input"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="يُعبّأ من اسم الملف تلقائيًا"
+                />
+              </div>
             </div>
+          </div>
+
+          <div className="admin-form-section">
+            <header className="admin-form-section-head">
+              <span className="admin-form-section-icon">
+                <Cloud size={14} />
+              </span>
+              <span className="admin-form-section-title">مُزوّد الاستضافة</span>
+              <span className="admin-form-section-count">اختياري — اتركه فارغًا للاختيار الافتراضي</span>
+            </header>
             <div className="admin-field">
-              <label className="admin-field-label" htmlFor="video-title">العنوان</label>
-              <input
-                id="video-title"
-                className="admin-input"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
-            </div>
-            <div className="admin-field admin-field-wide">
-              <label className="admin-field-label" htmlFor="video-provider">مزود الاستضافة</label>
+              <label className="admin-field-label" htmlFor="video-provider">
+                اختيار المُزوّد
+              </label>
               <select
                 id="video-provider"
-                className="admin-select"
+                className="admin-input"
                 value={provider}
                 disabled={busy}
                 onChange={(e) => setProvider(e.target.value)}
@@ -261,72 +316,73 @@ export const VideoHostingView: React.FC = () => {
                     disabled={!isSelectable(p)}
                     title={p.reason || undefined}
                   >
-                    {p.name}{isSelectable(p) ? '' : ' — غير جاهز'}
+                    {p.name}
+                    {isSelectable(p) ? '' : ' — غير جاهز'}
                   </option>
                 ))}
               </select>
-              {/* Every greyed provider states its own blocker right here, so
-                  the dropdown never hides why an option cannot be chosen. */}
+            </div>
+
+            {/* Every greyed provider states its own blocker right here, so
+                the dropdown never hides why an option cannot be chosen. */}
+            <div className="flex flex-col gap-2">
               {videoProviders
-                .filter((p) => !isSelectable(p) && p.code !== provider)
+                .filter((p) => !isSelectable(p))
                 .map((p) => (
-                  <div key={p.code} className="admin-detail-empty">
-                    {p.name} غير جاهز — {p.reason || 'تعذّر التحقق من جاهزيته.'}
+                  <div key={p.code} className="admin-check">
+                    <div className="admin-check-line">
+                      <span className="admin-check-label">{p.name}</span>
+                      <span className="admin-badge admin-badge-inactive">غير جاهز</span>
+                    </div>
+                    <span className="admin-check-detail">{p.reason || 'تعذّر التحقق من جاهزيته.'}</span>
                     {p.code === 'google_drive' && (
-                      <button
-                        type="button"
-                        className="admin-ghost-btn"
-                        onClick={authorizeDrive}
-                        disabled={authorizingDrive}
-                      >
-                        {authorizingDrive ? 'جارٍ تجهيز الرابط…' : 'تخويل حساب Google'}
-                      </button>
+                      <DriveLinkButton busy={authorizingDrive} onClick={linkDrive} />
                     )}
                   </div>
                 ))}
               {chosenBlocked && chosen?.code === 'google_drive' && (
-                <button
-                  type="button"
-                  className="admin-ghost-btn"
-                  onClick={authorizeDrive}
-                  disabled={authorizingDrive}
-                >
-                  {authorizingDrive ? 'جارٍ تجهيز الرابط…' : 'تخويل حساب Google'}
-                </button>
+                <DriveLinkButton busy={authorizingDrive} onClick={linkDrive} />
               )}
-              {chosenBlocked && (
-                <div className="admin-form-error">{chosen?.reason ?? 'هذا المزود غير مفعّل.'}</div>
+              {chosenBlocked && chosen && (
+                <div className="admin-form-error">{chosen.reason ?? 'هذا المُزوّد غير جاهز في الوقت الحالي.'}</div>
               )}
               {!chosenBlocked && provider && (
-                <div className="admin-detail-empty">{PROVIDER_NOTES[provider]}</div>
+                <span className="admin-check-hint font-body">{PROVIDER_NOTES[provider]}</span>
               )}
               {!provider && !pipelineOk && (
-                <div className="admin-detail-empty">
-                  سيُحفظ المصدر فقط (مرحَّل) بانتظار جهاز يغلّف — النتيجة تبقى قابلة للتشغيل لاحقًا.
-                </div>
+                <span className="admin-check-hint font-body">
+                  سيُحفظ المصدر مرحَّلًا دون تغليف، وتظل النتيجة قابلة للتشغيل بعد التغليف اللاحق.
+                </span>
               )}
             </div>
           </div>
 
           <div className="admin-form-footer">
-            <button type="submit" className="admin-primary-btn" disabled={busy || missingFile || chosenBlocked || capBlocked}>
-              <span>{busy ? 'جارٍ تنفيذ الرفع…' : 'رفع الفيديو'}</span>
+            <button
+              type="submit"
+              className="admin-primary-btn"
+              disabled={busy || missingFile || chosenBlocked || capBlocked}
+            >
+              {busy ? 'جارٍ تنفيذ الرفع…' : 'بدء الرفع والتغليف'}
             </button>
           </div>
         </form>
       </section>
 
       <section className="admin-view-section">
-        <h2 className="admin-section-title">الفيديوهات المخزَّنة</h2>
+        <h2 className="admin-section-title">
+          <FileVideo size={15} className="admin-section-title-icon" />
+          <span className="admin-section-title-text">أصول الفيديو المخزَّنة</span>
+        </h2>
         {videoAssets.length > 0 ? (
           <div className="admin-table admin-table-video">
             <div className="admin-table-head" aria-hidden="true">
               <span>المعرّف</span>
               <span>العنوان</span>
               <span>الحالة</span>
-              <span>المزود</span>
-              <span>أُنشئ</span>
-              <span>إجراءات</span>
+              <span>المُزوّد</span>
+              <span>أُضيف</span>
+              <span>إجراء</span>
             </div>
             {videoAssets.map((asset) => {
               /** The row the tracker is driving mirrors the live bar, not a stale load. */
@@ -335,7 +391,9 @@ export const VideoHostingView: React.FC = () => {
                 <div key={asset.id} className="admin-table-row admin-table-row-static">
                   <div className="admin-cell">
                     <span className="admin-cell-label">المعرّف</span>
-                    <span className="admin-cell-value admin-mono admin-key" title={asset.slug}>{asset.slug}</span>
+                    <span className="admin-cell-value admin-mono admin-key" title={asset.slug}>
+                      {asset.slug}
+                    </span>
                   </div>
                   <div className="admin-cell">
                     <span className="admin-cell-label">العنوان</span>
@@ -346,7 +404,7 @@ export const VideoHostingView: React.FC = () => {
                     <span className="admin-cell-value">
                       <VideoStatusBadge status={asset.status} />
                       <span className="admin-cell-sub">
-                        {asset.status === 'ready' ? `${asset.qualities ?? 0} نسخ` : (asset.error || '')}
+                        {asset.status === 'ready' ? `${asset.qualities ?? 0} نسخ جودة` : asset.error || ''}
                       </span>
                       {liveRow && (
                         <>
@@ -359,19 +417,19 @@ export const VideoHostingView: React.FC = () => {
                     </span>
                   </div>
                   <div className="admin-cell">
-                    <span className="admin-cell-label">المزود</span>
+                    <span className="admin-cell-label">المُزوّد</span>
                     <span className="admin-cell-value">{asset.provider || '—'}</span>
                   </div>
                   <div className="admin-cell">
-                    <span className="admin-cell-label">أُنشئ</span>
+                    <span className="admin-cell-label">أُضيف</span>
                     <span className="admin-cell-value">{formatShortDateTime(asset.createdAt)}</span>
                   </div>
                   <div className="admin-cell">
-                    <span className="admin-cell-label">إجراءات</span>
+                    <span className="admin-cell-label">إجراء</span>
                     <span className="admin-actions">
                       <ConfirmAction
                         label=""
-                        confirmLabel="تأكيد الحذف"
+                        confirmLabel="نعم، احذف"
                         icon={Trash2}
                         busy={deletingVideoId === asset.id}
                         onConfirm={() => deleteVideo(asset.id)}
@@ -383,7 +441,13 @@ export const VideoHostingView: React.FC = () => {
             })}
           </div>
         ) : (
-          !loadErrors.videos && <AdminEmptyState title="لا توجد فيديوهات بعد" hint="ارفع أول فيديو من النموذج أعلاه." />
+          !loadErrors.videos && (
+            <AdminEmptyState
+              icon={FileVideo}
+              title="لا توجد أصول فيديو بعد"
+              hint="ارفع أول فيديو من النموذج أعلاه ليظهر هنا مع حالته وعدد جوداته."
+            />
+          )
         )}
       </section>
     </div>

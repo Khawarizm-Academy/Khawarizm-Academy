@@ -1,56 +1,65 @@
 /* ==========================================================================
-   Admin Console — staff dashboard frame, data tables, charts, detail modal.
+   Admin Console — staff workspace: shell, rail, top bar, page head, tables,
+   forms, charts, diagnostics, upload tracker, modals.
    Feature-owned concept classes. Imported by styles/globals.css, which keeps
    only classes shared by 2+ features. Declared in @layer components so JSX
    utilities can still override them.
 
-   Design language: observatory navy glass under a warm gold command accent.
-   Surfaces are quiet (navy-900 hairlines); color is earned — gold for the
-   operator identity/actions, blue for data interactivity, semantic colors for
-   verdicts only. Everything interactive carries a visible focus ring.
+   Design language: same observatory canvas as every other page — navy glass
+   over the global celestial washes (never a page-level background), gold as
+   the command accent, blue for data interactivity, semantic colors only for
+   verdicts. Cards are lighter than the canvas; wells are darker inset.
    ========================================================================== */
 @layer components {
-  /* --- Page frame: sticky rail beside a fluid content column --- */
+  /* --- Page frame: fixed rail beside a centred content column --- */
   .admin-page {
-    @apply w-full min-h-screen flex items-start text-slate-100 relative overflow-x-clip;
-  }
-
-  /* Ambient observatory: one cold nebula left, one warm command glow right. */
-  .admin-main::before {
-    content: "";
-    @apply absolute inset-0 -z-10 pointer-events-none;
-    background:
-      radial-gradient(42rem 26rem at 85% -8%, rgb(229 182 92 / 0.07), transparent 62%),
-      radial-gradient(38rem 30rem at 4% 108%, rgb(41 169 255 / 0.06), transparent 60%);
+    @apply w-full min-h-screen flex justify-start items-start text-slate-100 relative overflow-x-clip;
   }
 
   .admin-main {
-    @apply flex-1 min-w-0 flex flex-col relative z-10;
+    @apply flex-1 min-w-0 flex flex-col justify-start items-start relative z-10;
   }
 
-  /* --- Section rail (desktop) --- */
+  .admin-container {
+    /* mx-auto centres the column; without it the body hugs the RTL start edge. */
+    @apply w-full max-w-[1280px] mx-auto px-4 sm:px-6 md:px-10 lg:px-12 pt-4 md:pt-6 pb-24 lg:pb-10 flex flex-col gap-6;
+  }
+
+  /* --- Section rail (desktop): glass column with grouped navigation --- */
   .admin-side {
-    @apply hidden lg:flex flex-col gap-7 sticky top-0 w-64 shrink-0 h-screen p-5 border-l border-navy-600/50 bg-navy-950/90 backdrop-blur-lg z-30;
+    @apply hidden lg:flex flex-col justify-between gap-6 sticky top-0 w-64 shrink-0 h-screen px-4 py-5 border-l border-navy-600/60 bg-navy-950/92 backdrop-blur-lg z-30 select-none;
+  }
+
+  .admin-side-top {
+    @apply flex flex-col gap-6 min-h-0;
   }
 
   .admin-side-brand {
-    @apply flex items-center gap-3 px-1;
-  }
-
-  .admin-brand-mark {
-    @apply size-10 rounded-xl grid place-items-center shrink-0 bg-gradient-to-br from-gold-200 to-gold-600 text-navy-950 font-black font-display text-lg shadow-[0_4px_18px_rgba(229,182,92,0.35)];
+    @apply flex items-center gap-2.5 px-1.5;
   }
 
   .admin-side-brand-text {
-    @apply flex flex-col min-w-0;
+    @apply flex flex-col min-w-0 pt-1;
   }
 
   .admin-side-brand-name {
-    @apply text-[13px] font-bold text-white font-display truncate;
+    @apply text-sm text-gold-400 font-bold font-display truncate;
   }
 
-  .admin-side-brand-tag {
-    @apply text-[11px] text-gold-400/90 font-body font-semibold;
+  .admin-side-console-tag {
+    @apply self-start px-2 py-0.5 rounded-md bg-gold-400/10 text-gold-400 text-[10px] font-black font-display border border-gold-400/30;
+  }
+
+  .admin-side-scroll {
+    @apply flex-1 min-h-0 overflow-y-auto flex flex-col gap-5 mt-1;
+  }
+
+  .admin-side-group {
+    @apply flex flex-col gap-1;
+  }
+
+  .admin-side-group-label {
+    @apply px-3 pb-1 text-[10px] font-bold font-display tracking-wider text-slate-500 uppercase;
   }
 
   .admin-side-nav {
@@ -58,26 +67,48 @@
   }
 
   .admin-nav-item {
-    @apply relative flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-[13px] font-display transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40;
+    @apply relative flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-[13px] font-display transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 active:scale-[0.985];
   }
 
-  /* The ride indicator: a gold puck that slides in beside the active section. */
+  /* Active marker: a gold puck beside the section, alive while it is open */
   .admin-nav-item-active {
-    @apply bg-gold-400/10 text-gold-400 font-bold;
+    @apply bg-gold-400/10 text-gold-400 font-bold shadow-[0_0_12px_rgba(229,182,92,0.16)];
   }
 
   .admin-nav-item-active::before {
-    content: "";
-    @apply absolute right-[-1px] top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-gold-400 shadow-[0_0_8px_rgba(229,182,92,0.8)];
+    content: '';
+    @apply absolute right-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full bg-gold-400;
+    box-shadow: 0 0 8px rgba(229, 182, 92, 0.85);
   }
 
   .admin-nav-item-idle {
     @apply text-slate-400 hover:text-slate-100 hover:bg-navy-800/60;
   }
 
-  /* --- Section pills (mobile) --- */
+  /* --- Rail footer: the signed-in operator --- */
+  .admin-side-foot {
+    @apply flex flex-col gap-3 pt-4 border-t border-navy-600/40;
+  }
+
+  .admin-operator {
+    @apply flex items-center gap-3 w-full p-2 rounded-2xl bg-navy-900/60 border border-navy-600/40;
+  }
+
+  .admin-operator-avatar {
+    @apply size-10 rounded-xl grid place-items-center shrink-0 bg-gold-400/15 border border-gold-400/40 text-gold-400 text-[13px] font-bold font-display;
+  }
+
+  .admin-operator-names {
+    @apply flex flex-col gap-1 min-w-0;
+  }
+
+  .admin-operator-name {
+    @apply text-[13px] font-bold font-display text-slate-100 truncate;
+  }
+
+  /* --- Console pills strip (mobile) --- */
   .admin-pills {
-    @apply flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1;
+    @apply flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 lg:hidden;
   }
 
   .admin-pill {
@@ -92,33 +123,51 @@
     @apply border-navy-600/60 text-slate-400 hover:text-slate-100;
   }
 
-  /* --- Top bar --- */
+  /* --- Top bar: section identity + the console actions, one cyan hairline --- */
   .admin-topbar {
-    @apply sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 py-2.5 border-b border-navy-600/50 bg-navy-950/85 backdrop-blur-lg;
+    @apply relative hidden md:flex h-14 items-center justify-between gap-4 px-4 sm:px-6 lg:px-10 border-b border-navy-600/70 bg-navy-950/90 backdrop-blur-lg z-20 shrink-0 sticky top-0;
+  }
+
+  .admin-topbar-hairline {
+    @apply pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-l from-transparent via-blue-400/40 to-transparent;
+  }
+
+  .admin-topbar-identity {
+    @apply flex items-center gap-2.5 min-w-0;
   }
 
   .admin-topbar-lead {
     @apply flex items-center gap-3 min-w-0;
   }
 
-  .admin-topbar-mark {
-    @apply size-9 rounded-xl grid place-items-center shrink-0 border border-gold-400/40 bg-gradient-to-b from-gold-400/20 to-gold-400/5 text-gold-400;
+  .admin-topbar-plate {
+    @apply flex items-center gap-2.5 h-9 px-3.5 rounded-full bg-navy-900/70 border border-navy-600/70 min-w-0;
+
   }
 
-  .admin-topbar-heading {
-    @apply flex flex-col min-w-0;
+  .admin-topbar-plate-icon {
+    @apply text-gold-400 shrink-0;
   }
 
-  .admin-topbar-title {
-    @apply text-base font-bold text-white font-display leading-6;
+  .admin-topbar-plate-label {
+    @apply text-[13px] font-bold font-display text-slate-200 truncate;
   }
 
-  .admin-topbar-sub {
+  .admin-topbar-tagline {
+    @apply hidden xl:flex flex-col min-w-0;
+
+  }
+
+  .admin-topbar-headline {
+    @apply text-sm font-bold text-white font-display leading-5 truncate;
+  }
+
+  .admin-topbar-subtitle {
     @apply text-[11px] text-slate-400 font-body truncate;
   }
 
   .admin-topbar-actions {
-    @apply flex items-center gap-2;
+    @apply flex items-center gap-2 shrink-0;
   }
 
   .admin-identity {
@@ -126,32 +175,58 @@
   }
 
   .admin-identity-avatar {
-    @apply size-9 rounded-full grid place-items-center shrink-0 border border-gold-400/50 bg-navy-800 text-gold-400 text-[13px] font-bold font-display shadow-[0_0_10px_rgba(229,182,92,0.25)];
+    @apply size-9 rounded-full grid place-items-center shrink-0 border border-gold-400/50 bg-navy-800 text-gold-400 text-[13px] font-bold font-display;
   }
 
   .admin-identity-text {
-    @apply hidden sm:flex flex-col items-start gap-1 min-w-0;
+    @apply hidden xl:flex flex-col items-start gap-1 min-w-0;
   }
 
   .admin-identity-name {
     @apply text-[13px] font-bold text-slate-100 font-display max-w-[160px] truncate;
   }
 
+  /* --- The per-section page head: icon plate, title, description --- */
+  .admin-page-head {
+    @apply flex flex-col gap-4 border-b border-navy-600/50 pb-6 md:border-none md:pb-0;
+  }
+
+  .admin-page-head-row {
+    @apply flex items-start justify-between gap-4 flex-wrap;
+  }
+
+  .admin-page-head-lead {
+    @apply flex items-start gap-3 min-w-0 sm:items-center;
+  }
+
+  .admin-page-head-plate {
+    @apply size-12 rounded-2xl grid place-items-center shrink-0 bg-gold-400/12 border border-gold-400/35 text-gold-400 shadow-[0_0_18px_rgba(229,182,92,0.14)];
+  }
+
+  .admin-page-head-text {
+    @apply flex flex-col gap-1 min-w-0;
+  }
+
+  .admin-page-head-sub {
+    @apply text-[13px] text-slate-400 font-body leading-5;
+  }
+
   /* --- Buttons --- */
   .admin-icon-btn {
-    @apply size-9 grid place-items-center rounded-lg border border-navy-600/70 bg-navy-900/70 text-slate-400 transition-colors hover:text-slate-100 hover:border-blue-400/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply size-9 grid place-items-center rounded-xl border border-navy-600/70 bg-navy-900/70 text-slate-400 transition-all duration-200 hover:text-slate-100 hover:border-blue-400/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95;
   }
 
   .admin-ghost-btn {
-    @apply h-9 px-3 inline-flex items-center gap-1.5 rounded-lg border border-navy-600/70 bg-navy-900/70 text-[12px] font-bold font-display text-slate-300 transition-colors hover:text-white hover:border-blue-400/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40;
+    @apply h-9 px-3 inline-flex items-center gap-1.5 rounded-xl border border-navy-600/70 bg-navy-900/70 text-[12px] font-bold font-display text-slate-300 transition-all duration-200 hover:text-white hover:border-blue-400/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95;
   }
 
+  /* The one filled action per screen — gold, like every primary CTA in the app */
   .admin-primary-btn {
-    @apply h-9 px-4 inline-flex items-center gap-1.5 rounded-lg border border-gold-400/50 bg-gold-400/10 text-[12px] font-bold font-display text-gold-400 transition-all hover:bg-gold-400/20 hover:shadow-[0_0_14px_rgba(229,182,92,0.2)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold-400/40 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply h-9 px-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-gold-400 to-gold-200 text-navy-950 text-[12px] font-bold font-display shadow-[0_2px_10px_rgba(229,182,92,0.3)] transition-all duration-200 hover:brightness-110 hover:shadow-[0_4px_16px_rgba(229,182,92,0.45)] active:scale-[0.97] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold-400/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
   }
 
   .admin-danger-btn {
-    @apply h-9 px-4 inline-flex items-center gap-1.5 rounded-lg border border-danger-500/50 bg-danger-500/10 text-[12px] font-bold font-display text-danger-500 transition-colors hover:bg-danger-500/20 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-danger-500/40 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply h-9 px-4 inline-flex items-center gap-1.5 rounded-xl border border-danger-500/50 bg-danger-500/10 text-[12px] font-bold font-display text-danger-500 transition-colors hover:bg-danger-500/20 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-danger-500/40 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95;
   }
 
   .admin-toolbar-actions {
@@ -164,7 +239,11 @@
 
   /* --- Error banner --- */
   .admin-notice {
-    @apply flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 py-2.5 border-b border-danger-500/30 bg-danger-500/10 text-danger-500 text-xs font-body;
+    @apply flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-10 py-2.5 border-b border-danger-500/30 bg-danger-500/10 text-danger-500 text-xs font-body;
+  }
+
+  .admin-notice-lead {
+    @apply flex items-center gap-2 min-w-0;
   }
 
   .admin-notice-close {
@@ -186,8 +265,21 @@
     @apply flex flex-wrap items-center justify-between gap-3;
   }
 
+  /* Section titles read like the rest of the app: gold accent bar + white title */
   .admin-section-title {
-    @apply text-[11px] font-bold text-gold-400/90 font-display tracking-wide;
+    @apply pr-3.5 py-0.5 border-r-4 border-gold-400/80 flex items-center gap-2 justify-start;
+  }
+
+  .admin-section-title-text {
+    @apply text-base md:text-lg font-bold text-white font-display leading-6;
+  }
+
+  .admin-section-title-icon {
+    @apply text-gold-400/70 shrink-0;
+  }
+
+  .admin-section-title-sub {
+    @apply text-[11px] text-slate-500 font-body leading-4;
   }
 
   .admin-toolbar {
@@ -201,7 +293,7 @@
   }
 
   .admin-stat {
-    @apply flex flex-col gap-1.5 p-4 rounded-2xl border border-navy-600/40 bg-gradient-to-b from-navy-900/80 to-navy-900/50 overflow-hidden transition-all hover:border-blue-400/35 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(10,15,30,0.45)];
+    @apply flex flex-col gap-1.5 p-4 rounded-2xl border border-navy-600/40 bg-navy-900/60 backdrop-blur-md overflow-hidden transition-all duration-200 hover:border-blue-400/35 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(10,15,30,0.45)];
   }
 
   .admin-stat-icon {
@@ -242,7 +334,7 @@
   }
 
   .admin-search-input {
-    @apply flex-1 min-w-0 bg-transparent text-[13px] text-slate-100 font-body outline-none;
+    @apply flex-1 min-w-0 bg-transparent text-[13px] text-slate-100 font-body outline-none text-right;
   }
 
   .admin-search-input::placeholder {
@@ -254,7 +346,7 @@
   }
 
   .admin-input {
-    @apply h-10 w-full px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50;
+    @apply w-full h-10 px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50;
   }
 
   .admin-input::placeholder {
@@ -266,7 +358,7 @@
   }
 
   .admin-textarea {
-    @apply w-full min-h-[88px] px-3 py-2 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 resize-y disabled:opacity-50;
+    @apply w-full min-h-[96px] px-3 py-2.5 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all hover:border-navy-600 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 resize-y disabled:opacity-50 leading-relaxed;
   }
 
   .admin-textarea-code {
@@ -274,11 +366,11 @@
   }
 
   .admin-select {
-    @apply h-10 w-full px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all cursor-pointer hover:border-navy-600 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50;
+    @apply h-10 px-3 rounded-xl border border-navy-600/70 bg-navy-950/70 text-[13px] text-slate-100 font-body outline-none transition-all cursor-pointer hover:border-navy-600 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50;
   }
 
   .admin-select-full {
-    @apply w-full h-10 text-[13px];
+    @apply w-full text-[13px];
   }
 
   .admin-pagination {
@@ -286,7 +378,7 @@
   }
 
   .admin-page-btn {
-    @apply size-9 grid place-items-center rounded-lg border border-navy-600/70 bg-navy-900/70 text-slate-400 transition-colors hover:text-slate-100 hover:border-blue-400/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-navy-600/70 disabled:hover:text-slate-400;
+    @apply size-9 grid place-items-center rounded-xl border border-navy-600/70 bg-navy-900/70 text-slate-400 transition-colors hover:text-slate-100 hover:border-blue-400/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-navy-600/70 disabled:hover:text-slate-400;
   }
 
   .admin-page-info {
@@ -304,12 +396,12 @@
   }
 
   .admin-table-head {
-    @apply hidden xl:grid gap-4 px-4 py-2.5 rounded-xl border border-navy-600/40 bg-navy-950/70 text-[11px] font-bold font-display text-slate-400;
+    @apply hidden xl:grid gap-4 px-4 py-2.5 rounded-xl border border-navy-600/40 bg-navy-950/60 text-[11px] font-bold font-display text-slate-400 uppercase tracking-wide;
     grid-template-columns: var(--admin-cols);
   }
 
   .admin-table-row {
-    @apply flex flex-col gap-2.5 p-4 rounded-2xl border border-navy-600/45 bg-navy-900/55 cursor-pointer transition-all hover:border-blue-400/40 hover:bg-navy-900/75 hover:shadow-[0_6px_16px_rgba(10,15,30,0.4)] xl:grid xl:gap-4 xl:items-center xl:flex-row;
+    @apply flex flex-col gap-2.5 p-4 rounded-2xl border border-navy-600/45 bg-navy-900/55 cursor-pointer transition-all duration-200 hover:border-blue-400/40 hover:bg-navy-900/75 hover:shadow-[0_6px_16px_rgba(10,15,30,0.4)] xl:grid xl:gap-4 xl:items-center xl:flex-row;
     grid-template-columns: var(--admin-cols);
   }
 
@@ -378,7 +470,7 @@
   }
 
   .admin-key {
-    @apply max-w-[180px] truncate text-slate-300 font-mono text-[12px];
+    @apply max-w-[200px] truncate text-slate-300 font-mono text-[12px];
   }
 
   .admin-content-title {
@@ -448,7 +540,7 @@
 
   /* --- Login series chart --- */
   .admin-chart {
-    @apply w-full rounded-2xl border border-navy-600/40 bg-gradient-to-b from-navy-900/80 to-navy-900/50 p-4 sm:p-5;
+    @apply w-full rounded-2xl border border-navy-600/40 bg-navy-900/60 backdrop-blur-md p-4 sm:p-5;
   }
 
   .admin-chart-bars {
@@ -456,7 +548,7 @@
   }
 
   .admin-chart-col {
-    @apply flex-1 min-w-0 h-full flex flex-col items-center gap-1;
+    @apply flex-1 min-w-0 h-full flex flex-col items-center gap-1 cursor-pointer;
   }
 
   .admin-chart-track {
@@ -553,11 +645,15 @@
 
   /* --- Empty / error state --- */
   .admin-empty {
-    @apply flex flex-col items-center justify-center gap-2 text-center py-12 px-6 rounded-2xl border border-dashed border-navy-600/60 bg-navy-900/30;
+    @apply flex flex-col items-center justify-center gap-2.5 text-center py-14 px-6 rounded-2xl border border-dashed border-navy-600/60 bg-navy-900/30;
   }
 
   .admin-empty-icon {
-    @apply size-12 rounded-full grid place-items-center border border-navy-600 bg-navy-950 text-slate-400 shadow-[0_0_16px_rgba(41,169,255,0.12)];
+    @apply size-14 rounded-full grid place-items-center border border-navy-600 bg-navy-950 text-slate-400 shadow-[0_0_20px_rgba(41,169,255,0.12)];
+  }
+
+  .admin-empty-icon-error {
+    @apply text-danger-500 border-danger-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)];
   }
 
   .admin-empty-title {
@@ -565,23 +661,21 @@
   }
 
   .admin-empty-hint {
-    @apply text-xs text-slate-400 font-body max-w-md;
+    @apply text-xs text-slate-400 font-body max-w-md leading-5;
   }
 
   .admin-retry-btn {
-    @apply mt-2 h-9 px-4 rounded-xl inline-flex items-center gap-2 border border-gold-400/50 bg-gold-400/10 text-xs font-bold font-display text-gold-400 transition-colors hover:bg-gold-400/20 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold-400/40;
+    @apply mt-2 h-9 px-4 rounded-full inline-flex items-center gap-2 border border-gold-400/50 bg-gold-400/10 text-xs font-bold font-display text-gold-400 transition-colors hover:bg-gold-400/20 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold-400/40 active:scale-95;
   }
 
   /* --- Diagnostics: health chips, staged check cards, per-check rows --- */
-
-  /* The three-chip verdict strip (overview + system view share it). */
   .admin-health-strip {
     @apply grid gap-3.5;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
 
   .admin-health-chip {
-    @apply flex items-center gap-3 p-3.5 rounded-2xl border bg-navy-900/60 transition-all hover:-translate-y-0.5;
+    @apply flex items-center gap-3 p-3.5 rounded-2xl border bg-navy-900/60 transition-all duration-200 hover:-translate-y-0.5;
   }
 
   .admin-health-chip-icon {
@@ -721,10 +815,8 @@
   }
 
   /* --- Video upload: dropzone, live tracker, progress bar --- */
-
-  /* The file picker itself doubles as a drag-and-drop target. */
   .admin-dropzone {
-    @apply flex items-center justify-center gap-3 w-full px-4 py-6 rounded-2xl border-2 border-dashed border-navy-600/70 bg-navy-950/40 text-slate-300 cursor-pointer transition-colors hover:border-gold-400/50 hover:bg-navy-900/40;
+    @apply flex items-center justify-center gap-3 w-full px-4 py-7 rounded-2xl border-2 border-dashed border-navy-600/70 bg-navy-950/40 text-slate-300 cursor-pointer transition-colors hover:border-gold-400/60 hover:bg-navy-900/40;
   }
 
   .admin-dropzone-drag {
@@ -761,11 +853,7 @@
   }
 
   .admin-upload-tracker-percent {
-    @apply text-[13px] font-bold text-slate-100;
-  }
-
-  .admin-upload-tracker-verdict-ok {
-    @apply text-[11px] font-bold font-display text-emerald-400;
+    @apply text-[13px] font-bold text-slate-100 tabular-nums;
   }
 
   /* The one progress bar concept — tracker card and inline table rows share it. */
@@ -781,7 +869,7 @@
 
   /* The migrating light: a soft sweep that reads as "the bar is alive". */
   .admin-progress-fill::after {
-    content: "";
+    content: '';
     @apply absolute inset-0 rounded-full;
     background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.35) 50%, transparent 62%);
     animation: admin-progress-shimmer 1.6s linear infinite;
@@ -801,31 +889,31 @@
     @apply h-1.5 mt-1.5 max-w-[180px];
   }
 
-  /* --- User detail modal --- */
+  /* --- Modals & drawers: panels over the page stay solid navy-900 --- */
   .admin-modal-overlay {
-    @apply fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 backdrop-blur-sm;
+    @apply fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 backdrop-blur-md;
     background: var(--color-overlay-scrim);
-    animation: fadeIn 0.2s ease-out both;
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .admin-modal {
-    @apply w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl border border-navy-600/80 bg-navy-900 shadow-2xl;
+    @apply w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl border border-navy-600/80 bg-navy-900 shadow-2xl;
     animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
   /* A single gold hairline crowns the panel — the modal's one moment of chrome. */
   .admin-modal::before {
-    content: "";
+    content: '';
     @apply h-0.5 shrink-0;
     background: linear-gradient(to left, transparent, rgb(229 182 92 / 0.75), transparent);
   }
 
   .admin-modal-wide {
-    @apply max-w-4xl;
+    @apply max-w-3xl;
   }
 
   .admin-modal-head {
-    @apply shrink-0 flex items-center justify-between gap-3 px-5 py-4 border-b border-navy-600/60 bg-navy-950/60;
+    @apply shrink-0 flex items-center justify-between gap-3 px-5 py-4 border-b border-navy-600/60 bg-navy-950/50;
   }
 
   .admin-modal-lead {
@@ -833,7 +921,7 @@
   }
 
   .admin-modal-icon {
-    @apply size-9 rounded-xl grid place-items-center shrink-0 border border-gold-400/40 bg-gold-400/15 text-gold-400;
+    @apply size-10 rounded-xl grid place-items-center shrink-0 border border-gold-400/40 bg-gold-400/15 text-gold-400;
   }
 
   .admin-modal-text {
@@ -852,16 +940,38 @@
     @apply flex flex-col gap-5 p-5 overflow-y-auto;
   }
 
+  /* A sticky action bar so the actions of a long editor never scroll away */
+  .admin-form-footer-bar {
+    @apply sticky bottom-0 flex items-center justify-between gap-2 px-5 py-3.5 border-t border-navy-600/50 bg-navy-950/90 backdrop-blur-md -mx-5 -mb-5 mt-4;
+  }
+
+  .admin-form-footer {
+    @apply flex items-center justify-end gap-2 pt-1;
+  }
+
+  /* The "unsaved changes" chip in that bar */
+  .admin-dirty-chip {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full h-7;
+  }
+
+  .admin-dirty-chip-on {
+    @apply border border-gold-400/50 bg-gold-400/10 text-gold-400 text-[11px] font-bold font-display;
+  }
+
+  .admin-dirty-chip-off {
+    @apply border border-navy-600/50 bg-navy-900/60 text-slate-500 text-[11px] font-bold font-display;
+  }
+
+  .admin-form-error {
+    @apply flex items-center gap-2 text-xs text-danger-500 font-body;
+  }
+
   .admin-form-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
   }
 
-  .admin-form-footer {
-    @apply flex items-center justify-end gap-2 pt-2;
-  }
-
-  .admin-form-error {
-    @apply text-xs text-danger-500 font-body;
+  .admin-content-tabs {
+    @apply flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1;
   }
 
   .admin-field {
@@ -873,11 +983,48 @@
   }
 
   .admin-field-label {
-    @apply text-[12px] font-bold text-slate-300 font-display;
+    @apply flex items-center gap-1.5 text-[12px] font-bold text-slate-300 font-display;
+  }
+
+  .admin-field-label-icon {
+    @apply text-slate-500 shrink-0;
+  }
+
+  .admin-field-wrap {
+    @apply relative;
+  }
+
+  .admin-field-glyph {
+    @apply absolute start-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none;
   }
 
   .admin-required {
     @apply text-gold-400;
+  }
+
+  .admin-required-legend {
+    @apply text-[11px] text-slate-500 font-body flex items-center gap-1.5;
+  }
+
+  /* Schema editors read as one paper: grouped plates, not a bare field dump. */
+  .admin-form-section {
+    @apply flex flex-col gap-3.5 p-4 rounded-2xl border border-navy-600/40 bg-navy-950/40;
+  }
+
+  .admin-form-section-head {
+    @apply flex items-center gap-2.5 pb-1 border-b border-navy-600/30;
+  }
+
+  .admin-form-section-icon {
+    @apply size-8 rounded-lg grid place-items-center shrink-0 border border-blue-400/40 bg-blue-400/10 text-blue-400;
+  }
+
+  .admin-form-section-title {
+    @apply text-[12px] font-bold font-display text-slate-200;
+  }
+
+  .admin-form-section-count {
+    @apply ms-auto text-[10px] font-bold font-display text-slate-500 shrink-0;
   }
 
   .admin-toggle-row {
@@ -916,16 +1063,12 @@
     @apply inline-flex items-center gap-2;
   }
 
-  .admin-content-tabs {
-    @apply flex items-center gap-2 overflow-x-auto;
-  }
-
   .admin-detail-identity {
-    @apply flex items-center gap-4 p-4 rounded-2xl border border-navy-600/50 bg-navy-950/50;
+    @apply flex items-center gap-4 p-4 rounded-2xl border border-navy-600/40 bg-navy-950/50;
   }
 
   .admin-detail-avatar {
-    @apply size-12 rounded-full grid place-items-center shrink-0 border border-gold-400/50 bg-navy-800 text-gold-400 font-bold font-display shadow-[0_0_14px_rgba(229,182,92,0.25)];
+    @apply size-12 rounded-full grid place-items-center shrink-0 border border-gold-400/50 bg-navy-800 text-gold-400 font-bold font-display;
   }
 
   .admin-detail-names {
@@ -961,7 +1104,17 @@
   }
 
   .admin-detail-section-title {
-    @apply text-xs font-bold font-display text-gold-400;
+    @apply pr-3 py-0.5 border-r-4 border-gold-400/70 text-xs font-bold font-display text-white flex items-center gap-2;
+  }
+
+  /* Danger section: the accent bar turns red so destructive areas read as one */
+  .admin-detail-title-danger {
+    @apply border-r-danger-500/70 text-danger-500;
+  }
+
+  /* The unsaved-edits sheet inside the detail modal, above the scrolling body */
+  .admin-close-guard {
+    @apply flex flex-wrap items-center gap-2 px-5 py-3 border-b border-gold-400/40 bg-gold-400/10 shrink-0;
   }
 
   .admin-mini-list {

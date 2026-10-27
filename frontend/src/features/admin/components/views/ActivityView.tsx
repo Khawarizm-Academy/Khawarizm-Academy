@@ -1,17 +1,10 @@
 import React from 'react';
 import { SlidingSegmentedControl } from '@/shared/components/Controls/SlidingSegmentedControl';
+import { History } from 'lucide-react';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { EventList } from '@/features/admin/components/layout/EventList';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
-import { EVENT_KIND_LABELS, type AdminEventKind } from '@/features/admin/types';
-
-const KIND_ORDER: AdminEventKind[] = ['login', 'logout', 'refresh', 'revoked', 'rejected'];
-
-/** One filter row: "all" first, then every kind in the order the API records them. */
-const KIND_FILTERS: Array<{ id: AdminEventKind | 'all'; label: string }> = [
-  { id: 'all', label: 'الكل' },
-  ...KIND_ORDER.map((kind) => ({ id: kind, label: EVENT_KIND_LABELS[kind] })),
-];
+import { EVENT_KIND_FILTERS } from '@/features/admin/types';
 
 /** Activity section: the most recent audit rows across the whole platform. */
 export const ActivityView: React.FC = () => {
@@ -20,9 +13,8 @@ export const ActivityView: React.FC = () => {
   return (
     <div className="admin-view">
       <div className="admin-toolbar">
-        <h2 className="admin-section-title">أحدث الأحداث</h2>
         <SlidingSegmentedControl
-          options={KIND_FILTERS}
+          options={EVENT_KIND_FILTERS}
           value={eventKind}
           onChange={setEventKind}
           tone="gold"
@@ -34,8 +26,13 @@ export const ActivityView: React.FC = () => {
         <EventList events={events} />
       ) : (
         <AdminEmptyState
+          icon={History}
           title={loadErrors.activity ? 'تعذّر تحميل سجل النشاط' : 'لا توجد أحداث بعد'}
-          hint={loadErrors.activity ? undefined : 'ستظهر أحداث المصادقة هنا فور حدوثها.'}
+          hint={
+            loadErrors.activity
+              ? 'تعذّر الوصول إلى الخادم؛ أعد المحاولة بعد لحظات.'
+              : 'تسجّل أحداث الدخول والخروج والإبطال هنا فور وقوعها.'
+          }
           isError={loadErrors.activity}
           onRetry={refresh}
         />

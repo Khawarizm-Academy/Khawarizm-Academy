@@ -8,7 +8,6 @@ import {
   fetchUsers,
   revokeAdminSession,
   updateUserRole,
-  createAdminUser,
   updateAdminUser,
   deleteAdminUser,
   fetchContentSchema,
@@ -113,15 +112,7 @@ describe('admin fetchers', () => {
     expect(lastCall().method).toBe('POST');
   });
 
-  it('creates and updates and deletes a user through the admin endpoints', async () => {
-    await createAdminUser({ email: 'a@b.com', fullName: 'Ahmad', role: 'admin', isActive: true });
-    const callCreate = fetchMock.mock.calls.at(-1) ?? [];
-    expect(String(callCreate[0])).toBe(`${API_BASE}/admin/users`);
-    expect(lastCall()).toEqual({
-      method: 'POST',
-      body: { email: 'a@b.com', fullName: 'Ahmad', role: 'admin', isActive: true },
-    });
-
+  it('updates and deletes a user through the admin endpoints', async () => {
     await updateAdminUser('u-1', { phone: '123', isActive: false });
     expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/users/u-1`);
     expect(lastCall().method).toBe('PATCH');

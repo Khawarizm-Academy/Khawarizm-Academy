@@ -2,6 +2,37 @@ import type { AdminField } from '@/features/admin/types';
 
 export type AdminFormValue = string | boolean;
 
+/** The reading order of an editor plate: required → prose → structured values. */
+export const FIELD_GROUP_ORDER = ['required', 'prose', 'structured'] as const;
+
+export type FieldGroupKey = (typeof FIELD_GROUP_ORDER)[number];
+
+/** Arabic plate titles identical across every schema form. */
+export const FIELD_GROUP_LABELS: Record<FieldGroupKey, string> = {
+  required: 'البيانات الأساسية',
+  prose: 'التفاصيل والوصف',
+  structured: 'بيانات تقنية',
+};
+
+const PROSE_KINDS: AdminField['kind'][] = ['text', 'textarea', 'url', 'select'];
+
+/**
+ * Split a schema into the editor's stacks: what must exist before saving, the
+ * descriptive prose fields, then numbers / toggles / JSON. Data-driven, so a
+ * new backend schema needs no editor change.
+ */
+export const groupEditorFields = (fields: AdminField[]): Record<FieldGroupKey, AdminField[]> => {
+  const groups: Record<FieldGroupKey, AdminField[]> = { required: [], prose: [], structured: [] };
+  for (const field of fields) {
+    const bucket = ((): FieldGroupKey => {
+      if (field.required) return 'required';
+      return PROSE_KINDS.includes(field.kind) ? 'prose' : 'structured';
+    })();
+    groups[bucket].push(field);
+  }
+  return groups;
+};
+
 function toFormValue(field: AdminField, raw: unknown): AdminFormValue {
   if (field.kind === 'bool') return Boolean(raw);
   if (field.kind === 'json') return raw == null ? '' : JSON.stringify(raw, null, 2);
