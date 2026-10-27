@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, LogOut, RefreshCw } from 'lucide-react';
 import { useLocation } from '@/app/routerContext';
+import { UserAvatar } from '@/shared/components/Artwork/UserAvatar';
 import { useAuth } from '@/features/auth/context/authContext';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { RoleBadge } from '@/features/admin/components/cards/Badges';
@@ -33,7 +34,11 @@ export const AdminHeader: React.FC = () => {
 
       <div className="admin-topbar-actions">
         <div className="admin-identity">
-          <span className="admin-identity-avatar">{initialsOf(user.fullName, user.avatarInitials)}</span>
+          <UserAvatar
+            src={user.avatarUrl}
+            initials={initialsOf(user.fullName, user.avatarInitials)}
+            className="admin-identity-avatar"
+          />
           <span className="admin-identity-text">
             <span className="admin-identity-name">{user.fullName}</span>
             <RoleBadge role={user.role} />

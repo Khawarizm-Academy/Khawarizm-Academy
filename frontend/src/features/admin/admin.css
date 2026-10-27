@@ -95,7 +95,7 @@
   }
 
   .admin-operator-avatar {
-    @apply size-10 rounded-xl grid place-items-center shrink-0 bg-gold-400/15 border border-gold-400/40 text-gold-400 text-[13px] font-bold font-display;
+    @apply size-10 rounded-xl grid place-items-center shrink-0 overflow-hidden bg-gold-400/15 border border-gold-400/40 text-gold-400 text-[13px] font-bold font-display;
   }
 
   .admin-operator-names {
@@ -175,7 +175,7 @@
   }
 
   .admin-identity-avatar {
-    @apply size-9 rounded-full grid place-items-center shrink-0 border border-gold-400/50 bg-navy-800 text-gold-400 text-[13px] font-bold font-display;
+    @apply size-9 rounded-full grid place-items-center shrink-0 overflow-hidden border border-gold-400/50 bg-navy-800 text-gold-400 text-[13px] font-bold font-display;
   }
 
   .admin-identity-text {
@@ -434,7 +434,7 @@
   }
 
   .admin-user-avatar {
-    @apply size-9 rounded-full grid place-items-center shrink-0 border border-navy-600 bg-navy-800 text-slate-200 text-[12px] font-bold font-display;
+    @apply size-9 rounded-full grid place-items-center shrink-0 overflow-hidden border border-navy-600 bg-navy-800 text-slate-200 text-[12px] font-bold font-display;
   }
 
   .admin-user-text {
@@ -966,6 +966,47 @@
     @apply flex items-center gap-2 text-xs text-danger-500 font-body;
   }
 
+  /* --- Editor wizard: numbered steps instead of one long form --- */
+  .admin-steps {
+    @apply flex items-center gap-2 flex-wrap;
+  }
+
+  .admin-step {
+    @apply flex items-center gap-2 min-w-0 text-slate-500;
+  }
+
+  .admin-step-dot {
+    @apply size-7 rounded-full grid place-items-center shrink-0 border border-navy-600/70 bg-navy-950/70 text-[11px] font-bold font-display transition-all;
+  }
+
+  .admin-step-name {
+    @apply text-[12px] font-bold font-display whitespace-nowrap;
+  }
+
+  .admin-step-active {
+    @apply text-slate-100;
+  }
+
+  .admin-step-active .admin-step-dot {
+    @apply border-gold-400 bg-gold-400/15 text-gold-400 shadow-[0_0_10px_rgba(229,182,92,0.35)];
+  }
+
+  .admin-step-done {
+    @apply text-emerald-400/80;
+  }
+
+  .admin-step-done .admin-step-dot {
+    @apply border-emerald-400/50 bg-emerald-400/10 text-emerald-400;
+  }
+
+  .admin-step-tail {
+    @apply w-5 h-px bg-navy-600/60 shrink-0;
+  }
+
+  .admin-step-pos {
+    @apply text-[11px] font-body text-slate-500 tabular-nums;
+  }
+
   .admin-form-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
   }
@@ -1063,22 +1104,6 @@
     @apply inline-flex items-center gap-2;
   }
 
-  .admin-detail-identity {
-    @apply flex items-center gap-4 p-4 rounded-2xl border border-navy-600/40 bg-navy-950/50;
-  }
-
-  .admin-detail-avatar {
-    @apply size-12 rounded-full grid place-items-center shrink-0 border border-gold-400/50 bg-navy-800 text-gold-400 font-bold font-display;
-  }
-
-  .admin-detail-names {
-    @apply flex flex-col items-start gap-2 min-w-0;
-  }
-
-  .admin-detail-name {
-    @apply text-base font-bold text-slate-100 font-display truncate;
-  }
-
   .admin-detail-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 gap-3;
   }
@@ -1097,6 +1122,48 @@
 
   .admin-detail-empty {
     @apply text-[12px] text-slate-400 font-body;
+  }
+
+  /* --- Full account page: the users table opens it as its own location --- */
+  .admin-detail-page {
+    @apply flex flex-col gap-4;
+  }
+
+  .admin-detail-guard {
+    @apply flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl border border-gold-400/40 bg-gold-400/10;
+  }
+
+  .admin-detail-hero {
+    @apply flex flex-wrap items-center gap-4 p-5 rounded-2xl border border-navy-600/50 bg-navy-950/60 shadow-[0_10px_30px_rgba(0,0,0,0.35)];
+  }
+
+  .admin-detail-hero-avatar {
+    @apply size-16 rounded-2xl grid place-items-center shrink-0 overflow-hidden border border-gold-400/50 bg-navy-900 text-gold-400 text-lg font-black font-display;
+  }
+
+  .admin-detail-hero-names {
+    @apply flex flex-col gap-1.5 min-w-0;
+  }
+
+  .admin-detail-hero-name {
+    @apply text-xl font-black text-slate-100 font-display truncate;
+  }
+
+  .admin-detail-hero-email {
+    @apply text-xs text-slate-400 font-body truncate;
+  }
+
+  .admin-detail-hero-meta {
+    @apply flex items-center gap-2 flex-wrap;
+  }
+
+  .admin-detail-hero-sub {
+    @apply text-[11px] text-slate-500 font-body;
+  }
+
+  /* The read-only record sits beside the destructive zone, never behind it */
+  .admin-detail-toprow {
+    @apply grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4 items-start;
   }
 
   .admin-detail-section {

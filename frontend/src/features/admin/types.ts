@@ -95,6 +95,7 @@ export interface AdminUserRow {
   id: string;
   email: string;
   fullName: string;
+  avatarUrl: string;
   role: AuthRole;
   isActive: boolean;
   isStaff: boolean;
@@ -108,6 +109,7 @@ export interface AdminUserSummary {
   id: string;
   email: string;
   fullName: string;
+  avatarUrl: string;
   role: AuthRole;
 }
 

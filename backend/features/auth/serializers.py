@@ -16,6 +16,7 @@ def user_profile(user: User) -> dict:
         "phone": user.phone,
         "role": user.role,
         "isAdmin": user.is_admin,
+        "isActive": user.is_active,
         "membershipStatus": user.membership_status,
         "avatarInitials": user.avatar_initials,
         "avatarUrl": user.avatar_url,
@@ -55,6 +56,7 @@ def session_with_user(session: UserSession, current_id=None) -> dict:
         "id": str(session.user_id),
         "email": session.user.email,
         "fullName": session.user.full_name,
+        "avatarUrl": session.user.avatar_url,
         "role": session.user.role,
     }
     return payload

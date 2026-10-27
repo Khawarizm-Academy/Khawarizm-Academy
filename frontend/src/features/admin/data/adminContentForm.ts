@@ -51,6 +51,19 @@ interface PayloadResult {
   error: string | null;
 }
 
+/** What blocks moving to the next step: a required field the step still leaves empty. */
+export function stepGuardError(
+  fields: AdminField[],
+  formValues: Record<string, AdminFormValue>
+): string | null {
+  for (const field of fields) {
+    if (!field.required || field.kind === 'bool') continue;
+    if (String(formValues[field.name] ?? '').trim() !== '') continue;
+    return `الحقل «${field.label}» إلزامي — أكمله قبل الانتقال إلى الخطوة التالية.`;
+  }
+  return null;
+}
+
 /** Turn form values into a payload; creates require non-empty, edits clear text-like fields when empty. */
 export function toPayloadValues(
   fields: AdminField[],

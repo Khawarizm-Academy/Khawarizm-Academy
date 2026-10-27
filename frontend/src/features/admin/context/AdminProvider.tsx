@@ -77,7 +77,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [sessionPage, setSessionPage] = useState(1);
   const [loginRange, setLoginRange] = useState<AdminLoginRange>('14');
   const [eventKind, setEventKind] = useState<AdminEventKind | 'all'>('all');
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -90,6 +89,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [contentPage, setContentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // The open account lives in the URL: /admin?tab=users&user=<id> — bookmarks,
+  // refresh, and browser-back all keep the same account page.
+  const selectedUserId = queryParams.get('user');
 
   const overview = useCachedData<AdminOverview>(['admin', 'overview'], fetchOverview);
   const users = useCachedData<Paged<AdminUserRow>>(
@@ -197,7 +200,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     (section: AdminSectionKey) => navigate(`/admin?tab=${section}`),
     [navigate]
   );
-  const selectUser = useCallback((userId: string | null) => setSelectedUserId(userId), []);
+  const selectUser = useCallback(
+    (userId: string | null) =>
+      navigate(userId ? `/admin?tab=users&user=${userId}` : `/admin?tab=${currentSection}`),
+    [navigate, currentSection]
+  );
   const clearError = useCallback(() => setError(null), []);
 
   const changeRole = async (userId: string, role: AuthRole) => {

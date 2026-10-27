@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
-import { AlertTriangle, CheckCircle2, Cloud, FileVideo, RefreshCw, Link2, Trash2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Cloud, FileVideo, RefreshCw, Link2, Trash2, X } from 'lucide-react';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
 import { VideoStatusBadge } from '@/features/admin/components/cards/Badges';
 import { ConfirmAction } from '@/features/admin/components/controls/ConfirmAction';
+import { AdminStepsRail } from '@/features/admin/components/controls/AdminStepsRail';
 import { formatShortDateTime } from '@/features/admin/data/adminFormatters';
 import { startDriveOAuth } from '@/features/admin/data/adminFetchers';
 import { vercelUploadTooLarge } from '@/shared/lib/apiClient';
 import { VIDEO_STAGE_LABELS, type AdminVideoProvider } from '@/features/admin/types';
+
+/** The upload wizard: one job per step, so the form never opens as one wall. */
+const UPLOAD_STEPS: { id: 'file' | 'asset' | 'provider'; label: string }[] = [
+  { id: 'file', label: 'ملف الفيديو' },
+  { id: 'asset', label: 'بيانات الأصل' },
+  { id: 'provider', label: 'مُزوّد الاستضافة' },
+];
 
 /** The select's per-provider footnote; unknown codes simply read no note. */
 const PROVIDER_NOTES: Record<string, string> = {
@@ -66,7 +74,11 @@ export const VideoHostingView: React.FC = () => {
   const [form, setForm] = useState<{ slug: string; title: string }>({ slug: '', title: '' });
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [authorizingDrive, setAuthorizingDrive] = useState(false);
+  const step = UPLOAD_STEPS[stepIndex].id;
+  const isLastStep = stepIndex === UPLOAD_STEPS.length - 1;
 
   /** Drive's blocker is a missing consent, not a config edit — open Google's
       URL (public id only) and let Django hold whatever comes back. */
@@ -121,7 +133,33 @@ export const VideoHostingView: React.FC = () => {
     if (uploaded) {
       setFile(null);
       setForm({ slug: '', title: '' });
+      setStepIndex(0);
+      setUploadError(null);
     }
+  };
+
+  /** A step opens only when the one before it is fully satisfied. */
+  const goToNextStep = () => {
+    if (step === 'file' && capBlocked) {
+      setUploadError('ملف الفيديو أكبر من حد الاستضافة السحابية — استخدم أمر التغليف من جهاز إداري.');
+      return;
+    }
+    if (step === 'file' && !file) {
+      setUploadError('اختر ملف الفيديو أولًا.');
+      return;
+    }
+    if (step === 'asset' && form.slug.trim() === '') {
+      setUploadError('اكتب معرّف الفيديو قبل المتابعة.');
+      return;
+    }
+    setUploadError(null);
+    setStepIndex(stepIndex + 1);
+  };
+
+  /** Rewind one step without losing what the operator already filled. */
+  const goBackStep = () => {
+    setUploadError(null);
+    setStepIndex(stepIndex - 1);
   };
 
   return (
@@ -201,6 +239,10 @@ export const VideoHostingView: React.FC = () => {
           <span className="admin-section-title-text">إضافة فيديو جديد</span>
         </h2>
         <form onSubmit={handleUpload} className="admin-detail-section gap-4">
+          <AdminStepsRail steps={UPLOAD_STEPS.map(({ id, label }) => ({ key: id, label }))} stepIndex={stepIndex} />
+
+          {step === 'file' && (
+            <div className="flex flex-col gap-3">
           <label
             className={`admin-dropzone ${dragging ? 'admin-dropzone-drag' : ''}`}
             onDragOver={(event) => {
@@ -246,7 +288,10 @@ export const VideoHostingView: React.FC = () => {
               أو انشر الخادم على استضافة تسمح بالملفات الكبيرة.
             </div>
           )}
+            </div>
+          )}
 
+          {step === 'asset' && (
           <div className="admin-form-section">
             <header className="admin-form-section-head">
               <span className="admin-form-section-icon">
@@ -288,7 +333,9 @@ export const VideoHostingView: React.FC = () => {
               </div>
             </div>
           </div>
+          )}
 
+          {step === 'provider' && (
           <div className="admin-form-section">
             <header className="admin-form-section-head">
               <span className="admin-form-section-icon">
@@ -356,15 +403,49 @@ export const VideoHostingView: React.FC = () => {
               )}
             </div>
           </div>
+          )}
+
+          {uploadError && (
+            <div className="admin-form-error" role="alert">
+              <AlertTriangle size={14} />
+              <span>{uploadError}</span>
+            </div>
+          )}
 
           <div className="admin-form-footer">
-            <button
-              type="submit"
-              className="admin-primary-btn"
-              disabled={busy || missingFile || chosenBlocked || capBlocked}
-            >
-              {busy ? 'جارٍ تنفيذ الرفع…' : 'بدء الرفع والتغليف'}
-            </button>
+            <div className="flex items-center gap-2">
+              {stepIndex > 0 && (
+                <button
+                  type="button"
+                  className="admin-ghost-btn"
+                  disabled={busy}
+                  onClick={goBackStep}
+                >
+                  <ChevronRight size={15} />
+                  <span>السابق</span>
+                </button>
+              )}
+              {!isLastStep && (
+                <button
+                  type="button"
+                  className="admin-primary-btn"
+                  disabled={busy}
+                  onClick={goToNextStep}
+                >
+                  <span>التالي</span>
+                  <ChevronLeft size={15} />
+                </button>
+              )}
+              {isLastStep && (
+                <button
+                  type="submit"
+                  className="admin-primary-btn"
+                  disabled={busy || missingFile || chosenBlocked || capBlocked}
+                >
+                  {busy ? 'جارٍ تنفيذ الرفع…' : 'بدء الرفع والتغليف'}
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </section>

@@ -18,7 +18,7 @@ describe('routes', () => {
 
     expect(admin?.meta.requiresAdmin).toBe(true);
     expect(admin?.meta.hideShell).toBe(true);
-    expect(admin?.meta.activeTab).toBeUndefined();
+    expect(admin?.meta.activeTab).toBe('overview');
   });
 
   it('marks the private pages as signed-in only, and the landing page as public', () => {

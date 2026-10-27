@@ -1,16 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { KeyRound, Loader2, NotebookPen, Pencil, Plus, Save, SlidersHorizontal, X } from 'lucide-react';
-import type { AdminContentRow, AdminContentType } from '@/features/admin/types';
+import { ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Save, X } from 'lucide-react';
+import type { AdminContentRow, AdminContentType, AdminField } from '@/features/admin/types';
 import { useAdmin } from '@/features/admin/context/adminContext';
 import { AdminFieldInput, type AdminFormValue } from '@/features/admin/components/controls/AdminFieldInput';
 import {
   emptyFormValues,
   groupEditorFields,
+  stepGuardError,
   toFormValues,
   toPayloadValues,
   FIELD_GROUP_ORDER,
   FIELD_GROUP_LABELS,
 } from '@/features/admin/data/adminContentForm';
+import { AdminStepsRail } from '@/features/admin/components/controls/AdminStepsRail';
+import { fieldIcon } from '@/features/admin/data/fieldIcons';
 
 interface ContentFormModalProps {
   contentType: AdminContentType;
@@ -18,17 +21,23 @@ interface ContentFormModalProps {
   onClose: () => void;
 }
 
-/** One icon per editor stack; every schema form reads with the same grammar. */
-const GROUP_ICONS: Record<string, React.ReactNode> = {
-  required: <KeyRound size={14} />,
-  prose: <NotebookPen size={14} />,
-  structured: <SlidersHorizontal size={14} />,
-};
+/** One editor step: a stack of fields the operator fills before moving on. */
+interface EditorStep {
+  key: string;
+  label: string;
+  fields: AdminField[];
+}
 
-/** Create or edit a content row; the form is rendered from the schema. */
+/** Create or edit a content row; the schema form walks its stacks as steps. */
 export const ContentFormModal: React.FC<ContentFormModalProps> = ({ contentType, row, onClose }) => {
   const { createContent, updateContent } = useAdmin();
   const isEdit = row !== null;
+  const stacks = groupEditorFields(contentType.fields);
+  const steps: EditorStep[] = FIELD_GROUP_ORDER.flatMap((key) =>
+    stacks[key].length > 0 ? [{ key, label: FIELD_GROUP_LABELS[key], fields: stacks[key] }] : []
+  );
+
+  const [stepIndex, setStepIndex] = useState(0);
   const [values, setValues] = useState<Record<string, AdminFormValue>>(() =>
     row ? toFormValues(contentType.fields, row.values) : emptyFormValues(contentType.fields)
   );
@@ -36,7 +45,8 @@ export const ContentFormModal: React.FC<ContentFormModalProps> = ({ contentType,
   const [formError, setFormError] = useState<string | null>(null);
 
   const ModeIcon = isEdit ? Pencil : Plus;
-  const modeTitle = isEdit ? 'تعديل العنصر' : 'إضافة عنصر';
+  const modeTitle = isEdit ? 'تعديل عنصر' : 'إضافة عنصر';
+  const isLastStep = stepIndex === steps.length - 1;
 
   // Guard: a backdrop or Escape click must never discard typed work silently.
   const safeClose = useCallback(() => {
@@ -52,8 +62,29 @@ export const ContentFormModal: React.FC<ContentFormModalProps> = ({ contentType,
     return () => window.removeEventListener('keydown', handler);
   }, [safeClose]);
 
+  /** The next step only opens when the current one has no missing required field. */
+  const goToNextStep = () => {
+    const guard = stepGuardError(steps[stepIndex].fields, values);
+    if (guard !== null) {
+      setFormError(guard);
+      return;
+    }
+    setFormError(null);
+    setStepIndex(stepIndex + 1);
+  };
+
+  const goBackStep = () => {
+    setFormError(null);
+    setStepIndex(stepIndex - 1);
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    const guard = stepGuardError(steps[stepIndex].fields, values);
+    if (guard !== null) {
+      setFormError(guard);
+      return;
+    }
     const { payload, error } = toPayloadValues(contentType.fields, values, !isEdit);
     if (error) {
       setFormError(error);
@@ -68,7 +99,7 @@ export const ContentFormModal: React.FC<ContentFormModalProps> = ({ contentType,
     }
   };
 
-  const groups = groupEditorFields(contentType.fields);
+  const step = steps[stepIndex];
   const requiredCount = contentType.fields.filter((field) => field.required).length;
 
   return (
@@ -90,7 +121,7 @@ export const ContentFormModal: React.FC<ContentFormModalProps> = ({ contentType,
                 {modeTitle} · {contentType.label}
               </span>
               <span className="admin-modal-sub">
-                {isEdit ? 'تُطبَّق التغييرات على الخادم فور الحفظ.' : 'املأ البيانات الأساسية ثم احفظ.'}
+                {isEdit ? 'تُطبَّق التغييرات على الخادم فور الحفظ.' : 'امشِ في الخطوات واحدة واحدة ثم احفظ.'}
               </span>
             </span>
           </div>
@@ -100,31 +131,29 @@ export const ContentFormModal: React.FC<ContentFormModalProps> = ({ contentType,
         </div>
 
         <form className="admin-modal-body" onSubmit={handleSubmit}>
-          {/* One plate per stack, so every schema reads like a drafted paper */}
-          {FIELD_GROUP_ORDER.map((groupKey) => {
-            const stack = groups[groupKey];
-            if (stack.length === 0) return null;
-            return (
-              <section key={groupKey} className="admin-form-section">
-                <header className="admin-form-section-head">
-                  <span className="admin-form-section-icon">{GROUP_ICONS[groupKey]}</span>
-                  <span className="admin-form-section-title">{FIELD_GROUP_LABELS[groupKey]}</span>
-                  <span className="admin-form-section-count">{stack.length} حقول</span>
-                </header>
-                <div className="admin-form-grid">
-                  {stack.map((field) => (
-                    <AdminFieldInput
-                      key={field.name}
-                      field={field}
-                      value={values[field.name]}
-                      disabled={isSubmitting}
-                      onChange={(value) => setValues((prev) => ({ ...prev, [field.name]: value }))}
-                    />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
+          {steps.length > 1 && <AdminStepsRail steps={steps} stepIndex={stepIndex} />}
+
+          {/* One plate per step, rendered from the schema stack */}
+          <section className="admin-form-section">
+            <header className="admin-form-section-head">
+              <span className="admin-form-section-icon">
+                {React.createElement(fieldIcon(step.fields[0]), { size: 14 })}
+              </span>
+              <span className="admin-form-section-title">{step.label}</span>
+              <span className="admin-form-section-count">{step.fields.length} حقول</span>
+            </header>
+            <div className="admin-form-grid">
+              {step.fields.map((field) => (
+                <AdminFieldInput
+                  key={field.name}
+                  field={field}
+                  value={values[field.name]}
+                  disabled={isSubmitting}
+                  onChange={(value) => setValues((prev) => ({ ...prev, [field.name]: value }))}
+                />
+              ))}
+            </div>
+          </section>
 
           {formError && (
             <p className="admin-form-error justify-center" role="alert">
@@ -134,16 +163,28 @@ export const ContentFormModal: React.FC<ContentFormModalProps> = ({ contentType,
 
           <div className="admin-form-footer-bar">
             <span className="admin-required-legend">
-              {requiredCount > 0 ? `${requiredCount} حقول إلزامية معلَّمة بـ *` : 'لا توجد حقول إلزامية'}
+              {steps.length > 1 ? `خطوة ${stepIndex + 1} من ${steps.length}` : ''}
+              {requiredCount > 0 ? `${steps.length > 1 ? ' · ' : ''}${requiredCount} حقول إلزامية معلَّمة بـ *` : ''}
             </span>
             <div className="flex items-center gap-2">
-              <button type="button" className="admin-ghost-btn" disabled={isSubmitting} onClick={safeClose}>
-                إلغاء
-              </button>
-              <button type="submit" className="admin-primary-btn" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                <span>{isEdit ? 'حفظ التغييرات' : 'إضافة العنصر'}</span>
-              </button>
+              {stepIndex > 0 && (
+                <button type="button" className="admin-ghost-btn" disabled={isSubmitting} onClick={goBackStep}>
+                  <ChevronRight size={15} />
+                  <span>السابق</span>
+                </button>
+              )}
+              {!isLastStep && (
+                <button type="button" className="admin-primary-btn" disabled={isSubmitting} onClick={goToNextStep}>
+                  <span>التالي</span>
+                  <ChevronLeft size={15} />
+                </button>
+              )}
+              {isLastStep && (
+                <button type="submit" className="admin-primary-btn" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  <span>{isEdit ? 'حفظ التغييرات' : 'إضافة العنصر'}</span>
+                </button>
+              )}
             </div>
           </div>
         </form>
@@ -151,3 +192,4 @@ export const ContentFormModal: React.FC<ContentFormModalProps> = ({ contentType,
     </div>
   );
 };
+

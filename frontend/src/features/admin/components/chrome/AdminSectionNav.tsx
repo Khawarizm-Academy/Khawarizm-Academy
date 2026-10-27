@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrandLogo } from '@/shared/components/Artwork/BrandVisuals';
+import { UserAvatar } from '@/shared/components/Artwork/UserAvatar';
 import { RoleBadge } from '@/features/admin/components/cards/Badges';
 import { ADMIN_NAV_GROUPS, SECTION_LABELS } from '@/features/admin/types';
 import { SECTION_ICONS, initialsOf } from '@/features/admin/data/adminFormatters';
@@ -39,12 +40,13 @@ const sectionButton = (
 export interface RailOperator {
   fullName: string;
   email: string;
+  avatarUrl: string;
   role: AuthRole;
 }
 
-const OperatorCard: React.FC<RailOperator> = ({ fullName, email, role }) => (
+const OperatorCard: React.FC<RailOperator> = ({ fullName, email, avatarUrl, role }) => (
   <div className="admin-operator">
-    <span className="admin-operator-avatar">{initialsOf(fullName, email.slice(0, 1))}</span>
+    <UserAvatar src={avatarUrl} initials={initialsOf(fullName, email.slice(0, 1))} className="admin-operator-avatar" />
     <span className="admin-operator-names">
       <span className="admin-operator-name">{fullName}</span>
       <RoleBadge role={role} />
