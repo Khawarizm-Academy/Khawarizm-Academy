@@ -16,4 +16,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    // Google's consent popup isolates itself with COOP, which severs the
+    // opener's window.closed poll in signInWithPopup — the allow-popups
+    // variant is Firebase's documented fix for that warning.
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    },
+  },
 })
