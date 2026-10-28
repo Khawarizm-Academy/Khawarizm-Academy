@@ -1,17 +1,19 @@
-"""Course detail, problems, related, enroll, progress, and certificate endpoints."""
+"""Course views — thin handlers over the service.
+
+Each one resolves the caller/row, calls one service function, serializes.
+"""
 
 from __future__ import annotations
 
 from typing import Any
 
-from django.db import transaction
-from django.db.models import F, Prefetch
+from django.db.models import Prefetch
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from features.common.cache import bump_version
+from features.courses import services
 from features.courses.models import Course, CourseModule, CourseProblem
-from features.courses.serializers import course_catalog_item, course_detail, course_problem
+from features.courses.serializers import course_detail, course_problem
 
 NOT_FOUND = {"detail": "الدورة غير موجودة"}
 
@@ -56,8 +58,7 @@ def course_related_view(request: Any, slug: str) -> Response:
     course = Course.objects.filter(slug=slug).first()
     if course is None:
         return Response(NOT_FOUND, status=404)
-    related = Course.objects.filter(slug__in=course.related_ids)
-    return Response([course_catalog_item(item) for item in related])
+    return Response(services.related_for(course))
 
 
 @api_view(["POST"])
@@ -67,18 +68,7 @@ def course_enroll_view(request: Any, slug: str) -> Response:
     if course is None:
         return Response(NOT_FOUND, status=404)
     if request.user.is_authenticated:
-        # Imported here so the courses feature never depends on dashboard at module load.
-        from features.dashboard.models import Enrollment
-
-        # One transaction, one commit: the enrollment row and the counter move
-        # together, the increment is atomic in SQL, and re-enrolling is a no-op.
-        # The detail payload shows enrolledCount, so the catalog cache bumps
-        # after the commit (queryset.update() fires no signals).
-        with transaction.atomic():
-            _, created = Enrollment.objects.get_or_create(user=request.user, course=course)
-            if created:
-                Course.objects.filter(pk=course.pk).update(enrolled_count=F("enrolled_count") + 1)
-                transaction.on_commit(lambda: bump_version("catalog"))
+        services.enroll(request.user, course)
     return Response({"enrolled": True, "courseId": course.slug})
 
 
@@ -90,13 +80,7 @@ def course_progress_view(request: Any, slug: str) -> Response:
         return Response(NOT_FOUND, status=404)
     completed = request.data.get("completedLessonIds", [])
     if request.user.is_authenticated:
-        from features.dashboard.models import Enrollment
-
-        enrollment, _ = Enrollment.objects.get_or_create(user=request.user, course=course)
-        enrollment.progress = int(request.data.get("progress", enrollment.progress))
-        enrollment.last_lesson = request.data.get("lastLesson", enrollment.last_lesson)
-        enrollment.is_completed = bool(request.data.get("isCompleted", enrollment.is_completed))
-        enrollment.save(update_fields=["progress", "last_lesson", "is_completed", "updated_at"])
+        services.save_progress(request.user, course, request.data)
     return Response({"courseId": course.slug, "completedLessonIds": completed})
 
 
@@ -108,14 +92,8 @@ def course_favorite_view(request: Any, slug: str) -> Response:
         return Response(NOT_FOUND, status=404)
     if not request.user.is_authenticated:
         return Response({"favorited": False, "requiresAuth": True})
-    from features.dashboard.models import FavoriteCourse
-
-    favorite = FavoriteCourse.objects.filter(user=request.user, course=course).first()
-    if favorite is None:
-        FavoriteCourse.objects.create(user=request.user, course=course)
-        return Response({"favorited": True, "courseId": course.slug})
-    favorite.delete()
-    return Response({"favorited": False, "courseId": course.slug})
+    favorited = services.toggle_favorite(request.user, course)
+    return Response({"favorited": favorited, "courseId": course.slug})
 
 
 @api_view(["GET"])
@@ -124,11 +102,4 @@ def course_certificate_view(request: Any, slug: str) -> Response:
     course = Course.objects.filter(slug=slug).first()
     if course is None:
         return Response(NOT_FOUND, status=404)
-    return Response(
-        {
-            "courseId": course.slug,
-            "courseTitle": course.title,
-            "credentialId": f"KHM-2026-{course.slug.upper()}",
-            "isOfficial": True,
-        }
-    )
+    return Response(services.certificate_payload(course))
