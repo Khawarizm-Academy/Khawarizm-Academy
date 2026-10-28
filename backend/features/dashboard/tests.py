@@ -174,3 +174,40 @@ class DashboardAdminTests(TestCase):
     def test_every_model_is_registered(self):
         for model in DASHBOARD_MODELS:
             self.assertTrue(admin.site.is_registered(model), model.__name__)
+
+
+class DashboardQueryGuardTests(ApiTestCase):
+    """Phase 6 tripwires: per-user reads stay flat in their row counts.
+
+    Every authenticated request pays auth (1 SELECT) + the last-seen touch
+    (1 UPDATE) before its payload queries — the guards pin that too.
+    """
+
+    def test_summary_is_a_fixed_query_count(self):
+        user = make_user()
+        DashboardStat.objects.create(user=user, attendance_rate=98, points_earned=120)
+        PriorityContinue.objects.create(user=user, course=make_course(slug="course-p"))
+        authenticate(self.client, user)
+        with self.assertNumQueries(6):  # auth + touch + priority + live + stats + upcoming events
+            body = self.client.get("/api/dashboard").json()
+        self.assertIsNotNone(body["stats"])
+        self.assertIsNotNone(body["priorityContinue"])
+
+    def test_enrolled_is_one_query_beyond_the_auth_pair(self):
+        user = make_user()
+        Enrollment.objects.create(user=user, course=make_course(slug="course-1"))
+        Enrollment.objects.create(user=user, course=make_course(slug="course-2"))
+        authenticate(self.client, user)
+        with self.assertNumQueries(3):  # auth + touch + one select_related query
+            body = self.client.get("/api/dashboard/enrolled").json()
+        self.assertEqual([row["id"] for row in body], ["course-1", "course-2"])
+
+    def test_saved_is_two_queries_beyond_the_auth_pair(self):
+        user = make_user()
+        SavedScholarship.objects.create(user=user, scholarship=make_scholarship())
+        FavoriteCourse.objects.create(user=user, course=make_course())
+        authenticate(self.client, user)
+        with self.assertNumQueries(4):  # auth + touch + scholarships + favorites
+            body = self.client.get("/api/dashboard/saved").json()
+        self.assertEqual(len(body["scholarships"]), 1)
+        self.assertEqual(len(body["courses"]), 1)

@@ -198,7 +198,11 @@ class StreamToken(UUIDModel, TimeStampedModel):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["token_hash", "expires_at"])]
+        indexes = [
+            models.Index(fields=["token_hash", "expires_at"], name="idx_streamtoken_hash_expires"),
+            # Asset lookups (readiness polling) + the expiry cleanup sweep.
+            models.Index(fields=["asset", "expires_at"], name="idx_streamtoken_asset_expires"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.asset.slug}@{self.expires_at:%Y-%m-%d %H:%M}"
