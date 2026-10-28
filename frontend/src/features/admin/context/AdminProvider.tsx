@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useLocation } from '@/app/routerContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
+import { dataCacheManager } from '@/shared/lib/cacheManager';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
 import { ApiError } from '@/shared/lib/apiClient';
 import { ADMIN_SECTION_KEYS } from '@/features/admin/types';
@@ -17,6 +18,8 @@ import {
   fetchVideoAssets,
   fetchVideoProviders,
   fetchVideoDiagnostics,
+  fetchVideoSystemConfig as fetchVideoSystemConfigRequest,
+  updateVideoSystemConfig as updateVideoSystemConfigRequest,
   deleteVideoAsset as deleteVideoRequest,
   uploadVideoAsset as uploadVideoRequest,
   revokeAdminSession,
@@ -45,6 +48,7 @@ import type {
   AdminVideoDiagnostics,
   AdminVideoInput,
   AdminVideoProvider,
+  AdminVideoSystemConfig,
   AdminContentSchema,
   AdminContentTypeKey,
   AdminContentPage,
@@ -144,6 +148,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     ['admin', 'video-diagnostics', 'deep'],
     () => fetchVideoDiagnostics(true),
     { enabled: deepDiagnosticsRequested, keepPreviousData: true }
+  );
+  // The global toggles own the packaging decision — always loaded with the
+  // video sections so the upload form can reason about FFmpeg.
+  const videoSystemConfig = useCachedData<AdminVideoSystemConfig>(
+    ['admin', 'video-system-config'],
+    fetchVideoSystemConfigRequest,
+    { enabled: videoReloadNeeded }
   );
 
   // Content schema is the single source of truth for forms; load it once.
@@ -309,7 +320,22 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       videoProviders.refetch(),
       videoAssets.refetch(),
       videoDiagnostics.refetch(),
+      videoSystemConfig.refetch(),
     ]);
+  };
+
+  /** Persist the FFmpeg packaging toggle; diagnostics re-run against the new mode. */
+  const updateVideoSystemConfig = async (useFfmpeg: boolean): Promise<boolean> => {
+    setError(null);
+    try {
+      await updateVideoSystemConfigRequest(useFfmpeg);
+      dataCacheManager.set(['admin', 'video-system-config'], { useFfmpeg });
+      await videoDiagnostics.refetch();
+      return true;
+    } catch (thrown) {
+      setError(toMessage(thrown));
+      return false;
+    }
   };
 
   // The backend 202s as soon as the file lands on disk and ingests on a worker
@@ -413,7 +439,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         refreshers.push(
           videoProviders.refetch(),
           videoAssets.refetch(),
-          videoDiagnostics.refetch()
+          videoDiagnostics.refetch(),
+          videoSystemConfig.refetch()
         );
       }
       await Promise.all(refreshers);
@@ -507,6 +534,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     videoAssets: videoAssets.data ?? [],
     deletingVideoId,
     deleteVideo,
+    videoSystemConfig: videoSystemConfig.data ?? null,
+    updateVideoSystemConfig,
     videoUpload,
     uploadVideo,
     clearVideoUpload,

@@ -41,6 +41,12 @@ export function useHlsPlayback(
     void mintStreamGrant(slug)
       .then((grant) => {
         if (cancelled) return;
+        // Raw mode = the un-packaged source; the browser plays it directly.
+        if (grant.mode === 'raw' && grant.playUrl) {
+          element.src = grant.playUrl;
+          setStatus('ready');
+          return;
+        }
         if (element.canPlayType('application/vnd.apple.mpegurl')) {
           element.src = grant.masterUrl;
           setStatus('ready');

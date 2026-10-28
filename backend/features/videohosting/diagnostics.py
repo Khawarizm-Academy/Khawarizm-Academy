@@ -14,30 +14,48 @@ from django.conf import settings
 from django.utils import timezone
 
 from features.videohosting import packaging
+from features.videohosting.models import VideoSystemConfig
 from features.videohosting.providers import SPECS, spec_for
-from features.videohosting.providers.base import SEVERITY_ERROR, SEVERITY_OK
+from features.videohosting.providers.base import SEVERITY_ERROR, SEVERITY_OK, SEVERITY_WARN
 
 
 def _pipeline_group() -> dict[str, Any]:
-    """The packaging pipeline: a normal host AND FFmpeg on its PATH."""
+    """The packaging pipeline: a normal host AND FFmpeg on its PATH.
+
+    With the admin toggle off, packaging is a decision, not a failure — the
+    host checks keep their verdicts but drop to warnings, so the group stays
+    green while still telling the admin why FFmpeg is out of use.
+    """
     vercel = bool(settings.IS_VERCEL)
     ffmpeg_ok = packaging.ffmpeg_available()
+    try:
+        packaging_off = not VideoSystemConfig.get_instance().use_ffmpeg
+    except Exception:
+        packaging_off = False
+    # Packaging off: whatever blocks FFmpeg cannot block the platform anymore.
+    severity = SEVERITY_WARN if packaging_off else SEVERITY_ERROR
+    ok_vercel, ok_ffmpeg = (not vercel, ffmpeg_ok)
     return {
         "id": "pipeline",
         "label": "خط التغليف (FFmpeg)",
         "provider": "",
-        "ok": not vercel and ffmpeg_ok,
-        "warningCount": 0,
+        "ok": (ok_vercel and ok_ffmpeg) or packaging_off,
+        "warningCount": 0 if (ok_vercel and ok_ffmpeg) else (2 if packaging_off else 1),
         "checks": [
-            {"id": "vercel", "label": "بيئة الخادم تسمح بتشغيل FFmpeg", "ok": not vercel,
-             "severity": SEVERITY_OK if not vercel else SEVERITY_ERROR,
+            {"id": "vercel", "label": "بيئة الخادم تسمح بتشغيل FFmpeg", "ok": ok_vercel,
+             "severity": SEVERITY_OK if ok_vercel else severity,
              "detail": "خادم عادي — التغليف مسموح." if not vercel
                        else "الاستضافة على Vercel (serverless): لا FFmpeg ولا ملفات مؤقتة واسعة.",
              "hint": ""},
-            {"id": "ffmpeg", "label": "FFmpeg مثبّت ويغلبّف HLS", "ok": ffmpeg_ok,
-             "severity": SEVERITY_OK if ffmpeg_ok else SEVERITY_ERROR,
+            {"id": "ffmpeg", "label": "FFmpeg مثبّت ويغلبّف HLS", "ok": ok_ffmpeg,
+             "severity": SEVERITY_OK if ok_ffmpeg else severity,
              "detail": "ffmpeg و ffprobe متوفران — سلّم 360p/480p/720p جاهز." if ffmpeg_ok
                        else "لم يُعثر على ffmpeg/ffprobe على PATH.",
+             "hint": ""},
+            {"id": "mode", "label": "وضع التغليف مُفعّل من لوحة الإدارة", "ok": True,
+             "severity": SEVERITY_OK,
+             "detail": ("التغليف موقوف — الملفات الجديدة تُشاهد مباشرة دون تغليف HLS." if packaging_off
+                        else "التغليف مُفعّل — كل ملف يُغلَّف تلقائيًا حسب قدراته المتاحة."),
              "hint": ""},
         ],
     }

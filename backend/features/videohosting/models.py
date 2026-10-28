@@ -43,6 +43,10 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     status = models.CharField(max_length=12, choices=VideoStatus.choices, default=VideoStatus.UPLOADING)
     error_message = models.TextField(blank=True)
 
+    # The watch ledger — one minted playback grant is one session start.
+    view_count = models.PositiveBigIntegerField(default=0, help_text="How many playback grants were minted")
+    last_viewed_at = models.DateTimeField(null=True, blank=True, help_text="When the platform last served a watch link")
+
     provider = models.ForeignKey(
         VideoProvider, null=True, blank=True, on_delete=models.SET_NULL, related_name="assets"
     )
@@ -231,3 +235,31 @@ class DriveAuthState(UUIDModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Drive state@{self.expires_at:%Y-%m-%d %H:%M}"
+
+
+# --------------------------------------------------------------------- config
+class VideoSystemConfig(UUIDModel, TimeStampedModel):
+    """Admin-controlled toggles that affect every video in the platform.
+
+    This singleton lives here (not in Django settings) so an admin can change
+    behaviour at runtime without restarting the server — e.g. disable FFmpeg
+    HLS packaging when no packaging host is available and fall back to raw
+    uploads served directly from Google Drive.
+    """
+
+    use_ffmpeg = models.BooleanField(default=True, help_text="Wrap uploads with HLS via FFmpeg")
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        status = "FFmpeg مُفعّل" if self.use_ffmpeg else "بدون تغليف — رفع مباشر"
+        return f"إعدادات الفيديو — {status}"
+
+    @classmethod
+    def get_instance(cls):
+        """Return the singleton, creating it from the env default if absent."""
+        row = cls.objects.first()
+        if row is None:
+            row = cls.objects.create(use_ffmpeg=settings.VIDEO_HOSTING_USE_FFMPEG)
+        return row

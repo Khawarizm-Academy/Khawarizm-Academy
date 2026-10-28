@@ -135,6 +135,9 @@ class ProviderSpec:
     # Optional callable that refreshes a stored file_id into a current file_path;
     # identity by default means the file_id itself can be used directly.
     file_path_refresher: Callable[[str], str] = _identity
+    # Raw-serving leg for un-packaged assets: (file_id, range_header) →
+    # (status, byte_iterator, headers). None means raw mode is unsupported.
+    raw_stream: Callable[[str, str], tuple[int, Any, dict[str, str]]] | None = None
 
     def row_defaults(self) -> dict[str, object]:
         """The VideoProvider column values this spec always enforces."""

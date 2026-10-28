@@ -315,6 +315,12 @@ export const VIDEO_STAGE_LABELS: Record<string, string> = {
   publishing: 'رفع المقاطع',
 };
 
+/** `GET/POST /admin/video-system-config` — global toggles, e.g. FFmpeg packaging. */
+export interface AdminVideoSystemConfig {
+  /** When false, uploads skip HLS packaging and are served raw from the provider. */
+  useFfmpeg: boolean;
+}
+
 export interface AdminVideoProvider {
   code: string;
   name: string;
@@ -341,6 +347,10 @@ export interface AdminVideoAsset {
   error?: string;
   /** Packaged renditions on the asset (0 while staged). */
   qualities?: number;
+  /** How many watch grants were minted — the asset's view ledger. */
+  viewCount?: number;
+  /** When the platform last served a watch link, null before the first watch. */
+  lastViewedAt?: string | null;
   createdAt?: string;
 }
 

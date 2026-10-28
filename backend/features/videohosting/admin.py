@@ -14,6 +14,7 @@ from features.videohosting.models import (
     VideoProvider,
     VideoRendition,
     VideoSegment,
+    VideoSystemConfig,
 )
 
 
@@ -37,10 +38,10 @@ class VideoProviderAdmin(admin.ModelAdmin):
 
 @admin.register(VideoAsset)
 class VideoAssetAdmin(admin.ModelAdmin):
-    list_display = ("slug", "title", "status", "provider", "duration_seconds", "source_size_bytes")
+    list_display = ("slug", "title", "status", "provider", "view_count", "last_viewed_at", "source_size_bytes")
     list_filter = ("status", "provider")
     search_fields = ("slug", "title")
-    readonly_fields = ("master_playlist",)
+    readonly_fields = ("master_playlist", "view_count", "last_viewed_at")
     inlines = [VideoRenditionInline, StreamTokenInline]
 
 
@@ -101,3 +102,9 @@ class DriveGrantAdmin(admin.ModelAdmin):
 class DriveAuthStateAdmin(admin.ModelAdmin):
     list_display = ("state_hash", "expires_at", "created_at")
     list_filter = ("expires_at",)
+
+
+@admin.register(VideoSystemConfig)
+class VideoSystemConfigAdmin(admin.ModelAdmin):
+    list_display = ("use_ffmpeg", "created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at")

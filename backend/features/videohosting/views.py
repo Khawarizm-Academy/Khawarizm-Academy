@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.urls import reverse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -90,10 +90,16 @@ def video_token_view(request: Any, slug: str) -> Response:
     if asset.status != "ready":
         return Response(NOT_READY_BY_STATUS.get(asset.status, NOT_READY), status=409)
     raw, row = tokens.mint(asset, request.user, client_ip(request))
-    master_url = request.build_absolute_uri(
-        reverse("videohosting-master", kwargs={"token": raw})
-    )
-    return Response(minted_token(asset, raw, row, master_url))
+    # An un-packaged asset has no master playlist — the watch URL points at the
+    # gated raw endpoint instead, so the player branches on `mode`.
+    is_raw = not (asset.master_playlist or "").strip()
+    if is_raw:
+        url = request.build_absolute_uri(
+            f"{reverse('videohosting-raw', kwargs={'slug': asset.slug})}?token={raw}"
+        )
+    else:
+        url = request.build_absolute_uri(reverse("videohosting-master", kwargs={"token": raw}))
+    return Response(minted_token(asset, raw, row, url))
 
 
 @api_view(["GET"])
@@ -158,6 +164,46 @@ def segment_view(request: Any, token: str, quality: str, index: int):
             url = telegram.segment_redirect(fp) if telegram else None
     response["Location"] = url or segment.file_path or ""
     return response
+
+
+@api_view(["GET"])
+def raw_video_view(request: Any, slug: str):
+    """Stream the un-packaged source through the platform, honoring Range.
+
+    Drive media responses need the backend's OAuth bearer, so the browser can
+    not fetch the file directly — this endpoint is the gated watch route for
+    assets uploaded in raw mode (FFmpeg off). The token rides the query string
+    exactly like an hls.js segment request would.
+    """
+    token = request.query_params.get("token", "")
+    row, error = _grant(request, token)
+    if error is not None:
+        return error
+    asset = row.asset
+    file_id = asset.source_file_id
+    if (asset.master_playlist or "").strip() or not file_id or asset.provider is None:
+        return Response({"detail": "هذه النسخة غير متاحة للعرض المباشر."}, status=404)
+    return _stream_raw(asset.provider.code, file_id, request.headers.get("Range", ""))
+
+
+def _stream_raw(provider_code: str, file_id: str, range_header: str):
+    """Open the provider stream, mapping provider errors to 502 with a reason."""
+    from features.videohosting.providers import spec_for
+
+    spec = spec_for(provider_code)
+    stream = spec.raw_stream if (spec is not None and hasattr(spec, "raw_stream")) else None
+    if stream is None:
+        return Response({"detail": f"المزود {provider_code} لا يدعم العرض المباشر."}, status=400)
+    try:
+        status_code, byte_iter, headers = stream(file_id, range_header)
+    except Exception as exc:  # noqa: BLE001 — every upstream failure surfaces here
+        return Response({"detail": f"تعذّر جلب الفيديو من {provider_code}: {exc}"}, status=502)
+    http_response = StreamingHttpResponse(byte_iter, status=int(status_code), content_type=headers.get("Content-Type", "application/octet-stream"))
+    for header in ("Content-Length", "Content-Range", "Accept-Ranges"):
+        if headers.get(header):
+            http_response[header] = headers[header]
+    http_response["Cache-Control"] = NO_STORE
+    return http_response
 
 
 @api_view(["GET"])
