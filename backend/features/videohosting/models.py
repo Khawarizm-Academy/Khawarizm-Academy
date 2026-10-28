@@ -47,17 +47,19 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     view_count = models.PositiveBigIntegerField(default=0, help_text="How many playback grants were minted")
     last_viewed_at = models.DateTimeField(null=True, blank=True, help_text="When the platform last served a watch link")
 
-    provider = models.ForeignKey(
-        VideoProvider, null=True, blank=True, on_delete=models.SET_NULL, related_name="assets"
-    )
+    provider = models.ForeignKey(VideoProvider, null=True, blank=True, on_delete=models.SET_NULL, related_name="assets")
 
     # Admin tracker — what the upload progress bar reads while the worker runs.
     progress = models.PositiveSmallIntegerField(default=0, help_text="Ingest progress 0-100")
     stage = models.CharField(max_length=20, blank=True, help_text="uploading | packaging | publishing")
 
     # Source file — kept for re-packaging when applicable.
-    source_message_id = models.PositiveBigIntegerField(null=True, blank=True, help_text="Telegram message holding the original upload")
-    source_file_id = models.CharField(max_length=128, blank=True, help_text="Provider file handle for non-message providers (Drive file id)")
+    source_message_id = models.PositiveBigIntegerField(
+        null=True, blank=True, help_text="Telegram message holding the original upload"
+    )
+    source_file_id = models.CharField(
+        max_length=128, blank=True, help_text="Provider file handle for non-message providers (Drive file id)"
+    )
     source_size_bytes = models.BigIntegerField(default=0)
     source_file_name = models.CharField(max_length=255, blank=True)
 
@@ -91,7 +93,9 @@ class VideoRendition(UUIDModel):
     playlist = models.TextField(blank=True, help_text="Media playlist with __TOKEN__ placeholders")
 
     # AES-128 key — server-side only; delivered exclusively through the gated key endpoint.
-    aes_key_hex = models.CharField(max_length=32, help_text="16-byte HLS segment key, hex; never leaves the backend un-gated")
+    aes_key_hex = models.CharField(
+        max_length=32, help_text="16-byte HLS segment key, hex; never leaves the backend un-gated"
+    )
     segment_count = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -110,8 +114,12 @@ class VideoSegment(UUIDModel):
 
     # Provider addressing.
     message_id = models.PositiveBigIntegerField(null=True, blank=True)
-    file_id = models.CharField(max_length=255, blank=True, help_text="Stable provider file handle used to resolve a fresh file path")
-    file_path = models.CharField(max_length=512, blank=True, help_text="Resolved provider file path cached for the redirect")
+    file_id = models.CharField(
+        max_length=255, blank=True, help_text="Stable provider file handle used to resolve a fresh file path"
+    )
+    file_path = models.CharField(
+        max_length=512, blank=True, help_text="Resolved provider file path cached for the redirect"
+    )
     provider_asset_id = models.CharField(max_length=255, blank=True)
     size_bytes = models.PositiveBigIntegerField(default=0)
 
@@ -183,7 +191,9 @@ class StreamToken(UUIDModel, TimeStampedModel):
     )
 
     # Binding — a shared link stops working off the minting network and after the TTL.
-    ip_binding = models.GenericIPAddressField(null=True, blank=True, help_text="Requests from another address are refused")
+    ip_binding = models.GenericIPAddressField(
+        null=True, blank=True, help_text="Requests from another address are refused"
+    )
     expires_at = models.DateTimeField()
 
     class Meta:

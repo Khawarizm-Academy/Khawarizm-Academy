@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from typing import Any
-
-from django.test import TestCase
 from unittest import mock
 
+from django.test import TestCase
+
 from features.common.choices import VideoStatus
-from features.common.testing import ApiTestCase, api_client, authenticate, make_admin, make_user
+from features.common.testing import ApiTestCase, authenticate, make_admin, make_user
 from features.videohosting import diagnostics, ingest, packaging, providers
 from features.videohosting.models import VideoAsset, VideoProvider, VideoSystemConfig
 
@@ -97,8 +97,10 @@ class RawModeIngestTests(TestCase):
         """The old behavior: touched packaging later, from a FFmpeg host."""
         _drive_asset("staged-move")
         config = VideoSystemConfig.get_instance()
-        with mock.patch.object(ingest, "GoogleDriveService", FakeDriveService), \
-             mock.patch.object(packaging, "ffmpeg_available", return_value=False):
+        with (
+            mock.patch.object(ingest, "GoogleDriveService", FakeDriveService),
+            mock.patch.object(packaging, "ffmpeg_available", return_value=False),
+        ):
             asset = ingest.ingest_file("missing.mp4", "staged-move", package="auto")
         self.assertEqual(asset.status, VideoStatus.STAGED)
         config.use_ffmpeg = True
@@ -119,14 +121,18 @@ class RawWatchRouteTests(ApiTestCase):
             source_file_name="lesson.mp4",
         )
         self.canned: tuple[int, Any, dict] = (
-            206, iter([b"part1", b"part2"]), {"Content-Type": "video/mp4", "Content-Range": "bytes 0-2/10", "Accept-Ranges": "bytes"},
+            206,
+            iter([b"part1", b"part2"]),
+            {"Content-Type": "video/mp4", "Content-Range": "bytes 0-2/10", "Accept-Ranges": "bytes"},
         )
 
     def _fake_raw(self):
         """A ProviderSpec stub whose raw_stream returns the canned payload."""
+
         class FakeSpec:
             code = "google_drive"
             raw_stream = staticmethod(lambda file_id, range_header: self.canned)
+
         return FakeSpec()
 
     def test_meta_lists_no_qualities_but_is_ready(self):

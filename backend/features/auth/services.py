@@ -43,7 +43,9 @@ def revoke_other_sessions(user: User, keep: UserSession | None = None) -> int:
     return others.update(is_active=False, revoked_reason=SessionRevokeReason.SIGNED_IN_ELSEWHERE)
 
 
-def record_event(kind: str, *, user=None, session=None, request=None, provider: str = "", email: str = "", detail: str = "") -> None:
+def record_event(
+    kind: str, *, user=None, session=None, request=None, provider: str = "", email: str = "", detail: str = ""
+) -> None:
     """Append one audit row; safe to call without a request (e.g. tests)."""
     footprint = parse_user_agent(request.META.get("HTTP_USER_AGENT", "")) if request else {}
     AuthEvent.objects.create(
@@ -75,7 +77,14 @@ def open_session(user: User, request, provider: str) -> tuple[UserSession, str, 
     )
     killed = revoke_other_sessions(user, keep=session)
     if killed:
-        record_event(AuthEventKind.REVOKED, user=user, session=session, request=request, provider=provider, detail=f"ended {killed} other session(s) on this login")
+        record_event(
+            AuthEventKind.REVOKED,
+            user=user,
+            session=session,
+            request=request,
+            provider=provider,
+            detail=f"ended {killed} other session(s) on this login",
+        )
     record_event(AuthEventKind.LOGIN, user=user, session=session, request=request, provider=provider)
     return session, make_access_token(user, session), raw_refresh
 

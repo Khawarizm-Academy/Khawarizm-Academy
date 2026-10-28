@@ -15,7 +15,7 @@ from features.common.choices import VideoStatus
 from features.videohosting.models import DriveGrant, VideoAsset, VideoRendition, VideoSegment
 
 MASTER = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=800000\n/api/stream/__TOKEN__/360p/index.m3u8\n"
-MEDIA = "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"/api/stream/__TOKEN__/key/360p\"\nseg_00000.ts\n"
+MEDIA = '#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI="/api/stream/__TOKEN__/key/360p"\nseg_00000.ts\n'
 KEY_HEX = "00112233445566778899aabbccddeeff"
 
 

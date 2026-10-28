@@ -27,9 +27,7 @@ def mint(asset: VideoAsset, user, ip: str | None) -> tuple[str, StreamToken]:
         token_hash=hashlib.sha256(raw.encode()).hexdigest(),
         expires_at=timezone.now() + timedelta(hours=settings.STREAM_TOKEN_TTL_HOURS),
     )
-    VideoAsset.objects.filter(pk=asset.pk).update(
-        view_count=models.F("view_count") + 1, last_viewed_at=timezone.now()
-    )
+    VideoAsset.objects.filter(pk=asset.pk).update(view_count=models.F("view_count") + 1, last_viewed_at=timezone.now())
     return raw, row
 
 
@@ -38,9 +36,7 @@ def resolve(raw: str, ip: str | None) -> StreamToken | None:
     if not raw:
         return None
     row = (
-        StreamToken.objects.select_related("asset")
-        .filter(token_hash=hashlib.sha256(raw.encode()).hexdigest())
-        .first()
+        StreamToken.objects.select_related("asset").filter(token_hash=hashlib.sha256(raw.encode()).hexdigest()).first()
     )
     if row is None:
         return None

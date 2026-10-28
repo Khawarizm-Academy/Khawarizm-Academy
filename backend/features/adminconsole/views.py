@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from datetime import timedelta
-from pathlib import Path
 
 from django.db import IntegrityError
 from django.db.models import Count, Q
@@ -99,7 +98,7 @@ def _values_for(spec: dict, data: dict, create: bool) -> dict:
             continue
         try:
             values[field["attr"]] = _coerce(field, value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             errors.append(f"قيمة غير صالحة في «{field['label']}».")
     if errors:
         raise InvalidParameter(" ".join(errors))
@@ -129,8 +128,12 @@ def overview(request):
             "activity": {
                 "loginsLast24h": AuthEvent.objects.filter(kind=AuthEventKind.LOGIN, created_at__gte=day_ago).count(),
                 "loginsLast7d": AuthEvent.objects.filter(kind=AuthEventKind.LOGIN, created_at__gte=week_ago).count(),
-                "rejectedLast7d": AuthEvent.objects.filter(kind=AuthEventKind.REJECTED, created_at__gte=week_ago).count(),
-                "revocationsLast7d": AuthEvent.objects.filter(kind=AuthEventKind.REVOKED, created_at__gte=week_ago).count(),
+                "rejectedLast7d": AuthEvent.objects.filter(
+                    kind=AuthEventKind.REJECTED, created_at__gte=week_ago
+                ).count(),
+                "revocationsLast7d": AuthEvent.objects.filter(
+                    kind=AuthEventKind.REVOKED, created_at__gte=week_ago
+                ).count(),
             },
             "content": {key: model.objects.count() for key, model in CONTENT_COUNTS.items()},
         }
@@ -153,7 +156,9 @@ def users(request):
     page = _int_param(request, "page", 1, 1)
     total = queryset.count()
     rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
-    return Response({"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [serializers.user_row(u) for u in rows]})
+    return Response(
+        {"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [serializers.user_row(u) for u in rows]}
+    )
 
 
 def _create_user(request) -> Response:
@@ -242,7 +247,14 @@ def sessions(request):
     page = _int_param(request, "page", 1, 1)
     total = queryset.count()
     rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
-    return Response({"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [session_with_user(s, request.auth.id) for s in rows]})
+    return Response(
+        {
+            "total": total,
+            "page": page,
+            "pageSize": PAGE_SIZE,
+            "results": [session_with_user(s, request.auth.id) for s in rows],
+        }
+    )
 
 
 @api_view(["POST"])
@@ -253,7 +265,13 @@ def revoke_session(request, session_id):
     if session is None:
         return Response({"detail": "الجلسة غير موجودة."}, status=status.HTTP_404_NOT_FOUND)
     session.revoke(SessionRevokeReason.REVOKED_BY_ADMIN)
-    services.record_event(AuthEventKind.REVOKED, user=session.user, session=session, request=request, detail=f"revoked by admin {request.user.email}")
+    services.record_event(
+        AuthEventKind.REVOKED,
+        user=session.user,
+        session=session,
+        request=request,
+        detail=f"revoked by admin {request.user.email}",
+    )
     return Response(session_with_user(session, request.auth.id))
 
 
@@ -307,7 +325,7 @@ def content_items(request, type_key):
         values = _values_for(spec, request.data or {}, create=True)
         try:
             row = spec["model"].objects.create(**values)
-        except (IntegrityError, ValueError):
+        except IntegrityError, ValueError:
             return Response({"detail": "تعذّر الإنشاء: بيانات غير صالحة أو مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializers.content_row(spec, row), status=status.HTTP_201_CREATED)
     queryset = spec["model"].objects.all()
@@ -320,7 +338,14 @@ def content_items(request, type_key):
     page = _int_param(request, "page", 1, 1)
     total = queryset.count()
     rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
-    return Response({"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [serializers.content_row(spec, r) for r in rows]})
+    return Response(
+        {
+            "total": total,
+            "page": page,
+            "pageSize": PAGE_SIZE,
+            "results": [serializers.content_row(spec, r) for r in rows],
+        }
+    )
 
 
 @api_view(["PATCH", "DELETE"])
@@ -339,6 +364,6 @@ def content_detail(request, type_key, pk):
         setattr(row, attr, value)
     try:
         row.save()
-    except (IntegrityError, ValueError):
+    except IntegrityError, ValueError:
         return Response({"detail": "تعذّر الحفظ: بيانات غير صالحة أو مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializers.content_row(spec, row))

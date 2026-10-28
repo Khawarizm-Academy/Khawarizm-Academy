@@ -100,7 +100,6 @@ def course_favorite_view(request: Any, slug: str) -> Response:
     return Response({"favorited": False, "courseId": course.slug})
 
 
-
 @api_view(["GET"])
 def course_certificate_view(request: Any, slug: str) -> Response:
     """Certificate metadata for a completed course."""

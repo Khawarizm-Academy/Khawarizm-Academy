@@ -94,9 +94,7 @@ def video_token_view(request: Any, slug: str) -> Response:
     # gated raw endpoint instead, so the player branches on `mode`.
     is_raw = not (asset.master_playlist or "").strip()
     if is_raw:
-        url = request.build_absolute_uri(
-            f"{reverse('videohosting-raw', kwargs={'slug': asset.slug})}?token={raw}"
-        )
+        url = request.build_absolute_uri(f"{reverse('videohosting-raw', kwargs={'slug': asset.slug})}?token={raw}")
     else:
         url = request.build_absolute_uri(reverse("videohosting-master", kwargs={"token": raw}))
     return Response(minted_token(asset, raw, row, url))
@@ -196,9 +194,11 @@ def _stream_raw(provider_code: str, file_id: str, range_header: str):
         return Response({"detail": f"المزود {provider_code} لا يدعم العرض المباشر."}, status=400)
     try:
         status_code, byte_iter, headers = stream(file_id, range_header)
-    except Exception as exc:  # noqa: BLE001 — every upstream failure surfaces here
+    except Exception as exc:
         return Response({"detail": f"تعذّر جلب الفيديو من {provider_code}: {exc}"}, status=502)
-    http_response = StreamingHttpResponse(byte_iter, status=int(status_code), content_type=headers.get("Content-Type", "application/octet-stream"))
+    http_response = StreamingHttpResponse(
+        byte_iter, status=int(status_code), content_type=headers.get("Content-Type", "application/octet-stream")
+    )
     for header in ("Content-Length", "Content-Range", "Accept-Ranges"):
         if headers.get(header):
             http_response[header] = headers[header]
@@ -211,4 +211,3 @@ def _stream_raw(provider_code: str, file_id: str, range_header: str):
 def video_providers_list(request: Any) -> Response:
     """Public provider listing — uses the same logic as admin, just without gate info."""
     return Response({"results": provider_listing(include_gate=False)})
-

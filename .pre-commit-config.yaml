@@ -1,0 +1,33 @@
+# Local hygiene gate — mirrors the CI stages that can run offline.
+# Everything else (checks, migrations, tests, audits, secrets) belongs to
+# the CI pipeline; keeping hooks small keeps them fast enough to actually run.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # Hygiene stays on this plan's territory (backend + repo tooling/docs):
+      # the frontend has its own tooling, .agents/ holds the skills library
+      # whose template placeholders are whitespace-significant, Designs/ is
+      # design-source. Fixing those here would make every PR carry their churn.
+      - id: trailing-whitespace
+        exclude: ^(frontend/|\.agents/|Designs/|backend/staticfiles/)
+      - id: end-of-file-fixer
+        exclude: ^(frontend/|\.agents/|Designs/|backend/staticfiles/)
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+        # tsconfigs are JSONC (TypeScript parses comments); real JSON everywhere else.
+        exclude: ^frontend/.*tsconfig.*\.json$
+      - id: check-merge-conflict
+      - id: detect-private-key # the last human gate before gitleaks runs in CI
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # same version as backend/requirements-dev.txt — ruff output must not
+    # disagree between local hooks and CI
+    rev: v0.17.3
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/

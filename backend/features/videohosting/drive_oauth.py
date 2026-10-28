@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import hashlib
 import json
 import urllib.parse
@@ -51,15 +52,17 @@ def consent_url() -> str:
         )
     raw = uuid.uuid4().hex
     DriveAuthState.objects.create(state_hash=_hash(raw), expires_at=timezone.now() + STATE_TTL)
-    return f"{GOOGLE_OAUTH_AUTH_URL}?" + urllib.parse.urlencode({
-        "client_id": (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip(),
-        "redirect_uri": redirect_uri(),
-        "response_type": "code",
-        "scope": AUTH_SCOPES,
-        "access_type": "offline",
-        "prompt": "consent",
-        "state": raw,
-    })
+    return f"{GOOGLE_OAUTH_AUTH_URL}?" + urllib.parse.urlencode(
+        {
+            "client_id": (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip(),
+            "redirect_uri": redirect_uri(),
+            "response_type": "code",
+            "scope": AUTH_SCOPES,
+            "access_type": "offline",
+            "prompt": "consent",
+            "state": raw,
+        }
+    )
 
 
 def complete(raw_state: str, code: str) -> tuple[bool, str, str]:
@@ -105,14 +108,20 @@ def access_token() -> tuple[bool, str, str]:
         return False, "", "لم يتم تخويل Google بعد — افتح «تخويل حساب Google» من لوحة الإدارة."
     if grant.status == DriveGrant.Status.REVOKED:
         return False, "", grant.error_message or "تخويل Google منسوح — أعد التخويل من لوحة الإدارة."
-    if grant.access_token and grant.access_token_expires_at and timezone.now() < grant.access_token_expires_at - PENDING_EXPIRY_MARGIN:
+    if (
+        grant.access_token
+        and grant.access_token_expires_at
+        and timezone.now() < grant.access_token_expires_at - PENDING_EXPIRY_MARGIN
+    ):
         return True, grant.access_token, "استخدم access token المخزَّن."
-    payload = _post_token({
-        "client_id": (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip(),
-        "client_secret": (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip(),
-        "refresh_token": grant.refresh_token,
-        "grant_type": "refresh_token",
-    })
+    payload = _post_token(
+        {
+            "client_id": (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip(),
+            "client_secret": (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip(),
+            "refresh_token": grant.refresh_token,
+            "grant_type": "refresh_token",
+        }
+    )
     if payload is None:
         mark_revoked(grant, "تعذّر الاتصال مع Google — أعد المحاولة.")
         return False, "", "تعذّر الاتصال مع Google."
@@ -149,13 +158,12 @@ def revoke() -> None:
     """Best-effort Google-side revocation; the DB grant row is dropped either way."""
     grant = _current_row()
     if grant is not None:
-        request = urllib.request.Request(  # noqa: S310 — fixed Google host, revoking our grant
+        request = urllib.request.Request(
             GOOGLE_OAUTH_REVOKE_URL, data=urllib.parse.urlencode({"token": grant.refresh_token}).encode("utf-8")
         )
-        try:
-            urllib.request.urlopen(request, timeout=REQUEST_SECONDS)  # noqa: S310 — fixed Google host
-        except Exception:
-            pass  # an already-dead token revoking again still leaves the DB clean
+        # An already-dead token revoking again still leaves the DB clean.
+        with contextlib.suppress(Exception):
+            urllib.request.urlopen(request, timeout=REQUEST_SECONDS)
     DriveGrant.objects.all().delete()
 
 
@@ -167,8 +175,11 @@ def mark_revoked(grant: DriveGrant, message: str) -> None:
 
 
 def configured() -> bool:
-    return redirect_uri() and bool((settings.GOOGLE_DRIVE_CLIENT_ID or "").strip()) and \
-        bool((settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip())
+    return (
+        redirect_uri()
+        and bool((settings.GOOGLE_DRIVE_CLIENT_ID or "").strip())
+        and bool((settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip())
+    )
 
 
 def redirect_uri() -> str:
@@ -190,19 +201,21 @@ def _current_row() -> DriveGrant | None:
 
 def _exchange_code(code: str) -> dict:
     client_id = (settings.GOOGLE_DRIVE_CLIENT_ID or "").strip()
-    request = urllib.request.Request(  # noqa: S310 — fixed Google host, backend-only secret
+    request = urllib.request.Request(
         GOOGLE_OAUTH_TOKEN_URL,
-        data=urllib.parse.urlencode({
-            "client_id": client_id,
-            "client_secret": (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip(),
-            "code": code.strip(),
-            "redirect_uri": redirect_uri(),
-            "grant_type": "authorization_code",
-        }).encode("utf-8"),
+        data=urllib.parse.urlencode(
+            {
+                "client_id": client_id,
+                "client_secret": (settings.GOOGLE_DRIVE_CLIENT_SECRET or "").strip(),
+                "code": code.strip(),
+                "redirect_uri": redirect_uri(),
+                "grant_type": "authorization_code",
+            }
+        ).encode("utf-8"),
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed Google host
+        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         # Google's refusal IS the payload (invalid_grant and friends live here) —
@@ -216,12 +229,13 @@ def _exchange_code(code: str) -> dict:
 
 
 def _post_token(body: dict) -> dict | None:
-    request = urllib.request.Request(  # noqa: S310 — fixed Google host, backend-only secret
-        GOOGLE_OAUTH_TOKEN_URL, data=urllib.parse.urlencode(body).encode("utf-8"),
+    request = urllib.request.Request(
+        GOOGLE_OAUTH_TOKEN_URL,
+        data=urllib.parse.urlencode(body).encode("utf-8"),
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 — fixed Google host
+        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         # A 400 invalid_grant is Google's answer, not a network outage — read it.
@@ -245,7 +259,7 @@ def _id_token_email(id_token: str) -> str:
 def _expiry(payload: dict) -> timedelta:
     try:
         return timedelta(seconds=int(payload.get("expires_in", 3600)))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return timedelta(hours=1)
 
 

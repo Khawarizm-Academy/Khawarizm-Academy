@@ -39,11 +39,13 @@ class Command(BaseCommand):
             raise CommandError(str(exc)) from exc
         if asset.status == VideoStatus.STAGED:
             megabytes = asset.source_size_bytes // (1024 * 1024)
-            self.stdout.write(self.style.WARNING(
-                f"{asset.slug} staged — source stored ({megabytes}MB). "
-                "Run again with --package force on a host that has FFmpeg to build the HLS ladder."
-            ))
+            self.stdout.write(
+                self.style.WARNING(
+                    f"{asset.slug} staged — source stored ({megabytes}MB). "
+                    "Run again with --package force on a host that has FFmpeg to build the HLS ladder."
+                )
+            )
             return
-        self.stdout.write(self.style.SUCCESS(
-            f"{asset.slug} ready — {asset.duration_seconds}s, {asset.renditions.count()} renditions"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(f"{asset.slug} ready — {asset.duration_seconds}s, {asset.renditions.count()} renditions")
+        )

@@ -8,7 +8,6 @@ from features.common.testing import ApiTestCase
 from features.videohosting import diagnostics
 from features.videohosting.models import DriveGrant
 from features.videohosting.providers import google_drive, spec_for
-
 from features.videohosting.tests.helpers import drive_grant
 
 
@@ -25,11 +24,13 @@ class DiagnosticsTests(ApiTestCase):
     def test_providers_gate_on_their_env(self):
         self.assertFalse(diagnostics.provider_available("telegram"))
         self.assertTrue(diagnostics.provider_reason("telegram"))
-        with mock.patch.object(diagnostics.settings, "TELEGRAM_API_ID", "12345"), \
-             mock.patch.object(diagnostics.settings, "TELEGRAM_API_HASH", "hash"), \
-             mock.patch.object(diagnostics.settings, "TELEGRAM_BOT_TOKEN", "111:abc"), \
-             mock.patch.object(diagnostics.settings, "TELEGRAM_STREAM_TOKEN", "222:def"), \
-             mock.patch.object(diagnostics.settings, "TELEGRAM_CHANNEL_ID", "@channel"):
+        with (
+            mock.patch.object(diagnostics.settings, "TELEGRAM_API_ID", "12345"),
+            mock.patch.object(diagnostics.settings, "TELEGRAM_API_HASH", "hash"),
+            mock.patch.object(diagnostics.settings, "TELEGRAM_BOT_TOKEN", "111:abc"),
+            mock.patch.object(diagnostics.settings, "TELEGRAM_STREAM_TOKEN", "222:def"),
+            mock.patch.object(diagnostics.settings, "TELEGRAM_CHANNEL_ID", "@channel"),
+        ):
             self.assertTrue(diagnostics.provider_available("telegram"))
             self.assertEqual(diagnostics.provider_reason("telegram"), "")
 
@@ -49,11 +50,13 @@ class DiagnosticsTests(ApiTestCase):
             raise AssertionError("deep drive checks must not reach the network without a grant")
 
         DriveGrant.objects.all().delete()
-        with mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"), \
-             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
-             mock.patch.object(diagnostics.urllib.request, "urlopen", boom):
+        with (
+            mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"),
+            mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"),
+            mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"),
+            mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"),
+            mock.patch.object(diagnostics.urllib.request, "urlopen", boom),
+        ):
             group = spec_for("google_drive").check_group(deep=True)
         check_ids = {c.id for c in group.checks}
         self.assertEqual(check_ids, {"client_id", "client_secret", "root_folder", "redirect_uri", "oauth_grant"})
@@ -62,14 +65,18 @@ class DiagnosticsTests(ApiTestCase):
         # The grant mints, then the 1-byte probe is the folder's verdict —
         # drive.file cannot read folder metadata, so there is no folder GET.
         drive_grant()
-        with mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"), \
-             mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
-             mock.patch.object(google_drive, "access_token",
-                               return_value=(True, "BEAR", "استخدم access token المخزَّن.")) as fake_token, \
-             mock.patch.object(google_drive, "upload_probe",
-                               return_value=(False, "تعذّر الكتابة — راجع صلاحيات الحساب")) as fake_probe:
+        with (
+            mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"),
+            mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"),
+            mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "FOLDER"),
+            mock.patch.object(diagnostics.settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"),
+            mock.patch.object(
+                google_drive, "access_token", return_value=(True, "BEAR", "استخدم access token المخزَّن.")
+            ) as fake_token,
+            mock.patch.object(
+                google_drive, "upload_probe", return_value=(False, "تعذّر الكتابة — راجع صلاحيات الحساب")
+            ) as fake_probe,
+        ):
             group = spec_for("google_drive").check_group(deep=True)
         by_id = {c.id: c for c in group.checks}
         self.assertTrue(by_id["drive_token"].ok)

@@ -6,7 +6,8 @@ Every filter is a row in `FILTERS`, so adding one never means adding an
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 # (query param, default, predicate) applied to one serialized CatalogItem.
 FILTERS: tuple[tuple[str, str, Callable[[dict[str, Any], str], bool]], ...] = (
@@ -14,8 +15,16 @@ FILTERS: tuple[tuple[str, str, Callable[[dict[str, Any], str], bool]], ...] = (
     ("field", "all", lambda item, value: value == "all" or item.get("categorySlug") == value),
     ("level", "all", lambda item, value: value == "all" or LEVEL_KEY[item["type"]](item) == value),
     ("cost", "all", lambda item, value: value == "all" or item["type"] != "course" or item.get("priceType") == value),
-    ("country", "all", lambda item, value: value == "all" or item["type"] != "scholarship" or item.get("countrySlug") == value),
-    ("status", "all", lambda item, value: value == "all" or item["type"] != "scholarship" or item.get("status") == value),
+    (
+        "country",
+        "all",
+        lambda item, value: value == "all" or item["type"] != "scholarship" or item.get("countrySlug") == value,
+    ),
+    (
+        "status",
+        "all",
+        lambda item, value: value == "all" or item["type"] != "scholarship" or item.get("status") == value,
+    ),
 )
 
 # "courses" / "scholarships" tab value -> the item's `type` field.

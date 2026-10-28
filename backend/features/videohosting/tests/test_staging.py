@@ -10,7 +10,6 @@ from features.common.choices import VideoStatus
 from features.common.testing import ApiTestCase, authenticate
 from features.videohosting import ingest, packaging, providers
 from features.videohosting.models import VideoAsset, VideoProvider
-
 from features.videohosting.tests.helpers import MASTER, FakeTelegramService, make_asset
 
 
@@ -54,9 +53,11 @@ class StagingTests(ApiTestCase):
             fake_result = packaging.PackagingResult(
                 master_playlist=MASTER, duration_seconds=90, renditions=[], work_dir=Path(work)
             )
-            with mock.patch.object(ingest, "TelegramMediaService", FakeTelegramService), \
-                 mock.patch.object(packaging, "ffmpeg_available", return_value=True), \
-                 mock.patch.object(packaging, "package_video", return_value=fake_result):
+            with (
+                mock.patch.object(ingest, "TelegramMediaService", FakeTelegramService),
+                mock.patch.object(packaging, "ffmpeg_available", return_value=True),
+                mock.patch.object(packaging, "package_video", return_value=fake_result),
+            ):
                 asset = ingest.ingest_file("missing.mp4", "staged-4", package="auto")
         self.assertEqual(asset.status, VideoStatus.READY)
         self.assertEqual(asset.master_playlist, MASTER)

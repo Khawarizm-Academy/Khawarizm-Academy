@@ -7,7 +7,7 @@
 # this module owns only the pipeline group and the runner that aggregates them.
 from __future__ import annotations
 
-import urllib.request  # tests patch urlopen through this namespace for deep runs
+import urllib.request  # noqa: F401 — deep-run tests patch urlopen through this namespace
 from typing import Any
 
 from django.conf import settings
@@ -42,21 +42,43 @@ def _pipeline_group() -> dict[str, Any]:
         "ok": (ok_vercel and ok_ffmpeg) or packaging_off,
         "warningCount": 0 if (ok_vercel and ok_ffmpeg) else (2 if packaging_off else 1),
         "checks": [
-            {"id": "vercel", "label": "بيئة الخادم تسمح بتشغيل FFmpeg", "ok": ok_vercel,
-             "severity": SEVERITY_OK if ok_vercel else severity,
-             "detail": "خادم عادي — التغليف مسموح." if not vercel
-                       else "الاستضافة على Vercel (serverless): لا FFmpeg ولا ملفات مؤقتة واسعة.",
-             "hint": ""},
-            {"id": "ffmpeg", "label": "FFmpeg مثبّت ويغلبّف HLS", "ok": ok_ffmpeg,
-             "severity": SEVERITY_OK if ok_ffmpeg else severity,
-             "detail": "ffmpeg و ffprobe متوفران — سلّم 360p/480p/720p جاهز." if ffmpeg_ok
-                       else "لم يُعثر على ffmpeg/ffprobe على PATH.",
-             "hint": ""},
-            {"id": "mode", "label": "وضع التغليف مُفعّل من لوحة الإدارة", "ok": True,
-             "severity": SEVERITY_OK,
-             "detail": ("التغليف موقوف — الملفات الجديدة تُشاهد مباشرة دون تغليف HLS." if packaging_off
-                        else "التغليف مُفعّل — كل ملف يُغلَّف تلقائيًا حسب قدراته المتاحة."),
-             "hint": ""},
+            {
+                "id": "vercel",
+                "label": "بيئة الخادم تسمح بتشغيل FFmpeg",
+                "ok": ok_vercel,
+                "severity": SEVERITY_OK if ok_vercel else severity,
+                "detail": "خادم عادي — التغليف مسموح."
+                if not vercel
+                else "الاستضافة على Vercel (serverless): لا FFmpeg ولا ملفات مؤقتة واسعة.",
+                "hint": "",
+            },
+            {
+                "id": "ffmpeg",
+                "label": "FFmpeg مثبّت ويغلبّف HLS",
+                "ok": ok_ffmpeg,
+                "severity": SEVERITY_OK if ok_ffmpeg else severity,
+                "detail": "ffmpeg و ffprobe متوفران — سلّم 360p/480p/720p جاهز."
+                if ffmpeg_ok
+                else "لم يُعثر على ffmpeg/ffprobe على PATH.",
+                "hint": ""
+                if ffmpeg_ok
+                else (
+                    "ثبّت FFmpeg على الخادم (Docker: الصورة تتضمنه؛ خادم عادي: apt install ffmpeg)"
+                    " أو أوقف التغليف من لوحة الإدارة."
+                ),
+            },
+            {
+                "id": "mode",
+                "label": "وضع التغليف مُفعّل من لوحة الإدارة",
+                "ok": True,
+                "severity": SEVERITY_OK,
+                "detail": (
+                    "التغليف موقوف — الملفات الجديدة تُشاهد مباشرة دون تغليف HLS."
+                    if packaging_off
+                    else "التغليف مُفعّل — كل ملف يُغلَّف تلقائيًا حسب قدراته المتاحة."
+                ),
+                "hint": "",
+            },
         ],
     }
 
@@ -74,8 +96,9 @@ def run(deep: bool = False) -> dict[str, Any]:
         payload = spec.check_group(deep=deep).payload(spec.hints)
         # One group payload serves both lists, so the env checks run once per spec.
         groups.append(payload)
-        providers.append({**payload, "code": spec.code, "available": payload["ok"],
-                          "reason": "" if payload["ok"] else spec.reason()})
+        providers.append(
+            {**payload, "code": spec.code, "available": payload["ok"], "reason": "" if payload["ok"] else spec.reason()}
+        )
     problems = [
         f"{g['label']} — {item['label']}: {item['detail']}"
         for g in groups

@@ -36,6 +36,7 @@ DJANGO_ENV = os.environ.get("DJANGO_ENV", "development")
 if not IS_VERCEL:
     load_dotenv(BASE_DIR / f".env.{DJANGO_ENV}")
 
+
 # Reads an env var with a type-appropriate default, so local dev needs no .env file.
 def env_bool(name: str, default: bool) -> bool:
     raw = os.environ.get(name)

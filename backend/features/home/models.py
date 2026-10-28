@@ -31,7 +31,9 @@ class HomeFeaturedCourse(UUIDModel):
 class HomeFeaturedScholarship(UUIDModel):
     """Pins a real Scholarship onto the home featured rail."""
 
-    scholarship = models.OneToOneField("scholarships.Scholarship", related_name="home_featured", on_delete=models.CASCADE)
+    scholarship = models.OneToOneField(
+        "scholarships.Scholarship", related_name="home_featured", on_delete=models.CASCADE
+    )
     deadline_text = models.CharField(max_length=60, blank=True)
     icon_type = models.CharField(max_length=20, blank=True, help_text="university, globe, or briefcase")
     thumbnail_type = models.CharField(max_length=30, choices=ThumbnailType.choices, blank=True)

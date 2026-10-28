@@ -12,5 +12,9 @@ urlpatterns = [
     path("dashboard/saved", views.dashboard_saved, name="dashboard-saved"),
     path("dashboard/competitions", views.dashboard_competitions, name="dashboard-competitions"),
     path("dashboard/notifications", views.dashboard_notifications, name="dashboard-notifications"),
-    path("dashboard/notifications/<str:notification_id>/read", views.dashboard_notification_read, name="dashboard-notification-read"),
+    path(
+        "dashboard/notifications/<str:notification_id>/read",
+        views.dashboard_notification_read,
+        name="dashboard-notification-read",
+    ),
 ]

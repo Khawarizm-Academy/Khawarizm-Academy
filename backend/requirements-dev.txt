@@ -1,0 +1,5 @@
+# Dev-only tools (lint, hooks, audits). The app's runtime dependencies stay in
+# requirements.txt — Vercel and Docker install only that file.
+ruff==0.17.3
+pip-audit==2.10.1
+pre-commit==4.3.0

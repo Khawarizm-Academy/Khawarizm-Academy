@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from decimal import Decimal
+from typing import Any
 
 
 def compact(**fields: Any) -> dict[str, Any]:

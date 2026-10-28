@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from features.catalog.filters import matches, sort_key
 from features.catalog.models import Category, FilterGroup, FilterOption
-from features.catalog.serializers import catalog_filters, catalog_item_for
+from features.catalog.serializers import catalog_item_for
 from features.common.testing import ApiTestCase, make_course, make_scholarship
 from features.courses.serializers import course_catalog_item
 from features.scholarships.serializers import scholarship_catalog_item
@@ -161,7 +161,9 @@ class CatalogUrlTests(TestCase):
 class CatalogFilterGroupTests(ApiTestCase):
     def setUp(self):
         super().setUp()
-        self.group = FilterGroup.objects.create(key="field", label="المجال", tone="gold", glow=True, surfaces=["desktop", "mobile"], order=0)
+        self.group = FilterGroup.objects.create(
+            key="field", label="المجال", tone="gold", glow=True, surfaces=["desktop", "mobile"], order=0
+        )
         FilterOption.objects.create(group=self.group, value="all", label="الكل", order=0)
         FilterOption.objects.create(group=self.group, value="ai", label="ذكاء اصطناعي", order=1)
 

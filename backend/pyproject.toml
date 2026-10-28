@@ -1,0 +1,41 @@
+[project]
+# The repo's dependency list stays in requirements.txt (Vercel + Docker read it);
+# this file pins tool configuration only, so it must not carry dependencies.
+name = "khawarizm-backend"
+version = "1.0.0"
+requires-python = ">=3.14"
+description = "Khawarizm Academy API — Django + DRF backend"
+
+[tool.ruff]
+# One hard-wrapped line style; matches the codebase's existing ~100-column code.
+line-length = 120
+target-version = "py314"
+extend-exclude = ["features/*/migrations/*", ".venv", "staticfiles", "*.md"]
+
+[tool.ruff.lint]
+# E/F pyflakes+pycodestyle; I import order; B bugbear footguns; SIM simplify;
+# UP pyupgrade (py314 idioms); RUF ruff-specific. Rule list intentionally small:
+# useful default gates, no style wars.
+select = ["E", "F", "I", "B", "SIM", "UP", "RUF"]
+ignore = [
+    # RUF012: Django/DRF configure classes through mutable class attributes
+    # (ModelAdmin.list_display, Meta.constraints, …). That is the framework's
+    # own idiom, not a shared-state bug — a blanket ClassVar everywhere is noise.
+    "RUF012",
+    # RUF001: the product copy is Arabic; confusable full-width/persian
+    # characters inside Arabic strings are intentional typography, not bugs.
+    "RUF001",
+]
+
+[tool.ruff.lint.isort]
+# first-party imports (config / features) sort closer to third-party ones,
+# matching how the codebase already groups them; no isort "profile" dialect needed.
+known-first-party = ["config", "features"]
+
+[tool.ruff.lint.per-file-ignores]
+# Migrations are generated code; never lint them.
+"features/*/migrations/*.py" = ["ALL"]
+# Test files bundle fixtures naturally; verbosity here is not a smell.
+# (SIM117: stacked with-statements read as one setup block in tests.)
+"features/*/tests.py" = ["SIM117"]
+"features/*/tests/*.py" = ["SIM117"]
