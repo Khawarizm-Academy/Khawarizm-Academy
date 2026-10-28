@@ -60,7 +60,12 @@ def _pipeline_group() -> dict[str, Any]:
                 "detail": "ffmpeg و ffprobe متوفران — سلّم 360p/480p/720p جاهز."
                 if ffmpeg_ok
                 else "لم يُعثر على ffmpeg/ffprobe على PATH.",
-                "hint": "",
+                "hint": ""
+                if ffmpeg_ok
+                else (
+                    "ثبّت FFmpeg على الخادم (Docker: الصورة تتضمنه؛ خادم عادي: apt install ffmpeg)"
+                    " أو أوقف التغليف من لوحة الإدارة."
+                ),
             },
             {
                 "id": "mode",
