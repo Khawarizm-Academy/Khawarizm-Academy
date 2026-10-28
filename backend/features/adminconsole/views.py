@@ -142,7 +142,7 @@ def users(request):
     """Paged, filterable user list (GET) or a new account (POST)."""
     if request.method == "POST":
         return _create_user(request)
-    queryset = User.objects.all()
+    queryset = User.objects.annotate(active_sessions=Count("sessions", filter=Q(sessions__is_active=True)))
     role = request.query_params.get("role")
     if role in Role.values:
         queryset = queryset.filter(role=role)
@@ -151,7 +151,11 @@ def users(request):
         queryset = queryset.filter(Q(email__icontains=query) | Q(full_name__icontains=query))
     page = _int_param(request, "page", 1, 1)
     total = queryset.count()
-    rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
+    # The active-session count rides as an annotation on the page slice only —
+    # a per-row subquery in the list used to make this an N+1.
+    rows = queryset.annotate(active_sessions=Count("sessions", filter=Q(sessions__is_active=True)))[
+        (page - 1) * PAGE_SIZE : page * PAGE_SIZE
+    ]
     return Response(
         {"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [serializers.user_row(u) for u in rows]}
     )

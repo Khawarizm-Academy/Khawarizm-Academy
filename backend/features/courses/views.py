@@ -4,19 +4,29 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.db import transaction
+from django.db.models import F, Prefetch
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from features.courses.models import Course, CourseProblem
+from features.common.cache import bump_version
+from features.courses.models import Course, CourseModule, CourseProblem
 from features.courses.serializers import course_catalog_item, course_detail, course_problem
 
 NOT_FOUND = {"detail": "الدورة غير موجودة"}
+
+# The landing record walks course -> modules -> lessons + live sessions; the
+# prefetch keeps it at a constant 4 queries however many modules exist.
+DETAIL_PREFETCH = (
+    Prefetch("modules", queryset=CourseModule.objects.prefetch_related("lessons")),
+    "live_sessions",
+)
 
 
 @api_view(["GET"])
 def course_detail_view(request: Any, slug: str) -> Response:
     """The full landing record for one course."""
-    course = Course.objects.filter(slug=slug).first()
+    course = Course.objects.filter(slug=slug).prefetch_related(*DETAIL_PREFETCH).first()
     if course is None:
         return Response(NOT_FOUND, status=404)
     return Response(course_detail(course))
@@ -60,7 +70,15 @@ def course_enroll_view(request: Any, slug: str) -> Response:
         # Imported here so the courses feature never depends on dashboard at module load.
         from features.dashboard.models import Enrollment
 
-        Enrollment.objects.get_or_create(user=request.user, course=course)
+        # One transaction, one commit: the enrollment row and the counter move
+        # together, the increment is atomic in SQL, and re-enrolling is a no-op.
+        # The detail payload shows enrolledCount, so the catalog cache bumps
+        # after the commit (queryset.update() fires no signals).
+        with transaction.atomic():
+            _, created = Enrollment.objects.get_or_create(user=request.user, course=course)
+            if created:
+                Course.objects.filter(pk=course.pk).update(enrolled_count=F("enrolled_count") + 1)
+                transaction.on_commit(lambda: bump_version("catalog"))
     return Response({"enrolled": True, "courseId": course.slug})
 
 

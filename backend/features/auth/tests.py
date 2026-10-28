@@ -633,3 +633,17 @@ class AuthThrottlingTests(ApiTestCase):
         self.assertEqual(client.post("/api/auth/refresh", {"refreshToken": "x"}, format="json").status_code, 429)
         fresh = api_client()
         self.assertEqual(fresh.post("/api/auth/refresh", {"refreshToken": "x"}, format="json").status_code, 401)
+
+
+class SessionQueryGuardTests(ApiTestCase):
+    """Phase 6 tripwire: the device list is one query beyond the auth pair."""
+
+    def test_my_sessions_is_two_queries_beyond_the_auth_pair(self):
+        user = make_user()
+        # The second device first — open_session keeps only the newest active,
+        # so authenticating last leaves the client's own session live.
+        services.open_session(user, FakeRequest(user_agent="Other-Device/1.0"), "dev")
+        authenticate(self.client, user)
+        with self.assertNumQueries(3):  # auth + touch + the device list
+            body = self.client.get("/api/auth/sessions").json()
+        self.assertEqual(len(body["sessions"]), 2)
