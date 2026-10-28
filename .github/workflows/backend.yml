@@ -45,6 +45,11 @@ jobs:
       - name: Django system checks
         run: python manage.py check
 
+      # Every view pins its shapes with @extend_schema; a rotting annotation
+      # (renamed serializer, dropped param) degrades the spec before CI.
+      - name: OpenAPI schema generates (catches annotation rot)
+        run: python manage.py spectacular --fail-on-warn --file /tmp/openapi.yaml
+
       - name: Models ⇄ migrations agree
         run: python manage.py makemigrations --check --dry-run
 

@@ -3,6 +3,7 @@ request-id + metrics middleware, and the liveness/readiness endpoints."""
 
 from __future__ import annotations
 
+import importlib
 import json
 import logging
 import tempfile
@@ -13,6 +14,8 @@ from unittest import mock
 from django.conf import settings
 from django.http import JsonResponse
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.urls import resolve
+from rest_framework.test import APIClient
 
 from config.logging import JsonConsoleFormatter, RequestContextFilter, reset_request_id, set_request_id
 from config.middleware import (
@@ -25,6 +28,7 @@ from config.middleware import (
 )
 from config.settings import resolve_sqlite_path
 from config.views import healthz, readyz, root
+from features.common.testing import ALLOWED_ORIGIN
 
 
 class ResolveSqlitePathTests(SimpleTestCase):
@@ -279,3 +283,120 @@ class PrivateCacheMiddlewareTests(SimpleTestCase):
     def test_public_routes_are_left_to_their_views(self):
         self.assertNotIn("Cache-Control", self._response("/api/catalog"))
         self.assertNotIn("Cache-Control", self._response("/api/auth/refresh"))
+
+
+class SchemaEndpointTests(TestCase):
+    """`/api/schema` renders the contract; the docs page wraps it; both are read-only."""
+
+    def setUp(self) -> None:
+        self.client = APIClient()
+
+    def test_the_schema_answers_yaml_without_an_origin(self):
+        response = self.client.get("/api/schema")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("application/vnd.oai.openapi", response.headers["Content-Type"])
+        self.assertIn("operationId: catalog_list", response.content.decode())
+
+    def test_the_swagger_page_answers_html(self):
+        response = self.client.get("/api/schema/docs")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.headers["Content-Type"])
+
+    def test_every_documented_operation_lists_the_error_envelope(self):
+        # The spec itself: the shared Error component exists and every
+        # operation's 400/401/403/404/429 rows reference it (spot-check).
+        text = self.client.get("/api/schema").content.decode()
+        self.assertIn("Error:", text)
+        for status_code in ("'400'", "'401'", "'403'", "'404'", "'429'"):
+            self.assertIn(f"{status_code}:", text)
+
+
+class OriginGateStillEnforcedTests(TestCase):
+    """The schema exemptions are exactly that — the rest of /api/ stays gated."""
+
+    def test_a_no_origin_request_to_a_real_endpoint_is_still_403(self):
+        self.assertEqual(APIClient().get("/api/catalog").status_code, 403)
+
+    def test_an_allowed_origin_still_passes(self):
+        self.assertEqual(APIClient().get("/api/catalog", HTTP_ORIGIN=ALLOWED_ORIGIN).status_code, 200)
+
+
+# (urls module, a sample path under /api/, the url_name it must resolve to).
+MOUNTED = [
+    ("config.urls", "/api/schema", "schema"),
+    ("config.urls", "/api/schema/docs", "schema-docs"),
+    ("features.auth.urls", "/api/auth/config", "auth-config"),
+    ("features.catalog.urls", "/api/catalog", "catalog-list"),
+    ("features.catalog.urls", "/api/catalog/filters", "catalog-filters"),
+    ("features.courses.urls", "/api/problems", "problems-list"),
+    ("features.courses.urls", "/api/courses/any-slug", "course-detail"),
+    ("features.scholarships.urls", "/api/scholarships/any-slug", "scholarship-detail"),
+    ("features.dashboard.urls", "/api/dashboard", "dashboard-summary"),
+    ("features.dashboard.urls", "/api/dashboard/enrolled", "dashboard-enrolled"),
+    ("features.home.urls", "/api/home", "home"),
+    ("features.events.urls", "/api/events", "events-list"),
+    ("features.competitions.urls", "/api/competitions", "competitions-list"),
+    ("features.profile.urls", "/api/profile", "profile"),
+    ("features.adminconsole.urls", "/api/admin/overview", "admin-overview"),
+    ("features.adminconsole.urls", "/api/admin/maintenance/cleanup", "admin-maintenance-cleanup"),
+    ("features.videohosting.urls", "/api/videos/providers", "videohosting-providers"),
+    ("features.videohosting.urls", "/api/videos/any-slug", "videohosting-meta"),
+    (
+        "features.videohosting.console.urls",
+        "/api/admin/video-assets/upload",
+        "admin-video-asset-upload",
+    ),
+]
+
+# Every urls module whose sibling ordering the shadow check walks.
+URLCONF_MODULES = [
+    "config.urls",
+    "features.auth.urls",
+    "features.catalog.urls",
+    "features.courses.urls",
+    "features.scholarships.urls",
+    "features.dashboard.urls",
+    "features.home.urls",
+    "features.events.urls",
+    "features.competitions.urls",
+    "features.profile.urls",
+    "features.adminconsole.urls",
+    "features.videohosting.urls",
+    "features.videohosting.console.urls",
+]
+
+
+class MountedRoutesTests(TestCase):
+    """Every feature route is mounted where the frontend expects it."""
+
+    def test_every_pinned_path_resolves_to_its_url_name(self):
+        for module, sample_path, url_name in MOUNTED:
+            with self.subTest(module=module, path=sample_path):
+                self.assertEqual(resolve(sample_path).url_name, url_name)
+
+
+class StaticBeforeParameterizedTests(TestCase):
+    """A static sibling must never be shadowed by an earlier parameterized one.
+
+    The regression this mechanizes: `videos/<slug:slug>` before
+    `videos/providers` turned the providers list into meta's 404.
+    """
+
+    def test_no_earlier_parameterized_pattern_matches_any_static_path(self):
+        for module_name in URLCONF_MODULES:
+            with self.subTest(urlconf=module_name):
+                patterns = importlib.import_module(module_name).urlpatterns
+                parameterized = [(i, p) for i, p in enumerate(patterns) if "<" in str(p.pattern)]
+                for j, static_pattern in enumerate(patterns):
+                    route = str(static_pattern.pattern)
+                    if "<" in route:
+                        continue
+                    for i, earlier in parameterized:
+                        if i >= j:
+                            break
+                        with self.subTest(module=module_name, static=route, shadowed_by=str(earlier.pattern)):
+                            self.assertFalse(
+                                earlier.pattern.regex.fullmatch(route),
+                                f"`{route}` is shadowed by the earlier `{earlier.pattern}` "
+                                f"— static paths must be declared first ({module_name}).",
+                            )

@@ -2,6 +2,7 @@ asgiref==3.12.1
 Django==6.1.2
 django-cors-headers==4.9.0
 djangorestframework==3.18.3
+drf-spectacular==0.30.0
 firebase-admin==6.6.0
 gunicorn==26.2.0
 psycopg[binary]==3.3.6

@@ -91,6 +91,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
     # Shared, non-feature code (abstract models + management commands).
     "features.common",
     # Feature apps — one folder per product feature, mirroring the frontend.
@@ -329,7 +330,25 @@ REST_FRAMEWORK = {
     # with a throttle_scope and lets the rest through untouched.
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
     "DEFAULT_THROTTLE_RATES": SCOPED_RATES,
+    # The schema class behind /api/schema — every view pins its request and
+    # response shapes with @extend_schema, so the spec stays the contract.
+    # ContractAutoSchema appends the shared error envelope to every operation.
+    "DEFAULT_SCHEMA_CLASS": "features.common.schemas.ContractAutoSchema",
     "EXCEPTION_HANDLER": "features.common.errors.api_exception_handler",
+}
+
+# /api/schema + Swagger UI (config/urls.py). The spec is generated from the
+# views' @extend_schema annotations; keep it split into reusable components
+# so generated frontend types stay named and stable.
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Khawarizm Academy API",
+    "DESCRIPTION": "The SPA's backend contract: one error envelope "
+    "`{detail, code, fields?}`, list responses wrapped as `{items: [...]}`.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    # The maintenance cron's 202 body is an inline job status, not a resource.
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 
 # Firebase. Two halves that must agree:

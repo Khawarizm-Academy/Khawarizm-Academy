@@ -11,7 +11,9 @@ from datetime import timedelta
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema, inline_serializer
 from rest_framework import exceptions, status
+from rest_framework import serializers as ser
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -31,7 +33,18 @@ from features.common.messages import (
     ADMIN_USER_NOT_FOUND,
     SESSION_NOT_FOUND,
 )
+from features.common.schemas import ErrorSerializer
 from features.common.throttling import scoped_throttle
+
+# The cron/staff trigger's 202 body — a job status resource, not a content row.
+inline_cleanup_status = inline_serializer(
+    "MaintenanceCleanupStatus",
+    fields={
+        "id": ser.UUIDField(help_text="The MaintenanceRun row id."),
+        "status": ser.ChoiceField(choices=["done", "skipped"]),
+        "deleted": ser.DictField(required=False, child=ser.IntegerField(), help_text="Per-family delete counts."),
+    },
+)
 
 PAGE_SIZE = 20
 
@@ -60,6 +73,13 @@ def _page(queryset, request):
     return {"total": total, "page": page, "pageSize": PAGE_SIZE, "results": rows}
 
 
+@extend_schema(
+    operation_id="admin_overview",
+    summary="Headline counts: users, sessions, activity, content totals.",
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{users, sessions, activity, content}`")
+    },
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -96,6 +116,37 @@ def overview(request):
     )
 
 
+@extend_schema(
+    methods=["GET"],
+    operation_id="admin_users_list",
+    summary="Paged, filterable user list.",
+    parameters=[
+        OpenApiParameter("role", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False),
+        OpenApiParameter(
+            "q", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Email/full-name search."
+        ),
+        OpenApiParameter("page", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+    ],
+    request=None,
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{total, page, pageSize, results: [UserRow]}`"),
+    },
+)
+@extend_schema(
+    methods=["POST"],
+    operation_id="admin_users_create",
+    summary="Create a user account.",
+    request=inline_serializer(
+        "AdminUserCreateRequest",
+        fields={
+            "email": ser.EmailField(),
+            "fullName": ser.CharField(),
+            "role": ser.ChoiceField(choices=["student", "instructor", "admin"], required=False),
+            "password": ser.CharField(required=False),
+        },
+    ),
+    responses={201: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The created UserRow.")},
+)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -123,6 +174,43 @@ def users(request):
     )
 
 
+@extend_schema(
+    methods=["GET"],
+    operation_id="admin_user_read",
+    summary="One account's detail.",
+    parameters=[OpenApiParameter("user_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+    request=None,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The UserRow.")},
+)
+@extend_schema(
+    methods=["PATCH"],
+    operation_id="admin_user_update",
+    summary="Edit a subset of one account.",
+    description="Moves through the account services (role sync, session revocation, audit events).",
+    parameters=[OpenApiParameter("user_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+    request=inline_serializer(
+        "AdminUserPatchRequest",
+        fields={
+            "fullName": ser.CharField(required=False, allow_blank=True),
+            "phone": ser.CharField(required=False, allow_blank=True),
+            "language": ser.CharField(required=False, allow_blank=True),
+            "timezone": ser.CharField(required=False, allow_blank=True),
+            "isStaff": ser.BooleanField(required=False),
+        },
+    ),
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The updated UserRow.")},
+)
+@extend_schema(
+    methods=["DELETE"],
+    operation_id="admin_user_delete",
+    summary="Delete an account.",
+    parameters=[OpenApiParameter("user_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+    request=None,
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{deleted: true, id}`"),
+        204: OpenApiResponse(description="Deleted."),
+    },
+)
 @api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -140,6 +228,20 @@ def user_detail(request, user_id):
     return Response(serializers.admin_user_detail(user, request.auth.id))
 
 
+@extend_schema(
+    operation_id="admin_user_set_role",
+    summary="Promote or demote a role (an admin cannot change their own).",
+    parameters=[OpenApiParameter("user_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+    request=inline_serializer(
+        "AdminRoleChange", fields={"role": ser.ChoiceField(choices=["student", "instructor", "admin"])}
+    ),
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The updated user profile."),
+        400: OpenApiResponse(
+            response=ErrorSerializer, description="`invalid_parameter` — unknown role or self-change."
+        ),
+    },
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -152,6 +254,20 @@ def set_role(request, user_id):
     return Response(user_profile(updated))
 
 
+@extend_schema(
+    operation_id="admin_sessions",
+    summary="Every device session across every user, active first.",
+    parameters=[
+        OpenApiParameter(
+            "active", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="`true|false`"
+        ),
+        OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False),
+        OpenApiParameter("page", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+    ],
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{total, page, pageSize, results: [Session]}`"),
+    },
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -169,6 +285,15 @@ def sessions(request):
     return Response(body)
 
 
+@extend_schema(
+    operation_id="admin_session_revoke",
+    summary="Force-logout one device anywhere in the fleet.",
+    request=None,
+    parameters=[OpenApiParameter("session_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The revoked session's payload."),
+    },
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -188,6 +313,18 @@ def revoke_session(request, session_id):
     return Response(session_with_user(session, request.auth.id))
 
 
+@extend_schema(
+    operation_id="admin_analytics_logins",
+    summary="Daily login counts for the activity chart.",
+    parameters=[
+        OpenApiParameter(
+            "days", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="1–90, default 14."
+        )
+    ],
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{days, points: [{date, count}]}`"),
+    },
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -205,6 +342,15 @@ def logins_series(request):
     return Response({"days": days, "points": [{"date": row["day"].isoformat(), "count": row["count"]} for row in rows]})
 
 
+@extend_schema(
+    operation_id="admin_analytics_devices",
+    summary="Session footprint breakdown by OS / browser / device type.",
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT, description="`{os: [...], browser: [...], deviceType: [...]}`"
+        ),
+    },
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -213,6 +359,22 @@ def devices(request):
     return Response({"os": _breakdown("os"), "browser": _breakdown("browser"), "deviceType": _breakdown("device_type")})
 
 
+@extend_schema(
+    operation_id="admin_events",
+    summary="The most recent audit rows.",
+    parameters=[
+        OpenApiParameter(
+            "kind",
+            OpenApiTypes.STR,
+            OpenApiParameter.QUERY,
+            required=False,
+            description="`login|logout|refresh|revoked|rejected`",
+        )
+    ],
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{results: [AuditEvent]}` — latest 100."),
+    },
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -225,6 +387,14 @@ def events(request):
     return Response({"results": [serializers.event_row(e, include_email=True) for e in queryset[:100]]})
 
 
+@extend_schema(
+    operation_id="admin_content_schema",
+    summary="The managed content types and their editable fields.",
+    description="Drives every admin form — the SPA renders from this, so field lists live here only.",
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{types: {...}, userFields: [...]}`"),
+    },
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -233,6 +403,31 @@ def content_schema(request):
     return Response({"types": serializers.content_types_payload(), "userFields": list(USER_FIELDS)})
 
 
+@extend_schema(
+    methods=["GET"],
+    operation_id="admin_content_list",
+    summary="Paged content rows for one managed type.",
+    description="`type_key` is `courses|scholarships|events|competitions`; unknown keys are 400s "
+    "naming the valid ones.",
+    parameters=[
+        OpenApiParameter("type_key", OpenApiTypes.STR, OpenApiParameter.PATH),
+        OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False),
+        OpenApiParameter("page", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+    ],
+    request=None,
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{total, page, pageSize, results: [Row]}`"),
+    },
+)
+@extend_schema(
+    methods=["POST"],
+    operation_id="admin_content_create",
+    summary="Create a content row.",
+    description="The body is the type's editable fields — the schema endpoint owns the list.",
+    parameters=[OpenApiParameter("type_key", OpenApiTypes.STR, OpenApiParameter.PATH)],
+    request=OpenApiTypes.OBJECT,
+    responses={201: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The created row.")},
+)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -254,6 +449,32 @@ def content_items(request, type_key):
     return Response(body)
 
 
+@extend_schema(
+    methods=["PATCH"],
+    operation_id="admin_content_update",
+    summary="Edit one content row.",
+    description="Partial: the body carries only the changed editable fields — the schema endpoint owns the list.",
+    parameters=[
+        OpenApiParameter("type_key", OpenApiTypes.STR, OpenApiParameter.PATH),
+        OpenApiParameter("pk", OpenApiTypes.UUID, OpenApiParameter.PATH),
+    ],
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The updated row.")},
+)
+@extend_schema(
+    methods=["DELETE"],
+    operation_id="admin_content_delete",
+    summary="Delete one content row.",
+    parameters=[
+        OpenApiParameter("type_key", OpenApiTypes.STR, OpenApiParameter.PATH),
+        OpenApiParameter("pk", OpenApiTypes.UUID, OpenApiParameter.PATH),
+    ],
+    request=None,
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{deleted: true, id}`"),
+        204: OpenApiResponse(description="Deleted."),
+    },
+)
 @api_view(["PATCH", "DELETE"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -270,6 +491,29 @@ def content_detail(request, type_key, pk):
     return Response(serializers.content_row(spec, updated))
 
 
+@extend_schema(
+    methods=["GET"],
+    operation_id="admin_maintenance_cleanup_status",
+    summary="Run the retention cleanup inline (the cron's method).",
+    description="Staff session bearer or the platform cron's `Bearer $CRON_SECRET`; anything else 401/403. "
+    "Idempotent; a still-running previous pass answers `status: skipped`.",
+    request=None,
+    responses={
+        202: OpenApiResponse(response=inline_cleanup_status, description="`{id, status: done|skipped, deleted?}`"),
+        403: OpenApiResponse(response=ErrorSerializer, description="`permission_denied` — neither staff nor cron."),
+    },
+)
+@extend_schema(
+    methods=["POST"],
+    operation_id="admin_maintenance_cleanup_trigger",
+    summary="Trigger the retention cleanup inline.",
+    description="Same gate and body as the GET — both exist because platform crons send GET and dashboards send POST.",
+    request=None,
+    responses={
+        202: OpenApiResponse(response=inline_cleanup_status, description="`{id, status: done|skipped, deleted?}`"),
+        403: OpenApiResponse(response=ErrorSerializer, description="`permission_denied` — neither staff nor cron."),
+    },
+)
 @api_view(["POST", "GET"])
 @authentication_classes([CronSecretAuthentication, AccessTokenAuthentication])
 @permission_classes([AllowAny])

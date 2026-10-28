@@ -62,6 +62,11 @@ class ApiOriginRestrictionMiddleware(MiddlewareMixin):
     EXEMPT_PATHS = (
         "/api/admin/video-drive/oauth/callback",
         "/api/admin/maintenance/cleanup",
+        # The generated contract: read-only docs with no auth, fetched by
+        # browsers and curl scripts that send no Origin (same rule as the
+        # Drive callback — protection is the read-only surface, not the gate).
+        "/api/schema",
+        "/api/schema/docs",
         "/healthz",
         "/readyz",
     )

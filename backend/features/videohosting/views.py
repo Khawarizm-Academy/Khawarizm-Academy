@@ -11,6 +11,7 @@ from typing import Any
 
 from django.http import HttpResponse, StreamingHttpResponse
 from django.urls import reverse
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework import exceptions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -36,12 +37,19 @@ from features.common.messages import (
     provider_no_direct,
     upstream_fetch_failed,
 )
+from features.common.schemas import ErrorSerializer
 from features.common.throttling import scoped_throttle
 from features.videohosting import tokens
 from features.videohosting.models import VideoAsset, VideoSegment
 from features.videohosting.packaging import TOKEN_PLACEHOLDER
 from features.videohosting.providers import provider_listing, spec_for
 from features.videohosting.serializers import asset_meta, minted_token
+
+_M3U8 = "application/vnd.apple.mpegurl"
+_PLAYLIST_RESPONSE = OpenApiResponse(
+    response=OpenApiTypes.STR,
+    description="The playlist text — `__TOKEN__` placeholders rewritten per request.",
+)
 
 
 class PlaybackTokenInvalid(exceptions.APIException):
@@ -96,6 +104,19 @@ def _refresh_segment(segment, provider) -> str:
     return fp or ""
 
 
+@extend_schema(
+    operation_id="video_meta",
+    summary="Readiness and the rendition ladder for one asset.",
+    description="Polled before minting a playback grant; unknown slugs are 404 `not_found`.",
+    auth=None,
+    parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT,
+            description="`{slug, title, status, renditions: [...]}` — status gates the token mint.",
+        ),
+    },
+)
 @api_view(["GET"])
 def video_meta_view(request: Any, slug: str) -> Response:
     """Readiness and the rendition ladder — polled before minting a grant."""
@@ -105,6 +126,21 @@ def video_meta_view(request: Any, slug: str) -> Response:
     return Response(asset_meta(asset))
 
 
+@extend_schema(
+    operation_id="video_token",
+    summary="Mint a short-lived playback grant.",
+    request=None,
+    description="Bound to the caller's IP and account, TTL from `STREAM_TOKEN_TTL_HOURS`. The `mode` in the "
+    "payload branches the player: `hls` (a `masterUrl`) or `raw` (a `playUrl` to the gated raw route).",
+    parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT,
+            description="`{token, url, mode, expiresAt, ...}` — the grant shown once.",
+        ),
+        409: OpenApiResponse(response=ErrorSerializer, description="`not_ready` — the asset is not `ready` yet."),
+    },
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @scoped_throttle("video_token")
@@ -126,6 +162,14 @@ def video_token_view(request: Any, slug: str) -> Response:
     return Response(minted_token(asset, raw, row, url))
 
 
+@extend_schema(
+    operation_id="stream_master",
+    summary="The HLS master playlist for a grant.",
+    description="Token-authenticated (hls.js cannot send headers); a dead or foreign-IP token is 403 `token_invalid`.",
+    auth=None,
+    parameters=[OpenApiParameter("token", OpenApiTypes.STR, OpenApiParameter.PATH)],
+    responses={(200, _M3U8): _PLAYLIST_RESPONSE},
+)
 @api_view(["GET"])
 def master_playlist_view(request: Any, token: str):
     """The master playlist with the caller's token baked into every variant URI."""
@@ -133,6 +177,16 @@ def master_playlist_view(request: Any, token: str):
     return _playlist_response(row.asset.master_playlist.replace(TOKEN_PLACEHOLDER, token))
 
 
+@extend_schema(
+    operation_id="stream_media",
+    summary="One rendition's media playlist.",
+    auth=None,
+    parameters=[
+        OpenApiParameter("token", OpenApiTypes.STR, OpenApiParameter.PATH),
+        OpenApiParameter("quality", OpenApiTypes.STR, OpenApiParameter.PATH),
+    ],
+    responses={(200, _M3U8): _PLAYLIST_RESPONSE},
+)
 @api_view(["GET"])
 def media_playlist_view(request: Any, token: str, quality: str):
     """One rendition playlist with token-scoped segment and key URIs."""
@@ -143,6 +197,21 @@ def media_playlist_view(request: Any, token: str, quality: str):
     return _playlist_response(rendition.playlist.replace(TOKEN_PLACEHOLDER, token))
 
 
+@extend_schema(
+    operation_id="stream_key",
+    summary="The AES-128 key bytes for one rendition.",
+    description="IP-bound and expiring; served `no-store` — a leaked URL exposes encrypted bytes only.",
+    auth=None,
+    parameters=[
+        OpenApiParameter("token", OpenApiTypes.STR, OpenApiParameter.PATH),
+        OpenApiParameter("quality", OpenApiTypes.STR, OpenApiParameter.PATH),
+    ],
+    responses={
+        ("200", "application/octet-stream"): OpenApiResponse(
+            response=OpenApiTypes.BINARY, description="The 16-byte key."
+        ),
+    },
+)
 @api_view(["GET"])
 def key_view(request: Any, token: str, quality: str):
     """The 16-byte AES-128 key for one rendition — the only secret the player needs."""
@@ -155,6 +224,22 @@ def key_view(request: Any, token: str, quality: str):
     return response
 
 
+@extend_schema(
+    operation_id="stream_segment",
+    summary="One 6s encrypted segment.",
+    description="Resolves a fresh provider path per view and **302s** straight to the CDN — "
+    "the backend never proxies bytes.",
+    auth=None,
+    parameters=[
+        OpenApiParameter("token", OpenApiTypes.STR, OpenApiParameter.PATH),
+        OpenApiParameter("quality", OpenApiTypes.STR, OpenApiParameter.PATH),
+        OpenApiParameter("index", OpenApiTypes.INT, OpenApiParameter.PATH),
+    ],
+    responses={
+        ("200", "video/mp2t"): OpenApiResponse(response=OpenApiTypes.BINARY, description="The encrypted .ts bytes."),
+        302: OpenApiResponse(description="Redirect to the provider/CDN URL."),
+    },
+)
 @api_view(["GET"])
 def segment_view(request: Any, token: str, quality: str, index: int):
     """Resolve one segment and 302 the browser straight to the provider's CDN."""
@@ -182,6 +267,22 @@ def segment_view(request: Any, token: str, quality: str, index: int):
     return response
 
 
+@extend_schema(
+    operation_id="video_raw",
+    summary="The gated raw source for an un-packaged asset.",
+    description="Drive assets watch through here when HLS packaging is off; the token rides in the query. "
+    "Range requests pass through to the provider's media API.",
+    auth=None,
+    parameters=[
+        OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH),
+        OpenApiParameter("token", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False),
+        OpenApiParameter("Range", OpenApiTypes.STR, OpenApiParameter.HEADER, required=False),
+    ],
+    responses={
+        ("200", "video/mp4"): OpenApiResponse(response=OpenApiTypes.BINARY, description="The source bytes."),
+        ("206", "video/mp4"): OpenApiResponse(response=OpenApiTypes.BINARY, description="The requested range."),
+    },
+)
 @api_view(["GET"])
 def raw_video_view(request: Any, slug: str):
     """Stream the un-packaged source through the platform, honoring Range.
@@ -222,6 +323,14 @@ def _stream_raw(provider_code: str, file_id: str, range_header: str):
     return http_response
 
 
+@extend_schema(
+    operation_id="video_providers",
+    summary="The public provider listing.",
+    description="Same registry logic as the admin endpoint, without the gate diagnostics.",
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{results: [Provider]}`"),
+    },
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def video_providers_list(request: Any) -> Response:
