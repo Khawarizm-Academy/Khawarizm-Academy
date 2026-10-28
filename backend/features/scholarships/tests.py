@@ -45,7 +45,7 @@ class ScholarshipViewTests(ApiTestCase):
     def test_detail_missing_slug_returns_404(self):
         response = self.client.get("/api/scholarships/missing")
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "المنحة غير موجودة"})
+        self.assertEqual(response.json(), {"detail": "المنحة غير موجودة", "code": "not_found"})
 
     def test_apply_acknowledges(self):
         make_scholarship(slug="scholarship-1")

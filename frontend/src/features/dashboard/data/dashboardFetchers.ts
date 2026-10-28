@@ -34,7 +34,7 @@ interface DashboardSummary {
 const fetchSummary = () => apiGet<DashboardSummary>('/dashboard');
 
 export const fetchEnrolledCourses = (): Promise<EnrolledCourse[]> =>
-  apiGet<EnrolledCourse[]>('/dashboard/enrolled');
+  apiGet<{ items: EnrolledCourse[] }>('/dashboard/enrolled').then((data) => data.items);
 
 export const fetchPriorityContinue = async (): Promise<PriorityContinue[]> => {
   const summary = await fetchSummary();

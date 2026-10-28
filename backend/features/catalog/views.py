@@ -13,7 +13,9 @@ from rest_framework.response import Response
 
 from features.catalog import service
 from features.common.cache import DEFAULT_TTL_SECONDS, cached, param_digest
+from features.common.errors import NotFound
 from features.common.http_cache import etag_response
+from features.common.messages import CATALOG_ITEM_NOT_FOUND
 from features.common.throttling import scoped_throttle
 
 
@@ -48,5 +50,5 @@ def catalog_detail(request: Any, slug: str) -> Response:
     """One catalog item (course or scholarship) by slug, from the cached interleave."""
     data = service.detail_item(slug)
     if data is None:
-        return Response({"detail": "العنصر غير موجود"}, status=404)
+        raise NotFound(CATALOG_ITEM_NOT_FOUND)
     return etag_response(request, data)

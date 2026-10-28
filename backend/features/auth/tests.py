@@ -201,8 +201,8 @@ class AuthViewTests(ApiTestCase):
         user = make_user()
         _, session = authenticate(self.client, user)
         body = self.client.get("/api/auth/sessions").json()
-        self.assertEqual(body["sessions"][0]["id"], str(session.id))
-        self.assertTrue(body["sessions"][0]["isCurrent"])
+        self.assertEqual(body["items"][0]["id"], str(session.id))
+        self.assertTrue(body["items"][0]["isCurrent"])
 
     def test_signed_in_elsewhere_surfaces_the_reason_code(self):
         user = make_user()
@@ -270,7 +270,7 @@ class AuthSessionLifecycleTests(ApiTestCase):
 
         body = self.client.get("/api/auth/sessions").json()
 
-        self.assertEqual([row["id"] for row in body["sessions"]], [str(own_session.id)])
+        self.assertEqual([row["id"] for row in body["items"]], [str(own_session.id)])
 
     def test_you_can_only_revoke_your_own_devices(self):
         victim_session, _, _ = services.open_session(make_user(email="victim@example.com"), FakeRequest(), "password")
@@ -622,9 +622,9 @@ class AuthThrottlingTests(ApiTestCase):
         response = self.client.post("/api/auth/refresh", {"refreshToken": "x"}, format="json")
         self.assertEqual(response.status_code, 429)
         self.assertIn("Retry-After", response.headers)
-        # DRF's default envelope is `{"detail": ...}` only — the lockout is the
-        # 429 that additionally carries `code: login_locked`.
-        self.assertNotIn("code", response.json())
+        # The scope throttle's code is `throttled` — the lockout's 429 carries
+        # `code: login_locked` instead.
+        self.assertEqual(response.json()["code"], "throttled")
 
     def test_a_fresh_minute_lets_the_same_client_back_in(self):
         client = api_client()  # clearing the throttle cache = a new counting minute
@@ -646,4 +646,4 @@ class SessionQueryGuardTests(ApiTestCase):
         authenticate(self.client, user)
         with self.assertNumQueries(3):  # auth + touch + the device list
             body = self.client.get("/api/auth/sessions").json()
-        self.assertEqual(len(body["sessions"]), 2)
+        self.assertEqual(len(body["items"]), 2)

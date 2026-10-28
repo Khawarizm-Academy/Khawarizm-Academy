@@ -9,24 +9,16 @@ from rest_framework import authentication, exceptions
 from features.auth.models import UserSession
 from features.auth.tokens import decode_access_token
 from features.common.choices import SessionRevokeReason
-
-# Reason code -> the Arabic line the SPA shows the user.
-REASON_MESSAGES = {
-    "token_expired": "انتهت صلاحية الجلسة، يرجى تسجيل الدخول من جديد.",
-    "token_invalid": "رمز الدخول غير صالح.",
-    "signed_in_elsewhere": "تم تسجيل الدخول من جهاز آخر، فتم إنهاء هذه الجلسة.",
-    "logout": "تم تسجيل الخروج من هذه الجلسة.",
-    "expired": "انتهت صلاحية الجلسة.",
-    "revoked_by_admin": "تم إنهاء الجلسة بواسطة الإدارة.",
-    "session_missing": "هذه الجلسة لم تعد موجودة.",
-}
+from features.common.messages import REASON_MESSAGES, SESSION_INVALID
 
 
 class SessionAuthError(exceptions.AuthenticationFailed):
     """401 carrying a machine-readable `code` the SPA reacts to."""
 
     def __init__(self, code: str):
-        super().__init__({"code": code, "detail": REASON_MESSAGES.get(code, "الجلسة غير صالحة.")})
+        super().__init__(REASON_MESSAGES.get(code, SESSION_INVALID))
+        # The handler reads this instead of DRF's `not_authenticated` default.
+        self.code = code
 
 
 class AccessTokenAuthentication(authentication.BaseAuthentication):

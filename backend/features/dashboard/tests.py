@@ -112,14 +112,14 @@ class DashboardScopingTests(ApiTestCase):
         other = make_user(email="other@example.com")
         Enrollment.objects.create(user=other, course=make_course())
         authenticate(self.client, make_user())
-        self.assertEqual(self.client.get("/api/dashboard/enrolled").json(), [])
+        self.assertEqual(self.client.get("/api/dashboard/enrolled").json(), {"items": []})
 
     def test_enrolled_only_returns_the_current_user(self):
         user = make_user()
         Enrollment.objects.create(user=user, course=make_course())
         authenticate(self.client, user)
         body = self.client.get("/api/dashboard/enrolled").json()
-        self.assertEqual([row["id"] for row in body], ["course-1"])
+        self.assertEqual([row["id"] for row in body["items"]], ["course-1"])
 
 
 class DashboardSectionViewTests(ApiTestCase):
@@ -200,7 +200,7 @@ class DashboardQueryGuardTests(ApiTestCase):
         authenticate(self.client, user)
         with self.assertNumQueries(3):  # auth + touch + one select_related query
             body = self.client.get("/api/dashboard/enrolled").json()
-        self.assertEqual([row["id"] for row in body], ["course-1", "course-2"])
+        self.assertEqual([row["id"] for row in body["items"]], ["course-1", "course-2"])
 
     def test_saved_is_two_queries_beyond_the_auth_pair(self):
         user = make_user()

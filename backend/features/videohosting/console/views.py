@@ -16,6 +16,23 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from features.auth.permissions import IsAdminRole
+from features.common.errors import (
+    Conflict,
+    InvalidParameter,
+    NotFound,
+    PayloadTooLarge,
+)
+from features.common.messages import (
+    ADMIN_VIDEO_NOT_FOUND,
+    CREATE_FAILED,
+    FILE_TOO_LARGE,
+    MISSING_FILE_AND_SLUG,
+    MISSING_SLUG,
+    MISSING_USE_FFMPEG,
+    UPLOAD_IN_PROGRESS,
+    provider_upload_unready,
+    unknown_provider,
+)
 from features.videohosting import diagnostics, drive_oauth, ingest
 from features.videohosting.models import VideoAsset, VideoProvider, VideoSystemConfig
 from features.videohosting.providers import ensure_defaults, provider_listing
@@ -24,22 +41,18 @@ from features.videohosting.providers import ensure_defaults, provider_listing
 def _resolve_provider(provider_code):
     """Resolve one provider code against the registry and its env checks.
 
-    Returns ``(provider, None)`` on success or ``(None, ready Response)``.
-    An unknown code fails loudly instead of silently falling back.
+    An empty code falls back to the default enabled provider; an unknown or
+    unready one raises (the envelope handler renders the 400). The provider
+    becomes selectable the moment its own env checks pass.
     """
     if not provider_code:
-        provider = VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
-        return provider, None
+        return VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
     provider = VideoProvider.objects.filter(code=provider_code).first()
     if provider is None:
-        return None, Response({"detail": f"مزود غير معروف: {provider_code}."}, status=status.HTTP_400_BAD_REQUEST)
-    # The provider becomes selectable the moment its own env checks pass.
+        raise InvalidParameter(unknown_provider(provider_code))
     if not diagnostics.provider_available(provider.code):
-        return None, Response(
-            {"detail": f"الرفع عبر {provider.name} غير جاهز — {diagnostics.provider_reason(provider.code)}"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-    return provider, None
+        raise InvalidParameter(provider_upload_unready(provider.name, diagnostics.provider_reason(provider.code)))
+    return provider
 
 
 def _asset_row(asset, *, include_error: bool = False) -> dict:
@@ -94,10 +107,8 @@ def video_assets(request):
         data = request.data or {}
         slug = data.get("slug")
         if not slug:
-            return Response({"detail": "slug مطلوب."}, status=status.HTTP_400_BAD_REQUEST)
-        provider, refusal = _resolve_provider(data.get("provider"))
-        if refusal is not None:
-            return refusal
+            raise InvalidParameter(MISSING_SLUG)
+        provider = _resolve_provider(data.get("provider"))
         try:
             asset = VideoAsset.objects.create(
                 slug=slug,
@@ -115,8 +126,8 @@ def video_assets(request):
                 },
                 status=status.HTTP_201_CREATED,
             )
-        except Exception:
-            return Response({"detail": "تعذّر الإنشاء."}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:
+            raise InvalidParameter(CREATE_FAILED) from exc
     assets = VideoAsset.objects.select_related("provider").prefetch_related("renditions").all()[:100]
     return Response({"results": [_asset_row(a, include_error=True) for a in assets]})
 
@@ -128,7 +139,7 @@ def video_drive_oauth_start(request):
     try:
         return Response({"authUrl": drive_oauth.consent_url()})
     except ValueError as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        raise InvalidParameter(str(exc)) from exc
 
 
 @api_view(["GET"])
@@ -173,22 +184,15 @@ def video_asset_upload(request):
     uploaded = request.data.get("file")
     slug = (request.data.get("slug") or "").strip()
     if uploaded is None or not slug:
-        return Response({"detail": "الملف و معرّف الفيديو مطلوبان."}, status=status.HTTP_400_BAD_REQUEST)
+        raise InvalidParameter(MISSING_FILE_AND_SLUG)
     if uploaded.size > VIDEO_UPLOAD_MAX_BYTES:
-        return Response(
-            {"detail": "الملف أكبر من 2GB — قسّمه أو استخدم ingest_video من الخادم."},
-            status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-        )
+        raise PayloadTooLarge(FILE_TOO_LARGE)
 
-    provider, refusal = _resolve_provider(request.data.get("provider"))
-    if refusal is not None:
-        return refusal
+    provider = _resolve_provider(request.data.get("provider"))
 
     existing = VideoAsset.objects.filter(slug=slug).first()
     if existing is not None and existing.status in ("uploading", "processing"):
-        return Response(
-            {"detail": "هذا المعرّف في منتصف رفع آخر — انتظر انتهاء المعالجة."}, status=status.HTTP_409_CONFLICT
-        )
+        raise Conflict(UPLOAD_IN_PROGRESS)
 
     file_name = getattr(uploaded, "name", "") or "video.bin"
     temp_path = Path(gettempdir()) / f"kh-video-{uuid.uuid4().hex}{Path(file_name).suffix or '.bin'}"
@@ -242,7 +246,7 @@ def video_asset_detail(request, asset_id):
     """GET tracker shape / DELETE the asset."""
     asset = VideoAsset.objects.filter(pk=asset_id).first()
     if asset is None:
-        return Response({"detail": "غير موجود."}, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(ADMIN_VIDEO_NOT_FOUND)
     if request.method == "DELETE":
         asset.delete()
         return Response({"deleted": True, "id": str(asset_id)})
@@ -269,6 +273,6 @@ def video_system_config(request):
             config.use_ffmpeg = use_ffmpeg
             config.save(update_fields=["use_ffmpeg", "updated_at"])
             return Response({"useFfmpeg": config.use_ffmpeg})
-        return Response({"detail": "useFfmpeg مطلوب و يجب أن يكون true أو false."}, status=status.HTTP_400_BAD_REQUEST)
+        raise InvalidParameter(MISSING_USE_FFMPEG)
     config = VideoSystemConfig.get_instance()
     return Response({"useFfmpeg": config.use_ffmpeg})

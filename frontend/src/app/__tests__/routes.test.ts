@@ -18,7 +18,8 @@ describe('routes', () => {
 
     expect(admin?.meta.requiresAdmin).toBe(true);
     expect(admin?.meta.hideShell).toBe(true);
-    expect(admin?.meta.activeTab).toBe('overview');
+    // Off the site shell: it renders its own internal tabs, so it has no nav tab.
+    expect(admin?.meta.activeTab).toBeUndefined();
   });
 
   it('marks the private pages as signed-in only, and the landing page as public', () => {

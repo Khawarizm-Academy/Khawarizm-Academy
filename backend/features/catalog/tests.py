@@ -148,7 +148,7 @@ class CatalogDetailViewTests(ApiTestCase):
     def test_missing_slug_returns_404(self):
         response = self.client.get("/api/catalog/missing")
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "العنصر غير موجود"})
+        self.assertEqual(response.json(), {"detail": "العنصر غير موجود", "code": "not_found"})
 
 
 class CatalogUrlTests(TestCase):
@@ -253,7 +253,12 @@ class CatalogHttpCacheTests(ApiTestCase):
         self.assertEqual(body["totalResults"], 2)
 
     def test_a_gzip_capable_client_receives_compressed_json(self):
-        make_course(slug="course-1")
+        # A full page of items: GZipMiddleware compresses only when strictly
+        # shorter, and its random BREACH-protection bytes (up to 100) can push
+        # a one-row body's compressed size past the plain size — flaking the
+        # header away ~20% of runs. A page-sized body always wins.
+        for index in range(7):
+            make_course(slug=f"course-{index}")
         response = self.client.get("/api/catalog", HTTP_ACCEPT_ENCODING="gzip")
         self.assertEqual(response.headers["Content-Encoding"], "gzip")
 
