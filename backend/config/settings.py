@@ -210,13 +210,27 @@ if DATABASE_URL:
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.sqlite3",
+            # The WAL-aware variant of the built-in sqlite3 engine: its
+            # test-DB clone checkpoints the -wal sidecar before the parallel
+            # runner copies the file, so every worker starts with all tables.
+            "ENGINE": "config.sqlite_backend",
             "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME, override=SQLITE_PATH),
             # The upload worker and its tracker flusher run on their own
-            # connections; Django's default shared-cache in-memory test DB
-            # fails those writes instantly with "database table is locked"
-            # (SQLITE_LOCKED ignores the busy timeout). A file-backed test DB
-            # lets contention resolve through the normal busy timeout instead.
+            # connections, and the parallel test runner multiplies readers —
+            # in default journal mode a poll-loop's reads starve the worker's
+            # writes past the busy timeout ("database table is locked",
+            # caught live in CI). WAL lets readers and the one writer proceed
+            # side by side; IMMEDIATE takes the write lock at BEGIN so a
+            # transaction never fails halfway on an upgrade (which the busy
+            # timeout does not retry).
+            "OPTIONS": {
+                "init_command": "PRAGMA journal_mode=WAL;PRAGMA busy_timeout=10000;",
+                "transaction_mode": "IMMEDIATE",
+            },
+            # Django's default shared-cache in-memory test DB fails the
+            # worker's writes instantly (SQLITE_LOCKED ignores the busy
+            # timeout). A file-backed test DB pairs with the WAL options
+            # above — contention resolves through the normal busy timeout.
             "TEST": {"NAME": str(Path(tempfile.gettempdir()) / "khawarizm-test-db.sqlite3")},
         }
     }
