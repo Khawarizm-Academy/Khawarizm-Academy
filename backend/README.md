@@ -392,6 +392,28 @@ VITE_API_BASE_URL=http://localhost:8000/api
 
 Start the backend first (`python manage.py runserver`), then `npm run dev`.
 
+## Observability
+
+Every request logs **one JSON line** to stdout: `ts`, `level`, `msg`, `logger`, `request_id`, `user_id`, `path`,
+`status`, `duration_ms`, `db_ms`, `queries` (`config/logging.py`). The shapes:
+
+- **Request id at the edge** (`config/middleware.py`): an inbound `X-Request-ID` (8–64 printable chars) is echoed on
+  the response and pinned to every log line; otherwise a `uuid4` hex is minted.
+- **Per-request metrics** (`RequestMetricsMiddleware`): one INFO line per request with query count and DB time —
+  escalated to **WARNING** above the thresholds (`SLOW_DB_SECONDS = 0.3`, `MANY_QUERIES = 25`), the N+1 tripwire.
+- Levels: DEBUG locally (`DJANGO_DEBUG=true`), INFO in production; the formatter whitelists fields, so no secrets or
+  request bodies can leak into logs.
+- Log lines carry `request_id`; grep the server log for a header value to trace one request end to end.
+
+## Health checks
+
+| Route | Meaning | Response |
+| :--- | :--- | :--- |
+| `GET /healthz` | Liveness — the process answers; touches nothing | `{"status": "ok"}` |
+| `GET /readyz` | Readiness — the database answers `SELECT 1` | `{"status": "ok", "database": "up"}` or **503** `{"database": "down"}` |
+
+Both are unauthenticated and exempt from the origin gate. The docker-compose healthcheck curls `/healthz`.
+
 ---
 
 ## Related

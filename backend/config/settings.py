@@ -14,6 +14,8 @@ from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
+from config.logging import build_logging_config
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOGGER = logging.getLogger(__name__)
 
@@ -109,6 +111,8 @@ AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    "config.middleware.RequestIDMiddleware",
+    "config.middleware.RequestMetricsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "config.middleware.ApiOriginRestrictionMiddleware",
@@ -228,6 +232,11 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# One JSON log line per request (config.logging builds the dict): request id,
+# user id, path, status, duration, query count. DEBUG level in dev, INFO prod;
+# the formatter whitelists fields so no secrets or request bodies can leak.
+LOGGING = build_logging_config(DEBUG)
 
 # The SPA calls this API from a different origin.
 CORS_ALLOWED_ORIGINS = env_list(
