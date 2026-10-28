@@ -64,6 +64,42 @@ shape change with byte-identical content (below).
   expected messages (`not_found`, `invalid_parameter`, `session_invalid`,
   `login_locked` + `Retry-After`); smoke lockout events cleared afterwards.
 
+## The CI flake — true root cause found and fixed
+
+PR #40's first `pull_request` CI run failed on
+`CatalogHttpCacheTests.test_a_gzip_capable_client_receives_compressed_json`
+(`KeyError: 'content-encoding'`), and the failure cascaded into a
+parallel-runner crash (`TypeError: cannot pickle 'traceback' object`) that
+masked it. The `push` run on the same sha passed — a per-run lottery.
+
+Instrumented reproduction (dumping the raw response per run) showed the real
+mechanism, which is **not** cache-related (`api_client()` already clears the
+app cache every test, so cross-test cache bleed was never possible):
+
+- The test's fixture was **one course** → plain body = 306 bytes.
+- `GZipMiddleware` compresses **only when strictly shorter**
+  (`if len(compressed) >= len(response.content): return response`), and its
+  BREACH defense (`max_random_bytes=100`) injects up to 100 random bytes into
+  the gzip stream.
+- 306-byte body → compressed ≈ 220 + random(0–100) → the distribution
+  straddles 306 → **~20% of runs answer uncompressed** (no `Content-Encoding`
+  header) and the header assertion fails. Confirmed: failing runs showed
+  `ENC=None` with the identical 306-byte plain body and `Vary` already
+  patched — the "shorter" rule, not the 200-byte gate, decided it.
+- In production/CI the real catalog is large, so compression always wins —
+  only this tiny test fixture sat in the danger band. Phase 5's record
+  ("suspect: GZip's min_length threshold") was close but wrong; this
+  supersedes it.
+
+**Fix** (`features/catalog/tests.py`): the gzip test now builds a full page
+(7 courses → 6-item page, ~1.8 KB plain), so compressed output wins
+decisively regardless of the random bytes. The assertion is unchanged — the
+contract it pins (`gzip-capable client → `Content-Encoding: gzip`) is intact.
+
+**Verification**: 20/20 isolated runs green; full suite serial OK; 3×
+`--parallel` (12 workers) OK; one `--parallel 4` (CI-like) OK — all 433
+tests.
+
 ## Notes for later phases
 
 - Phase 10 (`Docs/OpenAPI`) should emit this envelope as the components'
