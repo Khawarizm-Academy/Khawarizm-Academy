@@ -18,6 +18,7 @@ import type {
   AdminVideoDiagnostics,
   AdminVideoInput,
   AdminVideoProvider,
+  AdminVideoSystemConfig,
   AdminContentSchema,
   AdminContentTypeKey,
   AdminContentPage,
@@ -110,6 +111,10 @@ export interface AdminContextValue {
   /** Per-row busy state so only the affected asset spins while deleting. */
   deletingVideoId: string | null;
   deleteVideo: (id: string) => Promise<void>;
+
+  /** The global FFmpeg packaging toggle and its action. */
+  videoSystemConfig: AdminVideoSystemConfig | null;
+  updateVideoSystemConfig: (useFfmpeg: boolean) => Promise<boolean>;
 
   /** The one video currently uploading, from HTTP bytes to final ingest. */
   videoUpload: VideoUploadState | null;

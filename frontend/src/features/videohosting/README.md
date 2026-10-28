@@ -42,10 +42,14 @@ videohosting/
 ## How it works
 
 - **Grant.** `mintStreamGrant(slug)` → `POST /videos/:slug/token` returns an
-  absolute, tokenized `masterUrl`. Every mount mints a fresh grant because
-  tokens are IP-bound and expire — a cached one would be rejected later.
-- **Attach.** `useHlsPlayback` prefers native HLS (`canPlayType`), falls back to
-  `Hls.js`, and surfaces fatal errors through the returned `status`/`reload`.
+  absolute, tokenized `masterUrl` — or, for an un-packaged asset uploaded with
+  FFmpeg off, a `playUrl` to the gated raw watch route and `mode: 'raw'`. Every
+  mount mints a fresh grant because tokens are IP-bound and expire — a cached
+  one would be rejected later.
+- **Attach.** `useHlsPlayback` branches on the grant `mode` first: a raw grant
+  points `<video>.src` at the playUrl directly (no hls.js involved); otherwise
+  it prefers native HLS (`canPlayType`), falls back to `Hls.js`, and surfaces
+  fatal errors through the returned `status`/`reload`.
 - **Playback clock.** The courses `videoPlayerStore` exposes
   `bindMediaElement` / `syncFromMedia`: when a real `<video>` is bound the store
   mirrors the element (no simulated ticker), and every control (`play`, `skip`,

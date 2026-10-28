@@ -17,6 +17,7 @@ import type {
   AdminVideoDiagnostics,
   AdminVideoInput,
   AdminVideoProvider,
+  AdminVideoSystemConfig,
   AdminContentSchema,
   AdminContentTypeKey,
   AdminContentPage,
@@ -92,6 +93,13 @@ export const fetchVideoAssets = async () =>
 /** The staged validation; `deep` also calls each provider's live API. */
 export const fetchVideoDiagnostics = (deep: boolean) =>
   apiGet<AdminVideoDiagnostics>(`/admin/video-diagnostics${buildQuery({ deep: deep ? 'true' : undefined })}`);
+
+/** Read the global video system config (FFmpeg packaging toggle). */
+export const fetchVideoSystemConfig = () => apiGet<AdminVideoSystemConfig>('/admin/video-system-config');
+
+/** Persist the FFmpeg toggle; the backend applies it to every later ingest. */
+export const updateVideoSystemConfig = (useFfmpeg: boolean) =>
+  apiPost<AdminVideoSystemConfig>('/admin/video-system-config', { useFfmpeg });
 
 /** Record an asset; the backend refuses an unavailable provider with its reason. */
 export const createVideoAsset = (input: AdminVideoInput) => apiPost<AdminVideoAsset>('/admin/video-assets', input);

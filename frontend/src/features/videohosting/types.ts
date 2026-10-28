@@ -23,6 +23,8 @@ export interface HostedVideoMeta {
   title?: string;
   status: HostedVideoStatus;
   durationSeconds?: number;
+  /** Mounted watch sessions so far — present once the first grant is minted. */
+  viewCount?: number;
   qualities: HostedVideoQuality[];
 }
 
@@ -30,8 +32,12 @@ export interface HostedVideoMeta {
 export interface StreamGrant {
   token: string;
   assetId: string;
-  /** Absolute master-playlist URL with the token already baked in. */
+  /** Absolute master-playlist URL with the token already baked in (hls mode). */
   masterUrl: string;
+  /** Absolute watch URL in raw mode (un-packaged source streamed by the API). */
+  playUrl?: string;
+  /** `hls` = encrypted HLS ladder; `raw` = the platform-streamed source file. */
+  mode?: 'hls' | 'raw';
   expiresAt: string;
   durationSeconds?: number;
 }

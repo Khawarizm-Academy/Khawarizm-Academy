@@ -17,7 +17,7 @@ from rest_framework.response import Response
 
 from features.auth.permissions import IsAdminRole
 from features.videohosting import diagnostics, drive_oauth, ingest
-from features.videohosting.models import VideoAsset, VideoProvider
+from features.videohosting.models import VideoAsset, VideoProvider, VideoSystemConfig
 from features.videohosting.providers import ensure_defaults, provider_listing
 
 
@@ -53,6 +53,8 @@ def _asset_row(asset, *, include_error: bool = False) -> dict:
         "progress": asset.progress,
         "stage": asset.stage,
         "qualities": asset.renditions.count(),
+        "viewCount": asset.view_count,
+        "lastViewedAt": asset.last_viewed_at.isoformat() if asset.last_viewed_at else None,
         "createdAt": asset.created_at.isoformat(),
     }
     if include_error:
@@ -230,3 +232,20 @@ def video_diagnostics(request):
     """Staged validation — shallow (default) or deep (live API probes)."""
     deep = (request.query_params.get("deep") or "").lower() in {"1", "true", "yes"}
     return Response(diagnostics.run(deep=deep))
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated, IsAdminRole])
+def video_system_config(request):
+    """Get or update the global video system config singleton."""
+    if request.method == "POST":
+        data = request.data or {}
+        use_ffmpeg = data.get("useFfmpeg")
+        if use_ffmpeg is not None and isinstance(use_ffmpeg, bool):
+            config = VideoSystemConfig.get_instance()
+            config.use_ffmpeg = use_ffmpeg
+            config.save(update_fields=["use_ffmpeg", "updated_at"])
+            return Response({"useFfmpeg": config.use_ffmpeg})
+        return Response({"detail": "useFfmpeg مطلوب و يجب أن يكون true أو false."}, status=status.HTTP_400_BAD_REQUEST)
+    config = VideoSystemConfig.get_instance()
+    return Response({"useFfmpeg": config.use_ffmpeg})

@@ -22,25 +22,34 @@ def _qualities(asset: Any) -> list[dict[str, Any]]:
 
 
 def asset_meta(asset: Any) -> dict[str, Any]:
-    """What the player needs before minting: readiness, length, ladder."""
+    """What the player needs before minting: readiness, length, ladder, views."""
     return compact(
         id=asset.slug,
         title=asset.title,
         status=asset.status,
         durationSeconds=asset.duration_seconds,
+        viewCount=asset.view_count if asset.view_count else None,
         qualities=_qualities(asset),
     )
 
 
 def minted_token(asset: Any, raw_token: str, token_row: Any, master_url: str) -> dict[str, Any]:
-    """The playback grant — the raw token appears here and nowhere else."""
-    return compact(
+    """The playback grant — the raw token appears here and nowhere else.
+
+    An un-packaged (raw) asset swaps the HLS master for a platform-run
+    direct watch URL; the player branches on `mode`.
+    """
+    is_raw = not (asset.master_playlist or "").strip()
+    grant = compact(
         token=raw_token,
         assetId=asset.slug,
-        masterUrl=master_url,
+        masterUrl="" if is_raw else master_url,
+        playUrl=master_url,
+        mode="raw" if is_raw else "hls",
         expiresAt=token_row.expires_at.isoformat(),
         durationSeconds=asset.duration_seconds,
     )
+    return grant
 
 
 def provider_payload(provider: Any) -> dict[str, Any]:

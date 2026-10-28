@@ -263,6 +263,40 @@ class _DriveIngest:
         }
 
 
+def raw_stream(file_id: str, range_header: str) -> tuple[int, object, dict[str, str]]:
+    """Open Drive's media endpoint with the grant's bearer and forward a Range.
+
+    Returns ``(status, byte_iterator, headers)`` — the caller wraps it in a
+    streaming response. 401 here means the cached token went stale; the caller
+    re-reads the asset and the endpoint maps a fresh attempt through the same
+    helper, so a second call inside one request mints nothing extra.
+    """
+    import urllib.request
+
+    ok, bearer, detail = access_token()
+    if not ok:
+        raise RuntimeError(f"تعذّر مصادقة Google Drive: {detail}")
+    headers = {"Authorization": f"Bearer {bearer}"}
+    if range_header:
+        headers["Range"] = range_header
+    request = urllib.request.Request(  # noqa: S310 — fixed host
+        f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media",
+        headers=headers,
+    )
+    response = urllib.request.urlopen(request, timeout=REQUEST_SECONDS)
+    content_type = response.headers.get("Content-Type", "application/octet-stream")
+    return (
+        response.status,
+        iter(lambda: response.read(1024 * 256), b""),
+        {
+            "Content-Type": content_type,
+            "Content-Length": response.headers.get("Content-Length", ""),
+            "Content-Range": response.headers.get("Content-Range", ""),
+            "Accept-Ranges": response.headers.get("Accept-Ranges", "bytes"),
+        },
+    )
+
+
 # The spec — declared last so every symbol above is already defined.
 GOOGLE_DRIVE = ProviderSpec(
     code="google_drive",
@@ -276,6 +310,7 @@ GOOGLE_DRIVE = ProviderSpec(
         "playback": "provider_managed_or_limited",
     },
     segment_redirect=_identity,     # Drive does not use CDN redirects like Telegram
+    raw_stream=raw_stream,         # raw watch route (FFmpeg off): gatewayed media
     ingest=_DriveIngest(),         # store_source only; no HLS packaging
     env_checks=_drive_env_checks,
     deep_checks=_drive_deep_checks,

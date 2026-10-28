@@ -18,7 +18,7 @@ from django.db import connection
 
 from features.common.choices import VideoStatus
 from features.videohosting import packaging
-from features.videohosting.models import VideoAsset, VideoRendition, VideoSegment
+from features.videohosting.models import VideoAsset, VideoRendition, VideoSegment, VideoSystemConfig
 from features.videohosting.providers import default_code, spec_for
 
 
@@ -116,7 +116,34 @@ def _should_package(package: str) -> bool:
         return True
     if package == "never":
         return False
+    # Check the admin toggle first — a disabled flag short-circuits everything.
+    try:
+        config = VideoSystemConfig.get_instance()
+        if not config.use_ffmpeg:
+            return False
+    except Exception:
+        pass  # If the DB is unavailable fall back to the env heuristic.
     return packaging.ffmpeg_available() and not settings.IS_VERCEL
+
+
+# Which staged sources are directly playable by the platform without packaging.
+RAW_PLAYABLE = {"google_drive"}
+
+
+def raw_mode_is_playable(spec, package: str) -> bool:
+    """True when this store (no packaging leg) yields a watchable raw source.
+
+    Only the admin's toggle turns a skipped package watchable: with the toggle
+    on but FFmpeg absent the old staged-for-later behavior stands, and an
+    explicit ``--package never`` also defers to its packaging run.
+    """
+    if spec.code not in RAW_PLAYABLE or package != "auto":
+        return False
+    try:
+        return not VideoSystemConfig.get_instance().use_ffmpeg
+    except Exception:
+        return False
+
 
 
 # The public track: one ingest, one asset row; raises on failure except as noted.
@@ -159,9 +186,14 @@ def ingest_file(
             svc = _make_service(spec)
             bytes_arg = _report_arg(svc, tracker, FULL_SPAN)
             stored = _await_if_needed(spec.ingest.store_source(svc, asset, source, bytes_arg))
+            # A skipped package (FFmpeg off) makes Drive's raw source watchable
+            # as-is; Telegram keeps its source behind the bot API, so it stays staged.
             fields = {"master_playlist": ""}
-            status = VideoStatus.STAGED
             renditions = []
+            if raw_mode_is_playable(spec, package):
+                status = VideoStatus.READY
+            else:
+                status = VideoStatus.STAGED
         else:
             # Full path (Telegram): source, optionally package.
             svc = _make_service(spec)

@@ -34,6 +34,7 @@ Public playback (owner: `views.py`, paths in `urls.py`):
 | :--- | :--- | :--- |
 | `GET` | `/api/videos/<slug>` | Readiness, duration, and the rendition ladder |
 | `POST` | `/api/videos/<slug>/token` | Mint a playback grant (auth required) |
+| `GET` | `/api/videos/<slug>/raw` | Gated raw watch route for un-packaged Drive assets (Range passthrough) |
 | `GET` | `/api/stream/<token>/master.m3u8` | Master playlist, token-scoped |
 | `GET` | `/api/stream/<token>/<quality>/index.m3u8` | Rendition media playlist |
 | `GET` | `/api/stream/<token>/key/<quality>` | AES-128 key for one rendition |
@@ -41,7 +42,7 @@ Public playback (owner: `views.py`, paths in `urls.py`):
 
 Admin console (`console/` — paths and URL names unchanged since they moved out
 of `adminconsole`): `/api/admin/video-providers`, `-assets[-/detail/upload]`,
-`-diagnostics`, `video-drive/oauth/{start,callback,status,disconnect}`.
+`-system-config`, `-diagnostics`, `video-drive/oauth/{start,callback,status,disconnect}`.
 
 ## Data
 
@@ -52,6 +53,7 @@ of `adminconsole`): `/api/admin/video-providers`, `-assets[-/detail/upload]`,
 | `VideoSegment` | One encrypted `.ts`: message id, stable `file_id`, cached `file_path` |
 | `StreamToken` | A grant: SHA-256 `token_hash`, `ip_binding`, `expires_at` |
 | `VideoProvider` | The admin-visible registry row upserted from `SPECS` |
+| `VideoSystemConfig` | The admin packaging toggle (`use_ffmpeg`) — off = raw uploads watched through the platform |
 | `DriveGrant` | The stored Google OAuth grant (refresh token, cached bearer) |
 | `DriveAuthState` | Single-use hashed CSRF states for the consent dance |
 | `ProviderAsset`, `UploadSession` | **Kept as historical records** from the pre-Drive era — no live code path writes them |
@@ -69,12 +71,18 @@ raw token is shown once at mint time. `VideoStatus` lives in
    document, and the manifests keep `__TOKEN__` placeholders — no usable URL is
    ever stored at rest. **Google Drive** resumable-uploads the source into the
    configured folder and stages the asset (`source_file_id`) for a later
-   packaging run — no HLS is built on this path.
+   packaging run — no HLS is built on this path. When the admin toggle
+   (`VideoSystemConfig.use_ffmpeg`) is **off**, the skipped packaging makes a
+   Drive asset land **ready** instead of staged: the raw source is watchable
+   through `GET /api/videos/<slug>/raw` (Range passthrough, Drive media API,
+   token in the query). Telegram has no raw playback, so its assets stay staged.
 2. **Serve**: a signed-in viewer mints a token (IP-bound, TTL from
    `STREAM_TOKEN_TTL_HOURS`); the Telegram playlists are rewritten per request
    with that token; the key endpoint returns raw bytes with `no-store`; each
    segment view resolves a fresh Telegram file path over plain HTTPS and returns
-   a **302** straight to the CDN, so `api.telegram.org` does the byte work.
+   a **302** straight to the CDN, so `api.telegram.org` does the byte work. The
+   grant payload carries `mode`: `hls` (a `masterUrl`) or `raw` (a `playUrl` to
+   the gated raw route) — the player branches on it.
 3. **Protect**: the segment route only ever redirects to ciphertext; the key is
    IP-bound and expiring; the master and key responses are `no-store`. A leaked
    segment URL exposes encrypted bytes and nothing more.
@@ -85,6 +93,14 @@ FFmpeg is only needed for **packaging** (step 1). It cannot run on Vercel: the
 serverless runtime has no system packages, a 4.5 MB request cap, a 300 s ceiling,
 a read-only filesystem, and a 500 MB `/tmp`. `require_packaging_host()` fails
 loudly with those instructions instead of a vague "ffmpeg not found".
+
+When no FFmpeg-capable host is available (localhost builds, production without a
+packaging worker), the admin flips **وضع التغليف** off in the console
+(`POST /api/admin/video-system-config` with `useFfmpeg: false`): uploads stop
+packaging entirely, Drive sources become `ready` and watchable at
+`/api/videos/<slug>/raw`, and the packaging diagnostics drop to informational
+warnings instead of blocking errors. A later packaging run
+(`ingest_video --package force`) still works per file whenever FFmpeg returns.
 
 The split is the whole point — the **serving** path (steps 2–3) is tiny and
 serverless-friendly, so it runs fine on Vercel:
@@ -208,6 +224,7 @@ python manage.py test features.videohosting
 
 One module per concern: `tests/test_models.py`, `test_registry.py`,
 `test_routes.py`, `test_drive.py`, `test_diagnostics.py`, `test_staging.py`,
+`test_system_config.py` (the FFmpeg toggle + raw watch route),
 `test_admin_console.py` (the admin endpoints live on the videohosting app),
 with shared fixtures in `tests/helpers.py`.
 

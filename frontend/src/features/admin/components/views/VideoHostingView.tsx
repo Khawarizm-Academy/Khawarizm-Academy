@@ -5,6 +5,7 @@ import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptySt
 import { VideoStatusBadge } from '@/features/admin/components/cards/Badges';
 import { ConfirmAction } from '@/features/admin/components/controls/ConfirmAction';
 import { AdminStepsRail } from '@/features/admin/components/controls/AdminStepsRail';
+import { FfmpegModeToggle } from '@/features/admin/components/controls/FfmpegModeToggle';
 import { formatShortDateTime } from '@/features/admin/data/adminFormatters';
 import { startDriveOAuth } from '@/features/admin/data/adminFetchers';
 import { vercelUploadTooLarge } from '@/shared/lib/apiClient';
@@ -22,7 +23,13 @@ const PROVIDER_NOTES: Record<string, string> = {
   telegram:
     'تُرفع المصادر إلى قناة الأكاديمية على تليجرام، ثم تُغلَّف بصيغة HLS مشفّرة قابلة للتشغيل داخل المنصة — التغليف يتطلب FFmpeg.',
   google_drive:
-    'المصدر يُرفع تدفّقيًّا (resumable) إلى مجلد Google Drive المخصّص، ويُخزَّن كما هو دون تغليف HLS.',
+    'المصدر يُرفع تدفّقيًّا (resumable) إلى مجلد Google Drive المخصّص. مع التغليف يُبنى سلّم HLS مشفّر؛ بدونه يُخزَّن كما هو ويُشاهد مباشرة من داخل المنصة.',
+};
+
+/** The dropzone's second line, per packaging mode. */
+const DROPZONE_HINT: Record<'ffmpeg' | 'raw', string> = {
+  ffmpeg: 'حتى 2 GB — يُغلَّف بصيغة HLS تلقائيًا بعد الرفع إن توفر FFmpeg على الخادم',
+  raw: 'حتى 2 GB — يُخزَّن الملف كما هو ويُشاهد داخل المنصة مباشرة، دون تغليف FFmpeg',
 };
 
 /** Whether an option is selectable: the registry flag AND the env checks. */
@@ -62,6 +69,8 @@ export const VideoHostingView: React.FC = () => {
     videoProviders,
     videoAssets,
     videoDiagnostics,
+    videoSystemConfig,
+    updateVideoSystemConfig,
     deletingVideoId,
     videoUpload,
     uploadVideo,
@@ -77,8 +86,17 @@ export const VideoHostingView: React.FC = () => {
   const [stepIndex, setStepIndex] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [authorizingDrive, setAuthorizingDrive] = useState(false);
+  const [savingMode, setSavingMode] = useState(false);
+  const useFfmpeg = videoSystemConfig?.useFfmpeg ?? true;
   const step = UPLOAD_STEPS[stepIndex].id;
   const isLastStep = stepIndex === UPLOAD_STEPS.length - 1;
+
+  /** Persist the packaging switch; the upload form reads it immediately after. */
+  const changePackagingMode = async (next: boolean) => {
+    setSavingMode(true);
+    await updateVideoSystemConfig(next);
+    setSavingMode(false);
+  };
 
   /** Drive's blocker is a missing consent, not a config edit — open Google's
       URL (public id only) and let Django hold whatever comes back. */
@@ -186,13 +204,13 @@ export const VideoHostingView: React.FC = () => {
         />
       )}
 
-      {pipelineKnown && !pipelineOk && (
+      {useFfmpeg && pipelineKnown && !pipelineOk && (
         <div className="admin-diag-verdict admin-diag-verdict-error">
           <div className="flex items-center gap-2 text-xs font-bold font-display">
             <AlertTriangle size={16} className="shrink-0" />
             <span>
               FFmpeg غير متوفر على هذا الخادم — المصادر الجديدة تُحفظ مرحَّلةً دون تغليف، ويُغلَّف كل ملف لاحقًا من جهاز
-              مثبَّت عليه FFmpeg. راجع تبويب «فحص المنظومة».
+              مثبَّت عليه FFmpeg. راجع تبويب «فحص المنظومة»، أو أوقف التغليف من مفتاح «وضع التغليف».
             </span>
           </div>
         </div>
@@ -239,6 +257,7 @@ export const VideoHostingView: React.FC = () => {
           <span className="admin-section-title-text">إضافة فيديو جديد</span>
         </h2>
         <form onSubmit={handleUpload} className="admin-detail-section gap-4">
+          <FfmpegModeToggle config={videoSystemConfig} busy={savingMode} onToggle={changePackagingMode} />
           <AdminStepsRail steps={UPLOAD_STEPS.map(({ id, label }) => ({ key: id, label }))} stepIndex={stepIndex} />
 
           {step === 'file' && (
@@ -274,9 +293,7 @@ export const VideoHostingView: React.FC = () => {
                 <FileVideo size={20} className="shrink-0" />
                 <div>
                   <div className="admin-dropzone-name">اسحب ملف الفيديو إلى هنا، أو اضغط لاختياره</div>
-                  <div className="admin-dropzone-hint">
-                    حتى 2 GB — يُغلَّف بصيغة HLS تلقائيًا بعد الرفع إن توفر FFmpeg على الخادم
-                  </div>
+                  <div className="admin-dropzone-hint">{DROPZONE_HINT[useFfmpeg ? 'ffmpeg' : 'raw']}</div>
                 </div>
               </>
             )}
@@ -396,7 +413,18 @@ export const VideoHostingView: React.FC = () => {
               {!chosenBlocked && provider && (
                 <span className="admin-check-hint font-body">{PROVIDER_NOTES[provider]}</span>
               )}
-              {!provider && !pipelineOk && (
+              {/* Raw mode keeps Telegram usable but unwatchable until packaged — say it up front. */}
+              {!chosenBlocked && provider === 'telegram' && !useFfmpeg && (
+                <div className="admin-form-error">
+                  تعذّر المشاهدة بلا تغليف مع تليجرام — المشاهدة المباشرة تعمل مع Google Drive فقط.
+                </div>
+              )}
+              {!chosenBlocked && !provider && !useFfmpeg && (
+                <span className="admin-check-hint font-body">
+                  المشاهدة المباشرة تعمل مع Google Drive؛ ملفات تليجرام تبقى مرحَّلة لحين التغليف.
+                </span>
+              )}
+              {!chosenBlocked && !provider && useFfmpeg && !pipelineOk && (
                 <span className="admin-check-hint font-body">
                   سيُحفظ المصدر مرحَّلًا دون تغليف، وتظل النتيجة قابلة للتشغيل بعد التغليف اللاحق.
                 </span>
@@ -442,7 +470,7 @@ export const VideoHostingView: React.FC = () => {
                   className="admin-primary-btn"
                   disabled={busy || missingFile || chosenBlocked || capBlocked}
                 >
-                  {busy ? 'جارٍ تنفيذ الرفع…' : 'بدء الرفع والتغليف'}
+                  {busy ? 'جارٍ تنفيذ الرفع…' : useFfmpeg ? 'بدء الرفع والتغليف' : 'بدء الرفع المباشر'}
                 </button>
               )}
             </div>
@@ -462,6 +490,7 @@ export const VideoHostingView: React.FC = () => {
               <span>العنوان</span>
               <span>الحالة</span>
               <span>المُزوّد</span>
+              <span>المشاهدات</span>
               <span>أُضيف</span>
               <span>إجراء</span>
             </div>
@@ -500,6 +529,10 @@ export const VideoHostingView: React.FC = () => {
                   <div className="admin-cell">
                     <span className="admin-cell-label">المُزوّد</span>
                     <span className="admin-cell-value">{asset.provider || '—'}</span>
+                  </div>
+                  <div className="admin-cell">
+                    <span className="admin-cell-label">المشاهدات</span>
+                    <span className="admin-cell-value">{asset.viewCount ?? 0}</span>
                   </div>
                   <div className="admin-cell">
                     <span className="admin-cell-label">أُضيف</span>

@@ -317,3 +317,8 @@ GOOGLE_DRIVE_ROOT_FOLDER_ID = os.environ.get("GOOGLE_DRIVE_ROOT_FOLDER_ID", "")
 GOOGLE_DRIVE_OAUTH_REDIRECT_URI = os.environ.get("GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "")
 # The provider assets default to when none is named explicitly.
 VIDEO_HOSTING_DEFAULT_PROVIDER = os.environ.get("VIDEO_HOSTING_DEFAULT_PROVIDER", "google_drive")
+
+# Whether HLS packaging via FFmpeg runs automatically after upload.
+# When False the platform accepts raw uploads and serves them directly
+# (Google Drive works out-of-the-box; Telegram needs FFmpeg for HLS).
+VIDEO_HOSTING_USE_FFMPEG = env_bool("VIDEO_HOSTING_USE_FFMPEG", default=True)

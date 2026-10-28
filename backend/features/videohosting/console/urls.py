@@ -15,6 +15,7 @@ urlpatterns = [
     path("video-assets", views.video_assets, name="admin-video-assets"),
     path("video-assets/upload", views.video_asset_upload, name="admin-video-asset-upload"),
     path("video-assets/<uuid:asset_id>", views.video_asset_detail, name="admin-video-asset-detail"),
+    path("video-system-config", views.video_system_config, name="admin-video-system-config"),
     path("video-diagnostics", views.video_diagnostics, name="admin-video-diagnostics"),
     path("video-drive/oauth/start", views.video_drive_oauth_start, name="admin-video-drive-oauth-start"),
     path("video-drive/oauth/callback", views.video_drive_oauth_callback, name="admin-video-drive-oauth-callback"),
