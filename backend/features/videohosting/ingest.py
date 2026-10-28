@@ -16,6 +16,7 @@ from typing import Any
 
 from django.conf import settings
 from django.db import connection
+from django.db.utils import OperationalError
 
 from features.common.choices import VideoStatus
 from features.videohosting import packaging
@@ -94,8 +95,18 @@ class ProgressTracker:
                 with self._lock:
                     state = self._state
                 if state != last_written:
-                    self._write(state)
-                    last_written = state
+                    try:
+                        self._write(state)
+                        # Mark written only on success — a failed tick is
+                        # retried with fresh state on the next one.
+                        last_written = state
+                    except OperationalError:
+                        # Progress writes are best-effort: a busy database
+                        # (the parallel test suite, a loaded dev server) can
+                        # hold the lock past the busy timeout. The terminal
+                        # state comes from the ingest path itself, so the
+                        # flusher only ever falls a little behind.
+                        pass
                 time.sleep(SECONDS_BETWEEN_FLUSHES)
         finally:
             with self._lock:

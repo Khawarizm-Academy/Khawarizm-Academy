@@ -91,6 +91,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
     # Shared, non-feature code (abstract models + management commands).
     "features.common",
     # Feature apps — one folder per product feature, mirroring the frontend.
@@ -209,13 +210,27 @@ if DATABASE_URL:
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.sqlite3",
+            # The WAL-aware variant of the built-in sqlite3 engine: its
+            # test-DB clone checkpoints the -wal sidecar before the parallel
+            # runner copies the file, so every worker starts with all tables.
+            "ENGINE": "config.sqlite_backend",
             "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME, override=SQLITE_PATH),
             # The upload worker and its tracker flusher run on their own
-            # connections; Django's default shared-cache in-memory test DB
-            # fails those writes instantly with "database table is locked"
-            # (SQLITE_LOCKED ignores the busy timeout). A file-backed test DB
-            # lets contention resolve through the normal busy timeout instead.
+            # connections, and the parallel test runner multiplies readers —
+            # in default journal mode a poll-loop's reads starve the worker's
+            # writes past the busy timeout ("database table is locked",
+            # caught live in CI). WAL lets readers and the one writer proceed
+            # side by side; IMMEDIATE takes the write lock at BEGIN so a
+            # transaction never fails halfway on an upgrade (which the busy
+            # timeout does not retry).
+            "OPTIONS": {
+                "init_command": "PRAGMA journal_mode=WAL;PRAGMA busy_timeout=10000;",
+                "transaction_mode": "IMMEDIATE",
+            },
+            # Django's default shared-cache in-memory test DB fails the
+            # worker's writes instantly (SQLITE_LOCKED ignores the busy
+            # timeout). A file-backed test DB pairs with the WAL options
+            # above — contention resolves through the normal busy timeout.
             "TEST": {"NAME": str(Path(tempfile.gettempdir()) / "khawarizm-test-db.sqlite3")},
         }
     }
@@ -329,7 +344,25 @@ REST_FRAMEWORK = {
     # with a throttle_scope and lets the rest through untouched.
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
     "DEFAULT_THROTTLE_RATES": SCOPED_RATES,
+    # The schema class behind /api/schema — every view pins its request and
+    # response shapes with @extend_schema, so the spec stays the contract.
+    # ContractAutoSchema appends the shared error envelope to every operation.
+    "DEFAULT_SCHEMA_CLASS": "features.common.schemas.ContractAutoSchema",
     "EXCEPTION_HANDLER": "features.common.errors.api_exception_handler",
+}
+
+# /api/schema + Swagger UI (config/urls.py). The spec is generated from the
+# views' @extend_schema annotations; keep it split into reusable components
+# so generated frontend types stay named and stable.
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Khawarizm Academy API",
+    "DESCRIPTION": "The SPA's backend contract: one error envelope "
+    "`{detail, code, fields?}`, list responses wrapped as `{items: [...]}`.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    # The maintenance cron's 202 body is an inline job status, not a resource.
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 
 # Firebase. Two halves that must agree:

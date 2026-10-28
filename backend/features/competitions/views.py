@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from drf_spectacular.utils import OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -13,6 +14,15 @@ from features.competitions.models import Competition
 from features.competitions.serializers import competition
 
 
+@extend_schema(
+    operation_id="competitions_list",
+    summary="Every competition.",
+    description="App-cached and ETagged; one `Competition` entity per row in insertion order.",
+    auth=None,
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{items: [Competition]}`"),
+    },
+)
 @api_view(["GET"])
 def competitions_list(request: Any) -> Response:
     """Every competition as a `Competition` entity (app-cached, ETagged)."""

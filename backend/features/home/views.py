@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from drf_spectacular.utils import OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -21,6 +22,19 @@ from features.home.models import (
 from features.home.serializers import featured_course, featured_scholarship, quick_link
 
 
+@extend_schema(
+    operation_id="home_rails",
+    summary="All home rails in one payload, keyed like the original mocks.",
+    description="Featured courses/scholarships, competition and event spots, quick links — app-cached and ETagged.",
+    auth=None,
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT,
+            description="`{courses, scholarships, competitionMobile, competitionDesktop, eventMobile, "
+            "eventDesktopFeatured, eventDesktopWorkshop, quickLinks}`",
+        )
+    },
+)
 @api_view(["GET"])
 def home_view(request: Any) -> Response:
     """All home rails in one payload, keyed like the original mocks."""
