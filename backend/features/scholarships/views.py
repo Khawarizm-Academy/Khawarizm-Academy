@@ -1,4 +1,4 @@
-"""Scholarship detail, apply, and save endpoints."""
+"""Scholarship views — thin handlers over the service."""
 
 from __future__ import annotations
 
@@ -7,7 +7,8 @@ from typing import Any
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from features.scholarships.models import Scholarship, ScholarshipApplication
+from features.scholarships import services
+from features.scholarships.models import Scholarship
 from features.scholarships.serializers import scholarship_catalog_item
 
 NOT_FOUND = {"detail": "المنحة غير موجودة"}
@@ -29,7 +30,7 @@ def scholarship_apply_view(request: Any, slug: str) -> Response:
     if scholarship is None:
         return Response(NOT_FOUND, status=404)
     if request.user.is_authenticated:
-        ScholarshipApplication.objects.get_or_create(user=request.user, scholarship=scholarship)
+        services.apply(request.user, scholarship)
     return Response({"applied": True, "scholarshipId": scholarship.slug})
 
 
@@ -41,12 +42,5 @@ def scholarship_save_view(request: Any, slug: str) -> Response:
         return Response(NOT_FOUND, status=404)
     if not request.user.is_authenticated:
         return Response({"saved": bool(request.data.get("saved", True)), "scholarshipId": scholarship.slug})
-    # Imported here so the scholarships feature never depends on dashboard at module load.
-    from features.dashboard.models import SavedScholarship
-
-    saved = SavedScholarship.objects.filter(user=request.user, scholarship=scholarship).first()
-    if saved is None:
-        SavedScholarship.objects.create(user=request.user, scholarship=scholarship)
-        return Response({"saved": True, "scholarshipId": scholarship.slug})
-    saved.delete()
-    return Response({"saved": False, "scholarshipId": scholarship.slug})
+    saved = services.toggle_save(request.user, scholarship)
+    return Response({"saved": saved, "scholarshipId": scholarship.slug})

@@ -1,11 +1,13 @@
-"""Staff-only analytics, account control, and content management endpoints."""
+"""Staff-only analytics, account control, and content management endpoints.
+
+Thin handlers: resolve the caller/row, call one service function, serialize.
+The rules live in `features/adminconsole/services.py`.
+"""
 
 from __future__ import annotations
 
-import json
 from datetime import timedelta
 
-from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -14,24 +16,17 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from features.adminconsole import serializers
-from features.adminconsole.serializers import CONTENT_TYPES, USER_FIELDS
-from features.auth import services
+from features.adminconsole import serializers, services
+from features.adminconsole.serializers import USER_FIELDS
+from features.auth import services as auth_services
 from features.auth.models import AuthEvent, User, UserSession
 from features.auth.permissions import IsAdminRole
 from features.auth.serializers import session_with_user, user_profile
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
 from features.common.errors import InvalidParameter
 from features.common.throttling import scoped_throttle
-from features.competitions.models import Competition
-from features.courses.models import Course
-from features.events.models import EventItem
-from features.scholarships.models import Scholarship
 
 PAGE_SIZE = 20
-
-# The content types the console manages, and where their headline counts come from.
-CONTENT_COUNTS = {"courses": Course, "scholarships": Scholarship, "events": EventItem, "competitions": Competition}
 
 
 def _int_param(request, name: str, default: int, low: int) -> int:
@@ -50,53 +45,12 @@ def _breakdown(field: str) -> list[dict]:
     return [{"key": row[field] or "unknown", "count": row["count"]} for row in rows]
 
 
-def _require_content_type(type_key: str) -> dict:
-    """Resolve a managed content type or 404 with the standard envelope."""
-    spec = CONTENT_TYPES.get(type_key)
-    if spec is None:
-        raise InvalidParameter(f"نوع محتوى غير معروف: {type_key}")
-    return spec
-
-
-def _coerce(field: dict, value):
-    """Turn a submitted JSON value into the Python type the column expects."""
-    kind = field["kind"]
-    if kind == "number":
-        return int(value)
-    if kind == "decimal":
-        return float(value)
-    if kind == "bool":
-        return value in (True, "true", "1", 1)
-    if kind == "json":
-        return value if not isinstance(value, str) else json.loads(value)
-    return str(value)
-
-
-def _values_for(spec: dict, data: dict, create: bool) -> dict:
-    """Validate and coerce the submitted fields into model kwargs."""
-    values: dict = {}
-    errors: list[str] = []
-    for field in spec["fields"]:
-        if field["name"] not in data:
-            if create and field.get("required"):
-                errors.append(f"الحقل «{field['label']}» مطلوب.")
-            continue
-        value = data[field["name"]]
-        is_empty = value is None or value == ""
-        if is_empty:
-            # Clearing a text column is fine; a numeric one keeps its current value.
-            if create and field.get("required"):
-                errors.append(f"الحقل «{field['label']}» مطلوب.")
-            elif not create and field["kind"] in ("text", "textarea", "url", "select"):
-                values[field["attr"]] = ""
-            continue
-        try:
-            values[field["attr"]] = _coerce(field, value)
-        except TypeError, ValueError:
-            errors.append(f"قيمة غير صالحة في «{field['label']}».")
-    if errors:
-        raise InvalidParameter(" ".join(errors))
-    return values
+def _page(queryset, request):
+    """The standard paged envelope body for a list endpoint."""
+    page = _int_param(request, "page", 1, 1)
+    total = queryset.count()
+    rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
+    return {"total": total, "page": page, "pageSize": PAGE_SIZE, "results": rows}
 
 
 @api_view(["GET"])
@@ -130,7 +84,7 @@ def overview(request):
                     kind=AuthEventKind.REVOKED, created_at__gte=week_ago
                 ).count(),
             },
-            "content": {key: model.objects.count() for key, model in CONTENT_COUNTS.items()},
+            "content": {key: model.objects.count() for key, model in services.CONTENT_COUNTS.items()},
         }
     )
 
@@ -141,8 +95,9 @@ def overview(request):
 def users(request):
     """Paged, filterable user list (GET) or a new account (POST)."""
     if request.method == "POST":
-        return _create_user(request)
-    queryset = User.objects.annotate(active_sessions=Count("sessions", filter=Q(sessions__is_active=True)))
+        user = services.create_user_account(request.data or {})
+        return Response(serializers.user_row(user), status=status.HTTP_201_CREATED)
+    queryset = User.objects.all()
     role = request.query_params.get("role")
     if role in Role.values:
         queryset = queryset.filter(role=role)
@@ -161,23 +116,6 @@ def users(request):
     )
 
 
-def _create_user(request) -> Response:
-    """Create an account from the console's user form."""
-    data = request.data or {}
-    values = _values_for({"fields": USER_FIELDS}, data, create=True)
-    email = str(values.get("email", "")).strip().lower()
-    if not email:
-        return Response({"detail": "البريد الإلكتروني مطلوب."}, status=status.HTTP_400_BAD_REQUEST)
-    if User.objects.filter(email=email).exists():
-        return Response({"detail": "البريد الإلكتروني مستخدم بالفعل."}, status=status.HTTP_400_BAD_REQUEST)
-    password = data.get("password") or None
-    user = User.objects.create_user(email=email, password=password, **{k: v for k, v in values.items() if k != "email"})
-    user.is_staff = user.role == Role.ADMIN
-    user.save(update_fields=["is_staff"])
-    services.ensure_profile(user)
-    return Response(serializers.user_row(user), status=status.HTTP_201_CREATED)
-
-
 @api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 @scoped_throttle("admin_burst")
@@ -187,32 +125,12 @@ def user_detail(request, user_id):
     if user is None:
         return Response({"detail": "المستخدم غير موجود."}, status=status.HTTP_404_NOT_FOUND)
     if request.method == "PATCH":
-        return _update_user(request, user)
+        services.update_user_account(user, request.data or {}, acting_user=request.user)
+        return Response(serializers.user_row(user))
     if request.method == "DELETE":
-        if str(request.user.id) == str(user.id):
-            return Response({"detail": "لا يمكنك حذف حسابك الخاص."}, status=status.HTTP_400_BAD_REQUEST)
-        user.delete()
+        services.delete_user_account(user, acting_user=request.user)
         return Response({"deleted": True, "id": str(user_id)})
     return Response(serializers.admin_user_detail(user, request.auth.id))
-
-
-def _update_user(request, user: User) -> Response:
-    """Apply the console's account edits, keeping Django staff rights in sync."""
-    values = _values_for({"fields": USER_FIELDS}, request.data or {}, create=False)
-    # Email is immutable: console edits can never change the account's identity.
-    values.pop("email", None)
-    for attr, value in values.items():
-        setattr(user, attr, value)
-    if "role" in values:
-        if str(request.user.id) == str(user.id) and values["role"] != Role.ADMIN:
-            return Response({"detail": "لا يمكنك خفض دورك الخاص."}, status=status.HTTP_400_BAD_REQUEST)
-        user.is_staff = values["role"] == Role.ADMIN
-    try:
-        user.save()
-    except IntegrityError:
-        return Response({"detail": "تعذّر حفظ التعديلات: قيمة مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
-    services.ensure_profile(user)
-    return Response(serializers.user_row(user))
 
 
 @api_view(["POST"])
@@ -220,19 +138,11 @@ def _update_user(request, user: User) -> Response:
 @scoped_throttle("admin_burst")
 def set_role(request, user_id):
     """Promote or demote a role; an admin cannot change their own."""
-    if str(request.user.id) == str(user_id):
-        return Response({"detail": "لا يمكنك تغيير دورك الخاص."}, status=status.HTTP_400_BAD_REQUEST)
     user = User.objects.filter(pk=user_id).first()
     if user is None:
         return Response({"detail": "المستخدم غير موجود."}, status=status.HTTP_404_NOT_FOUND)
-    role = (request.data or {}).get("role")
-    if role not in Role.values:
-        return Response({"detail": "دور غير صالح."}, status=status.HTTP_400_BAD_REQUEST)
-    user.role = role
-    user.is_staff = role == Role.ADMIN
-    user.save(update_fields=["role", "is_staff"])
-    services.ensure_profile(user)
-    return Response(user_profile(user))
+    updated = services.set_role(user, (request.data or {}).get("role"), acting_user=request.user)
+    return Response(user_profile(updated))
 
 
 @api_view(["GET"])
@@ -247,17 +157,9 @@ def sessions(request):
     query = request.query_params.get("q")
     if query:
         queryset = queryset.filter(Q(user__email__icontains=query) | Q(ip_address__icontains=query))
-    page = _int_param(request, "page", 1, 1)
-    total = queryset.count()
-    rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
-    return Response(
-        {
-            "total": total,
-            "page": page,
-            "pageSize": PAGE_SIZE,
-            "results": [session_with_user(s, request.auth.id) for s in rows],
-        }
-    )
+    body = _page(queryset, request)
+    body["results"] = [session_with_user(s, request.auth.id) for s in body["results"]]
+    return Response(body)
 
 
 @api_view(["POST"])
@@ -269,7 +171,7 @@ def revoke_session(request, session_id):
     if session is None:
         return Response({"detail": "الجلسة غير موجودة."}, status=status.HTTP_404_NOT_FOUND)
     session.revoke(SessionRevokeReason.REVOKED_BY_ADMIN)
-    services.record_event(
+    auth_services.record_event(
         AuthEventKind.REVOKED,
         user=session.user,
         session=session,
@@ -329,13 +231,9 @@ def content_schema(request):
 @scoped_throttle("admin_burst")
 def content_items(request, type_key):
     """Paged content rows (GET) or a new row (POST) for one managed type."""
-    spec = _require_content_type(type_key)
+    spec = services.require_content_type(type_key)
     if request.method == "POST":
-        values = _values_for(spec, request.data or {}, create=True)
-        try:
-            row = spec["model"].objects.create(**values)
-        except IntegrityError, ValueError:
-            return Response({"detail": "تعذّر الإنشاء: بيانات غير صالحة أو مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
+        row = services.create_content_row(spec, request.data or {})
         return Response(serializers.content_row(spec, row), status=status.HTTP_201_CREATED)
     queryset = spec["model"].objects.all()
     query = request.query_params.get("q")
@@ -344,17 +242,9 @@ def content_items(request, type_key):
         for field in spec["search"]:
             conditions |= Q(**{f"{field}__icontains": query})
         queryset = queryset.filter(conditions)
-    page = _int_param(request, "page", 1, 1)
-    total = queryset.count()
-    rows = queryset[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
-    return Response(
-        {
-            "total": total,
-            "page": page,
-            "pageSize": PAGE_SIZE,
-            "results": [serializers.content_row(spec, r) for r in rows],
-        }
-    )
+    body = _page(queryset, request)
+    body["results"] = [serializers.content_row(spec, r) for r in body["results"]]
+    return Response(body)
 
 
 @api_view(["PATCH", "DELETE"])
@@ -362,18 +252,12 @@ def content_items(request, type_key):
 @scoped_throttle("admin_burst")
 def content_detail(request, type_key, pk):
     """Edit (PATCH) or delete (DELETE) one content row."""
-    spec = _require_content_type(type_key)
+    spec = services.require_content_type(type_key)
     row = spec["model"].objects.filter(pk=pk).first()
     if row is None:
         return Response({"detail": "العنصر غير موجود."}, status=status.HTTP_404_NOT_FOUND)
     if request.method == "DELETE":
         row.delete()
         return Response({"deleted": True, "id": str(pk)})
-    values = _values_for(spec, request.data or {}, create=False)
-    for attr, value in values.items():
-        setattr(row, attr, value)
-    try:
-        row.save()
-    except IntegrityError, ValueError:
-        return Response({"detail": "تعذّر الحفظ: بيانات غير صالحة أو مكرّرة."}, status=status.HTTP_400_BAD_REQUEST)
-    return Response(serializers.content_row(spec, row))
+    updated = services.save_content_row(spec, row, request.data or {})
+    return Response(serializers.content_row(spec, updated))
