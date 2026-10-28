@@ -256,3 +256,49 @@ class CatalogHttpCacheTests(ApiTestCase):
         make_course(slug="course-1")
         response = self.client.get("/api/catalog", HTTP_ACCEPT_ENCODING="gzip")
         self.assertEqual(response.headers["Content-Encoding"], "gzip")
+
+
+class CatalogValidationTests(ApiTestCase):
+    """Unknown `type`/`sort` values are 400s naming the valid options — the
+    Phase-0 baseline bug (`type=course` singular 500ing) becomes a loud 400."""
+
+    def test_an_unknown_type_is_a_400_listing_the_options(self):
+        response = self.client.get("/api/catalog", {"type": "course"})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("courses", response.json()["detail"])
+        self.assertIn("scholarships", response.json()["detail"])
+
+    def test_an_unknown_sort_is_a_400_listing_the_options(self):
+        response = self.client.get("/api/catalog", {"sort": "alphabetical"})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("rating", response.json()["detail"])
+        self.assertIn("deadline", response.json()["detail"])
+
+    def test_the_known_values_still_pass(self):
+        make_course(slug="course-1")
+        body = self.client.get("/api/catalog", {"type": "courses", "sort": "rating"}).json()
+        self.assertEqual(body["totalResults"], 1)
+
+    def test_popular_sort_is_accepted_and_keeps_the_interleave_order(self):
+        # The SPA's default toolbar sort — accepted as insertion order, like `newest`.
+        make_course(slug="course-1")
+        make_course(slug="course-2")
+        make_scholarship(slug="scholarship-1")
+        body = self.client.get("/api/catalog", {"sort": "popular"}).json()
+        self.assertEqual([item["id"] for item in body["items"]], ["course-1", "scholarship-1", "course-2"])
+
+
+class CatalogQueryGuardTests(ApiTestCase):
+    """The engine's query budget: miss = 2, warm = 0 (Phase 5 gate)."""
+
+    def test_a_cold_list_costs_exactly_two_queries(self):
+        make_course(slug="course-1")
+        with self.assertNumQueries(2):
+            self.client.get("/api/catalog")
+
+    def test_a_warm_detail_costs_zero_queries(self):
+        make_course(slug="course-1")
+        self.assertEqual(self.client.get("/api/catalog/course-1").json()["id"], "course-1")  # warms the detail entry
+        with self.assertNumQueries(0):
+            response = self.client.get("/api/catalog/course-1")
+        self.assertEqual(response.json()["id"], "course-1")

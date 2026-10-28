@@ -11,7 +11,6 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -22,6 +21,7 @@ from features.auth.models import AuthEvent, User, UserSession
 from features.auth.permissions import IsAdminRole
 from features.auth.serializers import session_with_user, user_profile
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
+from features.common.errors import InvalidParameter
 from features.common.throttling import scoped_throttle
 from features.competitions.models import Competition
 from features.courses.models import Course
@@ -32,13 +32,6 @@ PAGE_SIZE = 20
 
 # The content types the console manages, and where their headline counts come from.
 CONTENT_COUNTS = {"courses": Course, "scholarships": Scholarship, "events": EventItem, "competitions": Competition}
-
-
-class InvalidParameter(APIException):
-    """A malformed query parameter; carries the same `detail` shape as every other error."""
-
-    status_code = status.HTTP_400_BAD_REQUEST
-    default_code = "invalid_parameter"
 
 
 def _int_param(request, name: str, default: int, low: int) -> int:
