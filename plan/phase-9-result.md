@@ -20,7 +20,7 @@ shows every execution.
 | `backend/features/adminconsole/views.py` + `urls.py` | **`/api/admin/maintenance/cleanup`** (`GET`+`POST`, 202): explicit dual gate — `request.auth == "cron"` or `request.user.is_staff`; anything else `PermissionDenied` (403 `permission_denied`). Response is the run's status body: `{"id", "status": "done", "deleted": {...}}` — 202 per the job pattern (status resource immediately; the work itself is inline chunked deletes, nothing to poll). |
 | `backend/config/middleware.py` | The cleanup path joins `EXEMPT_PATHS` — platform crons send no `Origin`; they authenticate with the secret instead (same reasoning as the Drive OAuth callback). |
 | `backend/config/settings.py` | `AUTH_EVENT_RETENTION_DAYS` (env, default 180) and `MAINTENANCE_CRON_SECRET` (accepts Vercel's `CRON_SECRET` fallback; unset = cron path dead, staff-only). |
-| `backend/vercel.json` | `crons`: `/api/admin/maintenance/cleanup` at `0 */6 * * *`. Vercel auto-attaches `Authorization: Bearer $CRON_SECRET` when that project env var exists. |
+| `backend/vercel.json` | `crons`: `/api/admin/maintenance/cleanup` at `0 3 * * *` (daily, 03:00 UTC). Vercel auto-attaches `Authorization: Bearer $CRON_SECRET` when that project env var exists. Hobby-plan crons run at most once per day — the first attempt (`0 */6 * * *`) had the **Vercel backend preview deployment rejected in 0 s** (config validation, not a build error); the 6h cadence stays available to self-hosted cron. |
 | Docs | `features/common/README.md` rewritten (the "no models, no migrations" rule is gone — common is an app with one table; the job, both cron paths, and the lazy-import rule documented). `docs/07-backend-contract.md`: the endpoint row in the admin table. `features/videohosting/README.md`: the ingest retry policy (idempotent `get_or_create` by slug, failures land on the row as `status=error` + `error_message`, the re-run is the retry; Django admin filters by `status`/`provider` — verified present). |
 | Tests (+11 → **444**) | `CleanupExpiredTests` (sweeps the 4 families, keeps fresh rows; **twice → identical state**; the service body counts each family), `OverlapGuardTests` (a live marker skips *without deleting*; a stale marker doesn't block), `MaintenanceEndpointTests` (staff 202/`done`/trigger=endpoint; cron secret 202/`done`/trigger=cron; wrong secret → **401** `token_invalid`; student 403; anonymous 403 `permission_denied`), `OnCommitDisciplineTests` (enroll counts in-transaction but bumps the catalog version only on commit; a re-enroll neither recounts nor re-bumps). |
 
@@ -48,6 +48,15 @@ shows every execution.
   authenticator returns no `authenticate_header` — and `CronSecretAuthentication`
   sat first. Advertised `Bearer` on it (2 lines) and pinned the status in the
   test, so a bad credential reads 401 like on every other endpoint.
+- **Vercel rejected the first `crons` entry (deployment failed in 0 s).**
+  Hobby-plan crons may run at most once per day; `0 */6 * * *` fails config
+  validation before any build step. Re-scheduled to `0 3 * * *` (daily,
+  03:00 UTC); the 6h cadence is a self-hosted cron concern only. CI here also
+  differs from earlier phases: the workflow's `push` trigger covers
+  `main` + `Refactor/*`, so a branch named `Server/Jobs` gets **only** the
+  `pull_request` run (which builds the merge commit — the stronger check of
+  the two). Later phase branches (`Docs/OpenAPI`, `Docs/BackendAlignment`)
+  will behave the same.
 
 ## Live smoke (dev server, dev DB)
 
@@ -85,5 +94,5 @@ shows every execution.
 - `MAINTENANCE_CRON_SECRET` must be set (as `CRON_SECRET` or itself) in the
   live Vercel project env for the cron to authenticate; unset, the schedule
   answers 401 every run and the `MaintenanceRun` ledger stays empty.
-- `RUNNING_GRACE_MINUTES` (60) vs the 6h schedule: a crashed run self-heals
-  within one window; no watchdog needed.
+- `RUNNING_GRACE_MINUTES` (60) vs the schedules (6h self-hosted, daily on
+  Vercel): a crashed run self-heals within one window; no watchdog needed.

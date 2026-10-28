@@ -53,8 +53,9 @@ Two ways to schedule it:
 - **Self-hosted** — `python manage.py cleanup_expired` on cron, every 6h:
   `0 */6 * * *  cd backend && .venv/bin/python manage.py cleanup_expired`
 - **Vercel** — `backend/vercel.json` schedules
-  `GET /api/admin/maintenance/cleanup` every 6h; Vercel attaches
-  `Authorization: Bearer $CRON_SECRET`, which
+  `GET /api/admin/maintenance/cleanup` daily (03:00 UTC; Hobby-plan crons run
+  at most once per day — self-hosted cron is where the 6h cadence belongs);
+  Vercel attaches `Authorization: Bearer $CRON_SECRET`, which
   `CronSecretAuthentication` (`features/auth/authentication.py`) verifies
   against `MAINTENANCE_CRON_SECRET` (accepts `CRON_SECRET` as a fallback env
   name). The endpoint (in `features/adminconsole`) also accepts a staff
