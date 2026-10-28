@@ -14,6 +14,8 @@ urlpatterns = [
     path("admin/analytics/logins", views.logins_series, name="admin-analytics-logins"),
     path("admin/analytics/devices", views.devices, name="admin-analytics-devices"),
     path("admin/events", views.events, name="admin-events"),
+    # The maintenance job's HTTP surface (the command lives in features/common).
+    path("admin/maintenance/cleanup", views.maintenance_cleanup, name="admin-maintenance-cleanup"),
     # The generic content editor: schema first so it never reads as a type key.
     path("admin/content/schema", views.content_schema, name="admin-content-schema"),
     path("admin/content/<str:type_key>", views.content_items, name="admin-content-items"),

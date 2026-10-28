@@ -211,6 +211,7 @@ Staff-only (`IsAdminRole`), under `/admin`:
 | `POST` | `/admin/sessions/:id/revoke` | Force-logout one device. |
 | `GET` | `/admin/analytics/logins` · `/devices` | Login series, os/browser/device breakdown. |
 | `GET` | `/admin/events` | Recent audit trail. |
+| `GET` · `POST` | `/admin/maintenance/cleanup` | Run the retention cleanup inline — 202 `{id, status, deleted}` (staff bearer, or the platform cron's `Bearer $CRON_SECRET`). |
 | `GET` | `/admin/content/schema` | `{types, userFields}` — drives every admin form. |
 | `GET` · `POST` | `/admin/content/:type` | Paged rows / create (`courses`, `scholarships`, `events`, `competitions`). |
 | `PATCH` · `DELETE` | `/admin/content/:type/:id` | Edit / remove one content row. |
