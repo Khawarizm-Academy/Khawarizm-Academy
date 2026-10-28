@@ -18,4 +18,8 @@ env/
 /staticfiles/
 
 # Local env
+# The committed profile carries non-secret dev defaults + commented
+# placeholders (mirrors the root .gitignore's re-include); .env.production
+# and real values stay untracked through this ignore.
 .env*
+!.env.development
