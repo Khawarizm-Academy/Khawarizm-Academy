@@ -255,3 +255,27 @@ class DevProfileSafetyTests(SimpleTestCase):
     def test_the_browser_hardening_defaults_are_always_on(self):
         self.assertEqual(settings.SECURE_REFERRER_POLICY, "strict-origin-when-cross-origin")
         self.assertTrue(settings.SECURE_CONTENT_TYPE_NOSNIFF)
+
+
+class PrivateCacheMiddlewareTests(SimpleTestCase):
+    def _response(self, path):
+        from config.middleware import PrivateCacheMiddleware
+
+        middleware = PrivateCacheMiddleware(lambda request: JsonResponse({}))
+        return middleware(RequestFactory().get(path))
+
+    def test_per_user_and_privileged_routes_are_no_store(self):
+        for path in (
+            "/api/dashboard/summary",
+            "/api/auth/me",
+            "/api/auth/sessions",
+            "/api/admin/overview",
+            "/api/videos/clip-1/token",
+            "/api/stream/clip-1/index.m3u8",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(self._response(path).headers["Cache-Control"], "private, no-store")
+
+    def test_public_routes_are_left_to_their_views(self):
+        self.assertNotIn("Cache-Control", self._response("/api/catalog"))
+        self.assertNotIn("Cache-Control", self._response("/api/auth/refresh"))

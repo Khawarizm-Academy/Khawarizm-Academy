@@ -138,6 +138,8 @@ exported by hand:
 | `DJANGO_SSL_REDIRECT` | Force HTTPS redirects. Default: on whenever `DEBUG=false`, off in dev |
 | `DJANGO_HSTS_SECONDS` | HSTS max-age. Default: `31536000` (1 year) when `DEBUG=false`, off in dev |
 | `DJANGO_SESSION_COOKIE_SECURE` / `DJANGO_CSRF_COOKIE_SECURE` | `Secure` cookies. Default: on whenever `DEBUG=false` |
+| `DJANGO_CONN_MAX_AGE` | Persistent Postgres connections (seconds). Default `60` self-hosted, `0` on Vercel. SQLite stays at `0` — the upload worker needs short-lived connections |
+| `REDIS_URL` | Switch the app cache to Redis (requires `pip install django-redis`); LocMem otherwise |
 
 **Database per profile.** Development uses SQLite because `.env.development`
 sets no `DATABASE_URL`. Production values are set in the **host environment** (or as Vercel Project
@@ -418,6 +420,33 @@ table above); `Referrer-Policy: strict-origin-when-cross-origin`,
 `X-Content-Type-Options: nosniff`, and a `Permissions-Policy` on every
 response (`config/middleware.py`). The Django admin additionally gets a
 **report-only CSP** — the trial run before promoting it to a real one.
+
+## Caching
+
+Three layers, outermost first (`features/common/cache.py` +
+`features/common/http_cache.py`):
+
+- **App cache** — the public read payloads (`/api/catalog` list+detail+filters,
+  `/api/home`, `/api/events`, `/api/competitions`) go through one `cached()`
+  helper: keys `kh:<namespace>:v<version>:<digest>`, a ±10%-jittered 300 s TTL,
+  and one `cache miss` JSON log line per miss (the hit-ratio signal). Warm
+  requests run **zero DB queries**.
+- **Invalidation** — any write to a watched model (courses, scholarships,
+  events, competitions, home rails, catalog filters — the registry in
+  `features/common/cache_invalidation.py`) bumps the family version inside
+  `transaction.on_commit`, wherever the write comes from (admin console,
+  `seed_demo`, commands). Old entries age out; nothing is scanned.
+- **HTTP cache** — public GETs carry an ETag (a digest of the payload) +
+  `Cache-Control: public, max-age=30, s-maxage=300, stale-while-revalidate=600`
+  (`/api/auth/config`: short + `must-revalidate`). A matching `If-None-Match`
+  answers `304` with no body and no queries. Private routes
+  (`/api/dashboard/*`, `/api/auth/me|sessions`, `/api/admin/*`,
+  `/api/videos|stream/*`) get `Cache-Control: private, no-store`
+  (`PrivateCacheMiddleware`) and are never app-cached.
+
+Responses are gzipped (`GZipMiddleware`); `DJANGO_CONN_MAX_AGE` enables
+persistent DB connections for self-hosted workers (default `60`, `0` on
+Vercel). `REDIS_URL` moves the app cache to Redis for multi-instance deploys.
 
 ## Observability
 

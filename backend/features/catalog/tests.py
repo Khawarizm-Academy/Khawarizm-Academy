@@ -208,3 +208,51 @@ class CatalogAdminTests(TestCase):
         self.assertTrue(admin.site.is_registered(Category))
         self.assertTrue(admin.site.is_registered(FilterGroup))
         self.assertTrue(admin.site.is_registered(FilterOption))
+
+
+class CatalogHttpCacheTests(ApiTestCase):
+    """Layer 2: ETag/304 and the warm path touch no rows (Phase 4 gate)."""
+
+    def test_public_responses_carry_etag_and_cache_control(self):
+        make_course(slug="course-1")
+        response = self.client.get("/api/catalog")
+        self.assertEqual(
+            response.headers["Cache-Control"], "public, max-age=30, s-maxage=300, stale-while-revalidate=600"
+        )
+        self.assertTrue(response.headers["ETag"].startswith('"'))
+
+    def test_a_revalidating_request_answers_304_with_zero_queries(self):
+        make_course(slug="course-1")
+        first = self.client.get("/api/catalog")
+        second = self.client.get("/api/catalog", HTTP_IF_NONE_MATCH=first.headers["ETag"])
+        self.assertEqual(second.status_code, 304)
+        with self.assertNumQueries(0):
+            third = self.client.get("/api/catalog", HTTP_IF_NONE_MATCH=first.headers["ETag"])
+        self.assertEqual(third.status_code, 304)
+
+    def test_a_warm_request_answers_200_with_zero_queries(self):
+        make_course(slug="course-1")
+        self.client.get("/api/catalog")
+        with self.assertNumQueries(0):
+            response = self.client.get("/api/catalog")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.json()["items"]], ["course-1"])
+
+    def test_a_detail_404_is_cached_negatively(self):
+        self.client.get("/api/catalog/missing-slug")
+        with self.assertNumQueries(0):
+            response = self.client.get("/api/catalog/missing-slug")
+        self.assertEqual(response.status_code, 404)
+
+    def test_an_editor_write_invalidates_the_family(self):
+        make_course(slug="course-1")
+        self.client.get("/api/catalog")  # warm
+        with self.captureOnCommitCallbacks(execute=True):
+            make_course(slug="course-2")  # post_save bumps the catalog version
+        body = self.client.get("/api/catalog").json()
+        self.assertEqual(body["totalResults"], 2)
+
+    def test_a_gzip_capable_client_receives_compressed_json(self):
+        make_course(slug="course-1")
+        response = self.client.get("/api/catalog", HTTP_ACCEPT_ENCODING="gzip")
+        self.assertEqual(response.headers["Content-Encoding"], "gzip")

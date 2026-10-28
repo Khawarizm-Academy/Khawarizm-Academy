@@ -147,3 +147,25 @@ class HardeningHeadersMiddleware(MiddlewareMixin):
         if request.path.startswith("/admin/"):
             response.headers.setdefault("Content-Security-Policy-Report-Only", ADMIN_CSP_REPORT_ONLY)
         return response
+
+
+# Response prefixes that are per-user or privileged: neither the browser nor
+# any shared cache may keep them (cache-strategy §2). Public read endpoints
+# get their caching headers per view instead (features/common/http_cache.py).
+PRIVATE_CACHE_PREFIXES = (
+    "/api/dashboard/",
+    "/api/auth/me",
+    "/api/auth/sessions",
+    "/api/admin/",
+    "/api/videos",
+    "/api/stream",
+)
+
+
+class PrivateCacheMiddleware(MiddlewareMixin):
+    """`Cache-Control: private, no-store` on every per-user/privileged route."""
+
+    def process_response(self, request, response):
+        if request.path.startswith(PRIVATE_CACHE_PREFIXES):
+            response.headers.setdefault("Cache-Control", "private, no-store")
+        return response
