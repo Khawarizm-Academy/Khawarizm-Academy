@@ -1,0 +1,77 @@
+name: backend-ci
+
+# Every push and PR to main / the alignment base branch must pass the four
+# Django gates plus lint, dependency audit, secrets scan, and the deploy check.
+on:
+  push:
+    branches: [main, "Refactor/*"]
+  pull_request:
+    branches: [main, "Refactor/*"]
+
+# Stop the superseded run on the same ref — pushes go in close succession.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: lint · checks · tests · audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks detects secrets across the whole history, not just HEAD.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install dependencies + dev tools
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Django system checks
+        run: python manage.py check
+
+      - name: Models ⇄ migrations agree
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Migrations apply to a fresh database
+        run: python manage.py migrate
+
+      - name: Tests
+        run: python manage.py test -v2 --parallel
+
+      - name: Dependency vulnerability audit (pip-audit)
+        run: pip-audit -r requirements.txt
+
+      - name: Secrets scan (gitleaks, whole history)
+        # The official action now requires a paid license even on public repos,
+        # so the scanner binary runs directly instead — same detect, whole history.
+        # Source is the repo root so the audited .gitleaks.toml is the config used.
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz -C "$GITHUB_WORKSPACE" gitleaks
+          "$GITHUB_WORKSPACE/gitleaks" detect --source "$GITHUB_WORKSPACE" --config "$GITHUB_WORKSPACE/.gitleaks.toml" --exit-code 1
+
+      # The production profile: debug off, a real-shaped secret, and the flags
+      # Vercel/self-hosted set. Findings here are findings in prod, not in dev.
+      - name: Deploy-mode system checks (DJANGO_ENV=production)
+        run: >
+          DJANGO_ENV=production
+          DJANGO_SECRET_KEY=ci-only-deploy-check-secret-9f3f8c2a1b7e5d406a3c9f1e8b2d4a6c7e5f3a1d9c2b4e6f8
+          DJANGO_DEBUG=false
+          DJANGO_ALLOWED_HOSTS=api.example.com
+          DJANGO_CORS_ALLOWED_ORIGINS=https://app.example.com
+          python manage.py check --deploy

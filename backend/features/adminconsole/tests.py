@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-from unittest import mock
-
 from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
 
 from features.auth import services
 from features.auth.models import User
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
-from features.common.testing import ApiTestCase, FakeRequest, api_client, authenticate, make_admin, make_user
+from features.common.testing import ApiTestCase, FakeRequest, authenticate, make_admin, make_user
 
 
 class AdminConsoleUrlTests(TestCase):
@@ -142,7 +139,9 @@ class AdminConsoleSessionTests(ApiTestCase):
 
     def test_revoke_of_an_unknown_session_is_a_404(self):
         authenticate(self.client, make_admin())
-        response = self.client.post("/api/admin/sessions/00000000-0000-0000-0000-000000000000/revoke", {}, format="json")
+        response = self.client.post(
+            "/api/admin/sessions/00000000-0000-0000-0000-000000000000/revoke", {}, format="json"
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_the_active_flag_splits_open_and_closed_sessions(self):
@@ -291,7 +290,9 @@ class AdminConsoleUserMutationTests(ApiTestCase):
     def test_a_student_cannot_create_users(self):
         self.client.credentials()
         authenticate(self.client, make_user(email="plain@example.com"))
-        self.assertEqual(self.client.post("/api/admin/users", {"email": "x@example.com"}, format="json").status_code, 403)
+        self.assertEqual(
+            self.client.post("/api/admin/users", {"email": "x@example.com"}, format="json").status_code, 403
+        )
 
 
 class AdminConsoleContentTests(ApiTestCase):
@@ -340,12 +341,12 @@ class AdminConsoleContentTests(ApiTestCase):
         self.assertEqual(self.client.get("/api/admin/content/unknown").status_code, 400)
 
     def test_missing_row_is_a_404(self):
-        response = self.client.patch("/api/admin/content/events/00000000-0000-0000-0000-000000000000", {"title": "x"}, format="json")
+        response = self.client.patch(
+            "/api/admin/content/events/00000000-0000-0000-0000-000000000000", {"title": "x"}, format="json"
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_overview_reports_content_counts(self):
         body = self.client.get("/api/admin/overview").json()
         self.assertIn("content", body)
         self.assertEqual(set(body["content"]), {"courses", "scholarships", "events", "competitions"})
-
-

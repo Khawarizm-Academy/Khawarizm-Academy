@@ -88,7 +88,11 @@ class UpcomingEvent(UUIDModel, TimeStampedModel):
     event_id = models.CharField(max_length=80)
     title = models.CharField(max_length=160)
     date_text = models.CharField(max_length=120, blank=True)
-    event_type = models.CharField(max_length=20, choices=[("submission", "submission"), ("exam", "exam"), ("session", "session")], default="submission")
+    event_type = models.CharField(
+        max_length=20,
+        choices=[("submission", "submission"), ("exam", "exam"), ("session", "session")],
+        default="submission",
+    )
     type_label = models.CharField(max_length=40, blank=True)
 
     class Meta:
@@ -106,7 +110,9 @@ class DashboardNotification(UUIDModel, TimeStampedModel):
     notification_id = models.CharField(max_length=80)
     title = models.CharField(max_length=200, blank=True)
     time_ago = models.CharField(max_length=60, blank=True)
-    notification_type = models.CharField(max_length=20, choices=NotificationType.choices, default=NotificationType.LESSON)
+    notification_type = models.CharField(
+        max_length=20, choices=NotificationType.choices, default=NotificationType.LESSON
+    )
     is_read = models.BooleanField(default=False)
     link = models.CharField(max_length=200, blank=True)
 
@@ -125,7 +131,9 @@ class NotificationItemData(UUIDModel, TimeStampedModel):
     notification_id = models.CharField(max_length=80)
     message = models.CharField(max_length=200, blank=True)
     time_ago = models.CharField(max_length=60, blank=True)
-    notification_type = models.CharField(max_length=20, choices=NotificationType.choices, default=NotificationType.LESSON)
+    notification_type = models.CharField(
+        max_length=20, choices=NotificationType.choices, default=NotificationType.LESSON
+    )
     is_unread = models.BooleanField(default=False)
 
     class Meta:
@@ -172,9 +180,13 @@ class SavedCompetition(UUIDModel, TimeStampedModel):
     user = models.ForeignKey(USER, related_name="competitions", on_delete=models.CASCADE)
     competition = models.ForeignKey("competitions.Competition", related_name="saved_by", on_delete=models.CASCADE)
     status_text = models.CharField(max_length=120, blank=True)
-    status_color = models.CharField(max_length=10, choices=CompetitionStatusColor.choices, default=CompetitionStatusColor.BLUE)
+    status_color = models.CharField(
+        max_length=10, choices=CompetitionStatusColor.choices, default=CompetitionStatusColor.BLUE
+    )
     action_label = models.CharField(max_length=60, blank=True)
-    action_variant = models.CharField(max_length=10, choices=CompetitionActionVariant.choices, default=CompetitionActionVariant.SKY)
+    action_variant = models.CharField(
+        max_length=10, choices=CompetitionActionVariant.choices, default=CompetitionActionVariant.SKY
+    )
 
     class Meta:
         ordering = ["competition__competition_id"]

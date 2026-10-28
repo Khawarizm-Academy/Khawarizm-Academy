@@ -95,4 +95,11 @@ def _verify_dev(id_token: str) -> dict:
     if not email:
         raise FirebaseError("Dev token is missing an email.")
     role = parts[2] if len(parts) > 2 and parts[2] in Role.values else Role.STUDENT
-    return {"uid": f"dev-{email}", "email": email, "name": email.split("@")[0], "picture": "", "provider": AuthProvider.DEV, "role": role}
+    return {
+        "uid": f"dev-{email}",
+        "email": email,
+        "name": email.split("@")[0],
+        "picture": "",
+        "provider": AuthProvider.DEV,
+        "role": role,
+    }

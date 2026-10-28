@@ -178,7 +178,9 @@ class AuthViewTests(ApiTestCase):
         self.assertTrue(User.objects.filter(email="new@example.com").exists())
 
     def test_dev_login_can_assign_a_role(self):
-        body = self.client.post("/api/auth/firebase", {"idToken": "dev:teach@example.com:instructor"}, format="json").json()
+        body = self.client.post(
+            "/api/auth/firebase", {"idToken": "dev:teach@example.com:instructor"}, format="json"
+        ).json()
         self.assertEqual(body["user"]["role"], Role.INSTRUCTOR)
 
     def test_refresh_rotates_the_token(self):

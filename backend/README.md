@@ -207,6 +207,46 @@ them for Auth.
 | `python manage.py seed_demo` | Idempotent seed: reference catalog data, a demo learner, the admin |
 | `python manage.py ingest_video <file> --slug <slug>` | Package + host one video (needs FFmpeg; never on Vercel) |
 
+### Verification (the gates)
+
+The [CI workflow](../.github/workflows/backend.yml) (`.github/workflows/backend.yml`) runs these on every push/PR to
+`main` and `Refactor/*`; branch protection on `main` requires them for a merge:
+
+| Gate | Command |
+| :--- | :--- |
+| Lint + format | `ruff check .` · `ruff format --check .` (config in `pyproject.toml`) |
+| Framework sanity | `python manage.py check` |
+| Models ⇄ migrations agree | `python manage.py makemigrations --check --dry-run` |
+| Schema applies | `python manage.py migrate` |
+| Test suite | `python manage.py test` |
+| Dependency audit | `pip-audit -r requirements.txt` |
+| Secrets scan | gitleaks (whole git history) |
+| Deploy-mode checks | `python manage.py check --deploy` (production env shape) |
+
+Locally:
+
+```bash
+pip install -r requirements-dev.txt
+pre-commit install                   # one time; hooks run on every commit
+pre-commit run -a                    # or run all hooks over the tree now
+```
+
+Dev-only tools (ruff, pip-audit, pre-commit) live in `requirements-dev.txt`; `requirements.txt` stays runtime-only for
+Vercel/Docker.
+
+### Refactor parity
+
+Behavior-visible refactors prove zero diff: with the dev server running and seed data in place,
+
+```bash
+backend/scripts/parity_capture.sh before   # snapshot every public GET with an allowed Origin
+# ...make the change, restart the server...
+backend/scripts/parity_capture.sh after
+python backend/scripts/parity_diff.py /tmp/opencode/parity/before /tmp/opencode/parity/after
+```
+
+The diff normalizes regenerated-row volatile keys (`createdAt`, session ids, …); anything else must be exactly equal.
+
 > The database starts with the seed: `python manage.py seed_demo` loads the
 > reference catalog data and a demo learner/admin (idempotent — run it as often
 > as you like). Data beyond the seed is added through the Django admin

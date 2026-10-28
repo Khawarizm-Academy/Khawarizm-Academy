@@ -62,7 +62,7 @@ def _asset_row(asset, *, include_error: bool = False) -> dict:
     return row
 
 
-VIDEO_UPLOAD_MAX_BYTES = 2 ** 31     # Bot uploads cap at ~2GB
+VIDEO_UPLOAD_MAX_BYTES = 2**31  # Bot uploads cap at ~2GB
 
 
 def _login_page(okay: bool, detail: str) -> HttpResponse:
@@ -106,8 +106,13 @@ def video_assets(request):
                 created_by=request.user,
             )
             return Response(
-                {"id": str(asset.id), "slug": asset.slug, "title": asset.title,
-                 "status": asset.status, "provider": asset.provider.code if asset.provider else None},
+                {
+                    "id": str(asset.id),
+                    "slug": asset.slug,
+                    "title": asset.title,
+                    "status": asset.status,
+                    "provider": asset.provider.code if asset.provider else None,
+                },
                 status=status.HTTP_201_CREATED,
             )
         except Exception:
@@ -130,7 +135,7 @@ def video_drive_oauth_start(request):
 @permission_classes([AllowAny])
 def video_drive_oauth_callback(request):
     """Google's redirect target — validates state, mints grant, shows result."""
-    okay, email, detail = drive_oauth.complete(
+    okay, _email, detail = drive_oauth.complete(
         request.query_params.get("state") or "", request.query_params.get("code") or ""
     )
     return _login_page(okay, detail)
@@ -141,12 +146,14 @@ def video_drive_oauth_callback(request):
 def video_drive_oauth_status(request):
     """The admin-safe connection state — account email, no tokens."""
     grant = drive_oauth.connected()
-    return Response({
-        "connected": grant["connected"],
-        "accountEmail": grant["account_email"],
-        "status": grant["status"],
-        "error": grant["error_message"],
-    })
+    return Response(
+        {
+            "connected": grant["connected"],
+            "accountEmail": grant["account_email"],
+            "status": grant["status"],
+            "error": grant["error_message"],
+        }
+    )
 
 
 @api_view(["POST"])
@@ -168,7 +175,10 @@ def video_asset_upload(request):
     if uploaded is None or not slug:
         return Response({"detail": "الملف و معرّف الفيديو مطلوبان."}, status=status.HTTP_400_BAD_REQUEST)
     if uploaded.size > VIDEO_UPLOAD_MAX_BYTES:
-        return Response({"detail": "الملف أكبر من 2GB — قسّمه أو استخدم ingest_video من الخادم."}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+        return Response(
+            {"detail": "الملف أكبر من 2GB — قسّمه أو استخدم ingest_video من الخادم."},
+            status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        )
 
     provider, refusal = _resolve_provider(request.data.get("provider"))
     if refusal is not None:
@@ -176,7 +186,9 @@ def video_asset_upload(request):
 
     existing = VideoAsset.objects.filter(slug=slug).first()
     if existing is not None and existing.status in ("uploading", "processing"):
-        return Response({"detail": "هذا المعرّف في منتصف رفع آخر — انتظر انتهاء المعالجة."}, status=status.HTTP_409_CONFLICT)
+        return Response(
+            {"detail": "هذا المعرّف في منتصف رفع آخر — انتظر انتهاء المعالجة."}, status=status.HTTP_409_CONFLICT
+        )
 
     file_name = getattr(uploaded, "name", "") or "video.bin"
     temp_path = Path(gettempdir()) / f"kh-video-{uuid.uuid4().hex}{Path(file_name).suffix or '.bin'}"
@@ -192,7 +204,18 @@ def video_asset_upload(request):
     asset.error_message = ""
     asset.progress = 0
     asset.stage = "uploading"
-    asset.save(update_fields=["title", "provider", "source_file_name", "status", "error_message", "progress", "stage", "updated_at"])
+    asset.save(
+        update_fields=[
+            "title",
+            "provider",
+            "source_file_name",
+            "status",
+            "error_message",
+            "progress",
+            "stage",
+            "updated_at",
+        ]
+    )
 
     worker = threading.Thread(target=_run_ingest_worker, args=(slug, str(temp_path)), daemon=True)
     worker.start()

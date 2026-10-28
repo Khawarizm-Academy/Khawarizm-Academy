@@ -53,7 +53,9 @@ class DashboardModelTests(TestCase):
         self.assertEqual(str(row), f"{self.user.email}:course-1")
 
     def test_imminent_live_session_str(self):
-        session = CourseLiveSession.objects.create(course=self.course, session_id="s1", title="Live", date_label="Sun", time_label="8pm")
+        session = CourseLiveSession.objects.create(
+            course=self.course, session_id="s1", title="Live", date_label="Sun", time_label="8pm"
+        )
         row = ImminentLiveSession.objects.create(user=self.user, session=session)
         self.assertEqual(str(row), f"{self.user.email}:s1")
 
@@ -83,12 +85,16 @@ class DashboardSummaryViewTests(ApiTestCase):
     def test_empty_summary_returns_nulls_and_empty_events(self):
         authenticate(self.client, make_user())
         body = self.client.get("/api/dashboard").json()
-        self.assertEqual(body, {"stats": None, "priorityContinue": None, "imminentLiveSession": None, "upcomingEvents": []})
+        self.assertEqual(
+            body, {"stats": None, "priorityContinue": None, "imminentLiveSession": None, "upcomingEvents": []}
+        )
 
     def test_populated_summary_returns_each_block(self):
         user = make_user()
         course = make_course()
-        session = CourseLiveSession.objects.create(course=course, session_id="s1", title="Live", date_label="Sun", time_label="8pm")
+        session = CourseLiveSession.objects.create(
+            course=course, session_id="s1", title="Live", date_label="Sun", time_label="8pm"
+        )
         DashboardStat.objects.create(user=user, attendance_rate=95, points_earned=10)
         PriorityContinue.objects.create(user=user, course=course)
         ImminentLiveSession.objects.create(user=user, session=session)

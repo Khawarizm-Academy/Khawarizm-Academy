@@ -10,8 +10,9 @@ import inspect
 import shutil
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from django.conf import settings
 from django.db import connection
@@ -20,7 +21,6 @@ from features.common.choices import VideoStatus
 from features.videohosting import packaging
 from features.videohosting.models import VideoAsset, VideoRendition, VideoSegment, VideoSystemConfig
 from features.videohosting.providers import default_code, spec_for
-
 
 # The ingest shapes: "auto" packages when the host can, "force" requires the
 # packaging host, "never" stages the source so it can be packaged later.
@@ -145,7 +145,6 @@ def raw_mode_is_playable(spec, package: str) -> bool:
         return False
 
 
-
 # The public track: one ingest, one asset row; raises on failure except as noted.
 def ingest_file(
     file_path: str | Path,
@@ -159,9 +158,7 @@ def ingest_file(
 ) -> VideoAsset:
     """Run one ingest and return the asset row; raises on failure except as noted."""
     source = Path(file_path)
-    asset, _ = VideoAsset.objects.get_or_create(
-        slug=slug, defaults={"created_by": created_by, "title": title or slug}
-    )
+    asset, _ = VideoAsset.objects.get_or_create(slug=slug, defaults={"created_by": created_by, "title": title or slug})
 
     # Resolve the provider spec once — the rest delegates entirely to it.
     provider_code = asset.provider.code if asset.provider else default_code()
@@ -179,8 +176,6 @@ def ingest_file(
     if tracker is not None:
         tracker.start()
     try:
-        client_name = getattr(asset, "source_file_name", "") or ""
-
         if not hasattr(spec.ingest, "store_package"):
             # Staged-only path (Google Drive): one upload leg.
             svc = _make_service(spec)
@@ -190,10 +185,7 @@ def ingest_file(
             # as-is; Telegram keeps its source behind the bot API, so it stays staged.
             fields = {"master_playlist": ""}
             renditions = []
-            if raw_mode_is_playable(spec, package):
-                status = VideoStatus.READY
-            else:
-                status = VideoStatus.STAGED
+            status = VideoStatus.READY if raw_mode_is_playable(spec, package) else VideoStatus.STAGED
         else:
             # Full path (Telegram): source, optionally package.
             svc = _make_service(spec)
@@ -255,8 +247,8 @@ def ingest_file(
 
 
 # The service re-exports are the ingest test seam — tests patch ingest.TelegramMediaService.
-from features.videohosting.providers.telegram import TelegramMediaService  # noqa: E402,F401
-from features.videohosting.providers.google_drive import GoogleDriveService  # noqa: E402,F401
+from features.videohosting.providers.google_drive import GoogleDriveService  # noqa: E402
+from features.videohosting.providers.telegram import TelegramMediaService  # noqa: E402
 
 
 def _await_if_needed(coro_or_val):
@@ -266,7 +258,9 @@ def _await_if_needed(coro_or_val):
     return coro_or_val
 
 
-def _report_arg(service: object, tracker: "ProgressTracker | None", span: tuple[int, int]) -> dict[str, Callable[[int, int], None]]:
+def _report_arg(
+    service: object, tracker: ProgressTracker | None, span: tuple[int, int]
+) -> dict[str, Callable[[int, int], None]]:
     """Byte ticks go only to a service that accepts them."""
     if tracker is None:
         return {}
@@ -297,13 +291,15 @@ def _store_renditions(asset: VideoAsset, renditions: list[dict[str, Any]]) -> No
             aes_key_hex=payload["aes_key_hex"],
             segment_count=payload["segment_count"],
         )
-        VideoSegment.objects.bulk_create([
-            VideoSegment(
-                rendition=rendition,
-                index=index,
-                message_id=part["message_id"],
-                file_id=part["file_id"],
-                size_bytes=part["size_bytes"],
-            )
-            for index, part in payload["segments"]
-        ])
+        VideoSegment.objects.bulk_create(
+            [
+                VideoSegment(
+                    rendition=rendition,
+                    index=index,
+                    message_id=part["message_id"],
+                    file_id=part["file_id"],
+                    size_bytes=part["size_bytes"],
+                )
+                for index, part in payload["segments"]
+            ]
+        )

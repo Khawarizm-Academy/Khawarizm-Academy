@@ -107,17 +107,39 @@ def _pack_rendition(source: Path, work_dir: Path, spec: dict, duration_seconds: 
     key_info.write_text(f"/api/stream/{TOKEN_PLACEHOLDER}/key/{quality}\n{key_file}\n")
 
     playlist_path = out_dir / "index.m3u8"
-    _run([
-        "ffmpeg", "-y", "-i", str(source),
-        "-vf", f"scale=-2:{spec['height']}",
-        "-c:v", "libx264", "-preset", "veryfast", "-b:v", f"{spec['video_bitrate_kbps']}k",
-        "-c:a", "aac", "-b:a", f"{spec['audio_bitrate_kbps']}k",
-        "-f", "hls", "-hls_time", str(SEGMENT_SECONDS),
-        "-hls_playlist_type", "vod", "-hls_flags", "independent_segments",
-        "-hls_key_info_file", str(key_info),
-        "-hls_segment_filename", str(out_dir / "seg_%05d.ts"),
-        str(playlist_path),
-    ])
+    _run(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(source),
+            "-vf",
+            f"scale=-2:{spec['height']}",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-b:v",
+            f"{spec['video_bitrate_kbps']}k",
+            "-c:a",
+            "aac",
+            "-b:a",
+            f"{spec['audio_bitrate_kbps']}k",
+            "-f",
+            "hls",
+            "-hls_time",
+            str(SEGMENT_SECONDS),
+            "-hls_playlist_type",
+            "vod",
+            "-hls_flags",
+            "independent_segments",
+            "-hls_key_info_file",
+            str(key_info),
+            "-hls_segment_filename",
+            str(out_dir / "seg_%05d.ts"),
+            str(playlist_path),
+        ]
+    )
 
     playlist_text = playlist_path.read_text()
     segments = sorted(out_dir.glob("seg_*.ts"))
@@ -140,7 +162,18 @@ def _pack_rendition(source: Path, work_dir: Path, spec: dict, duration_seconds: 
 def _probe_width_height(source: Path, target_height: int) -> tuple[int, int]:
     """Even-width resolution the scale filter will produce for a target height."""
     proc = subprocess.run(
-        ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", str(source)],
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height",
+            "-of",
+            "csv=p=0",
+            str(source),
+        ],
         capture_output=True,
         text=True,
     )
@@ -148,7 +181,7 @@ def _probe_width_height(source: Path, target_height: int) -> tuple[int, int]:
         width, height = (int(part) for part in proc.stdout.strip().split(",")[:2])
         scaled_width = int(width * target_height / height / 2) * 2  # x264 needs even widths
         return scaled_width, target_height
-    except (ValueError, ZeroDivisionError):
+    except ValueError, ZeroDivisionError:
         return 640 * target_height // 360, target_height
 
 
@@ -156,7 +189,9 @@ def _master_playlist(renditions: list[PackagedRendition]) -> str:
     """A standard master playlist with the token placeholder in every variant URI."""
     lines = ["#EXTM3U", "#EXT-X-VERSION:3"]
     for rendition in sorted(renditions, key=lambda item: item.bandwidth_bps):
-        lines.append(f"#EXT-X-STREAM-INF:BANDWIDTH={rendition.bandwidth_bps},RESOLUTION={rendition.width}x{rendition.height}")
+        lines.append(
+            f"#EXT-X-STREAM-INF:BANDWIDTH={rendition.bandwidth_bps},RESOLUTION={rendition.width}x{rendition.height}"
+        )
         lines.append(f"/api/stream/{TOKEN_PLACEHOLDER}/{rendition.quality}/index.m3u8")
     return "\n".join(lines) + "\n"
 

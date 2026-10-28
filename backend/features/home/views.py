@@ -22,13 +22,17 @@ from features.home.serializers import featured_course, featured_scholarship, qui
 @api_view(["GET"])
 def home_view(request: Any) -> Response:
     """All home rails in one payload, keyed like the original mocks."""
-    competitions = {row.key: competition(row.competition) for row in HomeCompetitionSpot.objects.select_related("competition")}
+    competitions = {
+        row.key: competition(row.competition) for row in HomeCompetitionSpot.objects.select_related("competition")
+    }
     events = {row.key: event(row.event) for row in HomeEventSpot.objects.select_related("event")}
 
     return Response(
         {
             "courses": [featured_course(row) for row in HomeFeaturedCourse.objects.select_related("course")],
-            "scholarships": [featured_scholarship(row) for row in HomeFeaturedScholarship.objects.select_related("scholarship")],
+            "scholarships": [
+                featured_scholarship(row) for row in HomeFeaturedScholarship.objects.select_related("scholarship")
+            ],
             "competitionMobile": competitions.get("mobile"),
             "competitionDesktop": competitions.get("desktop"),
             "eventMobile": events.get("mobile"),

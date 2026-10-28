@@ -8,24 +8,29 @@ import os
 import time
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Dict, Union
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 
 from features.videohosting.providers.base import (
-    ProviderSpec,
-    Check,
-    check,
     SEVERITY_WARN,
+    Check,
+    ProviderSpec,
     blocking_checks,
+    check,
 )
 
+# Ingest-side progress reporting: the provider layer only calls the tracker's
+# duck-typed publish hooks — no runtime import (ingest imports providers).
+if TYPE_CHECKING:
+    from features.videohosting.ingest import ProgressTracker
 
 # The storage thresholds and retryable conditions in one record.
-CHUNK_SIZE = 1024 * 1024            # streaming chunk size — matches Pyrogram 1 MiB
-SPLIT_THRESHOLD_BYTES = 1950 * 1024 * 1024   # bot upload cap; larger files split first
-RETRYABLE_ERRORS = (OSError, TimeoutError)     # connection blips — safe to reconnect
+CHUNK_SIZE = 1024 * 1024  # streaming chunk size — matches Pyrogram 1 MiB
+SPLIT_THRESHOLD_BYTES = 1950 * 1024 * 1024  # bot upload cap; larger files split first
+RETRYABLE_ERRORS = (OSError, TimeoutError)  # connection blips — safe to reconnect
 
 
 # The Pyrogram-backed media service: persistent client, event-loop safe.
@@ -33,14 +38,14 @@ class TelegramMediaService:
     """Persistent Pyrogram client bound to one event loop (ingest + relay paths)."""
 
     def __init__(self) -> None:
-        self.channel_id: Union[int, str] = self._parse_channel_id(settings.TELEGRAM_CHANNEL_ID)
+        self.channel_id: int | str = self._parse_channel_id(settings.TELEGRAM_CHANNEL_ID)
         self.session_name = "khawarizm_videohosting_session"
         self.client = None
         self._is_started = False
-        self._start_lock = asyncio.Lock()     # concurrent requests double-init prevention
+        self._start_lock = asyncio.Lock()  # concurrent requests double-init prevention
 
     @staticmethod
-    def _parse_channel_id(raw: str) -> Union[int, str]:
+    def _parse_channel_id(raw: str) -> int | str:
         raw = (raw or "").strip()
         if not raw:
             raise ValueError("TELEGRAM_CHANNEL_ID is not configured")
@@ -66,6 +71,7 @@ class TelegramMediaService:
         if self.client is not None:
             return
         from pyrogram import Client
+
         self.client = Client(
             self.session_name,
             api_id=int(settings.TELEGRAM_API_ID),
@@ -109,7 +115,9 @@ class TelegramMediaService:
                 await asyncio.sleep(1 + attempt)
         raise last_error  # type: ignore[misc]
 
-    async def upload_file(self, file_path: str, caption: str = "", on_bytes: Callable[[int, int], None] | None = None) -> Dict[str, object]:
+    async def upload_file(
+        self, file_path: str, caption: str = "", on_bytes: Callable[[int, int], None] | None = None
+    ) -> dict[str, object]:
         """Upload one file (>2GB auto-split) and return catalog rows."""
         size = os.path.getsize(file_path)
         if size > SPLIT_THRESHOLD_BYTES:
@@ -123,20 +131,30 @@ class TelegramMediaService:
             return None
         return lambda current, total, *_: on_bytes(int(current), int(total))
 
-    async def _upload_single(self, file_path: str, caption: str = "", on_bytes: Callable[[int, int], None] | None = None) -> Dict[str, object]:
+    async def _upload_single(
+        self, file_path: str, caption: str = "", on_bytes: Callable[[int, int], None] | None = None
+    ) -> dict[str, object]:
         sent = await self.client.send_document(
-            chat_id=self.channel_id, document=file_path, caption=caption,
-            file_name=os.path.basename(file_path), force_document=True,
+            chat_id=self.channel_id,
+            document=file_path,
+            caption=caption,
+            file_name=os.path.basename(file_path),
+            force_document=True,
             progress=self._pyrogram_progress(on_bytes),
         )
         doc = sent.document
         return {
-            "message_id": sent.id, "file_id": doc.file_id,
-            "file_unique_id": doc.file_unique_id, "file_name": doc.file_name,
-            "size_bytes": doc.file_size, "mime_type": doc.mime_type,
+            "message_id": sent.id,
+            "file_id": doc.file_id,
+            "file_unique_id": doc.file_unique_id,
+            "file_name": doc.file_name,
+            "size_bytes": doc.file_size,
+            "mime_type": doc.mime_type,
         }
 
-    async def _upload_split(self, file_path: str, caption: str, on_bytes: Callable[[int, int], None] | None = None) -> Dict[str, object]:
+    async def _upload_split(
+        self, file_path: str, caption: str, on_bytes: Callable[[int, int], None] | None = None
+    ) -> dict[str, object]:
         """Split above the bot upload cap, upload part by part, clean temp parts."""
         base_dir, file_name = os.path.split(file_path)
         split_dir = os.path.join(base_dir, f"split_{int(time.time())}")
@@ -162,12 +180,16 @@ class TelegramMediaService:
                     part_num += 1
             parts = []
             for idx, part in enumerate(part_paths, start=1):
+
                 def part_bytes(sent: int, total: int, part_index: int = idx) -> None:
                     if on_bytes is None:
                         return
                     all_parts_bytes = len(part_paths) * SPLIT_THRESHOLD_BYTES
                     on_bytes(((part_index - 1) * SPLIT_THRESHOLD_BYTES + sent), all_parts_bytes)
-                result = await self._upload_single(part, caption=f"{caption} (Part {idx}/{len(part_paths)})", on_bytes=part_bytes)
+
+                result = await self._upload_single(
+                    part, caption=f"{caption} (Part {idx}/{len(part_paths)})", on_bytes=part_bytes
+                )
                 parts.append(result)
             return {"is_split": True, "parts": parts}
         finally:
@@ -181,8 +203,9 @@ class TelegramMediaService:
 # Bot API path helpers — the control plane's serving-side access to Telegram.
 def resolve_file_path_http(file_id: str) -> str:
     """Refresh a Bot API file path over plain HTTPS — no Pyrogram, serverless-safe."""
-    url = f"https://api.telegram.org/bot{settings.TELEGRAM_STREAM_TOKEN or settings.TELEGRAM_BOT_TOKEN}/getFile?file_id={file_id}"
-    with urllib.request.urlopen(url, timeout=10) as response:  # noqa: S310 — fixed host
+    token = settings.TELEGRAM_STREAM_TOKEN or settings.TELEGRAM_BOT_TOKEN
+    url = f"https://api.telegram.org/bot{token}/getFile?file_id={file_id}"
+    with urllib.request.urlopen(url, timeout=10) as response:
         payload = json.loads(response.read().decode("utf-8"))
     if not payload.get("ok"):
         raise ValueError(f"Telegram getFile failed: {payload.get('description')}")
@@ -204,20 +227,41 @@ def _telegram_env_checks() -> list[Check]:
     channel = (settings.TELEGRAM_CHANNEL_ID or "").strip()
     channel_ok = bool(channel) and (channel.startswith("@") or channel.lstrip("-").isdigit())
     return [
-        check("api_id", "معرّف Telegram API (TELEGRAM_API_ID)", api_id.isdigit(),
-              "متوفر." if api_id.isdigit() else "غير مضبوط أو ليس رقمًا."),
-        check("api_hash", "مفتاح Telegram API (TELEGRAM_API_HASH)", bool(api_hash),
-              "متوفر." if api_hash else "غير مضبوط."),
-        check("bot_token", "روبوت الرفع (TELEGRAM_BOT_TOKEN)", bool(bot_token),
-              "متوفر." if bot_token else "غير مضبوط."),
-        check("stream_token", "روبوت التوجيه للعرض (TELEGRAM_STREAM_TOKEN)", bool(stream_token),
-              "متوفر — روابط المقاطع تُبنى به (قراءة فقط)." if stream_token
-              else "غير مضبوط — روابط التوجيه ستستخدم روبوت الرفع الأقوى صلاحية.",
-              severity=SEVERITY_WARN),
-        check("channel_id", "قناة التخزين (TELEGRAM_CHANNEL_ID)", channel_ok,
-              f"مضبوط: {channel}" if channel_ok else "غير مضبوط."),
-        check("channel_format", "صيغة معرّف القناة صحيحة", channel_ok,
-              "‎@مقبض." if channel_ok and channel.startswith("@") else ("رقم." if channel_ok else "غير قابلة للتحليل: مطلوب ‎@مقبض أو رقم.")),
+        check(
+            "api_id",
+            "معرّف Telegram API (TELEGRAM_API_ID)",
+            api_id.isdigit(),
+            "متوفر." if api_id.isdigit() else "غير مضبوط أو ليس رقمًا.",
+        ),
+        check(
+            "api_hash", "مفتاح Telegram API (TELEGRAM_API_HASH)", bool(api_hash), "متوفر." if api_hash else "غير مضبوط."
+        ),
+        check(
+            "bot_token", "روبوت الرفع (TELEGRAM_BOT_TOKEN)", bool(bot_token), "متوفر." if bot_token else "غير مضبوط."
+        ),
+        check(
+            "stream_token",
+            "روبوت التوجيه للعرض (TELEGRAM_STREAM_TOKEN)",
+            bool(stream_token),
+            "متوفر — روابط المقاطع تُبنى به (قراءة فقط)."
+            if stream_token
+            else "غير مضبوط — روابط التوجيه ستستخدم روبوت الرفع الأقوى صلاحية.",
+            severity=SEVERITY_WARN,
+        ),
+        check(
+            "channel_id",
+            "قناة التخزين (TELEGRAM_CHANNEL_ID)",
+            channel_ok,
+            f"مضبوط: {channel}" if channel_ok else "غير مضبوط.",
+        ),
+        check(
+            "channel_format",
+            "صيغة معرّف القناة صحيحة",
+            channel_ok,
+            "‎@مقبض."
+            if channel_ok and channel.startswith("@")
+            else ("رقم." if channel_ok else "غير قابلة للتحليل: مطلوب ‎@مقبض أو رقم."),
+        ),
     ]
 
 
@@ -239,7 +283,7 @@ def _bot_api_call(token: str, method: str, params: dict[str, str] | None = None)
     query = f"?{urllib.parse.urlencode(params)}" if params else ""
     url = f"https://api.telegram.org/bot{token}/{method}{query}"
     try:
-        with urllib.request.urlopen(url, timeout=8) as response:  # noqa: S310 — fixed host
+        with urllib.request.urlopen(url, timeout=8) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except Exception as exc:
         return False, f"تعذّر الاتصال: {exc}"
@@ -255,7 +299,7 @@ class _TelegramIngest:
     """The Telegram-specific legs of an ingest."""
 
     @staticmethod
-    async def store_source(service: "TelegramMediaService", asset, source: Path, upload_args: dict | None) -> dict:
+    async def store_source(service: TelegramMediaService, asset, source: Path, upload_args: dict | None) -> dict:
         """Publish the original file and return row fields to write back."""
         uploaded = await service.upload_file(str(source), caption=f"source · {asset.slug}", **(upload_args or {}))
         parts = uploaded["parts"]
@@ -267,10 +311,10 @@ class _TelegramIngest:
 
     @staticmethod
     async def store_package(
-        service: "TelegramMediaService",
+        service: TelegramMediaService,
         slug: str,
         result,
-        tracker: "ProgressTracker | None" = None,
+        tracker: ProgressTracker | None = None,
     ) -> list[dict]:
         """Upload every renditions' segments and return payloads for the ORM."""
         total_segments = sum(len(p.segments) for p in result.renditions)
@@ -279,22 +323,26 @@ class _TelegramIngest:
         for packaged in result.renditions:
             segments = []
             for index, segment_path in enumerate(packaged.segments):
-                uploaded = await service.upload_file(str(segment_path), caption=f"{slug} · {packaged.quality} · {index}")
+                uploaded = await service.upload_file(
+                    str(segment_path), caption=f"{slug} · {packaged.quality} · {index}"
+                )
                 part = uploaded["parts"][0]
                 segments.append((index, part))
                 published += 1
                 if tracker is not None:
                     tracker.publish_segment(published, total_segments)
-            renditions.append({
-                "quality": packaged.quality,
-                "width": packaged.width,
-                "height": packaged.height,
-                "bandwidth_bps": packaged.bandwidth_bps,
-                "playlist": packaged.playlist_text,
-                "aes_key_hex": packaged.aes_key_hex,
-                "segment_count": len(packaged.segments),
-                "segments": segments,
-            })
+            renditions.append(
+                {
+                    "quality": packaged.quality,
+                    "width": packaged.width,
+                    "height": packaged.height,
+                    "bandwidth_bps": packaged.bandwidth_bps,
+                    "playlist": packaged.playlist_text,
+                    "aes_key_hex": packaged.aes_key_hex,
+                    "segment_count": len(packaged.segments),
+                    "segments": segments,
+                }
+            )
         return renditions
 
 

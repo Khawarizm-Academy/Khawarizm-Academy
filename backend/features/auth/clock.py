@@ -28,9 +28,9 @@ def drift_seconds() -> int | None:
     """Seconds the local clock lags real time (positive = lagging), or None
     when the reference is unreachable -- offline must fail quiet, not fail
     the server boot."""
-    request = urllib.request.Request("https://www.google.com", method="HEAD")  # noqa: S310 -- fixed reference host
+    request = urllib.request.Request("https://www.google.com", method="HEAD")
     try:
-        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:  # noqa: S310 -- fixed reference host
+        with urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response:
             server_seconds = parsedate_to_datetime(response.headers["Date"]).timestamp()
     except Exception:
         return None

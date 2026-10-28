@@ -60,7 +60,9 @@ class User(AbstractUser):
     # Display fields shared by every role.
     full_name = models.CharField(max_length=120, blank=True)
     phone = models.CharField(max_length=40, blank=True)
-    membership_status = models.CharField(max_length=140, blank=True, help_text="Display line, e.g. 'متعلّم منذ مارس 2024'")
+    membership_status = models.CharField(
+        max_length=140, blank=True, help_text="Display line, e.g. 'متعلّم منذ مارس 2024'"
+    )
     avatar_initials = models.CharField(max_length=10, blank=True)
     avatar_url = models.URLField(max_length=400, blank=True)
     language = models.CharField(max_length=10, default="ar")
@@ -91,7 +93,9 @@ class StudentProfile(UUIDModel):
     user = models.OneToOneField(User, related_name="student_profile", on_delete=models.CASCADE)
     learning_level = models.CharField(max_length=20, choices=LEARNING_LEVELS, default="intermediate")
     interests = models.JSONField(default=list, blank=True, help_text="List of interest labels")
-    notifications = models.JSONField(default=dict, blank=True, help_text="liveSessionReminders / weeklyProgressSummary / recommendedOpportunities")
+    notifications = models.JSONField(
+        default=dict, blank=True, help_text="liveSessionReminders / weeklyProgressSummary / recommendedOpportunities"
+    )
 
     class Meta:
         verbose_name = "Student profile"
