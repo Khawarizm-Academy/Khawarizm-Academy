@@ -16,6 +16,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from features.auth.device import client_ip
+from features.common.throttling import scoped_throttle
 from features.videohosting import tokens
 from features.videohosting.models import VideoAsset, VideoSegment
 from features.videohosting.packaging import TOKEN_PLACEHOLDER
@@ -82,6 +83,7 @@ def video_meta_view(request: Any, slug: str) -> Response:
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@scoped_throttle("video_token")
 def video_token_view(request: Any, slug: str) -> Response:
     """Mint a short-lived playback grant bound to the caller's IP and account."""
     asset = VideoAsset.objects.filter(slug=slug).first()

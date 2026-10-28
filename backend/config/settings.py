@@ -15,6 +15,7 @@ from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 from config.logging import build_logging_config
+from features.common.throttling import SCOPED_RATES
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOGGER = logging.getLogger(__name__)
@@ -121,6 +122,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.middleware.HardeningHeadersMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -250,6 +252,19 @@ if IS_VERCEL:
 # Vercel terminates TLS and forwards the original scheme to the app.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Transport & browser hardening. The gate is `not DEBUG`: a dev run over plain
+# HTTP keeps redirects off and cookies settable, while any prod-shaped run
+# (DEBUG=false) locks down unless the env says otherwise. The Phase-1
+# `check --deploy` warnings (W004/W008/W012/W016) are these four settings.
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SSL_REDIRECT", not DEBUG)
+SECURE_HSTS_SECONDS = env_int("DJANGO_HSTS_SECONDS", 0 if DEBUG else 31536000)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", not DEBUG)
+# Protocol-agnostic: no downside over plain HTTP either.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
 # Trust the same origins for CSRF (Django admin) over HTTPS.
 CSRF_TRUSTED_ORIGINS = [*CORS_ALLOWED_ORIGINS]
 if IS_VERCEL and VERCEL_URL:
@@ -262,6 +277,11 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["features.auth.authentication.AccessTokenAuthentication"],
+    # Scoped throttling (features.common.throttling owns the rates): every view
+    # passes through ScopedRateThrottle, which throttles only views tagged
+    # with a throttle_scope and lets the rest through untouched.
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": SCOPED_RATES,
     "EXCEPTION_HANDLER": "features.common.errors.api_exception_handler",
 }
 

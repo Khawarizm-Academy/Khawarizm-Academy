@@ -10,12 +10,14 @@ import uuid
 from pathlib import Path
 from unittest import mock
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 
 from config.logging import JsonConsoleFormatter, RequestContextFilter, reset_request_id, set_request_id
 from config.middleware import (
     ApiOriginRestrictionMiddleware,
+    HardeningHeadersMiddleware,
     RequestIDMiddleware,
     RequestMetricsMiddleware,
     _is_allowed_origin,
@@ -218,3 +220,38 @@ class RequestContextTests(SimpleTestCase):
         self.assertEqual(line["msg"], "hello")
         self.assertEqual(line["request_id"], "req-42")
         self.assertNotIn("user_id", line)  # empty context stays out of the line
+
+
+class HardeningHeaderTests(SimpleTestCase):
+    def _response(self, path="/api/catalog"):
+        middleware = HardeningHeadersMiddleware(lambda request: JsonResponse({}))
+        return middleware(RequestFactory().get(path))
+
+    def test_every_response_carries_the_permissions_policy(self):
+        self.assertIn("camera=()", self._response().headers["Permissions-Policy"])
+
+    def test_the_admin_gets_a_report_only_csp(self):
+        response = self._response("/admin/")
+        self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy-Report-Only"])
+
+    def test_the_api_stays_out_of_the_admin_csp(self):
+        self.assertNotIn("Content-Security-Policy-Report-Only", self._response())
+
+    def test_existing_headers_are_never_overwritten(self):
+        middleware = HardeningHeadersMiddleware(lambda request: JsonResponse({}, headers={"Permissions-Policy": "own"}))
+        response = middleware(RequestFactory().get("/"))
+        self.assertEqual(response.headers["Permissions-Policy"], "own")
+
+
+class DevProfileSafetyTests(SimpleTestCase):
+    """The committed dev profile must stay plain-HTTP friendly — no redirect, no secure cookies."""
+
+    def test_the_development_profile_never_gates_http(self):
+        self.assertFalse(settings.SECURE_SSL_REDIRECT)
+        self.assertEqual(settings.SECURE_HSTS_SECONDS, 0)
+        self.assertFalse(settings.SESSION_COOKIE_SECURE)
+        self.assertFalse(settings.CSRF_COOKIE_SECURE)
+
+    def test_the_browser_hardening_defaults_are_always_on(self):
+        self.assertEqual(settings.SECURE_REFERRER_POLICY, "strict-origin-when-cross-origin")
+        self.assertTrue(settings.SECURE_CONTENT_TYPE_NOSNIFF)

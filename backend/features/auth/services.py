@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import math
+from datetime import timedelta
+
+from django.db.models import Q
 from django.utils import timezone
 
 from features.auth.device import client_ip, parse_user_agent
 from features.auth.models import AuthEvent, InstructorProfile, StudentProfile, User, UserSession
 from features.auth.tokens import make_access_token, make_refresh_token, refresh_expiry
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
+from features.common.throttling import LOCKOUT_THRESHOLD, LOCKOUT_WINDOW_SECONDS
 
 
 def ensure_profile(user: User) -> None:
@@ -61,6 +66,32 @@ def record_event(
         user_agent=request.META.get("HTTP_USER_AGENT", "") if request else "",
         detail=detail,
     )
+
+
+def login_lockout_seconds(email: str = "", ip: str | None = None) -> int:
+    """Seconds this identity must wait before logging in again, 0 when clear.
+
+    Counted from REJECTED auth events matching the email or the source IP
+    inside the lockout window (either identifier alone is enough). Past the
+    threshold the wait is the time until the newest reject leaves the window —
+    waiting clears it, and callers of the blocked path record nothing new, so
+    a retry storm cannot extend its own lockout.
+    """
+    if not email and not ip:
+        return 0
+    now = timezone.now()
+    rejects = AuthEvent.objects.filter(
+        kind=AuthEventKind.REJECTED, created_at__gte=now - timedelta(seconds=LOCKOUT_WINDOW_SECONDS)
+    )
+    if email and ip:
+        rejects = rejects.filter(Q(email=email) | Q(ip_address=ip))
+    else:
+        rejects = rejects.filter(email=email) if email else rejects.filter(ip_address=ip)
+    if rejects.count() < LOCKOUT_THRESHOLD:
+        return 0
+    newest = rejects.order_by("-created_at").first()
+    remaining = LOCKOUT_WINDOW_SECONDS - (now - newest.created_at).total_seconds()
+    return max(1, math.ceil(remaining))
 
 
 def open_session(user: User, request, provider: str) -> tuple[UserSession, str, str]:

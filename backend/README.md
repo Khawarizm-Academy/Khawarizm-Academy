@@ -135,6 +135,9 @@ exported by hand:
 | `GOOGLE_DRIVE_*` | Alternative managed host: OAuth client id/secret/refresh token, service-account JSON, upload folder |
 | `VIDEO_HOSTING_DEFAULT_PROVIDER` | Provider assets default to (`google_drive`) |
 | `STREAM_TOKEN_TTL_HOURS` | Playback grant lifetime (default `6`) |
+| `DJANGO_SSL_REDIRECT` | Force HTTPS redirects. Default: on whenever `DEBUG=false`, off in dev |
+| `DJANGO_HSTS_SECONDS` | HSTS max-age. Default: `31536000` (1 year) when `DEBUG=false`, off in dev |
+| `DJANGO_SESSION_COOKIE_SECURE` / `DJANGO_CSRF_COOKIE_SECURE` | `Secure` cookies. Default: on whenever `DEBUG=false` |
 
 **Database per profile.** Development uses SQLite because `.env.development`
 sets no `DATABASE_URL`. Production values are set in the **host environment** (or as Vercel Project
@@ -391,6 +394,30 @@ VITE_API_BASE_URL=http://localhost:8000/api
 ```
 
 Start the backend first (`python manage.py runserver`), then `npm run dev`.
+
+## Hardening
+
+Abuse surfaces answer **429 with `Retry-After`** (`features/common/throttling.py` owns the rates):
+
+| Scope | Covers | Rate (per source IP) |
+| :--- | :--- | :--- |
+| `auth_burst` | `POST /api/auth/firebase`, `POST /api/auth/refresh` | 10/min |
+| `catalog` | `GET /api/catalog`, `/api/catalog/{slug}` | 120/min |
+| `video_token` | `POST /api/videos/{slug}/token` (playback grants) | 60/min |
+| `admin_burst` | every `/api/admin/*` console endpoint | 60/min |
+
+On top of the request throttle, **login lockout**: 5 rejected sign-ins from one
+email/IP within 15 minutes locks the login for the rest of the window — `429`
+with `{"code": "login_locked"}` and `Retry-After` counting down to when the
+newest rejection leaves the window. Waiting clears it; spamming does not
+extend it.
+
+Transport and browser headers: HTTPS redirect + HSTS (1 year, subdomains) +
+`Secure` session/CSRF cookies whenever `DEBUG=false` (env-overridable, see the
+table above); `Referrer-Policy: strict-origin-when-cross-origin`,
+`X-Content-Type-Options: nosniff`, and a `Permissions-Policy` on every
+response (`config/middleware.py`). The Django admin additionally gets a
+**report-only CSP** — the trial run before promoting it to a real one.
 
 ## Observability
 

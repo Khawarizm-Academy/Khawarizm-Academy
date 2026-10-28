@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.core.cache import cache
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -31,7 +32,14 @@ class FakeRequest:
 
 
 def api_client() -> APIClient:
-    """A DRF client that always sends an allowed Origin and asks for JSON."""
+    """A DRF client that always sends an allowed Origin and asks for JSON.
+
+    Clears the throttle cache too: rate counters key on the shared test ident
+    (127.0.0.1) in a process-local cache, so every test that asks for a client
+    starts with a fresh minute — including TransactionTestCase classes that
+    bypass ApiTestCase.setUp and build one here directly.
+    """
+    cache.clear()
     client = APIClient()
     client.defaults["HTTP_ORIGIN"] = ALLOWED_ORIGIN
     client.defaults["HTTP_ACCEPT"] = "application/json"
@@ -39,7 +47,7 @@ def api_client() -> APIClient:
 
 
 class ApiTestCase(TestCase):
-    """Base case whose client passes the API origin middleware."""
+    """Base case whose client passes the API origin middleware and throttling."""
 
     def setUp(self) -> None:
         super().setUp()
