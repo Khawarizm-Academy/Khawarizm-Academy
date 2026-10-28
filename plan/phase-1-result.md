@@ -36,12 +36,27 @@ Branch: `Chore/BackendCI` → PR into `Refactor/BackendSkills`. Date: 2026-10-28
 
 23/23 GET snapshots identical before → after the whole lint/format/refactor sweep (`plan/phase-0-baseline.md` method; volatile keys normalized). Zero behavior change.
 
-## Workflow wiring
+## Workflow wiring (from the first CI runs)
 
-- CI green on the PR into `Refactor/BackendSkills` (first run of the pipeline).
-- `main` branch protection (required check: `backend-ci / lint · checks · tests · audit`) set after this PR's merge — the check run must exist before protection can name it.
+- **Run 1 fail — diagnostics hint:** the `ffmpeg` check carried an empty `hint`; the gate test demands every failing check name its fix, and CI has no ffmpeg (locally it exists). Fixed the check (Docker image / `apt install ffmpeg` / admin toggle are the actual remedies) — a real gap the new pipeline caught on day one.
+- **Run 2 fail — gitleaks license:** `gitleaks-action@v2` now requires `GITLEAKS_LICENSE` even on public repos. Replaced with the pinned gitleaks CLI binary (`v8.28.0`) running whole-history `detect` — same scan, no license gate.
+- **Run 3 fail — config discovery:** the scan step inherited `working-directory: backend`, so the root `.gitleaks.toml` was never read. Fixed with explicit `--source "$GITHUB_WORKSPACE" --config "$GITHUB_WORKSPACE/.gitleaks.toml"`.
+- **Run 4 — green.**
+
+## Secrets scan findings (audited allowances + follow-ups)
+
+Whole-history scan flagged 6; each dispositioned in `.gitleaks.toml` with a why-comment:
+
+1–2. `00112233445566778899aabbccddeeff` (videohosting test fixtures ×2) — counting-pattern dummy AES hex; not a credential.
+3–4. `AIzaSyAU4w…` in two historical `.env.development` commits — the **development** project's Firebase **web** config; web API keys are public identifiers by design (they ship in the SPA bundle); the boundary is Authorized domains.
+5–6. `DJANGO_SECRET_KEY=djs-de101f…` committed in `2cdfcbfc`/`03c2957c` ("Update All ENVs"/"Update Secrets", 2026-10-14) — those two commits touched **only env files**. The current untracked `.env.production` holds a **different, later** key, i.e. it was rotated after the leak.
+
+**Open follow-ups for the owner (recorded, not blockers):**
+- Verify the live Vercel/deploy env actually uses only the post-leak key (if the `djs-…` value is still set anywhere, rotate again).
+- Optional: rewrite history to drop the two env commits (`git filter-repo`) — destructive to every branch; decide before Phase 12's tag/release.
 
 ## Notes for later phases
 
 - Pre-commit hygiene hooks are scoped on purpose; widen only with a plan update.
 - `catalog?type=course` (singular) 500s with `KeyError` in the original code — caught during Phase 0 parity capture (baseline fact; Phase 5 replaces silent/unknown-value handling with 400).
+- CI runner note: ubuntu-latest migrates to Ubuntu 26 (actions/runner-images#14748) — nothing to do now.
