@@ -115,6 +115,7 @@ MIDDLEWARE = [
     "config.middleware.RequestIDMiddleware",
     "config.middleware.RequestMetricsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "config.middleware.ApiOriginRestrictionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -122,6 +123,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.middleware.PrivateCacheMiddleware",
     "config.middleware.HardeningHeadersMiddleware",
 ]
 
@@ -180,6 +182,10 @@ def resolve_sqlite_path(
     return runtime
 
 
+# A persistent connection helps a long-lived gunicorn worker; a Lambda's
+# frozen connection goes stale between invocations, so Vercel keeps 0.
+CONN_MAX_AGE = env_int("DJANGO_CONN_MAX_AGE", 0 if IS_VERCEL else 60)
+
 if DATABASE_URL:
     db = urllib.parse.urlparse(DATABASE_URL)
     options = {}
@@ -195,7 +201,7 @@ if DATABASE_URL:
             "HOST": db.hostname,
             "PORT": db.port,
             "OPTIONS": options,
-            "CONN_MAX_AGE": 0,
+            "CONN_MAX_AGE": CONN_MAX_AGE,
             "DISABLE_SERVER_SIDE_CURSORS": True,
         }
     }
@@ -204,6 +210,7 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME, override=SQLITE_PATH),
+            "CONN_MAX_AGE": CONN_MAX_AGE,
             # The upload worker and its tracker flusher run on their own
             # connections; Django's default shared-cache in-memory test DB
             # fails those writes instantly with "database table is locked"
@@ -269,6 +276,38 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 CSRF_TRUSTED_ORIGINS = [*CORS_ALLOWED_ORIGINS]
 if IS_VERCEL and VERCEL_URL:
     CSRF_TRUSTED_ORIGINS.append(f"https://{VERCEL_URL}")
+
+# Compress JSON responses (JSON shrinks 5-10x under gzip); Vary: Accept-Encoding
+# is added by the middleware itself.
+GZIP_MIN_LENGTH = 200
+
+# App cache: LocMem per process by default (fine for one gunicorn worker /
+# Lambda instance). Setting REDIS_URL switches to django-redis for a shared,
+# multi-instance cache — install it (`pip install django-redis`) when that
+# day comes; until then the env var is documented, not shipped.
+REDIS_URL = os.environ.get("REDIS_URL", "")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "khawarizm-cache",
+    }
+}
+if REDIS_URL:
+    try:
+        import django_redis  # noqa: F401
+
+        CACHES = {
+            "default": {
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": REDIS_URL,
+                "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+            }
+        }
+    except ImportError:
+        LOGGER.warning(
+            "REDIS_URL is set but django-redis is not installed — falling back to LocMem, "
+            "which is per-instance. Add django-redis to requirements.txt to use Redis."
+        )
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [

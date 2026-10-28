@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from django.core.cache import cache
 from django.test import TestCase
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
+from features.common.cache import bump_version, cached, param_digest
 from features.common.errors import api_exception_handler
 from features.common.serializers import as_number, compact
 from features.common.testing import ALLOWED_ORIGIN, ApiTestCase, make_course, make_scholarship
@@ -55,3 +57,55 @@ class TestingHelpersTests(ApiTestCase):
     def test_factories_fill_required_fields(self):
         self.assertEqual(make_course().slug, "course-1")
         self.assertEqual(make_scholarship().slug, "scholarship-1")
+
+
+class CacheHelperTests(TestCase):
+    """The app-cache contract: versioned keys, jittered TTLs, one miss line."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        cache.clear()  # version keys and entries must not leak between tests
+
+    def test_a_miss_calls_the_loader_and_a_hit_does_not(self):
+        calls = []
+
+        def loader():
+            calls.append(1)
+            return {"n": len(calls)}
+
+        first = cached("test-ns", param_digest({"a": 1}), 60, loader)
+        second = cached("test-ns", param_digest({"a": 1}), 60, loader)
+        self.assertEqual(first, {"n": 1})
+        self.assertEqual(second, {"n": 1})  # the loader ran once
+        self.assertEqual(len(calls), 1)
+
+    def test_a_version_bump_invalidates_the_whole_family(self):
+        counter = {"n": 0}
+
+        def loader():
+            counter["n"] += 1
+            return {"n": counter["n"]}
+
+        warm = cached("test-bump", "key", 60, loader)
+        bump_version("test-bump")
+        after = cached("test-bump", "key", 60, loader)
+        self.assertEqual(warm, {"n": 1})
+        self.assertEqual(after, {"n": 2})  # the loader ran again, fresh value
+
+    def test_a_cached_none_is_a_hit_not_a_miss(self):
+        calls = []
+        loader = lambda: calls.append(1) and None  # noqa: E731
+
+        self.assertIsNone(cached("test-none", "k", 60, loader))
+        self.assertIsNone(cached("test-none", "k", 60, loader))
+        self.assertEqual(len(calls), 1)
+
+    def test_every_miss_logs_one_greppable_line(self):
+        with self.assertLogs("features.common.cache", level="INFO") as captured:
+            cached("test-log", "abc", 60, lambda: {"x": 1})
+        self.assertIn("cache miss", captured.records[0].getMessage())
+        self.assertEqual(captured.records[0].cache_ns, "test-log")
+
+    def test_param_digest_is_order_insensitive_and_deterministic(self):
+        self.assertEqual(param_digest({"a": 1, "b": 2}), param_digest({"b": 2, "a": 1}))
+        self.assertNotEqual(param_digest({"a": 1}), param_digest({"a": 2}))

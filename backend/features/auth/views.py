@@ -15,6 +15,7 @@ from features.auth.models import UserSession
 from features.auth.serializers import session_payload, user_profile
 from features.auth.tokens import hash_refresh_token
 from features.common.choices import AuthEventKind, SessionRevokeReason
+from features.common.http_cache import etag_response
 from features.common.serializers import compact
 from features.common.throttling import scoped_throttle
 
@@ -34,19 +35,22 @@ def login_failure_detail(error: Exception) -> str:
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def auth_config(request):
-    """Everything the SPA needs to initialize its Firebase client."""
-    return Response(
-        {
-            # The web config `initializeApp()` takes; Auth needs exactly these three.
-            "firebase": compact(
-                apiKey=settings.FIREBASE_API_KEY,
-                authDomain=settings.FIREBASE_AUTH_DOMAIN,
-                projectId=settings.FIREBASE_PROJECT_ID,
-            ),
-            "providers": ["password", "google", "facebook"],
-            "devAuth": settings.FIREBASE_ALLOW_DEV_TOKENS and not settings.FIREBASE_PROJECT_ID,
-        }
-    )
+    """Everything the SPA needs to initialize its Firebase client.
+
+    Settings-derived and DB-free, so it carries a short must-revalidate
+    cache lifetime instead of an app-cache entry.
+    """
+    payload = {
+        # The web config `initializeApp()` takes; Auth needs exactly these three.
+        "firebase": compact(
+            apiKey=settings.FIREBASE_API_KEY,
+            authDomain=settings.FIREBASE_AUTH_DOMAIN,
+            projectId=settings.FIREBASE_PROJECT_ID,
+        ),
+        "providers": ["password", "google", "facebook"],
+        "devAuth": settings.FIREBASE_ALLOW_DEV_TOKENS and not settings.FIREBASE_PROJECT_ID,
+    }
+    return etag_response(request, payload, max_age=15, s_maxage=60, swr=0, must_revalidate=True)
 
 
 @api_view(["POST"])

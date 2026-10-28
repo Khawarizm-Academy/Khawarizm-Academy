@@ -19,13 +19,9 @@ from datetime import UTC, datetime
 _request_id_ctx: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="")
 _user_id_ctx: contextvars.ContextVar[str] = contextvars.ContextVar("user_id", default="")
 
-# Log lines never carry secrets or request bodies (be-observability §2): the
-# formatter whitelists fields, so nothing sensitive can leak by accident.
+# The formatter whitelists these record attributes, so nothing sensitive can
+# leak into logs by accident (ts/level/msg/logger are emitted directly).
 _FIELDS = (
-    "ts",
-    "level",
-    "msg",
-    "logger",
     "request_id",
     "user_id",
     "path",
@@ -33,6 +29,8 @@ _FIELDS = (
     "duration_ms",
     "db_ms",
     "queries",
+    "cache_ns",
+    "cache_key",
 )
 
 
@@ -77,7 +75,7 @@ class JsonConsoleFormatter(logging.Formatter):
             "msg": record.getMessage(),
             "logger": record.name,
         }
-        for name in ("request_id", "user_id", "path", "status", "duration_ms", "db_ms", "queries"):
+        for name in _FIELDS:
             value = getattr(record, name, None)
             if value not in (None, ""):
                 line[name] = value
