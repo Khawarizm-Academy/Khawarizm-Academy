@@ -22,6 +22,7 @@ from features.auth.models import AuthEvent, User, UserSession
 from features.auth.permissions import IsAdminRole
 from features.auth.serializers import session_with_user, user_profile
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
+from features.common.throttling import scoped_throttle
 from features.competitions.models import Competition
 from features.courses.models import Course
 from features.events.models import EventItem
@@ -107,6 +108,7 @@ def _values_for(spec: dict, data: dict, create: bool) -> dict:
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def overview(request):
     """Headline numbers for the console home, including content totals."""
     now = timezone.now()
@@ -142,6 +144,7 @@ def overview(request):
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def users(request):
     """Paged, filterable user list (GET) or a new account (POST)."""
     if request.method == "POST":
@@ -180,6 +183,7 @@ def _create_user(request) -> Response:
 
 @api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def user_detail(request, user_id):
     """One user's detail (GET), an account edit (PATCH), or removal (DELETE)."""
     user = User.objects.filter(pk=user_id).first()
@@ -216,6 +220,7 @@ def _update_user(request, user: User) -> Response:
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def set_role(request, user_id):
     """Promote or demote a role; an admin cannot change their own."""
     if str(request.user.id) == str(user_id):
@@ -235,6 +240,7 @@ def set_role(request, user_id):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def sessions(request):
     """Every session across every user, active first."""
     queryset = UserSession.objects.select_related("user")
@@ -259,6 +265,7 @@ def sessions(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def revoke_session(request, session_id):
     """Force-logout one device anywhere in the fleet."""
     session = UserSession.objects.select_related("user").filter(pk=session_id).first()
@@ -277,6 +284,7 @@ def revoke_session(request, session_id):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def logins_series(request):
     """Daily login counts for the activity chart."""
     days = min(_int_param(request, "days", 14, 1), 90)
@@ -293,6 +301,7 @@ def logins_series(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def devices(request):
     """Session footprint breakdown by OS / browser / device type."""
     return Response({"os": _breakdown("os"), "browser": _breakdown("browser"), "deviceType": _breakdown("device_type")})
@@ -300,6 +309,7 @@ def devices(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def events(request):
     """The most recent audit rows, optionally filtered by kind."""
     queryset = AuthEvent.objects.select_related("user")
@@ -311,6 +321,7 @@ def events(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def content_schema(request):
     """The managed content types and their editable fields."""
     return Response({"types": serializers.content_types_payload(), "userFields": list(USER_FIELDS)})
@@ -318,6 +329,7 @@ def content_schema(request):
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def content_items(request, type_key):
     """Paged content rows (GET) or a new row (POST) for one managed type."""
     spec = _require_content_type(type_key)
@@ -350,6 +362,7 @@ def content_items(request, type_key):
 
 @api_view(["PATCH", "DELETE"])
 @permission_classes([IsAuthenticated, IsAdminRole])
+@scoped_throttle("admin_burst")
 def content_detail(request, type_key, pk):
     """Edit (PATCH) or delete (DELETE) one content row."""
     spec = _require_content_type(type_key)

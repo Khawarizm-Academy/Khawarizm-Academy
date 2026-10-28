@@ -124,3 +124,26 @@ class RequestMetricsMiddleware:
         finally:
             reset_user_id(user_token)
         return response
+
+
+# The browser-facing hardening headers, kept literal: they are the boring
+# defaults from the security checklist, reviewed with the site, not per-env
+# tuning knobs.
+PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+# Trial run for the admin surface only — report-only, so promoting it to a
+# real CSP cannot break the admin's inline scripts/styles on day one. The
+# phase that enforces it owns the inline cleanup first.
+ADMIN_CSP_REPORT_ONLY = (
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data:; frame-ancestors 'none'"
+)
+
+
+class HardeningHeadersMiddleware(MiddlewareMixin):
+    """Permissions-Policy on every response; a report-only CSP on /admin/."""
+
+    def process_response(self, request, response):
+        response.headers.setdefault("Permissions-Policy", PERMISSIONS_POLICY)
+        if request.path.startswith("/admin/"):
+            response.headers.setdefault("Content-Security-Policy-Report-Only", ADMIN_CSP_REPORT_ONLY)
+        return response

@@ -10,11 +10,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from features.auth import firebase, services
+from features.auth.device import client_ip
 from features.auth.models import UserSession
 from features.auth.serializers import session_payload, user_profile
 from features.auth.tokens import hash_refresh_token
 from features.common.choices import AuthEventKind, SessionRevokeReason
 from features.common.serializers import compact
+from features.common.throttling import scoped_throttle
 
 
 def login_failure_detail(error: Exception) -> str:
@@ -49,11 +51,22 @@ def auth_config(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@scoped_throttle("auth_burst")
 def firebase_login(request):
     """Exchange a Firebase ID token for our access/refresh pair."""
     id_token = (request.data or {}).get("idToken", "")
     if not id_token:
         return Response({"detail": "idToken مطلوب."}, status=status.HTTP_400_BAD_REQUEST)
+    # The lockout is the auth-failure backoff (REJECTED audit events); it sits
+    # before verification, and the blocked path records nothing, so waiting
+    # clears it instead of a retry storm extending it.
+    wait = services.login_lockout_seconds(ip=client_ip(request))
+    if wait:
+        return Response(
+            {"code": "login_locked", "detail": f"محاولات دخول كثيرة — أعد المحاولة بعد {wait} ثانية."},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+            headers={"Retry-After": str(wait)},
+        )
     try:
         identity = firebase.verify_id_token(id_token)
     except firebase.FirebaseError as exc:
@@ -76,6 +89,7 @@ def firebase_login(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@scoped_throttle("auth_burst")
 def refresh(request):
     """Rotate a refresh token into a new access token (and a new refresh token)."""
     raw = (request.data or {}).get("refreshToken", "")

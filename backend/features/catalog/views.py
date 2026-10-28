@@ -13,6 +13,7 @@ from rest_framework.response import Response
 
 from features.catalog.filters import matches, sort_key
 from features.catalog.serializers import catalog_filters, catalog_item_for
+from features.common.throttling import scoped_throttle
 from features.courses.models import Course
 from features.scholarships.models import Scholarship
 
@@ -40,6 +41,7 @@ def _interleaved_items() -> list[dict[str, Any]]:
 
 
 @api_view(["GET"])
+@scoped_throttle("catalog")
 def catalog_list(request: Any) -> Response:
     """Paged, filterable list of courses and scholarships interleaved."""
     params = request.query_params
@@ -71,6 +73,7 @@ def catalog_list(request: Any) -> Response:
 
 
 @api_view(["GET"])
+@scoped_throttle("catalog")
 def catalog_detail(request: Any, slug: str) -> Response:
     """One catalog item (course or scholarship) by slug."""
     course = Course.objects.filter(slug=slug).first()
