@@ -138,7 +138,7 @@ exported by hand:
 | `DJANGO_SSL_REDIRECT` | Force HTTPS redirects. Default: on whenever `DEBUG=false`, off in dev |
 | `DJANGO_HSTS_SECONDS` | HSTS max-age. Default: `31536000` (1 year) when `DEBUG=false`, off in dev |
 | `DJANGO_SESSION_COOKIE_SECURE` / `DJANGO_CSRF_COOKIE_SECURE` | `Secure` cookies. Default: on whenever `DEBUG=false` |
-| `DJANGO_CONN_MAX_AGE` | Persistent DB connections (seconds). Default `60` self-hosted, `0` on Vercel |
+| `DJANGO_CONN_MAX_AGE` | Persistent Postgres connections (seconds). Default `60` self-hosted, `0` on Vercel. SQLite stays at `0` — the upload worker needs short-lived connections |
 | `REDIS_URL` | Switch the app cache to Redis (requires `pip install django-redis`); LocMem otherwise |
 
 **Database per profile.** Development uses SQLite because `.env.development`

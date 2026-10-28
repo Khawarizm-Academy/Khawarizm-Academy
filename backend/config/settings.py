@@ -182,16 +182,17 @@ def resolve_sqlite_path(
     return runtime
 
 
-# A persistent connection helps a long-lived gunicorn worker; a Lambda's
-# frozen connection goes stale between invocations, so Vercel keeps 0.
-CONN_MAX_AGE = env_int("DJANGO_CONN_MAX_AGE", 0 if IS_VERCEL else 60)
-
 if DATABASE_URL:
     db = urllib.parse.urlparse(DATABASE_URL)
     options = {}
     sslmode = urllib.parse.parse_qs(db.query).get("sslmode", [None])[0]
     if sslmode:
         options["sslmode"] = sslmode
+    # A persistent connection helps a long-lived gunicorn worker on Postgres;
+    # a Lambda's frozen connection goes stale between invocations, so Vercel
+    # keeps 0. SQLite stays at 0 below — its multi-thread workers (the upload
+    # ingest) rely on short-lived connections to keep table locks transient.
+    CONN_MAX_AGE = env_int("DJANGO_CONN_MAX_AGE", 0 if IS_VERCEL else 60)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -210,7 +211,6 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME, override=SQLITE_PATH),
-            "CONN_MAX_AGE": CONN_MAX_AGE,
             # The upload worker and its tracker flusher run on their own
             # connections; Django's default shared-cache in-memory test DB
             # fails those writes instantly with "database table is locked"
