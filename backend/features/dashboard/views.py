@@ -36,7 +36,7 @@ def dashboard_summary(request: Any) -> Response:
 @permission_classes([IsAuthenticated])
 def dashboard_enrolled(request: Any) -> Response:
     rows = Enrollment.objects.filter(user=request.user).select_related("course")
-    return Response([enrolled_course(row) for row in rows])
+    return Response({"items": [enrolled_course(row) for row in rows]})
 
 
 @api_view(["GET"])

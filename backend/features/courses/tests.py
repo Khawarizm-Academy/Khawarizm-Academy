@@ -136,22 +136,22 @@ class CourseViewTests(ApiTestCase):
     def test_detail_missing_slug_returns_404(self):
         response = self.client.get("/api/courses/missing")
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "الدورة غير موجودة"})
+        self.assertEqual(response.json(), {"detail": "الدورة غير موجودة", "code": "not_found"})
 
     def test_problems_list_returns_the_shared_set(self):
         build_course_row()
         body = self.client.get("/api/problems").json()
-        self.assertEqual([problem["id"] for problem in body], ["p1"])
+        self.assertEqual([problem["id"] for problem in body["items"]], ["p1"])
 
     def test_course_problems_returns_the_same_set(self):
         build_course_row()
-        self.assertEqual(self.client.get("/api/courses/course-1/problems").json()[0]["id"], "p1")
+        self.assertEqual(self.client.get("/api/courses/course-1/problems").json()["items"][0]["id"], "p1")
 
     def test_related_returns_catalog_cards(self):
         build_course_row()
         make_course(slug="course-2")
         body = self.client.get("/api/courses/course-1/related").json()
-        self.assertEqual([item["id"] for item in body], ["course-2"])
+        self.assertEqual([item["id"] for item in body["items"]], ["course-2"])
 
     def test_related_missing_course_returns_404(self):
         self.assertEqual(self.client.get("/api/courses/missing/related").status_code, 404)

@@ -148,7 +148,7 @@ class CatalogDetailViewTests(ApiTestCase):
     def test_missing_slug_returns_404(self):
         response = self.client.get("/api/catalog/missing")
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "العنصر غير موجود"})
+        self.assertEqual(response.json(), {"detail": "العنصر غير موجود", "code": "not_found"})
 
 
 class CatalogUrlTests(TestCase):

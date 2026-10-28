@@ -23,7 +23,12 @@ from features.auth.models import AuthEvent, User, UserSession
 from features.auth.permissions import IsAdminRole
 from features.auth.serializers import session_with_user, user_profile
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
-from features.common.errors import InvalidParameter
+from features.common.errors import InvalidParameter, NotFound
+from features.common.messages import (
+    ADMIN_CONTENT_NOT_FOUND,
+    ADMIN_USER_NOT_FOUND,
+    SESSION_NOT_FOUND,
+)
 from features.common.throttling import scoped_throttle
 
 PAGE_SIZE = 20
@@ -123,7 +128,7 @@ def user_detail(request, user_id):
     """One user's detail (GET), an account edit (PATCH), or removal (DELETE)."""
     user = User.objects.filter(pk=user_id).first()
     if user is None:
-        return Response({"detail": "المستخدم غير موجود."}, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(ADMIN_USER_NOT_FOUND)
     if request.method == "PATCH":
         services.update_user_account(user, request.data or {}, acting_user=request.user)
         return Response(serializers.user_row(user))
@@ -140,7 +145,7 @@ def set_role(request, user_id):
     """Promote or demote a role; an admin cannot change their own."""
     user = User.objects.filter(pk=user_id).first()
     if user is None:
-        return Response({"detail": "المستخدم غير موجود."}, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(ADMIN_USER_NOT_FOUND)
     updated = services.set_role(user, (request.data or {}).get("role"), acting_user=request.user)
     return Response(user_profile(updated))
 
@@ -169,7 +174,7 @@ def revoke_session(request, session_id):
     """Force-logout one device anywhere in the fleet."""
     session = UserSession.objects.select_related("user").filter(pk=session_id).first()
     if session is None:
-        return Response({"detail": "الجلسة غير موجودة."}, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(SESSION_NOT_FOUND)
     session.revoke(SessionRevokeReason.REVOKED_BY_ADMIN)
     auth_services.record_event(
         AuthEventKind.REVOKED,
@@ -255,7 +260,7 @@ def content_detail(request, type_key, pk):
     spec = services.require_content_type(type_key)
     row = spec["model"].objects.filter(pk=pk).first()
     if row is None:
-        return Response({"detail": "العنصر غير موجود."}, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(ADMIN_CONTENT_NOT_FOUND)
     if request.method == "DELETE":
         row.delete()
         return Response({"deleted": True, "id": str(pk)})
