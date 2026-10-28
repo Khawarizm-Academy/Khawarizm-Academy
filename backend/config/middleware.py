@@ -55,9 +55,16 @@ class ApiOriginRestrictionMiddleware(MiddlewareMixin):
 
     # A top-level Google OAuth redirect carries no Origin or Referer; its CSRF
     # protection is the single-use `state` in the query, not the origin gate.
-    # /healthz and /readyz sit outside /api/ anyway; listing them here keeps
-    # the uptime surface explicit if they ever move under it.
-    EXEMPT_PATHS = ("/api/admin/video-drive/oauth/callback", "/healthz", "/readyz")
+    # The maintenance endpoint: platform crons (Vercel) send no Origin either —
+    # they authenticate with the cron secret instead. /healthz and /readyz sit
+    # outside /api/ anyway; listing them here keeps the uptime surface
+    # explicit if they ever move under it.
+    EXEMPT_PATHS = (
+        "/api/admin/video-drive/oauth/callback",
+        "/api/admin/maintenance/cleanup",
+        "/healthz",
+        "/readyz",
+    )
 
     def process_request(self, request: HttpRequest):
         if request.path.startswith("/api/"):

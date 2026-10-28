@@ -309,6 +309,14 @@ if REDIS_URL:
             "which is per-instance. Add django-redis to requirements.txt to use Redis."
         )
 
+# Maintenance job (features/common/maintenance.py, command `cleanup_expired`):
+# how long the auth audit trail is kept, and the shared secret platform crons
+# authenticate with. Vercel Cron auto-attaches `Authorization: Bearer
+# $CRON_SECRET` when that project env var exists, so it is accepted as a
+# fallback name; unset means the cron path is dead and only staff can run it.
+AUTH_EVENT_RETENTION_DAYS = env_int("AUTH_EVENT_RETENTION_DAYS", 180)
+MAINTENANCE_CRON_SECRET = os.environ.get("MAINTENANCE_CRON_SECRET") or os.environ.get("CRON_SECRET", "")
+
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",

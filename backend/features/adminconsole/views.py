@@ -11,19 +11,21 @@ from datetime import timedelta
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import exceptions, status
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from features.adminconsole import serializers, services
 from features.adminconsole.serializers import USER_FIELDS
 from features.auth import services as auth_services
+from features.auth.authentication import AccessTokenAuthentication, CronSecretAuthentication
 from features.auth.models import AuthEvent, User, UserSession
 from features.auth.permissions import IsAdminRole
 from features.auth.serializers import session_with_user, user_profile
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
 from features.common.errors import InvalidParameter, NotFound
+from features.common.maintenance import run_cleanup
 from features.common.messages import (
     ADMIN_CONTENT_NOT_FOUND,
     ADMIN_USER_NOT_FOUND,
@@ -266,3 +268,25 @@ def content_detail(request, type_key, pk):
         return Response({"deleted": True, "id": str(pk)})
     updated = services.save_content_row(spec, row, request.data or {})
     return Response(serializers.content_row(spec, updated))
+
+
+@api_view(["POST", "GET"])
+@authentication_classes([CronSecretAuthentication, AccessTokenAuthentication])
+@permission_classes([AllowAny])
+def maintenance_cleanup(request):
+    """Run `cleanup_expired` inline — 202 with the run's status body.
+
+    Two callers share it: an admin (session bearer) and the platform cron
+    (Vercel sends `Authorization: Bearer $CRON_SECRET`, which cannot hold a
+    user session). `CronSecretAuthentication` marks the cron path as
+    `request.auth == "cron"`; everything else must be staff, so the gate
+    stays explicit here instead of trusting `AllowAny`.
+    """
+    is_cron = request.auth == "cron"
+    if not is_cron and not (request.user and request.user.is_staff):
+        raise exceptions.PermissionDenied()
+    trigger = "cron" if is_cron else "endpoint"
+    # 202 per the job pattern: the caller gets a status resource immediately;
+    # the work itself is inline (chunked deletes finish well inside the
+    # serverless runtime), so there is nothing to poll.
+    return Response(run_cleanup(trigger), status=status.HTTP_202_ACCEPTED)
