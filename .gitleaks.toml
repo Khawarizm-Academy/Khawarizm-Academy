@@ -1,0 +1,30 @@
+# gitleaks configuration — the default rule set plus a small, audited allowlist.
+# Every entry has a reason and is recorded in plan/phase-1-result.md. A new
+# entry here must come with the same: what leaked, why it is not a live risk.
+title = "Khawarizm Academy — audited allowances"
+
+[extend]
+useDefault = true
+
+[allowlist]
+  description = "audited allowances — details in plan/phase-1-result.md"
+  regexes = [
+    # videohosting test fixtures: a counting-pattern hex standing in for an
+    # AES key — not a credential, never used outside tests.
+    '''00112233445566778899aabbccddeeff''',
+    # The development project's Firebase WEB config, committed historically in
+    # backend/.env.development. Web API keys are public identifiers by design —
+    # they ship inside the SPA bundle — and the boundary is Firebase's
+    # Authorized-domains list, not key secrecy.
+    '''AIzaSyAU4wASrifWsFYXOLFjd8OgT9Z0MMFRuv0''',
+  ]
+  commits = [
+    # 2cdfcbfc "Update All ENVs" + 03c2957c "Update Secrets": these two commits
+    # touched only env files and carried the then-production DJANGO_SECRET_KEY.
+    # The current backend/.env.production (untracked) holds a different,
+    # later-generated key, i.e. it was rotated after these commits; the
+    # follow-ups (verify the Vercel env var matches, optional history rewrite)
+    # are recorded in plan/phase-1-result.md.
+    "2cdfcbfc2479e54ebdd51b8c9ff040724a7686c8",
+    "03c2957c07beb0f79106cbc71628472e890b3fff",
+  ]

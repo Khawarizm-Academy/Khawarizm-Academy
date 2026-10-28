@@ -58,9 +58,11 @@ jobs:
         run: pip-audit -r requirements.txt
 
       - name: Secrets scan (gitleaks, whole history)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # The official action now requires a paid license even on public repos,
+        # so the scanner binary runs directly instead — same detect, whole history.
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks detect --source . --report-format sarif --report-path /tmp/gitleaks.sarif --exit-code 1 -v
 
       # The production profile: debug off, a real-shaped secret, and the flags
       # Vercel/self-hosted set. Findings here are findings in prod, not in dev.
