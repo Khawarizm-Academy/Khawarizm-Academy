@@ -17,7 +17,22 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ["email", "full_name", "firebase_uid"]
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Identity", {"fields": ("firebase_uid", "role", "full_name", "phone", "avatar_url", "avatar_initials", "membership_status", "language", "timezone")}),
+        (
+            "Identity",
+            {
+                "fields": (
+                    "firebase_uid",
+                    "role",
+                    "full_name",
+                    "phone",
+                    "avatar_url",
+                    "avatar_initials",
+                    "membership_status",
+                    "language",
+                    "timezone",
+                )
+            },
+        ),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Dates", {"fields": ("last_login", "last_seen_at", "date_joined")}),
     )

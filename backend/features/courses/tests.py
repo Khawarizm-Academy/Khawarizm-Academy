@@ -29,7 +29,9 @@ def build_course_row() -> Course:
     course = make_course(slug="course-1", related_ids=["course-2"])
     module = CourseModule.objects.create(course=course, module_id="m1", title="Module 1")
     CourseLesson.objects.create(module=module, lesson_id="l1", title="Lesson 1", duration="10:00")
-    CourseLiveSession.objects.create(course=course, session_id="s1", title="Live 1", date_label="12 Oct", time_label="10:00")
+    CourseLiveSession.objects.create(
+        course=course, session_id="s1", title="Live 1", date_label="12 Oct", time_label="10:00"
+    )
     problem = CourseProblem.objects.create(problem_id="p1", prompt="Prompt", correct_option_id="a")
     CourseProblemOption.objects.create(problem=problem, option_id="a", label="Option A")
     return course
@@ -62,7 +64,9 @@ class CourseModelTests(TestCase):
 
     def test_live_session_defaults_to_upcoming(self):
         course = make_course()
-        session = CourseLiveSession.objects.create(course=course, session_id="s1", title="Live", date_label="d", time_label="t")
+        session = CourseLiveSession.objects.create(
+            course=course, session_id="s1", title="Live", date_label="d", time_label="t"
+        )
         self.assertEqual(session.state, "upcoming")
 
     def test_problem_str_and_unique_business_key(self):

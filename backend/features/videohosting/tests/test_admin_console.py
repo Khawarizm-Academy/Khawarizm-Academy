@@ -17,7 +17,6 @@ from django.utils import timezone
 from features.common.testing import ApiTestCase, api_client, authenticate, make_admin, make_user
 from features.videohosting import diagnostics, drive_oauth, ingest, packaging
 from features.videohosting.models import DriveAuthState, DriveGrant, VideoAsset
-
 from features.videohosting.tests.helpers import FakeTelegramService, ScriptedDriveHTTP
 
 
@@ -53,13 +52,17 @@ class AdminConsoleVideoTests(ApiTestCase):
 
     def test_telegram_asset_is_blocked_with_its_reason(self):
         with mock.patch.object(diagnostics, "provider_available", return_value=False):
-            response = self.client.post("/api/admin/video-assets", {"slug": "video-tg", "provider": "telegram"}, format="json")
+            response = self.client.post(
+                "/api/admin/video-assets", {"slug": "video-tg", "provider": "telegram"}, format="json"
+            )
         self.assertEqual(response.status_code, 400)
         self.assertIn("TELEGRAM_API_ID", response.json()["detail"])
 
     def test_telegram_asset_is_selectable_when_env_checks_pass(self):
         with mock.patch.object(diagnostics, "provider_available", return_value=True):
-            response = self.client.post("/api/admin/video-assets", {"slug": "video-tg", "provider": "telegram"}, format="json")
+            response = self.client.post(
+                "/api/admin/video-assets", {"slug": "video-tg", "provider": "telegram"}, format="json"
+            )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["provider"], "telegram")
 
@@ -101,7 +104,12 @@ class AdminConsoleVideoUploadTests(TransactionTestCase):
 
         return self.client.post(
             "/api/admin/video-assets/upload",
-            {"slug": slug, "title": "درس تجريبي", "provider": provider, "file": SimpleUploadedFile("clip.mp4", b"0" * 2048)},
+            {
+                "slug": slug,
+                "title": "درس تجريبي",
+                "provider": provider,
+                "file": SimpleUploadedFile("clip.mp4", b"0" * 2048),
+            },
             format="multipart",
         )
 
@@ -111,8 +119,10 @@ class AdminConsoleVideoUploadTests(TransactionTestCase):
     def test_upload_kicks_off_a_worker_that_stages_the_file(self):
         # The patches must outlive the 202: the worker reads them from its own
         # thread, seconds after the request has already returned.
-        with mock.patch.object(diagnostics, "provider_available", return_value=True), \
-             mock.patch.object(packaging, "ffmpeg_available", return_value=False):
+        with (
+            mock.patch.object(diagnostics, "provider_available", return_value=True),
+            mock.patch.object(packaging, "ffmpeg_available", return_value=False),
+        ):
             response = self._upload()
             self.assertEqual(response.status_code, 202)
             self.assertEqual(response.json()["status"], "uploading")
@@ -181,14 +191,22 @@ class AdminConsoleDriveUploadTests(TransactionTestCase):
     def test_upload_routes_the_drive_provider_through_the_drive_service(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        with mock.patch.object(diagnostics, "provider_available", return_value=True), \
-             mock.patch.object(ingest, "GoogleDriveService", FakeDriveService), \
-             mock.patch.object(ingest, "TelegramMediaService",
-                               side_effect=AssertionError("Drive upload must not construct the Telegram service")):
+        with (
+            mock.patch.object(diagnostics, "provider_available", return_value=True),
+            mock.patch.object(ingest, "GoogleDriveService", FakeDriveService),
+            mock.patch.object(
+                ingest,
+                "TelegramMediaService",
+                side_effect=AssertionError("Drive upload must not construct the Telegram service"),
+            ),
+        ):
             response = self.client.post(
                 "/api/admin/video-assets/upload",
-                {"slug": "drive-clip", "provider": "google_drive",
-                 "file": SimpleUploadedFile("lesson.mp4", b"0" * 2048)},
+                {
+                    "slug": "drive-clip",
+                    "provider": "google_drive",
+                    "file": SimpleUploadedFile("lesson.mp4", b"0" * 2048),
+                },
                 format="multipart",
             )
             self.assertEqual(response.status_code, 202)
@@ -230,9 +248,11 @@ class AdminConsoleDriveOAuthTests(ApiTestCase):
 
     def test_start_hands_the_admin_only_the_url(self):
         authenticate(self.client, make_admin())
-        with mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(django_settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"):
+        with (
+            mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"),
+            mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"),
+            mock.patch.object(django_settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"),
+        ):
             response = self.client.get("/api/admin/video-drive/oauth/start")
         self.assertEqual(response.status_code, 200)
         self.assertIn("accounts.google.com/o/oauth2/v2/auth", response.json()["authUrl"])
@@ -248,9 +268,7 @@ class AdminConsoleDriveOAuthTests(ApiTestCase):
     def test_callback_survives_the_origin_gate_like_a_real_google_redirect(self):
         # A top-level consent redirect carries no Origin header — the bare
         # client must reach the view instead of the middleware's 403.
-        response = Client().get(
-            "/api/admin/video-drive/oauth/callback", {"state": "forged", "code": "4/0x"}
-        )
+        response = Client().get("/api/admin/video-drive/oauth/callback", {"state": "forged", "code": "4/0x"})
         self.assertEqual(response.status_code, 200)
         self.assertIn("فشل", response.content.decode("utf-8"))
 
@@ -260,13 +278,17 @@ class AdminConsoleDriveOAuthTests(ApiTestCase):
             state_hash=hashlib.sha256(raw_state.encode()).hexdigest(),
             expires_at=timezone.now() + timedelta(minutes=5),
         )
-        token_reply = b'{"access_token": "AT", "refresh_token": "RT", "id_token": "%s", "expires_in": 3600}' % \
-            base64.urlsafe_b64encode(json.dumps({"email": "owner@example.com"}).encode()).rstrip(b"=")
+        token_reply = (
+            b'{"access_token": "AT", "refresh_token": "RT", "id_token": "%s", "expires_in": 3600}'
+            % base64.urlsafe_b64encode(json.dumps({"email": "owner@example.com"}).encode()).rstrip(b"=")
+        )
         scripted = ScriptedDriveHTTP([(200, {}, token_reply)])
-        with mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"), \
-             mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"), \
-             mock.patch.object(django_settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"), \
-             mock.patch.object(drive_oauth.urllib.request, "urlopen", scripted):
+        with (
+            mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_ID", "cid"),
+            mock.patch.object(django_settings, "GOOGLE_DRIVE_CLIENT_SECRET", "secret"),
+            mock.patch.object(django_settings, "GOOGLE_DRIVE_OAUTH_REDIRECT_URI", "http://cb"),
+            mock.patch.object(drive_oauth.urllib.request, "urlopen", scripted),
+        ):
             response = self.client.get("/api/admin/video-drive/oauth/callback", {"state": raw_state, "code": "4/0x"})
         page = response.content.decode("utf-8")
         self.assertIn("تم ربط", page)
@@ -275,8 +297,10 @@ class AdminConsoleDriveOAuthTests(ApiTestCase):
 
     def test_status_reports_connection_without_tokens(self):
         DriveGrant.objects.create(
-            account_email="owner@example.com", refresh_token="rt-super-secret",
-            access_token="at-super-secret", access_token_expires_at=timezone.now() + timedelta(hours=1),
+            account_email="owner@example.com",
+            refresh_token="rt-super-secret",
+            access_token="at-super-secret",
+            access_token_expires_at=timezone.now() + timedelta(hours=1),
         )
         authenticate(self.client, make_admin())
         response = self.client.get("/api/admin/video-drive/oauth/status")
@@ -295,12 +319,15 @@ class AdminConsoleDriveOAuthTests(ApiTestCase):
 
     def test_disconnect_drops_the_stored_grant(self):
         DriveGrant.objects.create(
-            account_email="owner@example.com", refresh_token="rt",
-            access_token="at", access_token_expires_at=timezone.now() + timedelta(hours=1),
+            account_email="owner@example.com",
+            refresh_token="rt",
+            access_token="at",
+            access_token_expires_at=timezone.now() + timedelta(hours=1),
         )
         authenticate(self.client, make_admin())
-        with mock.patch.object(drive_oauth.urllib.request, "urlopen",
-                               side_effect=AssertionError("disconnect must not hang on Google")):
+        with mock.patch.object(
+            drive_oauth.urllib.request, "urlopen", side_effect=AssertionError("disconnect must not hang on Google")
+        ):
             response = self.client.post("/api/admin/video-drive/oauth/disconnect", {})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(DriveGrant.objects.count(), 0)

@@ -51,9 +51,13 @@ class Scholarship(UUIDModel):
 class ScholarshipApplication(UUIDModel, TimeStampedModel):
     """A learner's submitted application for a scholarship."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="scholarship_applications", on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name="scholarship_applications", on_delete=models.CASCADE
+    )
     scholarship = models.ForeignKey(Scholarship, related_name="applications", on_delete=models.CASCADE)
-    status = models.CharField(max_length=20, default="submitted", help_text="submitted / reviewing / accepted / rejected")
+    status = models.CharField(
+        max_length=20, default="submitted", help_text="submitted / reviewing / accepted / rejected"
+    )
     note = models.CharField(max_length=240, blank=True)
 
     class Meta:

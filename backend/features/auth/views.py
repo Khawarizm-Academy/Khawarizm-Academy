@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from features.auth import clock, firebase, services
+from features.auth import firebase, services
 from features.auth.models import UserSession
 from features.auth.serializers import session_payload, user_profile
 from features.auth.tokens import hash_refresh_token
@@ -21,7 +21,11 @@ def login_failure_detail(error: Exception) -> str:
     """The one-line Arabic rejection reason; the clock story names its fix."""
     text = str(error).lower()
     if "too early" in text or "clock" in text or "used while invalid" in text:
-        return "تعذر التحقق من الهوية — ساعة النظام متأخرة عن الساعة الحقيقية. شغّل `manage.py clock_drift` للتأكد، وزامِن الساعة بـ `sudo backend/scripts/sync_clock_from_http.sh` ثم أعد المحاولة."
+        return (
+            "تعذر التحقق من الهوية — ساعة النظام متأخرة عن الساعة الحقيقية. "
+            "شغّل `manage.py clock_drift` للتأكد، "
+            "وزامِن الساعة بـ `sudo backend/scripts/sync_clock_from_http.sh` ثم أعد المحاولة."
+        )
     return "تعذر التحقق من الهوية."
 
 
@@ -115,5 +119,7 @@ def revoke_session(request, session_id):
     if session is None:
         return Response({"detail": "الجلسة غير موجودة."}, status=status.HTTP_404_NOT_FOUND)
     session.revoke(SessionRevokeReason.LOGOUT)
-    services.record_event(AuthEventKind.LOGOUT, user=request.user, session=session, request=request, detail="revoked from devices list")
+    services.record_event(
+        AuthEventKind.LOGOUT, user=request.user, session=session, request=request, detail="revoked from devices list"
+    )
     return Response(session_payload(session, request.auth.id))

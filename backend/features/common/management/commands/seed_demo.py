@@ -64,7 +64,13 @@ FILTER_GROUPS = [
         "tone": "gold",
         "glow": True,
         "surfaces": ["desktop", "mobile"],
-        "options": [("all", "الكل", []), ("ai", "ذكاء اصطناعي", []), ("programming", "برمجة", []), ("cybersecurity", "أمن سيبراني", []), ("space", "فضاء", [])],
+        "options": [
+            ("all", "الكل", []),
+            ("ai", "ذكاء اصطناعي", []),
+            ("programming", "برمجة", []),
+            ("cybersecurity", "أمن سيبراني", []),
+            ("space", "فضاء", []),
+        ],
     },
     {
         "key": "level",
@@ -90,7 +96,12 @@ FILTER_GROUPS = [
         "tone": "sky",
         "glow": False,
         "surfaces": ["desktop"],
-        "options": [("all", "الكل", []), ("arabic", "العربية", []), ("english", "الإنجليزية", []), ("french", "الفرنسية", [])],
+        "options": [
+            ("all", "الكل", []),
+            ("arabic", "العربية", []),
+            ("english", "الإنجليزية", []),
+            ("french", "الفرنسية", []),
+        ],
     },
     {
         "key": "cost",
@@ -106,7 +117,13 @@ FILTER_GROUPS = [
         "tone": "gold",
         "glow": False,
         "surfaces": ["desktop", "mobile"],
-        "options": [("all", "الكل", []), ("saudi", "السعودية", []), ("usa", "أمريكا", []), ("turkey", "تركيا", []), ("uk", "بريطانيا", [])],
+        "options": [
+            ("all", "الكل", []),
+            ("saudi", "السعودية", []),
+            ("usa", "أمريكا", []),
+            ("turkey", "تركيا", []),
+            ("uk", "بريطانيا", []),
+        ],
     },
     {
         "key": "status",
@@ -114,7 +131,12 @@ FILTER_GROUPS = [
         "tone": "gold",
         "glow": False,
         "surfaces": ["desktop"],
-        "options": [("all", "الكل", []), ("open", "مفتوح الآن", []), ("closing_soon", "ينتهي قريباً", []), ("closed", "مغلق", [])],
+        "options": [
+            ("all", "الكل", []),
+            ("open", "مفتوح الآن", []),
+            ("closing_soon", "ينتهي قريباً", []),
+            ("closed", "مغلق", []),
+        ],
     },
     {
         "key": "sort",
@@ -122,7 +144,12 @@ FILTER_GROUPS = [
         "tone": "sky",
         "kind": "sort",
         "surfaces": ["desktop", "mobile"],
-        "options": [("newest", "الأحدث", []), ("rating", "التقييم", []), ("deadline", "الأقرب انتهاءً", []), ("popular", "الأكثر شيوعًا", [])],
+        "options": [
+            ("newest", "الأحدث", []),
+            ("rating", "التقييم", []),
+            ("deadline", "الأقرب انتهاءً", []),
+            ("popular", "الأكثر شيوعًا", []),
+        ],
     },
 ]
 
@@ -279,7 +306,23 @@ class Command(BaseCommand):
         self.stdout.write(f"  instructor: {users['instructor'].email}")
 
     def _flush(self) -> None:
-        for model in (HomeQuickLink, HomeEventSpot, HomeCompetitionSpot, HomeFeaturedScholarship, HomeFeaturedCourse, Enrollment, PriorityContinue, FavoriteCourse, SavedScholarship, SavedCompetition, Certificate, DashboardStat, UpcomingEvent, DashboardNotification, NotificationItemData):
+        for model in (
+            HomeQuickLink,
+            HomeEventSpot,
+            HomeCompetitionSpot,
+            HomeFeaturedScholarship,
+            HomeFeaturedCourse,
+            Enrollment,
+            PriorityContinue,
+            FavoriteCourse,
+            SavedScholarship,
+            SavedCompetition,
+            Certificate,
+            DashboardStat,
+            UpcomingEvent,
+            DashboardNotification,
+            NotificationItemData,
+        ):
             model.objects.all().delete()
 
     def _seed_reference(self) -> None:
@@ -308,7 +351,10 @@ class Command(BaseCommand):
 
     def _seed_users(self) -> dict[str, User]:
         admin_email = "admin@khawarizm.dev"
-        admin, created = User.objects.get_or_create(email=admin_email, defaults={"role": Role.ADMIN, "full_name": "مدير النظام", "is_staff": True, "is_superuser": True})
+        admin, created = User.objects.get_or_create(
+            email=admin_email,
+            defaults={"role": Role.ADMIN, "full_name": "مدير النظام", "is_staff": True, "is_superuser": True},
+        )
         if created:
             admin.set_password(os.environ.get("DJANGO_DEMO_ADMIN_PASSWORD", "admin12345"))
             admin.save()
@@ -328,7 +374,11 @@ class Command(BaseCommand):
         ensure_profile(student)
         student.student_profile.learning_level = "intermediate"
         student.student_profile.interests = ["الذكاء الاصطناعي", "تحليل البيانات", "البرمجة والتطوير"]
-        student.student_profile.notifications = {"liveSessionReminders": True, "weeklyProgressSummary": True, "recommendedOpportunities": False}
+        student.student_profile.notifications = {
+            "liveSessionReminders": True,
+            "weeklyProgressSummary": True,
+            "recommendedOpportunities": False,
+        }
         student.student_profile.save()
 
         instructor, _ = User.objects.get_or_create(
@@ -345,16 +395,31 @@ class Command(BaseCommand):
         for spec in COURSES:
             course, _ = Course.objects.update_or_create(slug=spec["slug"], defaults=spec)
             for index in range(1, 4):
-                module, _ = CourseModule.objects.update_or_create(course=course, module_id=f"{course.slug}-m{index}", defaults={"title": f"الوحدة {index}", "order": index})
+                module, _ = CourseModule.objects.update_or_create(
+                    course=course,
+                    module_id=f"{course.slug}-m{index}",
+                    defaults={"title": f"الوحدة {index}", "order": index},
+                )
                 CourseLesson.objects.update_or_create(
                     module=module,
                     lesson_id=f"{course.slug}-m{index}-l1",
-                    defaults={"title": f"الدرس {index}", "duration": "12:00", "summary": "شرح مبسّط مع أمثلة.", "order": 1},
+                    defaults={
+                        "title": f"الدرس {index}",
+                        "duration": "12:00",
+                        "summary": "شرح مبسّط مع أمثلة.",
+                        "order": 1,
+                    },
                 )
             CourseLiveSession.objects.update_or_create(
                 course=course,
                 session_id=f"{course.slug}-live-1",
-                defaults={"title": "جلسة مراجعة أسبوعية", "state": "upcoming", "date_label": "الأحد القادم", "time_label": "٨:٠٠ م", "meet_url": "https://meet.google.com/abc-defg-hij"},
+                defaults={
+                    "title": "جلسة مراجعة أسبوعية",
+                    "state": "upcoming",
+                    "date_label": "الأحد القادم",
+                    "time_label": "٨:٠٠ م",
+                    "meet_url": "https://meet.google.com/abc-defg-hij",
+                },
             )
 
         for spec in SCHOLARSHIPS:
@@ -370,33 +435,143 @@ class Command(BaseCommand):
             "courses": {c["slug"]: Course.objects.get(slug=c["slug"]) for c in COURSES},
             "scholarships": {s["slug"]: Scholarship.objects.get(slug=s["slug"]) for s in SCHOLARSHIPS},
             "events": {e["event_id"]: EventItem.objects.get(event_id=e["event_id"]) for e in EVENTS},
-            "competitions": {c["competition_id"]: Competition.objects.get(competition_id=c["competition_id"]) for c in COMPETITIONS},
+            "competitions": {
+                c["competition_id"]: Competition.objects.get(competition_id=c["competition_id"]) for c in COMPETITIONS
+            },
         }
 
     def _seed_home(self, content: dict) -> None:
-        for order, (slug, course) in enumerate(content["courses"].items()):
-            HomeFeaturedCourse.objects.update_or_create(course=course, defaults={"students_count": "1,240 طالب", "status": "متاح", "thumbnail_type": "ai_generative", "order": order})
-        for order, (slug, scholarship) in enumerate(content["scholarships"].items()):
-            HomeFeaturedScholarship.objects.update_or_create(scholarship=scholarship, defaults={"deadline_text": scholarship.deadline_badge, "icon_type": "university", "thumbnail_type": "astrolabe_scholarship", "order": order})
-        HomeCompetitionSpot.objects.update_or_create(key="mobile", defaults={"competition": content["competitions"]["competition-1"]})
-        HomeCompetitionSpot.objects.update_or_create(key="desktop", defaults={"competition": content["competitions"]["competition-1"]})
+        for order, course in enumerate(content["courses"].values()):
+            HomeFeaturedCourse.objects.update_or_create(
+                course=course,
+                defaults={
+                    "students_count": "1,240 طالب",
+                    "status": "متاح",
+                    "thumbnail_type": "ai_generative",
+                    "order": order,
+                },
+            )
+        for order, scholarship in enumerate(content["scholarships"].values()):
+            HomeFeaturedScholarship.objects.update_or_create(
+                scholarship=scholarship,
+                defaults={
+                    "deadline_text": scholarship.deadline_badge,
+                    "icon_type": "university",
+                    "thumbnail_type": "astrolabe_scholarship",
+                    "order": order,
+                },
+            )
+        HomeCompetitionSpot.objects.update_or_create(
+            key="mobile", defaults={"competition": content["competitions"]["competition-1"]}
+        )
+        HomeCompetitionSpot.objects.update_or_create(
+            key="desktop", defaults={"competition": content["competitions"]["competition-1"]}
+        )
         HomeEventSpot.objects.update_or_create(key="mobile", defaults={"event": content["events"]["event-1"]})
         HomeEventSpot.objects.update_or_create(key="desktopFeatured", defaults={"event": content["events"]["event-2"]})
         HomeEventSpot.objects.update_or_create(key="desktopWorkshop", defaults={"event": content["events"]["event-1"]})
         for order, (link_id, icon, label, subtitle, tone, target) in enumerate(QUICK_LINKS):
-            HomeQuickLink.objects.update_or_create(link_id=link_id, defaults={"icon": icon, "label": label, "subtitle": subtitle, "tone": tone, "target": target, "order": order})
+            HomeQuickLink.objects.update_or_create(
+                link_id=link_id,
+                defaults={
+                    "icon": icon,
+                    "label": label,
+                    "subtitle": subtitle,
+                    "tone": tone,
+                    "target": target,
+                    "order": order,
+                },
+            )
 
     def _seed_dashboard(self, student: User, content: dict) -> None:
         course1 = content["courses"]["course-1"]
         course2 = content["courses"]["course-2"]
-        Enrollment.objects.update_or_create(user=student, course=course1, defaults={"progress": 62, "last_lesson": "الوحدة 2 · الدرس 1", "exact_unit_lesson": "الوحدة 2", "next_live_time": "الأحد ٨:٠٠ م", "icon_type": "ai", "is_completed": False})
-        Enrollment.objects.update_or_create(user=student, course=course2, defaults={"progress": 30, "last_lesson": "الوحدة 1 · الدرس 2", "exact_unit_lesson": "الوحدة 1", "icon_type": "code", "is_completed": False})
-        PriorityContinue.objects.update_or_create(user=student, course=course1, defaults={"progress": 62, "lesson_status": "استكمل من حيث توقفت"})
-        DashboardStat.objects.update_or_create(user=student, defaults={"attendance_rate": 98, "attendance_note": "ممتاز", "gpa": "4.7", "gpa_rating": "ممتاز", "points_earned": 1240, "rank_note": "المرتبة 12"})
-        SavedScholarship.objects.update_or_create(user=student, scholarship=content["scholarships"]["scholarship-1"], defaults={"is_urgent": False, "gpa_requirement": "3.5"})
+        Enrollment.objects.update_or_create(
+            user=student,
+            course=course1,
+            defaults={
+                "progress": 62,
+                "last_lesson": "الوحدة 2 · الدرس 1",
+                "exact_unit_lesson": "الوحدة 2",
+                "next_live_time": "الأحد ٨:٠٠ م",
+                "icon_type": "ai",
+                "is_completed": False,
+            },
+        )
+        Enrollment.objects.update_or_create(
+            user=student,
+            course=course2,
+            defaults={
+                "progress": 30,
+                "last_lesson": "الوحدة 1 · الدرس 2",
+                "exact_unit_lesson": "الوحدة 1",
+                "icon_type": "code",
+                "is_completed": False,
+            },
+        )
+        PriorityContinue.objects.update_or_create(
+            user=student, course=course1, defaults={"progress": 62, "lesson_status": "استكمل من حيث توقفت"}
+        )
+        DashboardStat.objects.update_or_create(
+            user=student,
+            defaults={
+                "attendance_rate": 98,
+                "attendance_note": "ممتاز",
+                "gpa": "4.7",
+                "gpa_rating": "ممتاز",
+                "points_earned": 1240,
+                "rank_note": "المرتبة 12",
+            },
+        )
+        SavedScholarship.objects.update_or_create(
+            user=student,
+            scholarship=content["scholarships"]["scholarship-1"],
+            defaults={"is_urgent": False, "gpa_requirement": "3.5"},
+        )
         FavoriteCourse.objects.update_or_create(user=student, course=course2)
-        SavedCompetition.objects.update_or_create(user=student, competition=content["competitions"]["competition-1"], defaults={"status_text": "قيد المشاركة", "status_color": "blue", "action_label": "عرض", "action_variant": "sky"})
-        Certificate.objects.update_or_create(user=student, course=course1, defaults={"issue_date": "١٠ أكتوبر ٢٠٢٦", "credential_id": "KHM-COURSE-1", "is_official": True})
-        UpcomingEvent.objects.update_or_create(user=student, event_id="due-1", defaults={"title": "تسليم مشروع الوحدة 2", "date_text": "غداً · ٩:٠٠ م", "event_type": "submission", "type_label": "تسليم"})
-        DashboardNotification.objects.update_or_create(user=student, notification_id="note-1", defaults={"title": "درس جديد متاح", "time_ago": "قبل ساعة", "notification_type": "lesson", "is_read": False, "link": "/courses/course-1"})
-        NotificationItemData.objects.update_or_create(user=student, notification_id="note-1", defaults={"message": "تم إضافة درس جديد إلى دورتك.", "time_ago": "قبل ساعة", "notification_type": "lesson", "is_unread": True})
+        SavedCompetition.objects.update_or_create(
+            user=student,
+            competition=content["competitions"]["competition-1"],
+            defaults={
+                "status_text": "قيد المشاركة",
+                "status_color": "blue",
+                "action_label": "عرض",
+                "action_variant": "sky",
+            },
+        )
+        Certificate.objects.update_or_create(
+            user=student,
+            course=course1,
+            defaults={"issue_date": "١٠ أكتوبر ٢٠٢٦", "credential_id": "KHM-COURSE-1", "is_official": True},
+        )
+        UpcomingEvent.objects.update_or_create(
+            user=student,
+            event_id="due-1",
+            defaults={
+                "title": "تسليم مشروع الوحدة 2",
+                "date_text": "غداً · ٩:٠٠ م",
+                "event_type": "submission",
+                "type_label": "تسليم",
+            },
+        )
+        DashboardNotification.objects.update_or_create(
+            user=student,
+            notification_id="note-1",
+            defaults={
+                "title": "درس جديد متاح",
+                "time_ago": "قبل ساعة",
+                "notification_type": "lesson",
+                "is_read": False,
+                "link": "/courses/course-1",
+            },
+        )
+        NotificationItemData.objects.update_or_create(
+            user=student,
+            notification_id="note-1",
+            defaults={
+                "message": "تم إضافة درس جديد إلى دورتك.",
+                "time_ago": "قبل ساعة",
+                "notification_type": "lesson",
+                "is_unread": True,
+            },
+        )

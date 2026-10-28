@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from features.common.choices import VideoStatus
 from features.common.testing import ApiTestCase, authenticate
-
 from features.videohosting.tests.helpers import KEY_HEX, make_asset
 
 

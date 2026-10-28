@@ -6,6 +6,7 @@ import hashlib
 from datetime import timedelta
 from unittest import mock
 
+from django.db import IntegrityError
 from django.utils import timezone
 
 from features.common.choices import VideoStatus
@@ -13,7 +14,6 @@ from features.common.testing import ApiTestCase
 from features.videohosting import packaging, tokens
 from features.videohosting.models import StreamToken, VideoRendition
 from features.videohosting.serializers import asset_meta
-
 from features.videohosting.tests.helpers import KEY_HEX, make_asset
 
 
@@ -26,7 +26,7 @@ class AssetModelTests(ApiTestCase):
 
     def test_rendition_quality_is_unique_per_asset(self):
         asset = make_asset()
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             VideoRendition.objects.create(asset=asset, quality="360p", aes_key_hex=KEY_HEX)
 
 

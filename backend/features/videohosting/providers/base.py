@@ -7,11 +7,12 @@
 # SPECS entry in providers/__init__.py.
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable
+from typing import Any
 
-SEVERITY_OK = "info"      # the check passed
-SEVERITY_WARN = "warn"    # degraded but not blocking (e.g. no stream bot)
+SEVERITY_OK = "info"  # the check passed
+SEVERITY_WARN = "warn"  # degraded but not blocking (e.g. no stream bot)
 SEVERITY_ERROR = "error"  # blocking — this provider or the pipeline cannot serve
 
 

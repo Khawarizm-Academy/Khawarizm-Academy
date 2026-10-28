@@ -23,7 +23,9 @@ class Command(BaseCommand):
                 raise CommandError(clock.CLOCK_FIX)
             return
         if drift is None:
-            self.stdout.write(style.WARNING("Could not measure the clock -- the network is unreachable; try again later."))
+            self.stdout.write(
+                style.WARNING("Could not measure the clock -- the network is unreachable; try again later.")
+            )
             return
         # Terminal output stays ASCII -- the actionable Arabic detail lives in
         # the 401 the browser shows, not here.
