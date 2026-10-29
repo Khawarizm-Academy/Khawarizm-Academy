@@ -1,5 +1,113 @@
 # Khawarizm Academy — Completion Report
 
+This file carries two reports: the **backend skills alignment** (below, latest)
+and the original feature-completion report (§ "Part 2 — Feature Completion,
+2026-10-17") after it.
+
+---
+
+# Part 1 — Backend Skills Alignment (final audit, 2026-10-29)
+
+The 13-phase plan in `plan/backend-skills-alignment.md` is complete: Phases 0–11
+landed one branch/PR at a time onto `Refactor/BackendSkills` (PRs #32, #34–#43),
+each gated on CI + the Vercel backend preview, and Phase 12 (this audit)
+released the result to `main` and tagged **`backend-skills-v1`**. Every phase
+left a result doc in `plan/phase-<n>-result.md`.
+
+## Phases
+
+| # | Phase | Headline result |
+| :--- | :--- | :--- |
+| 0 | Baseline & safety net | 370 tests recorded, parity-capture tooling, conventions |
+| 1 | CI pipeline & quality gates | ruff/check/migrate/test/pip-audit/gitleaks on every PR; `main` protected |
+| 2 | Observability & health | one JSON log line per request, request ids, `/healthz` + `/readyz` |
+| 3 | Throttling & security headers | named scopes + login lockout, HSTS/nosniff/Permissions-Policy, admin report-only CSP |
+| 4 | Cache layers & compression | namespaced app cache + `on_commit` invalidation, ETag/304, gzip |
+| 5 | Catalog engine | cached interleave built in 2 queries; validation; warm = 0 queries |
+| 6 | N+1 kill & index pass | course detail 13→4, admin users 10→4; `enrolled_count` fixed; query guards pinned |
+| 7 | Services layer | business rules out of views; parity 23/23 |
+| 8 | Error envelope & `{items}` | one `{detail, code, fields?}` envelope; 5 list endpoints wrapped (coordinated frontend edits, 76/76 vitest) |
+| 9 | Jobs & cleanup | idempotent, overlap-guarded retention cleanup; command + cron endpoint + Vercel daily schedule |
+| 10 | OpenAPI & route manifest | drf-spectacular: 62 paths / 72 operations / 72 unique ids, `--fail-on-warn` in CI; route-manifest tests |
+| 11 | Docs & profile sync | profile/READMEs/architecture guide rewritten from the shipped facts; 27 value-vs-code checks |
+| 12 | Final verification & release | the audit below; merge to `main`; tag `backend-skills-v1` |
+
+## Final gate sweep (all green)
+
+| Gate | Result |
+| :--- | :--- |
+| `ruff check .` / `ruff format --check .` | clean (159 files) |
+| `manage.py check` | no issues |
+| `manage.py spectacular --fail-on-warn` | exit 0 — 62 paths / 72 operations / 72 unique operationIds |
+| `manage.py makemigrations --check --dry-run` | no changes (every alignment migration additive) |
+| `manage.py migrate` | nothing to apply |
+| `manage.py test` | **451 tests OK** (38.3 s serial) |
+| `manage.py test --parallel` | **451 tests OK** (6.6 s) |
+| `manage.py check --deploy` (prod env) | 1 known accepted warning (`security.W021` HSTS preload) — identical to CI |
+| `pip-audit -r requirements.txt` | no known vulnerabilities |
+| gitleaks (whole history) | no leaks |
+
+## Parity sweep — aligned vs pre-alignment (`main`)
+
+23 GET snapshots captured from the **pre-alignment code** (worktree of `main`,
+same DB copy) and re-captured from the aligned branch: **18/23 identical;
+every one of the 5 diffs is exactly the documented Phase 8 shape change, with
+byte-identical content**:
+
+| Snapshot | Documented change | Verified |
+| :--- | :--- | :--- |
+| `dashboard-enrolled.json` | bare array → `{items: [...]}` | items identical |
+| `course-problems.json` | bare array → `{items: [...]}` | items identical |
+| `course-related.json` | bare array → `{items: [...]}` | items identical |
+| `auth-sessions.json` | `{sessions}` → `{items}` | rows identical modulo volatile keys |
+| `videos-providers.json` | 401 `{detail}` → `+code: not_authenticated` | detail identical |
+
+## Query counts — before → after (same DB, both codebases, measured)
+
+| Request | Before | After |
+| :--- | :--- | :--- |
+| `GET /api/catalog` (cold) | 2 | 2 (miss → cached whole) |
+| `GET /api/catalog` (warm) | 2 | **0** |
+| `GET /api/catalog/:slug` (warm) | 1 | **0** |
+| `GET /api/courses/:slug` | **6** (N+1: grows with modules — 13 at Phase 6's 11-module fixture) | **4** constant |
+| `GET /api/dashboard` | 6 | 6 (already constant — now pinned) |
+| `GET /api/dashboard/enrolled` | 3 | 3 (pinned) |
+| `GET /api/dashboard/saved` | 4 | 4 (pinned) |
+| `GET /api/auth/sessions` | 3 | 3 (pinned) |
+| `GET /api/admin/users?page=1` | **10** (grows with users) | **4** constant |
+
+All nine counts are pinned by `assertNumQueries` guards in the suite, so a
+future N+1 fails CI instead of production.
+
+## Offline smoke (fresh clone)
+
+`git clone` → fresh venv from `requirements.txt` alone → migrate → `seed_demo`
+→ runserver. Verified over HTTP: `/healthz` + `/readyz` ok; `/api/catalog`
+**403 without Origin → 200 with it**; app cache **miss → hit** (one `cache
+miss` log line, none on the repeat); admin dev-session PATCHes a course via
+the content editor and the next catalog read **rebuilds** (new miss line — the
+`on_commit` invalidation) and the write is visible in `/api/courses/:slug`;
+learner token mint → **master playlist → media playlist → AES key (exact 16
+bytes) → segment 302** to the provider file URL via the mocked-provider
+offline fixture (no network); `/api/schema` + Swagger UI public and
+origin-exempt (72 operationIds).
+
+## Open items (deferred with recorded triggers)
+
+| Item | Trigger to revisit |
+| :--- | :--- |
+| Redis mandatory (throttle counters per-instance) | multi-instance prod or global throttle correctness |
+| DB-pushdown catalog filtering | catalog > ~2k rows |
+| MFA for admin | policy decision (accounts are Firebase-issued) |
+| Celery/RQ queue | real queue volume (one cron job + manual ingest today) |
+| Search upgrade (`pg_trgm`/full-text) | catalog growth |
+| Named OpenAPI components + generated frontend types | Serializer components for the `compact()` payloads — needs the frontend in the loop (Phase 10 deferral) |
+| Frontend-wide refactor | separate plan (this one was backend-scoped) |
+
+---
+
+# Part 2 — Feature Completion (2026-10-17)
+
 Date: 2026-10-17
 
 This report covers the work done to (1) complete the missing backend features
