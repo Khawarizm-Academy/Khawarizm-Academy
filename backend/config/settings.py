@@ -14,6 +14,9 @@ from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
+from config.logging import build_logging_config
+from features.common.throttling import SCOPED_RATES
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOGGER = logging.getLogger(__name__)
 
@@ -88,6 +91,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
     # Shared, non-feature code (abstract models + management commands).
     "features.common",
     # Feature apps — one folder per product feature, mirroring the frontend.
@@ -109,7 +113,10 @@ AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    "config.middleware.RequestIDMiddleware",
+    "config.middleware.RequestMetricsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "config.middleware.ApiOriginRestrictionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -117,6 +124,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.middleware.PrivateCacheMiddleware",
+    "config.middleware.HardeningHeadersMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -180,6 +189,11 @@ if DATABASE_URL:
     sslmode = urllib.parse.parse_qs(db.query).get("sslmode", [None])[0]
     if sslmode:
         options["sslmode"] = sslmode
+    # A persistent connection helps a long-lived gunicorn worker on Postgres;
+    # a Lambda's frozen connection goes stale between invocations, so Vercel
+    # keeps 0. SQLite stays at 0 below — its multi-thread workers (the upload
+    # ingest) rely on short-lived connections to keep table locks transient.
+    CONN_MAX_AGE = env_int("DJANGO_CONN_MAX_AGE", 0 if IS_VERCEL else 60)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -189,20 +203,34 @@ if DATABASE_URL:
             "HOST": db.hostname,
             "PORT": db.port,
             "OPTIONS": options,
-            "CONN_MAX_AGE": 0,
+            "CONN_MAX_AGE": CONN_MAX_AGE,
             "DISABLE_SERVER_SIDE_CURSORS": True,
         }
     }
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.sqlite3",
+            # The WAL-aware variant of the built-in sqlite3 engine: its
+            # test-DB clone checkpoints the -wal sidecar before the parallel
+            # runner copies the file, so every worker starts with all tables.
+            "ENGINE": "config.sqlite_backend",
             "NAME": resolve_sqlite_path(BASE_DIR, IS_SERVERLESS_RUNTIME, override=SQLITE_PATH),
             # The upload worker and its tracker flusher run on their own
-            # connections; Django's default shared-cache in-memory test DB
-            # fails those writes instantly with "database table is locked"
-            # (SQLITE_LOCKED ignores the busy timeout). A file-backed test DB
-            # lets contention resolve through the normal busy timeout instead.
+            # connections, and the parallel test runner multiplies readers —
+            # in default journal mode a poll-loop's reads starve the worker's
+            # writes past the busy timeout ("database table is locked",
+            # caught live in CI). WAL lets readers and the one writer proceed
+            # side by side; IMMEDIATE takes the write lock at BEGIN so a
+            # transaction never fails halfway on an upgrade (which the busy
+            # timeout does not retry).
+            "OPTIONS": {
+                "init_command": "PRAGMA journal_mode=WAL;PRAGMA busy_timeout=10000;",
+                "transaction_mode": "IMMEDIATE",
+            },
+            # Django's default shared-cache in-memory test DB fails the
+            # worker's writes instantly (SQLITE_LOCKED ignores the busy
+            # timeout). A file-backed test DB pairs with the WAL options
+            # above — contention resolves through the normal busy timeout.
             "TEST": {"NAME": str(Path(tempfile.gettempdir()) / "khawarizm-test-db.sqlite3")},
         }
     }
@@ -229,6 +257,11 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# One JSON log line per request (config.logging builds the dict): request id,
+# user id, path, status, duration, query count. DEBUG level in dev, INFO prod;
+# the formatter whitelists fields so no secrets or request bodies can leak.
+LOGGING = build_logging_config(DEBUG)
+
 # The SPA calls this API from a different origin.
 CORS_ALLOWED_ORIGINS = env_list(
     "DJANGO_CORS_ALLOWED_ORIGINS",
@@ -241,10 +274,63 @@ if IS_VERCEL:
 # Vercel terminates TLS and forwards the original scheme to the app.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Transport & browser hardening. The gate is `not DEBUG`: a dev run over plain
+# HTTP keeps redirects off and cookies settable, while any prod-shaped run
+# (DEBUG=false) locks down unless the env says otherwise. The Phase-1
+# `check --deploy` warnings (W004/W008/W012/W016) are these four settings.
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SSL_REDIRECT", not DEBUG)
+SECURE_HSTS_SECONDS = env_int("DJANGO_HSTS_SECONDS", 0 if DEBUG else 31536000)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", not DEBUG)
+# Protocol-agnostic: no downside over plain HTTP either.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
 # Trust the same origins for CSRF (Django admin) over HTTPS.
 CSRF_TRUSTED_ORIGINS = [*CORS_ALLOWED_ORIGINS]
 if IS_VERCEL and VERCEL_URL:
     CSRF_TRUSTED_ORIGINS.append(f"https://{VERCEL_URL}")
+
+# Compress JSON responses (JSON shrinks 5-10x under gzip); Vary: Accept-Encoding
+# is added by the middleware itself.
+GZIP_MIN_LENGTH = 200
+
+# App cache: LocMem per process by default (fine for one gunicorn worker /
+# Lambda instance). Setting REDIS_URL switches to django-redis for a shared,
+# multi-instance cache — install it (`pip install django-redis`) when that
+# day comes; until then the env var is documented, not shipped.
+REDIS_URL = os.environ.get("REDIS_URL", "")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "khawarizm-cache",
+    }
+}
+if REDIS_URL:
+    try:
+        import django_redis  # noqa: F401
+
+        CACHES = {
+            "default": {
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": REDIS_URL,
+                "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+            }
+        }
+    except ImportError:
+        LOGGER.warning(
+            "REDIS_URL is set but django-redis is not installed — falling back to LocMem, "
+            "which is per-instance. Add django-redis to requirements.txt to use Redis."
+        )
+
+# Maintenance job (features/common/maintenance.py, command `cleanup_expired`):
+# how long the auth audit trail is kept, and the shared secret platform crons
+# authenticate with. Vercel Cron auto-attaches `Authorization: Bearer
+# $CRON_SECRET` when that project env var exists, so it is accepted as a
+# fallback name; unset means the cron path is dead and only staff can run it.
+AUTH_EVENT_RETENTION_DAYS = env_int("AUTH_EVENT_RETENTION_DAYS", 180)
+MAINTENANCE_CRON_SECRET = os.environ.get("MAINTENANCE_CRON_SECRET") or os.environ.get("CRON_SECRET", "")
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
@@ -253,7 +339,30 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["features.auth.authentication.AccessTokenAuthentication"],
+    # Scoped throttling (features.common.throttling owns the rates): every view
+    # passes through ScopedRateThrottle, which throttles only views tagged
+    # with a throttle_scope and lets the rest through untouched.
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": SCOPED_RATES,
+    # The schema class behind /api/schema — every view pins its request and
+    # response shapes with @extend_schema, so the spec stays the contract.
+    # ContractAutoSchema appends the shared error envelope to every operation.
+    "DEFAULT_SCHEMA_CLASS": "features.common.schemas.ContractAutoSchema",
     "EXCEPTION_HANDLER": "features.common.errors.api_exception_handler",
+}
+
+# /api/schema + Swagger UI (config/urls.py). The spec is generated from the
+# views' @extend_schema annotations; keep it split into reusable components
+# so generated frontend types stay named and stable.
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Khawarizm Academy API",
+    "DESCRIPTION": "The SPA's backend contract: one error envelope "
+    "`{detail, code, fields?}`, list responses wrapped as `{items: [...]}`.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    # The maintenance cron's 202 body is an inline job status, not a resource.
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 
 # Firebase. Two halves that must agree:

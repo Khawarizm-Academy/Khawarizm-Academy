@@ -29,9 +29,10 @@ frontend JSON.
 catalog/
 ├── apps.py           AppConfig (label "catalog")
 ├── models.py         Category, FilterGroup, FilterOption
+├── service.py        the engine — cached interleave, list/detail/filters, validation
 ├── serializers.py    catalog_item_for() — dispatches to course/scholarship serializers
 ├── filters.py        FILTERS / SORTERS — data-driven filter/sorter tables
-├── views.py          catalog_list, catalog_detail, catalog_filters_view
+├── views.py          thin handlers over the service
 ├── urls.py           /api/catalog routes
 ├── admin.py          Category, filter group/option admin
 ├── migrations/       schema history
@@ -41,11 +42,22 @@ catalog/
 
 ## How it works
 
-- **Interleaved union:** builds an array alternating `Course` and `Scholarship`
-  objects in the order they exist, serializes each to a `CatalogItem`, applies
-  filters (type/tab, q, field, level, cost, country, status), optional
-  `ids=` filter (used by the related-courses rail), then sorts and paginates (6
-  per page).
+- **The engine (`service.py`):** the interleaved union is built once and cached
+  whole (`kh:catalog:v*:items` — see the backend README's Caching section). A
+  cache miss costs exactly two queries (courses + scholarships); filtering,
+  sorting, and pagination then run over the cached list. Unknown `type`/`sort`
+  values are `400`s naming the valid options (`KNOWN_TYPES`/`KNOWN_SORTS` —
+  `newest` and `popular` both keep the interleave order; `rating`/`deadline`
+  reorder). **A write to a watched model (`Course`, `Scholarship`,
+  `FilterGroup`, `FilterOption`) bumps the family version inside
+  `transaction.on_commit`** — the next reader rebuilds; there is no manual
+  cache clearing anywhere.
+- **Interleaved union:** courses and scholarships alternate in the order they
+  exist; filters (type/tab, q, field, level, cost, country, status), the
+  optional `ids=` filter (related-courses rail), sorting, and 6-per-page
+  pagination apply on top. Note: a scholarship beyond the course count is not
+  shown in the list (original interleaving, kept for parity) — the **detail**
+  endpoint still resolves it by slug.
 - **DB-driven taxonomy:** `GET /api/catalog/filters?surface=desktop|mobile&tab=all|courses|scholarships`
   returns `{"groups": [...], "sortOptions": [...]}` built from `FilterGroup` /
   `FilterOption` rows (no frontend JSON). A group carries surface, kind
@@ -53,7 +65,9 @@ catalog/
   carries `tabs` so one group can serve different catalog tabs.
 - **Data-driven filters:** every filter is a row in `filters.FILTERS`; `sort_key`
   reads from `filters.SORTERS`. There are **no `if/else` chains** — the lists
-  are the specification.
+  are the specification. If the catalog ever exceeds ~2k rows, the engine's
+  docstring names the DB-pushdown rework (filters become `QuerySet.filter()`
+  per type, keyset pagination).
 - **One shape:** `catalog_item_for()` returns the shared `CatalogItem` (a
   discriminated shape with `type: 'course' | 'scholarship'`). The per-entity
   mappings live in `courses.serializers.course_catalog_item` and

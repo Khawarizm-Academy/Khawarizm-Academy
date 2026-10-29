@@ -23,7 +23,8 @@ from features.auth.models import AuthEvent, InstructorProfile, StudentProfile, U
 from features.auth.serializers import session_payload, user_profile
 from features.auth.views import login_failure_detail
 from features.common.choices import AuthProvider, Role, SessionRevokeReason
-from features.common.testing import ApiTestCase, FakeRequest, authenticate, make_admin, make_user
+from features.common.testing import ApiTestCase, FakeRequest, api_client, authenticate, make_admin, make_user
+from features.common.throttling import LOCKOUT_WINDOW_SECONDS
 
 IPHONE_UA = (
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 "
@@ -200,8 +201,8 @@ class AuthViewTests(ApiTestCase):
         user = make_user()
         _, session = authenticate(self.client, user)
         body = self.client.get("/api/auth/sessions").json()
-        self.assertEqual(body["sessions"][0]["id"], str(session.id))
-        self.assertTrue(body["sessions"][0]["isCurrent"])
+        self.assertEqual(body["items"][0]["id"], str(session.id))
+        self.assertTrue(body["items"][0]["isCurrent"])
 
     def test_signed_in_elsewhere_surfaces_the_reason_code(self):
         user = make_user()
@@ -269,7 +270,7 @@ class AuthSessionLifecycleTests(ApiTestCase):
 
         body = self.client.get("/api/auth/sessions").json()
 
-        self.assertEqual([row["id"] for row in body["sessions"]], [str(own_session.id)])
+        self.assertEqual([row["id"] for row in body["items"]], [str(own_session.id)])
 
     def test_you_can_only_revoke_your_own_devices(self):
         victim_session, _, _ = services.open_session(make_user(email="victim@example.com"), FakeRequest(), "password")
@@ -564,3 +565,85 @@ class ClockDriftEndpointTests(ApiTestCase):
             response = self.client.post("/api/auth/firebase", {"idToken": "irrelevant"}, format="json")
         self.assertEqual(response.status_code, 401)
         self.assertIn("ساعة النظام", response.json()["detail"])
+
+
+class LoginLockoutTests(ApiTestCase):
+    """The auth-failure backoff: 429 with its own code, counted from REJECTED events."""
+
+    def _reject(self, **meta):
+        with patch.object(firebase, "verify_id_token", side_effect=firebase.FirebaseError("nope.")):
+            return self.client.post("/api/auth/firebase", {"idToken": "irrelevant"}, format="json", **meta)
+
+    def test_repeated_failures_lock_the_login_with_its_own_code(self):
+        for _ in range(5):
+            self.assertEqual(self._reject().status_code, 401)
+        response = self._reject()
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(response.json()["code"], "login_locked")
+        retry_after = int(response.headers["Retry-After"])
+        self.assertGreaterEqual(retry_after, 1)
+        self.assertLessEqual(retry_after, LOCKOUT_WINDOW_SECONDS)
+
+    def test_a_retry_storm_cannot_extend_its_own_lockout(self):
+        for _ in range(5):
+            self._reject()
+        first = int(self._reject().headers["Retry-After"])
+        second = int(self._reject().headers["Retry-After"])
+        self.assertEqual(first, second)
+
+    def test_the_lockout_matches_the_source_ip_not_the_whole_world(self):
+        for _ in range(5):
+            self._reject(HTTP_X_FORWARDED_FOR="203.0.113.9")
+        # A different source IP is still allowed to fail on its own.
+        self.assertEqual(self._reject(HTTP_X_FORWARDED_FOR="203.0.113.77").status_code, 401)
+        # ...while the original one is locked.
+        self.assertEqual(self._reject(HTTP_X_FORWARDED_FOR="203.0.113.9").status_code, 429)
+
+    def test_a_successful_login_resets_the_path_forward(self):
+        # 4 failures stay below the threshold: the 5th attempt (a valid login) passes.
+        for _ in range(4):
+            self._reject()
+        body = self.client.post("/api/auth/firebase", {"idToken": "dev:clean@example.com"}, format="json").json()
+        self.assertIn("accessToken", body)
+
+    def test_the_service_guards_against_an_unidentified_caller(self):
+        self.assertEqual(services.login_lockout_seconds(), 0)
+
+
+class AuthThrottlingTests(ApiTestCase):
+    """The DRF scope answers 429 with its default detail — distinct from the lockout."""
+
+    def test_the_refresh_exchange_is_capped_with_retry_after(self):
+        for _ in range(10):
+            self.assertEqual(
+                self.client.post("/api/auth/refresh", {"refreshToken": "x"}, format="json").status_code,
+                401,
+            )
+        response = self.client.post("/api/auth/refresh", {"refreshToken": "x"}, format="json")
+        self.assertEqual(response.status_code, 429)
+        self.assertIn("Retry-After", response.headers)
+        # The scope throttle's code is `throttled` — the lockout's 429 carries
+        # `code: login_locked` instead.
+        self.assertEqual(response.json()["code"], "throttled")
+
+    def test_a_fresh_minute_lets_the_same_client_back_in(self):
+        client = api_client()  # clearing the throttle cache = a new counting minute
+        for _ in range(10):
+            self.assertEqual(client.post("/api/auth/refresh", {"refreshToken": "x"}, format="json").status_code, 401)
+        self.assertEqual(client.post("/api/auth/refresh", {"refreshToken": "x"}, format="json").status_code, 429)
+        fresh = api_client()
+        self.assertEqual(fresh.post("/api/auth/refresh", {"refreshToken": "x"}, format="json").status_code, 401)
+
+
+class SessionQueryGuardTests(ApiTestCase):
+    """Phase 6 tripwire: the device list is one query beyond the auth pair."""
+
+    def test_my_sessions_is_two_queries_beyond_the_auth_pair(self):
+        user = make_user()
+        # The second device first — open_session keeps only the newest active,
+        # so authenticating last leaves the client's own session live.
+        services.open_session(user, FakeRequest(user_agent="Other-Device/1.0"), "dev")
+        authenticate(self.client, user)
+        with self.assertNumQueries(3):  # auth + touch + the device list
+            body = self.client.get("/api/auth/sessions").json()
+        self.assertEqual(len(body["items"]), 2)

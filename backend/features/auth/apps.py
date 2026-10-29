@@ -26,3 +26,6 @@ class AuthConfig(AppConfig):
 
         if "runserver" in sys.argv and os.environ.get("RUN_MAIN") == "true":
             clock.warn_background()
+
+        # Register the spec's security schemes (import side effect).
+        from features.auth import schema  # noqa: F401

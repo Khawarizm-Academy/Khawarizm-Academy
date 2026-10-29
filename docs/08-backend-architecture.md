@@ -21,7 +21,8 @@ backend/features/<feature>/
 ├── apps.py           AppConfig — sets the app label
 ├── models.py         the feature's tables
 ├── serializers.py    ORM row → camelCase JSON
-├── views.py          thin function views (resolve → query → serialize)
+├── services.py       business rules (when the feature has any)
+├── views.py          thin function views (resolve → call → serialize)
 ├── urls.py           the feature's routes
 ├── admin.py          admin registration (the data editor)
 ├── tests.py          tests — models, serializers, routes
@@ -35,19 +36,19 @@ shared abstract models (`UUIDModel`, `TimeStampedModel`), the choice enums, and
 `management/commands/seed_demo.py`. `adminconsole` owns no tables either — it
 reads across the other features.
 
-| Feature | App label | Owns |
-| :--- | :--- | :--- |
-| `auth` | `accounts` | `User`, `StudentProfile`, `InstructorProfile`, `UserSession`, `AuthEvent` |
-| `catalog` | `catalog` | `Category`, `FilterGroup`, `FilterOption` |
-| `courses` | `courses` | `Course`, `CourseModule`, `CourseLesson`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` |
-| `scholarships` | `scholarships` | `Scholarship` |
-| `dashboard` | `dashboard` | learner-scoped projections |
-| `home` | `home` | `HomeFeaturedCourse`, `HomeFeaturedScholarship`, `HomeCompetition`, `HomeEvent`, `HomeQuickLink` |
-| `events` | `events` | `EventItem` |
-| `competitions` | `competitions` | `Competition` |
-| `profile` | `profile` | — (edits `accounts.User`; owns no tables) |
-| `adminconsole` | `adminconsole` | — (staff analytics across features) |
-| `videohosting` | `videohosting` | `VideoProvider`, `VideoAsset`, `VideoRendition`, `VideoSegment`, `StreamToken`, `ProviderAsset`, `UploadSession`, plus the `providers/` module-per-host registry |
+| Feature | App label | Owns | `services.py` — business rules |
+| :--- | :--- | :--- | :--- |
+| `auth` | `accounts` | `User`, `StudentProfile`, `InstructorProfile`, `UserSession`, `AuthEvent` | sessions: open/rotate/revoke, event recording |
+| `catalog` | `catalog` | `Category`, `FilterGroup`, `FilterOption` | — (pure-read engine in `service.py`) |
+| `courses` | `courses` | `Course`, `CourseModule`, `CourseLesson`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` | enroll (bumps `enrolled_count`), progress, favorite, related rail, certificate |
+| `scholarships` | `scholarships` | `Scholarship` | apply, save toggle |
+| `dashboard` | `dashboard` | learner-scoped projections | summary assembly, notification lists |
+| `home` | `home` | `HomeFeaturedCourse`, `HomeFeaturedScholarship`, `HomeCompetition`, `HomeEvent`, `HomeQuickLink` | — (curated reads) |
+| `events` | `events` | `EventItem` | — |
+| `competitions` | `competitions` | `Competition` | — |
+| `profile` | `profile` | — (edits `accounts.User`; owns no tables) | — (edits via `accounts`) |
+| `adminconsole` | `adminconsole` | — (staff analytics across features) | account lifecycle (email uniqueness, role⇄staff, self-protection), content-editor value coercion |
+| `videohosting` | `videohosting` | `VideoProvider`, `VideoAsset`, `VideoRendition`, `VideoSegment`, `StreamToken`, `ProviderAsset`, `UploadSession`, plus the `providers/` module-per-host registry | ingest + packaging in `ingest.py`/`packaging.py` (not `services.py` — the file names are the domain's) |
 
 **Why `accounts`?** The auth folder keeps the product name (`auth`) but the app
 label cannot be `auth` — Django reserves that label for `django.contrib.auth`.
@@ -259,6 +260,67 @@ Analytics header).
 tokens stop being accepted, clear it and they come back. A project id without
 an `apiKey`/`authDomain` raises `ImproperlyConfigured` at boot — a half config
 would otherwise only surface as a failed sign-in in the browser.
+
+---
+
+## 8. Observability — one JSON line per request
+
+`config/logging.py` + `config/middleware.py` make every request traceable:
+
+- **Request id at the edge:** an inbound `X-Request-ID` (8–64 printable chars)
+  is echoed on the response and pinned to every log line; otherwise a `uuid4`
+  hex is minted. Grep the server log for the header value to follow one request
+  end to end.
+- **Per-request metrics:** `RequestMetricsMiddleware` logs one INFO line with
+  `duration_ms`, `db_ms`, and `queries`; above the thresholds
+  (`SLOW_DB_SECONDS = 0.3`, `MANY_QUERIES = 25`) it escalates to WARNING — the
+  N+1 tripwire. A slow or chatty endpoint shows up in the log before anyone
+  complains about it.
+- **The formatter whitelists fields,** so secrets and request bodies cannot
+  leak into logs. Levels: DEBUG locally, INFO in production.
+
+The full shapes and field list: [`backend/README.md`](../backend/README.md) (§ Observability).
+
+---
+
+## 9. Caching — versioned namespaces, invalidated on write
+
+Two layers, both owned by `features/common`:
+
+- **App cache (`cache.py`):** a cacheable public read is
+  `cached(namespace, digest, ttl, loader)` — keys
+  `kh:<ns>:v<version>:<digest>`, TTL 300 s with ±10% jitter, one `cache miss`
+  log line per miss. Namespaces: `catalog`, `home`, `events`, `competitions`.
+  No view calls `cache.get/set` by hand.
+- **Invalidation (`cache_invalidation.py`):** the registry
+  `MODEL_NAMESPACES` maps each watched model to the families its writes
+  change (a `Course` write bumps `catalog` *and* `home`); receivers bump the
+  family version inside `transaction.on_commit`, so a reader that raced the
+  write cannot repopulate stale data. Old entries simply age out.
+- **HTTP cache (`http_cache.py`):** public GETs carry a strong ETag +
+  `Cache-Control` (`max-age=30, s-maxage=300, stale-while-revalidate=600`);
+  a matching `If-None-Match` answers 304 with no body and no queries. Private
+  routes get `Cache-Control: private, no-store`.
+
+Details and the current rate/TTL values: [`backend/README.md`](../backend/README.md) (§ Caching).
+
+---
+
+## 10. Jobs — one scheduled cleanup, idempotent by construction
+
+`features/common/maintenance.py::run_cleanup` sweeps four dead-weight families
+(expired stream tokens, stale upload sessions, expired Drive auth states, auth
+events past `AUTH_EVENT_RETENTION_DAYS`) in chunks of 500, one transaction per
+chunk. It is **idempotent** — deleting an already-deleted row deletes nothing —
+and **overlap-guarded**: a second concurrent run exits 0 with
+`skipped, still running`, so cron + a manual trigger never fight. Every run
+leaves its per-family delete counts on a `MaintenanceRun` ledger row.
+
+Two triggers: `python manage.py cleanup_expired` (self-hosted cron, every 6 h)
+and `GET/POST /api/admin/maintenance/cleanup` (Vercel's daily cron at
+`0 3 * * *`, authenticated with the cron secret). The why-and-how:
+[`backend/README.md`](../backend/README.md) (§ Jobs & cleanup) and the contract row in
+[07 · Backend Contract](07-backend-contract.md).
 
 ---
 

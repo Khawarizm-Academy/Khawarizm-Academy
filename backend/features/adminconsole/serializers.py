@@ -240,7 +240,14 @@ USER_FIELDS: tuple[dict[str, Any], ...] = (
 
 
 def user_row(user: User) -> dict[str, Any]:
-    """A compact user row for the users table."""
+    """A compact user row for the users table.
+
+    `active_sessions` arrives as an annotation on the list queryset; the
+    single-user endpoints fall back to the per-row count.
+    """
+    active_sessions = getattr(user, "active_sessions", None)
+    if active_sessions is None:
+        active_sessions = user.sessions.filter(is_active=True).count()
     return {
         "id": str(user.id),
         "email": user.email,
@@ -249,7 +256,7 @@ def user_row(user: User) -> dict[str, Any]:
         "role": user.role,
         "isActive": user.is_active,
         "isStaff": user.is_staff,
-        "activeSessions": user.sessions.filter(is_active=True).count(),
+        "activeSessions": active_sessions,
         "joinedAt": user.date_joined.isoformat(),
         "lastSeenAt": user.last_seen_at.isoformat() if user.last_seen_at else None,
     }

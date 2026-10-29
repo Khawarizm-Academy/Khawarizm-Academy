@@ -123,7 +123,18 @@ under `/api/`.
 
 **Response shapes.** Payloads use camelCase keys matching `entities.ts` and each
 feature's `types.ts`. Empty/`None` fields are omitted (the backend `compact` helper).
-Errors share one structured shape (`backend/features/common/errors.py`).
+List endpoints answer a top-level object — `{"items": [...]}` for plain lists, named
+keys where two collections ride one call (`saved`, `competitions`, `notifications`);
+never a bare array.
+
+**Errors share one envelope** (`backend/features/common/errors.py`):
+`{"detail": <Arabic line>, "code": <machine key>, "fields"?: {input: [messages]}}`.
+`ApiError` in `apiClient.ts` carries `status` + `code`; the auth flow keys its
+states off codes (`login_locked`, `session_invalid`, `expired`,
+`signed_in_elsewhere`, `revoked_by_admin`, `token_invalid`, …). Generic codes
+follow the status: `invalid_parameter` (400), `not_found` (404),
+`permission_denied` (403), `not_authenticated` (401), `conflict` (409),
+`throttled` (429), `payload_too_large` (413), `upstream_unavailable` (502).
 
 **Current user.** The browser verifies identity with Firebase Auth; the server
 exchanges the Firebase ID token for a `UserSession` (HS256 access token +
@@ -140,7 +151,7 @@ feature layout and the session model.
 | `POST` | `/auth/refresh` | Rotate the refresh token, mint a fresh access token. |
 | `GET` | `/auth/me` | Current user profile. |
 | `POST` | `/auth/logout` | End the session. |
-| `GET` / `POST` | `/auth/sessions` · `/auth/sessions/:id/revoke` | List live sessions / revoke one. |
+| `GET` / `POST` | `/auth/sessions` · `/auth/sessions/:id/revoke` | List live sessions (`{"items": [...]}`) / revoke one. |
 
 ### Catalog & courses
 
@@ -149,9 +160,9 @@ feature layout and the session model.
 | `GET` | `/catalog` | Paged, filterable list (`type`, `q`, `field`, `level`, `language`, `cost`, `country`, `status`, `sort`, `page`, `ids`). |
 | `GET` | `/catalog/:slug` | Single course or scholarship detail. |
 | `GET` | `/courses/:slug` | Course detail (modules, lessons, sessions, exam). |
-| `GET` | `/courses/:slug/problems` | Practice problems. |
-| `GET` | `/problems` | The shared practice set. |
-| `GET` | `/courses/:slug/related` | Related-course rail. |
+| `GET` | `/courses/:slug/problems` | Practice problems (`{"items": [...]}`). |
+| `GET` | `/problems` | The shared practice set (`{"items": [...]}`). |
+| `GET` | `/courses/:slug/related` | Related-course rail (`{"items": [...]}`). |
 | `POST` | `/courses/:slug/enroll` | Enroll the learner. |
 | `POST` | `/courses/:slug/progress` | Sync completed lessons / progress. |
 | `POST` | `/courses/:slug/favorite` | Toggle a course in favorites. |
@@ -170,7 +181,7 @@ feature layout and the session model.
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
 | `GET` | `/dashboard` | Summary (stats, priority cards). |
-| `GET` | `/dashboard/enrolled` | Enrolled courses. |
+| `GET` | `/dashboard/enrolled` | Enrolled courses (`{"items": [...]}`). |
 | `GET` | `/dashboard/saved` | Saved scholarships + favorite courses. |
 | `GET` | `/dashboard/competitions` | Competitions + certificates. |
 | `GET` | `/dashboard/notifications` | Notifications list. |
@@ -200,6 +211,7 @@ Staff-only (`IsAdminRole`), under `/admin`:
 | `POST` | `/admin/sessions/:id/revoke` | Force-logout one device. |
 | `GET` | `/admin/analytics/logins` · `/devices` | Login series, os/browser/device breakdown. |
 | `GET` | `/admin/events` | Recent audit trail. |
+| `GET` · `POST` | `/admin/maintenance/cleanup` | Run the retention cleanup inline — 202 `{id, status, deleted}` (staff bearer, or the platform cron's `Bearer $CRON_SECRET`). |
 | `GET` | `/admin/content/schema` | `{types, userFields}` — drives every admin form. |
 | `GET` · `POST` | `/admin/content/:type` | Paged rows / create (`courses`, `scholarships`, `events`, `competitions`). |
 | `PATCH` · `DELETE` | `/admin/content/:type/:id` | Edit / remove one content row. |

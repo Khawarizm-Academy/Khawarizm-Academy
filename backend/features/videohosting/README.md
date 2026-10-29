@@ -87,6 +87,15 @@ raw token is shown once at mint time. `VideoStatus` lives in
    IP-bound and expiring; the master and key responses are `no-store`. A leaked
    segment URL exposes encrypted bytes and nothing more.
 
+**Ingest retry policy** — deliberately not a Celery build. The command is
+idempotent (`get_or_create` by slug, so re-running with the same `--slug`
+resumes the same row), and any failure lands **on the row**:
+`status="error"`, `error_message` = the exception — visible in Django admin
+(`VideoAsset` filtered by status/provider) and the admin console's asset list.
+The retry *is* the re-run: fix the cause (network, disk, FFmpeg) and invoke
+`ingest_video` again with the same slug; a successful pass clears
+`error_message` and walks the same upload → store → package ladder.
+
 ## Where FFmpeg runs — **not on Vercel**
 
 FFmpeg is only needed for **packaging** (step 1). It cannot run on Vercel: the

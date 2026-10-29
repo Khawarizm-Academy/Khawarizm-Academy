@@ -19,6 +19,7 @@ feature reads from the API without any shape-casting.
 | CORS | `django-cors-headers` (frontend origin allow-list) |
 | Database | SQLite locally · Postgres on Vercel when `DATABASE_URL` is set |
 | Auth | Firebase ID-token verification + HS256 access tokens with rotating refresh sessions (`accounts.User`) |
+| API contract | drf-spectacular — OpenAPI at `/api/schema`, Swagger UI at `/api/schema/docs` (both public, origin-exempt) |
 
 ---
 
@@ -135,6 +136,13 @@ exported by hand:
 | `GOOGLE_DRIVE_*` | Alternative managed host: OAuth client id/secret/refresh token, service-account JSON, upload folder |
 | `VIDEO_HOSTING_DEFAULT_PROVIDER` | Provider assets default to (`google_drive`) |
 | `STREAM_TOKEN_TTL_HOURS` | Playback grant lifetime (default `6`) |
+| `AUTH_EVENT_RETENTION_DAYS` | Days the auth audit trail (`AuthEvent`) is kept before the cleanup job deletes it (default `180`) |
+| `MAINTENANCE_CRON_SECRET` | Bearer secret the platform cron sends to `/api/admin/maintenance/cleanup` (`CRON_SECRET` accepted as a fallback name); unset = the cron endpoint only accepts staff sessions |
+| `DJANGO_SSL_REDIRECT` | Force HTTPS redirects. Default: on whenever `DEBUG=false`, off in dev |
+| `DJANGO_HSTS_SECONDS` | HSTS max-age. Default: `31536000` (1 year) when `DEBUG=false`, off in dev |
+| `DJANGO_SESSION_COOKIE_SECURE` / `DJANGO_CSRF_COOKIE_SECURE` | `Secure` cookies. Default: on whenever `DEBUG=false` |
+| `DJANGO_CONN_MAX_AGE` | Persistent Postgres connections (seconds). Default `60` self-hosted, `0` on Vercel. SQLite stays at `0` — the upload worker needs short-lived connections |
+| `REDIS_URL` | Switch the app cache to Redis (requires `pip install django-redis`); LocMem otherwise |
 
 **Database per profile.** Development uses SQLite because `.env.development`
 sets no `DATABASE_URL`. Production values are set in the **host environment** (or as Vercel Project
@@ -216,9 +224,10 @@ The [CI workflow](../.github/workflows/backend.yml) (`.github/workflows/backend.
 | :--- | :--- |
 | Lint + format | `ruff check .` · `ruff format --check .` (config in `pyproject.toml`) |
 | Framework sanity | `python manage.py check` |
+| OpenAPI schema generates | `python manage.py spectacular --fail-on-warn` — a rotting `@extend_schema` annotation (renamed field, dropped param) breaks the build instead of silently degrading the spec |
 | Models ⇄ migrations agree | `python manage.py makemigrations --check --dry-run` |
 | Schema applies | `python manage.py migrate` |
-| Test suite | `python manage.py test` |
+| Test suite | `python manage.py test -v2 --parallel` (the full suite; runs serial locally in ~40 s, parallel in ~7 s) |
 | Dependency audit | `pip-audit -r requirements.txt` |
 | Secrets scan | gitleaks (whole git history) |
 | Deploy-mode checks | `python manage.py check --deploy` (production env shape) |
@@ -353,30 +362,38 @@ the last column.
 | `GET` | `/catalog` — paged, filterable list (`type`, `q`, `field`, `level`, `cost`, `country`, `status`, `sort`, `page`, `ids`) | catalog |
 | `GET` | `/catalog/:slug` — one course or scholarship summary | catalog |
 | `GET` | `/courses/:slug` — course detail (modules, lessons, live sessions, exam) | courses |
-| `GET` | `/courses/:slug/problems`, `/problems` — practice set | courses |
-| `GET` | `/courses/:slug/related` — related-course rail | courses |
+| `GET` | `/courses/:slug/problems`, `/problems` — `{items: [CourseProblem]}` practice set | courses |
+| `GET` | `/courses/:slug/related` — `{items: [CatalogItem]}` related-course rail | courses |
 | `POST` | `/courses/:slug/enroll` · `/favorite` · `/progress` — learner actions | courses |
 | `GET` | `/courses/:slug/certificate` — certificate metadata | courses |
 | `GET` | `/scholarships/:slug` — scholarship detail | scholarships |
 | `POST` | `/scholarships/:slug/apply` · `/save` | scholarships |
-| `GET` | `/dashboard` · `/enrolled` · `/saved` · `/competitions` · `/notifications` | dashboard |
+| `GET` | `/dashboard` · `/saved` · `/competitions` — single payloads | dashboard |
+| `GET` | `/dashboard/enrolled` — `{items: [EnrolledCourse]}` | dashboard |
+| `GET` | `/dashboard/notifications` — `{items: [...], drawer: [...]}` (both notification shapes) | dashboard |
 | `POST` | `/dashboard/notifications/:id/read` | dashboard |
 | `GET` | `/home` — featured courses/scholarships, competition, events, quick links | home |
 | `GET` | `/events` — events & seminars | events |
 | `GET` | `/competitions` — competitions & challenges | competitions |
 | `GET` · `PATCH` | `/profile` — learner profile & preferences | profile |
 | `GET` | `/auth/config` — the public Firebase web config for the browser | auth |
-| `POST` | `/auth/firebase` — exchange a Firebase ID token for a session | auth |
-| `POST` | `/auth/refresh` — rotate the refresh token, mint a new access token | auth |
+| `POST` | `/auth/firebase` — exchange a Firebase ID token for a session (429 on login lockout) | auth |
+| `POST` | `/auth/refresh` — rotate the refresh token, mint a new access token (429 on the auth-burst scope) | auth |
 | `GET` | `/auth/me` — current learner | auth |
-| `POST` | `/auth/logout` · `GET` `/auth/sessions` · `POST` `/auth/sessions/:id/revoke` | auth |
+| `POST` | `/auth/logout` · `GET` `/auth/sessions` (`{items: [Session]}`) · `POST` `/auth/sessions/:id/revoke` | auth |
 | `GET` · `POST` · `PATCH` · `DELETE` | `/admin/*` — overview, accounts & roles, sessions & revokes, analytics, the content editor | adminconsole |
+| `GET` · `POST` | `/admin/maintenance/cleanup` — run the retention cleanup inline (202 `{id, status, deleted}`); the platform cron calls it with `Bearer $MAINTENANCE_CRON_SECRET` | adminconsole |
 | `GET` | `/videos/providers` · `/videos/:slug` — hosting registry, readiness + ladder | videohosting |
-| `POST` | `/videos/:slug/token` — mint a playback grant (auth) | videohosting |
+| `POST` | `/videos/:slug/token` — mint a playback grant (auth; 429 on the token scope) | videohosting |
 | `GET` | `/stream/:token/*` — master/media playlists, AES key, 302 to the provider CDN | videohosting |
+| `GET` | `/schema` — the OpenAPI YAML · `/schema/docs` — Swagger UI. Public and origin-exempt | common |
 
-Errors use one structured shape (see `features/common/errors.py`) so the
-frontend's data-section error state can render a message and a retry.
+**List payloads** use one convention: rows ride in `{items: [...]}` (problems,
+related, enrolled, sessions, notifications); single payloads are flat camelCase
+objects. `/catalog` pagination is explicit in the payload (`totalResults`,
+`totalPages`, `currentPage`). Every error is the one structured envelope
+`{detail, code, fields?}` (see `features/common/errors.py`) so the frontend's
+data-section error state can render a message and a retry.
 
 ---
 
@@ -391,6 +408,107 @@ VITE_API_BASE_URL=http://localhost:8000/api
 ```
 
 Start the backend first (`python manage.py runserver`), then `npm run dev`.
+
+## Hardening
+
+Abuse surfaces answer **429 with `Retry-After`** (`features/common/throttling.py` owns the rates).
+The 429 body is the same error envelope as every other failure —
+`{"detail": "...", "code": "throttled" | "login_locked"}` — and `Retry-After` counts the seconds to the next allowed request:
+
+| Scope | Covers | Rate (per source IP) |
+| :--- | :--- | :--- |
+| `auth_burst` | `POST /api/auth/firebase`, `POST /api/auth/refresh` | 10/min |
+| `catalog` | `GET /api/catalog`, `/api/catalog/{slug}` | 120/min |
+| `video_token` | `POST /api/videos/{slug}/token` (playback grants) | 60/min |
+| `admin_burst` | every `/api/admin/*` console endpoint | 60/min |
+
+The rate lives where the surface lives: a view tags itself with
+`@scoped_throttle("<scope>")` and the scope's rate is one row in `SCOPED_RATES`.
+A new abuse surface gets a named scope — never a hand-rolled counter.
+
+On top of the request throttle, **login lockout**: 5 rejected sign-ins from one
+email/IP within 15 minutes locks the login for the rest of the window — `429`
+with `{"code": "login_locked"}` and `Retry-After` counting down to when the
+newest rejection leaves the window. Waiting clears it; spamming does not
+extend it.
+
+Transport and browser headers: HTTPS redirect + HSTS (1 year, subdomains) +
+`Secure` session/CSRF cookies whenever `DEBUG=false` (env-overridable, see the
+table above); `Referrer-Policy: strict-origin-when-cross-origin`,
+`X-Content-Type-Options: nosniff`, and a `Permissions-Policy` on every
+response (`config/middleware.py`). The Django admin additionally gets a
+**report-only CSP** — the trial run before promoting it to a real one.
+
+## Caching
+
+Three layers, outermost first (`features/common/cache.py` +
+`features/common/http_cache.py`):
+
+- **App cache** — the public read payloads (`/api/catalog` list+detail+filters,
+  `/api/home`, `/api/events`, `/api/competitions`) go through one `cached()`
+  helper: keys `kh:<namespace>:v<version>:<digest>` (namespaces today:
+  `catalog`, `home`, `events`, `competitions`), a ±10%-jittered 300 s TTL,
+  and one `cache miss` JSON log line per miss (the hit-ratio signal). Warm
+  requests run **zero DB queries**.
+- **Invalidation** — any write to a watched model (courses, scholarships,
+  events, competitions, home rails, catalog filters — the registry in
+  `features/common/cache_invalidation.py`) bumps the family version inside
+  `transaction.on_commit`, wherever the write comes from (admin console,
+  `seed_demo`, commands). Old entries age out; nothing is scanned.
+- **HTTP cache** — public GETs carry an ETag (a digest of the payload) +
+  `Cache-Control: public, max-age=30, s-maxage=300, stale-while-revalidate=600`
+  (`/api/auth/config`: short + `must-revalidate`). A matching `If-None-Match`
+  answers `304` with no body and no queries. Private routes
+  (`/api/dashboard/*`, `/api/auth/me|sessions`, `/api/admin/*`,
+  `/api/videos|stream/*`) get `Cache-Control: private, no-store`
+  (`PrivateCacheMiddleware`) and are never app-cached.
+
+Responses are gzipped (`GZipMiddleware`); `DJANGO_CONN_MAX_AGE` enables
+persistent DB connections for self-hosted workers (default `60`, `0` on
+Vercel). `REDIS_URL` moves the app cache to Redis for multi-instance deploys.
+
+## Observability
+
+Every request logs **one JSON line** to stdout: `ts`, `level`, `msg`, `logger`, `request_id`, `user_id`, `path`,
+`status`, `duration_ms`, `db_ms`, `queries` (`config/logging.py`). The shapes:
+
+- **Request id at the edge** (`config/middleware.py`): an inbound `X-Request-ID` (8–64 printable chars) is echoed on
+  the response and pinned to every log line; otherwise a `uuid4` hex is minted.
+- **Per-request metrics** (`RequestMetricsMiddleware`): one INFO line per request with query count and DB time —
+  escalated to **WARNING** above the thresholds (`SLOW_DB_SECONDS = 0.3`, `MANY_QUERIES = 25`), the N+1 tripwire.
+- Levels: DEBUG locally (`DJANGO_DEBUG=true`), INFO in production; the formatter whitelists fields, so no secrets or
+  request bodies can leak into logs.
+- Log lines carry `request_id`; grep the server log for a header value to trace one request end to end.
+
+## Health checks
+
+| Route | Meaning | Response |
+| :--- | :--- | :--- |
+| `GET /healthz` | Liveness — the process answers; touches nothing | `{"status": "ok"}` |
+| `GET /readyz` | Readiness — the database answers `SELECT 1` | `{"status": "ok", "database": "up"}` or **503** `{"database": "down"}` |
+
+Both are unauthenticated and exempt from the origin gate. The docker-compose healthcheck curls `/healthz`.
+
+## Jobs & cleanup
+
+There is one scheduled job: the **retention cleanup** (`features/common/maintenance.py`),
+run two ways:
+
+- **Self-hosted** — `python manage.py cleanup_expired` on cron every 6 h:
+  `0 */6 * * * cd backend && .venv/bin/python manage.py cleanup_expired`
+- **Vercel** — `backend/vercel.json` schedules `GET /api/admin/maintenance/cleanup`
+  daily at `0 3 * * *` (the Hobby plan allows crons at most once per day, so the
+  6 h cadence is a self-hosted concern only). Vercel attaches
+  `Authorization: Bearer $CRON_SECRET`, verified against `MAINTENANCE_CRON_SECRET`
+  by `CronSecretAuthentication`; the endpoint also accepts a staff bearer.
+
+It sweeps four dead-weight families in chunks of 500, one transaction per
+chunk — expired `StreamToken`s, `UploadSession`s stale past 7 days, expired
+`DriveAuthState`s, and `AuthEvent`s past `AUTH_EVENT_RETENTION_DAYS` (env,
+default 180). It is idempotent (re-runs converge) and overlap-guarded: a
+second run while one is still active exits **0** with
+`skipped, still running`. Every run leaves its per-family delete counts on a
+`MaintenanceRun` ledger row (`trigger` = command | endpoint | cron).
 
 ---
 

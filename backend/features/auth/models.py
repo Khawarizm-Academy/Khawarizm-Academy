@@ -147,6 +147,9 @@ class UserSession(UUIDModel):
     class Meta:
         verbose_name = "Session"
         ordering = ["-last_seen_at"]
+        # Per-user active-session counts (admin users list annotation) and the
+        # "which of my devices are live" trail.
+        indexes = [models.Index(fields=["user", "is_active"], name="idx_usersession_user_active")]
 
     def __str__(self) -> str:
         return f"{self.user.email} · {self.device_label or self.device_type}"
@@ -181,6 +184,12 @@ class AuthEvent(UUIDModel):
     class Meta:
         verbose_name = "Auth event"
         ordering = ["-created_at"]
+        # Admin analytics ranges (kind x window) and the per-user trail. The
+        # user FK index is automatic; this one matches its sort direction.
+        indexes = [
+            models.Index(fields=["kind", "created_at"], name="idx_authevent_kind_created"),
+            models.Index(fields=["user", "-created_at"], name="idx_authevent_user_created"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.kind}:{self.email or self.user_id}"

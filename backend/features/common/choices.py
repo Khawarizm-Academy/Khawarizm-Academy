@@ -182,3 +182,11 @@ class FilterGroupKind(models.TextChoices):
 
     CHOICE = "choice", "choice"
     SEARCH = "search", "search"
+
+
+class MaintenanceRunStatus(models.TextChoices):
+    """Lifecycle of one `cleanup_expired` execution (features/common/maintenance.py)."""
+
+    RUNNING = "running", "Running"
+    DONE = "done", "Done"
+    ERROR = "error", "Error"

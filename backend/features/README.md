@@ -40,6 +40,7 @@ features/<feature>/
 ├── apps.py           AppConfig — sets the app label
 ├── models.py         the feature's tables
 ├── serializers.py    ORM row → camelCase JSON
+├── services.py       business rules (mutating or multi-step ones)
 ├── views.py          thin function views
 ├── urls.py           the feature's routes
 ├── admin.py          admin registration (data editor)
@@ -49,8 +50,9 @@ features/<feature>/
 ```
 
 A feature creates only the files it needs — a model-less feature (like
-`profile`) skips `models.py`/`migrations/`. An empty file is not allowed; a
-single-purpose file is fine.
+`profile`) skips `models.py`/`migrations/`, and a feature whose views are pure
+reads (like `catalog`, which keeps its engine in `service.py`) may skip
+`services.py`. An empty file is not allowed; a single-purpose file is fine.
 
 ---
 
@@ -141,7 +143,10 @@ This serializer converts a Course model instance into a dictionary...
 ### 8. Lean payloads, exact keys
 `compact()` drops empties. Never rename a camelCase key to match a model field;
 the frontend types are the contract (`shared/types/entities.ts` and each
-feature's `types.ts`).
+feature's `types.ts`). List endpoints wrap their rows as `{items: [...]}`
+(problems, related rail, enrolled, sessions, notifications); single payloads
+are flat camelCase objects, and the catalog adds its pagination keys
+(`totalResults`, `totalPages`, `currentPage`) around the page.
 
 ### 9. Fail loudly
 A missing row returns a 404 with the Arabic message (`الدورة غير موجودة`), never
@@ -166,6 +171,41 @@ python manage.py test              # every feature
 python manage.py test features.<feature>
 ```
 
+### 11. Business rules live in `services.py`
+A mutating or multi-step rule — enrollment with its counter bump, session
+rotation, application submission, account lifecycle — is a function in the
+feature's `services.py`, and the view calls one function and serializes. The
+view still owns resolve → call → respond; the service owns the writes and any
+`transaction.atomic`/`on_commit` discipline. Pure reads may stay in the view or
+a `service.py` engine (see `catalog`). Existing examples:
+`courses/services.py` (enroll/progress/favorite/related/certificate),
+`auth/services.py` (sessions), `scholarships/services.py` (apply/save),
+`dashboard/services.py` (summary assembly), `adminconsole/services.py`
+(account lifecycle + content editor).
+
+### 12. One error envelope
+Every failure renders the same body — `{"detail": ..., "code": ...}` with an
+optional `fields` map — from the shared handler `features/common/errors.py`
+(400/401/403/404/429 and the 5xx fallback). A feature defines its Arabic
+`detail` strings once (`messages.py` for shared ones) and raises the coded
+exception (`NotFound`, `InvalidParameter`, `Conflict`, …); it never hand-builds
+an error dict in a view.
+
+### 13. Cache reads go through `common.cache`, invalidation through the registry
+A cacheable public read is `cached(namespace, digest, ttl, loader)` — never a
+bare `cache.get/set` with a hand-rolled key. A write that changes a public
+payload must have its model registered in
+`features/common/cache_invalidation.py::MODEL_NAMESPACES` (the bump runs inside
+`transaction.on_commit`); if you add a model that feeds `catalog`/`home`, add
+the row in the same change, or the cached payload goes stale until the TTL.
+
+### 14. Throttle abuse surfaces with a named scope
+Anything a stranger can hammer (login, token minting, the admin console, a
+public browse list) tags `@scoped_throttle("<scope>")`, and the scope's rate is
+one row in `features/common/throttling.py::SCOPED_RATES`. No view invents its
+own rate limiting, and the shared handler answers 429 with the envelope plus
+`Retry-After`.
+
 ---
 
 ## Wiring a new feature
@@ -175,7 +215,8 @@ python manage.py test features.<feature>
 2.  Set the AppConfig:        name = "features.<feature>", label = "<feature>"
 3.  Add models:               models.py (choices from features.common.choices)
 4.  Add serializers:          serializers.py (camelCase, compact)
-5.  Add views:                views.py (thin: resolve → query → serialize)
+5.  Add views:                views.py (thin: resolve → call → serialize);
+                              business rules → services.py + @scoped_throttle
 6.  Add routes:               urls.py
 7.  Register in settings:     "features.<feature>" in INSTALLED_APPS
 8.  Mount in config/urls.py:  path("api/", include("features.<feature>.urls"))

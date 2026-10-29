@@ -30,12 +30,12 @@ export async function fetchCourseDetail(slug: string): Promise<CourseDetail | nu
 
 /** Related course cards the API computes from this course's own related list. */
 export async function fetchRelatedCourses(slug: string): Promise<CatalogItem[]> {
-  return orEmpty(await apiGet<CatalogItem[]>(`/courses/${slug}/related`));
+  return orEmpty(await apiGet<{ items: CatalogItem[] }>(`/courses/${slug}/related`).then((data) => data.items));
 }
 
 /** The course's practice set shown under a lesson's "حلّ المسائل" tab. */
 export async function fetchCourseProblems(slug: string): Promise<CourseProblem[]> {
-  return orEmpty(await apiGet<CourseProblem[]>(`/courses/${slug}/problems`));
+  return orEmpty(await apiGet<{ items: CourseProblem[] }>(`/courses/${slug}/problems`).then((data) => data.items));
 }
 
 /** Enroll the learner; the API still acknowledges a visitor so the CTA never dead-ends. */

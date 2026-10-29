@@ -23,8 +23,8 @@ export function logout(): Promise<{ loggedOut: boolean }> {
 
 /** Every device this account has signed in from. */
 export async function fetchSessions(): Promise<AuthSession[]> {
-  const data = await apiGet<{ sessions: AuthSession[] }>('/auth/sessions');
-  return data.sessions;
+  const data = await apiGet<{ items: AuthSession[] }>('/auth/sessions');
+  return data.items;
 }
 
 /** Force one other device to sign out. */

@@ -9,6 +9,8 @@ from tempfile import gettempdir
 
 from django.db import connections
 from django.http import HttpResponse
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema, inline_serializer
+from rest_framework import serializers as ser
 from rest_framework import status
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -16,30 +18,55 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from features.auth.permissions import IsAdminRole
+from features.common.errors import (
+    Conflict,
+    InvalidParameter,
+    NotFound,
+    PayloadTooLarge,
+)
+from features.common.messages import (
+    ADMIN_VIDEO_NOT_FOUND,
+    CREATE_FAILED,
+    FILE_TOO_LARGE,
+    MISSING_FILE_AND_SLUG,
+    MISSING_SLUG,
+    MISSING_USE_FFMPEG,
+    UPLOAD_IN_PROGRESS,
+    provider_upload_unready,
+    unknown_provider,
+)
+from features.common.schemas import ErrorSerializer
 from features.videohosting import diagnostics, drive_oauth, ingest
 from features.videohosting.models import VideoAsset, VideoProvider, VideoSystemConfig
 from features.videohosting.providers import ensure_defaults, provider_listing
+
+# The upload's multipart form — the actual file plus its coordinates.
+inline_upload = inline_serializer(
+    "VideoUploadRequest",
+    fields={
+        "file": ser.FileField(),
+        "slug": ser.CharField(),
+        "title": ser.CharField(required=False, allow_blank=True),
+        "provider": ser.CharField(required=False, allow_blank=True),
+    },
+)
 
 
 def _resolve_provider(provider_code):
     """Resolve one provider code against the registry and its env checks.
 
-    Returns ``(provider, None)`` on success or ``(None, ready Response)``.
-    An unknown code fails loudly instead of silently falling back.
+    An empty code falls back to the default enabled provider; an unknown or
+    unready one raises (the envelope handler renders the 400). The provider
+    becomes selectable the moment its own env checks pass.
     """
     if not provider_code:
-        provider = VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
-        return provider, None
+        return VideoProvider.objects.filter(is_default=True, is_enabled=True).first()
     provider = VideoProvider.objects.filter(code=provider_code).first()
     if provider is None:
-        return None, Response({"detail": f"مزود غير معروف: {provider_code}."}, status=status.HTTP_400_BAD_REQUEST)
-    # The provider becomes selectable the moment its own env checks pass.
+        raise InvalidParameter(unknown_provider(provider_code))
     if not diagnostics.provider_available(provider.code):
-        return None, Response(
-            {"detail": f"الرفع عبر {provider.name} غير جاهز — {diagnostics.provider_reason(provider.code)}"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-    return provider, None
+        raise InvalidParameter(provider_upload_unready(provider.name, diagnostics.provider_reason(provider.code)))
+    return provider
 
 
 def _asset_row(asset, *, include_error: bool = False) -> dict:
@@ -78,6 +105,11 @@ def _login_page(okay: bool, detail: str) -> HttpResponse:
     return HttpResponse(body, content_type="text/html; charset=utf-8")
 
 
+@extend_schema(
+    operation_id="admin_video_providers",
+    summary="Provider registry rows plus each provider's availability gate.",
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{results: [Provider + gate]}`")},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_providers(request):
@@ -85,6 +117,34 @@ def video_providers(request):
     return Response({"results": provider_listing(include_gate=True)})
 
 
+@extend_schema(
+    methods=["GET"],
+    operation_id="admin_video_assets_list",
+    summary="List the first 100 assets (with error info).",
+    request=None,
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{results: [AssetRow]}`"),
+    },
+)
+@extend_schema(
+    methods=["POST"],
+    operation_id="admin_video_assets_create",
+    summary="Create an asset after provider resolution.",
+    request=inline_serializer(
+        "VideoAssetCreateRequest",
+        fields={
+            "slug": ser.CharField(),
+            "title": ser.CharField(required=False, allow_blank=True),
+            "provider": ser.CharField(required=False, allow_blank=True),
+        },
+    ),
+    responses={
+        201: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{id, slug, title, status, provider}`"),
+        400: OpenApiResponse(
+            response=ErrorSerializer, description="`create_failed` — unknown provider code or a taken slug."
+        ),
+    },
+)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_assets(request):
@@ -94,10 +154,8 @@ def video_assets(request):
         data = request.data or {}
         slug = data.get("slug")
         if not slug:
-            return Response({"detail": "slug مطلوب."}, status=status.HTTP_400_BAD_REQUEST)
-        provider, refusal = _resolve_provider(data.get("provider"))
-        if refusal is not None:
-            return refusal
+            raise InvalidParameter(MISSING_SLUG)
+        provider = _resolve_provider(data.get("provider"))
         try:
             asset = VideoAsset.objects.create(
                 slug=slug,
@@ -115,12 +173,17 @@ def video_assets(request):
                 },
                 status=status.HTTP_201_CREATED,
             )
-        except Exception:
-            return Response({"detail": "تعذّر الإنشاء."}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:
+            raise InvalidParameter(CREATE_FAILED) from exc
     assets = VideoAsset.objects.select_related("provider").prefetch_related("renditions").all()[:100]
     return Response({"results": [_asset_row(a, include_error=True) for a in assets]})
 
 
+@extend_schema(
+    operation_id="admin_video_drive_oauth_start",
+    summary="Google's consent URL for the admin's browser.",
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{authUrl}`")},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_drive_oauth_start(request):
@@ -128,9 +191,20 @@ def video_drive_oauth_start(request):
     try:
         return Response({"authUrl": drive_oauth.consent_url()})
     except ValueError as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        raise InvalidParameter(str(exc)) from exc
 
 
+@extend_schema(
+    operation_id="admin_video_drive_oauth_callback",
+    summary="Google's redirect target — validates state, mints the grant.",
+    description="Origin-exempt (Google's redirect carries no Origin); protection is the single-use state.",
+    auth=None,
+    responses={
+        ("200", "text/html"): OpenApiResponse(
+            response=OpenApiTypes.STR, description="The tiny result page the admin sees."
+        ),
+    },
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def video_drive_oauth_callback(request):
@@ -141,6 +215,13 @@ def video_drive_oauth_callback(request):
     return _login_page(okay, detail)
 
 
+@extend_schema(
+    operation_id="admin_video_drive_oauth_status",
+    summary="The Drive connection state — account email, never tokens.",
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{connected, accountEmail, status, error}`"),
+    },
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_drive_oauth_status(request):
@@ -156,6 +237,12 @@ def video_drive_oauth_status(request):
     )
 
 
+@extend_schema(
+    operation_id="admin_video_drive_oauth_disconnect",
+    summary="Revoke the Drive grant at Google and drop the credential.",
+    request=None,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{connected: false}`")},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_drive_oauth_disconnect(request):
@@ -164,6 +251,18 @@ def video_drive_oauth_disconnect(request):
     return Response({"connected": False})
 
 
+@extend_schema(
+    operation_id="admin_video_upload",
+    summary="Accept the video file, then ingest it in a worker thread.",
+    description="Multipart form. 409 while an upload/ingest is already running for the slug, 413 past "
+    "`VIDEO_UPLOAD_MAX_BYTES`. The asset's `progress`/`stage` columns are the poll surface.",
+    request=inline_upload,
+    responses={
+        201: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{id, slug, status: uploading}`"),
+        409: OpenApiResponse(response=ErrorSerializer, description="`upload_in_progress`"),
+        413: OpenApiResponse(response=ErrorSerializer, description="`file_too_large`"),
+    },
+)
 @api_view(["POST"])
 @parser_classes([MultiPartParser, FormParser])
 @permission_classes([IsAuthenticated, IsAdminRole])
@@ -173,22 +272,15 @@ def video_asset_upload(request):
     uploaded = request.data.get("file")
     slug = (request.data.get("slug") or "").strip()
     if uploaded is None or not slug:
-        return Response({"detail": "الملف و معرّف الفيديو مطلوبان."}, status=status.HTTP_400_BAD_REQUEST)
+        raise InvalidParameter(MISSING_FILE_AND_SLUG)
     if uploaded.size > VIDEO_UPLOAD_MAX_BYTES:
-        return Response(
-            {"detail": "الملف أكبر من 2GB — قسّمه أو استخدم ingest_video من الخادم."},
-            status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-        )
+        raise PayloadTooLarge(FILE_TOO_LARGE)
 
-    provider, refusal = _resolve_provider(request.data.get("provider"))
-    if refusal is not None:
-        return refusal
+    provider = _resolve_provider(request.data.get("provider"))
 
     existing = VideoAsset.objects.filter(slug=slug).first()
     if existing is not None and existing.status in ("uploading", "processing"):
-        return Response(
-            {"detail": "هذا المعرّف في منتصف رفع آخر — انتظر انتهاء المعالجة."}, status=status.HTTP_409_CONFLICT
-        )
+        raise Conflict(UPLOAD_IN_PROGRESS)
 
     file_name = getattr(uploaded, "name", "") or "video.bin"
     temp_path = Path(gettempdir()) / f"kh-video-{uuid.uuid4().hex}{Path(file_name).suffix or '.bin'}"
@@ -236,19 +328,41 @@ def _run_ingest_worker(slug: str, file_path: str) -> None:
         connections.close_all()
 
 
+@extend_schema(
+    methods=["GET"],
+    operation_id="admin_video_asset_read",
+    summary="One asset's tracker shape.",
+    parameters=[OpenApiParameter("asset_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+    request=None,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The AssetRow (progress/stage/error).")},
+)
+@extend_schema(
+    methods=["DELETE"],
+    operation_id="admin_video_asset_delete",
+    summary="Delete an asset.",
+    parameters=[OpenApiParameter("asset_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+    request=None,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{deleted: true, id}`")},
+)
 @api_view(["GET", "DELETE"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_asset_detail(request, asset_id):
     """GET tracker shape / DELETE the asset."""
     asset = VideoAsset.objects.filter(pk=asset_id).first()
     if asset is None:
-        return Response({"detail": "غير موجود."}, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(ADMIN_VIDEO_NOT_FOUND)
     if request.method == "DELETE":
         asset.delete()
         return Response({"deleted": True, "id": str(asset_id)})
     return Response(_asset_row(asset, include_error=True))
 
 
+@extend_schema(
+    operation_id="admin_video_diagnostics",
+    summary="Staged provider validation — shallow by default, deep with live probes.",
+    parameters=[OpenApiParameter("deep", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False)],
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="Per-check results.")},
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_diagnostics(request):
@@ -257,6 +371,20 @@ def video_diagnostics(request):
     return Response(diagnostics.run(deep=deep))
 
 
+@extend_schema(
+    methods=["GET"],
+    operation_id="admin_video_system_config_read",
+    summary="The FFmpeg toggle (the video system config singleton).",
+    request=None,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{useFfmpeg}`")},
+)
+@extend_schema(
+    methods=["POST"],
+    operation_id="admin_video_system_config_update",
+    summary="Set the FFmpeg toggle.",
+    request=inline_serializer("VideoSystemConfigUpdate", fields={"useFfmpeg": ser.BooleanField()}),
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{useFfmpeg}`")},
+)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated, IsAdminRole])
 def video_system_config(request):
@@ -269,6 +397,6 @@ def video_system_config(request):
             config.use_ffmpeg = use_ffmpeg
             config.save(update_fields=["use_ffmpeg", "updated_at"])
             return Response({"useFfmpeg": config.use_ffmpeg})
-        return Response({"detail": "useFfmpeg مطلوب و يجب أن يكون true أو false."}, status=status.HTTP_400_BAD_REQUEST)
+        raise InvalidParameter(MISSING_USE_FFMPEG)
     config = VideoSystemConfig.get_instance()
     return Response({"useFfmpeg": config.use_ffmpeg})

@@ -2,31 +2,53 @@
 
 from __future__ import annotations
 
+import hmac
+
 import jwt
+from django.conf import settings
 from django.utils import timezone
 from rest_framework import authentication, exceptions
 
 from features.auth.models import UserSession
 from features.auth.tokens import decode_access_token
 from features.common.choices import SessionRevokeReason
-
-# Reason code -> the Arabic line the SPA shows the user.
-REASON_MESSAGES = {
-    "token_expired": "انتهت صلاحية الجلسة، يرجى تسجيل الدخول من جديد.",
-    "token_invalid": "رمز الدخول غير صالح.",
-    "signed_in_elsewhere": "تم تسجيل الدخول من جهاز آخر، فتم إنهاء هذه الجلسة.",
-    "logout": "تم تسجيل الخروج من هذه الجلسة.",
-    "expired": "انتهت صلاحية الجلسة.",
-    "revoked_by_admin": "تم إنهاء الجلسة بواسطة الإدارة.",
-    "session_missing": "هذه الجلسة لم تعد موجودة.",
-}
+from features.common.messages import REASON_MESSAGES, SESSION_INVALID
 
 
 class SessionAuthError(exceptions.AuthenticationFailed):
     """401 carrying a machine-readable `code` the SPA reacts to."""
 
     def __init__(self, code: str):
-        super().__init__({"code": code, "detail": REASON_MESSAGES.get(code, "الجلسة غير صالحة.")})
+        super().__init__(REASON_MESSAGES.get(code, SESSION_INVALID))
+        # The handler reads this instead of DRF's `not_authenticated` default.
+        self.code = code
+
+
+class CronSecretAuthentication(authentication.BaseAuthentication):
+    """Authenticates the platform cron by shared secret — no user session.
+
+    Vercel Cron sends `Authorization: Bearer $CRON_SECRET` and can never hold
+    a user session, and AccessTokenAuthentication would reject that bearer as
+    a malformed token. This authenticator runs BEFORE it (per-view on the
+    maintenance endpoint): the matching secret authenticates as a marker the
+    view checks (`request.auth == "cron"`); any other bearer falls through
+    (returns None) to the token authenticator untouched.
+    """
+
+    def authenticate(self, request):
+        header = authentication.get_authorization_header(request).split()
+        if len(header) != 2 or header[0].lower() != b"bearer":
+            return None
+        secret = settings.MAINTENANCE_CRON_SECRET
+        if not secret or not hmac.compare_digest(header[1].decode(), secret):
+            return None
+        return (None, "cron")
+
+    def authenticate_header(self, request):
+        # This authenticator sits first on its view, and DRF coerces a 401 to
+        # 403 when the first authenticator advertises no scheme — advertise
+        # Bearer so a wrong secret answers 401 `token_invalid` like everywhere.
+        return "Bearer"
 
 
 class AccessTokenAuthentication(authentication.BaseAuthentication):

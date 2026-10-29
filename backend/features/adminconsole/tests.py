@@ -350,3 +350,17 @@ class AdminConsoleContentTests(ApiTestCase):
         body = self.client.get("/api/admin/overview").json()
         self.assertIn("content", body)
         self.assertEqual(set(body["content"]), {"courses", "scholarships", "events", "competitions"})
+
+
+class AdminUsersQueryGuardTests(ApiTestCase):
+    """Phase 6 tripwire: the users list annotates instead of counting per row."""
+
+    def test_the_users_list_stays_a_fixed_query_count(self):
+        for index in range(3):
+            user = make_user(email=f"guarded-{index}@example.com")
+            services.open_session(user, FakeRequest(), "password")  # one active session each
+        authenticate(self.client, make_admin(email="guard-admin@example.com"))
+        with self.assertNumQueries(4):  # auth + touch + total count + annotated page slice
+            body = self.client.get("/api/admin/users").json()
+        self.assertEqual(body["total"], 4)
+        self.assertTrue(all(row["activeSessions"] == 1 for row in body["results"]))

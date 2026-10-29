@@ -8,7 +8,7 @@ from django.contrib import admin
 from django.test import TestCase
 from django.urls import reverse
 
-from features.common.testing import ApiTestCase, authenticate, make_course, make_user
+from features.common.testing import ApiTestCase, api_client, authenticate, make_course, make_user
 from features.courses.models import (
     Course,
     CourseLesson,
@@ -136,22 +136,22 @@ class CourseViewTests(ApiTestCase):
     def test_detail_missing_slug_returns_404(self):
         response = self.client.get("/api/courses/missing")
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "الدورة غير موجودة"})
+        self.assertEqual(response.json(), {"detail": "الدورة غير موجودة", "code": "not_found"})
 
     def test_problems_list_returns_the_shared_set(self):
         build_course_row()
         body = self.client.get("/api/problems").json()
-        self.assertEqual([problem["id"] for problem in body], ["p1"])
+        self.assertEqual([problem["id"] for problem in body["items"]], ["p1"])
 
     def test_course_problems_returns_the_same_set(self):
         build_course_row()
-        self.assertEqual(self.client.get("/api/courses/course-1/problems").json()[0]["id"], "p1")
+        self.assertEqual(self.client.get("/api/courses/course-1/problems").json()["items"][0]["id"], "p1")
 
     def test_related_returns_catalog_cards(self):
         build_course_row()
         make_course(slug="course-2")
         body = self.client.get("/api/courses/course-1/related").json()
-        self.assertEqual([item["id"] for item in body], ["course-2"])
+        self.assertEqual([item["id"] for item in body["items"]], ["course-2"])
 
     def test_related_missing_course_returns_404(self):
         self.assertEqual(self.client.get("/api/courses/missing/related").status_code, 404)
@@ -226,3 +226,47 @@ class CourseAdminTests(TestCase):
     def test_all_models_are_registered(self):
         for model in (Course, CourseModule, CourseProblem):
             self.assertTrue(admin.site.is_registered(model))
+
+
+class CourseQueryGuardTests(ApiTestCase):
+    """Phase 6 tripwire: the landing record stays constant-4 however many modules."""
+
+    def test_detail_is_a_constant_query_count(self):
+        build_course_row()  # one module, one lesson, one live session
+        course = Course.objects.get(slug="course-1")
+        second = CourseModule.objects.create(course=course, module_id="m2", title="Module 2")
+        CourseLesson.objects.create(module=second, lesson_id="l2", title="Lesson 2", duration="5:00")
+        with self.assertNumQueries(4):  # course + modules + lessons + live sessions
+            body = self.client.get("/api/courses/course-1").json()
+        self.assertEqual([module["id"] for module in body["modules"]], ["m1", "m2"])
+        self.assertEqual(body["modules"][1]["lessons"][0]["id"], "l2")
+
+
+class EnrollCounterTests(ApiTestCase):
+    """The dead enrolled_count counter lives again — one commit, F() increment."""
+
+    def _enroll(self):
+        return self.client.post("/api/courses/course-1/enroll", {}, format="json")
+
+    def test_first_enroll_increments_the_counter(self):
+        make_course()
+        authenticate(self.client, make_user())
+        self.assertEqual(Course.objects.get(slug="course-1").enrolled_count, 0)
+        self._enroll()
+        self.assertEqual(Course.objects.get(slug="course-1").enrolled_count, 1)
+
+    def test_re_enrolling_does_not_increment_again(self):
+        make_course()
+        authenticate(self.client, make_user())
+        self._enroll()
+        self._enroll()
+        self.assertEqual(Course.objects.get(slug="course-1").enrolled_count, 1)
+
+    def test_enroll_bumps_the_catalog_cache_after_the_commit(self):
+        make_course()
+        self.client.get("/api/catalog")  # warm the interleave
+        authenticate(self.client, make_user())
+        with self.captureOnCommitCallbacks(execute=True):
+            self._enroll()
+        with self.assertNumQueries(2):  # a miss at the bumped version, not a stale hit
+            api_client().get("/api/catalog")  # a fresh, unauthenticated client
