@@ -28,6 +28,7 @@ dashboard/
 ├── apps.py           AppConfig (label "dashboard")
 ├── models.py         Learner-scoped projections (enrollments, saved/favorites, competitions, certificates, notifications, stats, priority, live, upcoming)
 ├── serializers.py    enrolled_course, priority_continue, live_session_info, dashboard_stats, upcoming_event, drawer_notification, view_notification, saved_scholarship, favorite_course, competition_item, certificate_item
+├── services.py       summary assembly + notification lists (the views only serialize)
 ├── views.py          summary, enrolled, saved, competitions, notifications, notification_read
 ├── urls.py           /api/dashboard/*
 ├── admin.py          each model registered with learner + key
