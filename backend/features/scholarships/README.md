@@ -25,6 +25,7 @@ scholarships/
 ├── apps.py           AppConfig (label "scholarships")
 ├── models.py         Scholarship, ScholarshipApplication
 ├── serializers.py    scholarship_catalog_item
+├── services.py       apply, toggle_save
 ├── views.py          scholarship_detail_view, scholarship_apply_view, scholarship_save_view
 ├── urls.py           /api/scholarships/*
 ├── admin.py          Scholarship + ScholarshipApplication admin

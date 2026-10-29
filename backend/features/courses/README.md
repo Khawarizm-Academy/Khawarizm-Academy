@@ -26,6 +26,7 @@ courses/
 ├── apps.py           AppConfig (label "courses")
 ├── models.py         Course, CourseModule, CourseLesson, CourseLiveSession, CourseProblem, CourseProblemOption
 ├── serializers.py    course_catalog_item, module, lesson, live_session, course_detail, course_problem
+├── services.py       enroll, save_progress, toggle_favorite, related_for, certificate_payload
 ├── views.py          course detail/problems/related/enroll/favorite/progress/certificate; problems_list
 ├── urls.py           /api/courses/* and /api/problems
 ├── admin.py          Course/Module/Problem with inlines
@@ -46,11 +47,14 @@ courses/
 - **Problems are shared:** `problems_list` and `course_problems_view` both
   return the same `CourseProblem` set with prefetched options. The related rail
   filters `Course` by `slug__in(course.related_ids)`.
-- **Mutations persist for a signed-in learner:** `enroll` does
-  `get_or_create` on `dashboard.Enrollment`; `progress` writes `progress`,
-  `last_lesson` and `is_completed` onto that row; `favorite` toggles a
+- **Mutations persist for a signed-in learner:** `services.enroll` does
+  `get_or_create` on `dashboard.Enrollment` and, on a new row only, bumps
+  `Course.enrolled_count` atomically (`F()+1` inside the same transaction, the
+  catalog cache bumped after commit — re-enrolling changes nothing);
+  `services.save_progress` writes `progress`, `last_lesson` and
+  `is_completed` onto that row; `services.toggle_favorite` toggles a
   `dashboard.FavoriteCourse`. The dashboard models are imported *inside* the
-  view so `courses` never depends on `dashboard` at module load. A visitor
+  services so `courses` never depends on `dashboard` at module load. A visitor
   keeps the old acknowledgement — `enroll` and `progress` echo the course id
   back and `favorite` answers `{favorited: false, requiresAuth: true}`. All
   three 404 first on a missing course.

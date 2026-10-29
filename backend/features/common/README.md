@@ -12,6 +12,7 @@ package; it depends on no feature.
 | `choices.py` | Every enum-style `TextChoices` (course levels, scholarship statuses, notification types…) | every feature's `models.py` |
 | `serializers.py` | `compact(**fields)` — drops empty/`None` keys; `as_number(Decimal)` — Decimal → float | every feature's serializers |
 | `errors.py` | `api_exception_handler` — the DRF exception handler named in `settings.py` | the project |
+| `schemas.py` | The OpenAPI contract helpers: `ErrorSerializer` (the shared error envelope component), `ENVELOPE_STATUSES` (400/401/403/404/429), and `ContractAutoSchema` — the default schema class that appends the envelope to every operation | `config/settings.py`, every view's `@extend_schema` |
 | `cache.py` | Namespaced app cache with version keys (`cached`, `bump_version`) | catalog, home, dashboard |
 | `cache_invalidation.py` | Model write → `bump_version` receivers, **on_commit** only | `apps.py` |
 | `http_cache.py` | `etag_response` — strong ETag + `Cache-Control` + 304 short-circuit | catalog, auth config |

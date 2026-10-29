@@ -30,6 +30,7 @@ and delete any account** and **manage the four managed content types**
 adminconsole/
 ├── apps.py           AppConfig (label "adminconsole")
 ├── serializers.py     USER_FIELDS + the CONTENT_TYPES registry (the editor's schema)
+├── services.py        account lifecycle (uniqueness, role⇄staff, self-protection) + content-editor value coercion
 ├── views.py          thin staff-only views + the two label maps
 ├── urls.py           /api/admin routes
 ├── admin.py          (none — it owns no models)

@@ -48,7 +48,10 @@ catalog/
   sorting, and pagination then run over the cached list. Unknown `type`/`sort`
   values are `400`s naming the valid options (`KNOWN_TYPES`/`KNOWN_SORTS` —
   `newest` and `popular` both keep the interleave order; `rating`/`deadline`
-  reorder).
+  reorder). **A write to a watched model (`Course`, `Scholarship`,
+  `FilterGroup`, `FilterOption`) bumps the family version inside
+  `transaction.on_commit`** — the next reader rebuilds; there is no manual
+  cache clearing anywhere.
 - **Interleaved union:** courses and scholarships alternate in the order they
   exist; filters (type/tab, q, field, level, cost, country, status), the
   optional `ids=` filter (related-courses rail), sorting, and 6-per-page

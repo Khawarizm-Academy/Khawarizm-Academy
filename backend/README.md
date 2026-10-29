@@ -19,6 +19,7 @@ feature reads from the API without any shape-casting.
 | CORS | `django-cors-headers` (frontend origin allow-list) |
 | Database | SQLite locally · Postgres on Vercel when `DATABASE_URL` is set |
 | Auth | Firebase ID-token verification + HS256 access tokens with rotating refresh sessions (`accounts.User`) |
+| API contract | drf-spectacular — OpenAPI at `/api/schema`, Swagger UI at `/api/schema/docs` (both public, origin-exempt) |
 
 ---
 
@@ -135,6 +136,8 @@ exported by hand:
 | `GOOGLE_DRIVE_*` | Alternative managed host: OAuth client id/secret/refresh token, service-account JSON, upload folder |
 | `VIDEO_HOSTING_DEFAULT_PROVIDER` | Provider assets default to (`google_drive`) |
 | `STREAM_TOKEN_TTL_HOURS` | Playback grant lifetime (default `6`) |
+| `AUTH_EVENT_RETENTION_DAYS` | Days the auth audit trail (`AuthEvent`) is kept before the cleanup job deletes it (default `180`) |
+| `MAINTENANCE_CRON_SECRET` | Bearer secret the platform cron sends to `/api/admin/maintenance/cleanup` (`CRON_SECRET` accepted as a fallback name); unset = the cron endpoint only accepts staff sessions |
 | `DJANGO_SSL_REDIRECT` | Force HTTPS redirects. Default: on whenever `DEBUG=false`, off in dev |
 | `DJANGO_HSTS_SECONDS` | HSTS max-age. Default: `31536000` (1 year) when `DEBUG=false`, off in dev |
 | `DJANGO_SESSION_COOKIE_SECURE` / `DJANGO_CSRF_COOKIE_SECURE` | `Secure` cookies. Default: on whenever `DEBUG=false` |
@@ -221,9 +224,10 @@ The [CI workflow](../.github/workflows/backend.yml) (`.github/workflows/backend.
 | :--- | :--- |
 | Lint + format | `ruff check .` · `ruff format --check .` (config in `pyproject.toml`) |
 | Framework sanity | `python manage.py check` |
+| OpenAPI schema generates | `python manage.py spectacular --fail-on-warn` — a rotting `@extend_schema` annotation (renamed field, dropped param) breaks the build instead of silently degrading the spec |
 | Models ⇄ migrations agree | `python manage.py makemigrations --check --dry-run` |
 | Schema applies | `python manage.py migrate` |
-| Test suite | `python manage.py test` |
+| Test suite | `python manage.py test -v2 --parallel` (the full suite; runs serial locally in ~40 s, parallel in ~7 s) |
 | Dependency audit | `pip-audit -r requirements.txt` |
 | Secrets scan | gitleaks (whole git history) |
 | Deploy-mode checks | `python manage.py check --deploy` (production env shape) |
@@ -358,30 +362,38 @@ the last column.
 | `GET` | `/catalog` — paged, filterable list (`type`, `q`, `field`, `level`, `cost`, `country`, `status`, `sort`, `page`, `ids`) | catalog |
 | `GET` | `/catalog/:slug` — one course or scholarship summary | catalog |
 | `GET` | `/courses/:slug` — course detail (modules, lessons, live sessions, exam) | courses |
-| `GET` | `/courses/:slug/problems`, `/problems` — practice set | courses |
-| `GET` | `/courses/:slug/related` — related-course rail | courses |
+| `GET` | `/courses/:slug/problems`, `/problems` — `{items: [CourseProblem]}` practice set | courses |
+| `GET` | `/courses/:slug/related` — `{items: [CatalogItem]}` related-course rail | courses |
 | `POST` | `/courses/:slug/enroll` · `/favorite` · `/progress` — learner actions | courses |
 | `GET` | `/courses/:slug/certificate` — certificate metadata | courses |
 | `GET` | `/scholarships/:slug` — scholarship detail | scholarships |
 | `POST` | `/scholarships/:slug/apply` · `/save` | scholarships |
-| `GET` | `/dashboard` · `/enrolled` · `/saved` · `/competitions` · `/notifications` | dashboard |
+| `GET` | `/dashboard` · `/saved` · `/competitions` — single payloads | dashboard |
+| `GET` | `/dashboard/enrolled` — `{items: [EnrolledCourse]}` | dashboard |
+| `GET` | `/dashboard/notifications` — `{items: [...], drawer: [...]}` (both notification shapes) | dashboard |
 | `POST` | `/dashboard/notifications/:id/read` | dashboard |
 | `GET` | `/home` — featured courses/scholarships, competition, events, quick links | home |
 | `GET` | `/events` — events & seminars | events |
 | `GET` | `/competitions` — competitions & challenges | competitions |
 | `GET` · `PATCH` | `/profile` — learner profile & preferences | profile |
 | `GET` | `/auth/config` — the public Firebase web config for the browser | auth |
-| `POST` | `/auth/firebase` — exchange a Firebase ID token for a session | auth |
-| `POST` | `/auth/refresh` — rotate the refresh token, mint a new access token | auth |
+| `POST` | `/auth/firebase` — exchange a Firebase ID token for a session (429 on login lockout) | auth |
+| `POST` | `/auth/refresh` — rotate the refresh token, mint a new access token (429 on the auth-burst scope) | auth |
 | `GET` | `/auth/me` — current learner | auth |
-| `POST` | `/auth/logout` · `GET` `/auth/sessions` · `POST` `/auth/sessions/:id/revoke` | auth |
+| `POST` | `/auth/logout` · `GET` `/auth/sessions` (`{items: [Session]}`) · `POST` `/auth/sessions/:id/revoke` | auth |
 | `GET` · `POST` · `PATCH` · `DELETE` | `/admin/*` — overview, accounts & roles, sessions & revokes, analytics, the content editor | adminconsole |
+| `GET` · `POST` | `/admin/maintenance/cleanup` — run the retention cleanup inline (202 `{id, status, deleted}`); the platform cron calls it with `Bearer $MAINTENANCE_CRON_SECRET` | adminconsole |
 | `GET` | `/videos/providers` · `/videos/:slug` — hosting registry, readiness + ladder | videohosting |
-| `POST` | `/videos/:slug/token` — mint a playback grant (auth) | videohosting |
+| `POST` | `/videos/:slug/token` — mint a playback grant (auth; 429 on the token scope) | videohosting |
 | `GET` | `/stream/:token/*` — master/media playlists, AES key, 302 to the provider CDN | videohosting |
+| `GET` | `/schema` — the OpenAPI YAML · `/schema/docs` — Swagger UI. Public and origin-exempt | common |
 
-Errors use one structured shape (see `features/common/errors.py`) so the
-frontend's data-section error state can render a message and a retry.
+**List payloads** use one convention: rows ride in `{items: [...]}` (problems,
+related, enrolled, sessions, notifications); single payloads are flat camelCase
+objects. `/catalog` pagination is explicit in the payload (`totalResults`,
+`totalPages`, `currentPage`). Every error is the one structured envelope
+`{detail, code, fields?}` (see `features/common/errors.py`) so the frontend's
+data-section error state can render a message and a retry.
 
 ---
 
@@ -399,7 +411,9 @@ Start the backend first (`python manage.py runserver`), then `npm run dev`.
 
 ## Hardening
 
-Abuse surfaces answer **429 with `Retry-After`** (`features/common/throttling.py` owns the rates):
+Abuse surfaces answer **429 with `Retry-After`** (`features/common/throttling.py` owns the rates).
+The 429 body is the same error envelope as every other failure —
+`{"detail": "...", "code": "throttled" | "login_locked"}` — and `Retry-After` counts the seconds to the next allowed request:
 
 | Scope | Covers | Rate (per source IP) |
 | :--- | :--- | :--- |
@@ -407,6 +421,10 @@ Abuse surfaces answer **429 with `Retry-After`** (`features/common/throttling.py
 | `catalog` | `GET /api/catalog`, `/api/catalog/{slug}` | 120/min |
 | `video_token` | `POST /api/videos/{slug}/token` (playback grants) | 60/min |
 | `admin_burst` | every `/api/admin/*` console endpoint | 60/min |
+
+The rate lives where the surface lives: a view tags itself with
+`@scoped_throttle("<scope>")` and the scope's rate is one row in `SCOPED_RATES`.
+A new abuse surface gets a named scope — never a hand-rolled counter.
 
 On top of the request throttle, **login lockout**: 5 rejected sign-ins from one
 email/IP within 15 minutes locks the login for the rest of the window — `429`
@@ -428,7 +446,8 @@ Three layers, outermost first (`features/common/cache.py` +
 
 - **App cache** — the public read payloads (`/api/catalog` list+detail+filters,
   `/api/home`, `/api/events`, `/api/competitions`) go through one `cached()`
-  helper: keys `kh:<namespace>:v<version>:<digest>`, a ±10%-jittered 300 s TTL,
+  helper: keys `kh:<namespace>:v<version>:<digest>` (namespaces today:
+  `catalog`, `home`, `events`, `competitions`), a ±10%-jittered 300 s TTL,
   and one `cache miss` JSON log line per miss (the hit-ratio signal). Warm
   requests run **zero DB queries**.
 - **Invalidation** — any write to a watched model (courses, scholarships,
@@ -469,6 +488,27 @@ Every request logs **one JSON line** to stdout: `ts`, `level`, `msg`, `logger`, 
 | `GET /readyz` | Readiness — the database answers `SELECT 1` | `{"status": "ok", "database": "up"}` or **503** `{"database": "down"}` |
 
 Both are unauthenticated and exempt from the origin gate. The docker-compose healthcheck curls `/healthz`.
+
+## Jobs & cleanup
+
+There is one scheduled job: the **retention cleanup** (`features/common/maintenance.py`),
+run two ways:
+
+- **Self-hosted** — `python manage.py cleanup_expired` on cron every 6 h:
+  `0 */6 * * * cd backend && .venv/bin/python manage.py cleanup_expired`
+- **Vercel** — `backend/vercel.json` schedules `GET /api/admin/maintenance/cleanup`
+  daily at `0 3 * * *` (the Hobby plan allows crons at most once per day, so the
+  6 h cadence is a self-hosted concern only). Vercel attaches
+  `Authorization: Bearer $CRON_SECRET`, verified against `MAINTENANCE_CRON_SECRET`
+  by `CronSecretAuthentication`; the endpoint also accepts a staff bearer.
+
+It sweeps four dead-weight families in chunks of 500, one transaction per
+chunk — expired `StreamToken`s, `UploadSession`s stale past 7 days, expired
+`DriveAuthState`s, and `AuthEvent`s past `AUTH_EVENT_RETENTION_DAYS` (env,
+default 180). It is idempotent (re-runs converge) and overlap-guarded: a
+second run while one is still active exits **0** with
+`skipped, still running`. Every run leaves its per-family delete counts on a
+`MaintenanceRun` ledger row (`trigger` = command | endpoint | cron).
 
 ---
 
