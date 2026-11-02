@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { CourseDetail, CourseLesson, CourseProblem } from '@/shared/types/entities';
 import type { CourseTab } from '@/features/courses/types';
+import type { CourseQuizSummary } from '@/features/courses/quizTypes';
 
 export interface CoursePlayerContextValue {
   courseSlug: string;
@@ -12,6 +13,13 @@ export interface CoursePlayerContextValue {
   activeTab: CourseTab;
   isSyllabusOpen: boolean;
   problems: CourseProblem[];
+  problemsLoading: boolean;
+  problemsError: Error | null;
+  retryProblems: () => Promise<CourseProblem[] | undefined>;
+  quizzes: CourseQuizSummary[];
+  quizzesLoading: boolean;
+  quizzesError: Error | null;
+  retryQuizzes: () => Promise<CourseQuizSummary[] | undefined>;
   /** Single unified course percentage: completed lessons over total lessons. */
   progress: number;
   isExamUnlocked: boolean;

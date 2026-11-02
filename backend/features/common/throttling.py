@@ -16,6 +16,9 @@ VIDEO_TOKEN_RATE = "60/min"  # playback grant minting
 VIDEO_PROGRESS_RATE = "30/min"  # anti-cheat playback heartbeats
 ADMIN_BURST_RATE = "60/min"  # the admin console
 STUDIO_WRITE_RATE = "120/min"  # protects instructor mutations without throttling reads
+QUIZ_ATTEMPT_RATE = "30/min"  # prevents attempt-start/submit storms
+QUIZ_SAVE_RATE = "60/min"  # bounds autosaved exam answers
+QUIZ_CHECK_RATE = "120/min"  # bounds server-graded practice checks
 
 SCOPED_RATES: dict[str, str] = {
     "auth_burst": AUTH_BURST_RATE,
@@ -24,6 +27,9 @@ SCOPED_RATES: dict[str, str] = {
     "video_progress": VIDEO_PROGRESS_RATE,
     "admin_burst": ADMIN_BURST_RATE,
     "studio_write": STUDIO_WRITE_RATE,
+    "quiz_attempt": QUIZ_ATTEMPT_RATE,
+    "quiz_save": QUIZ_SAVE_RATE,
+    "quiz_check": QUIZ_CHECK_RATE,
 }
 
 

@@ -32,6 +32,7 @@ from features.common.testing import (
 from features.courses import services as courses_services
 from features.courses.models import CourseProblem, CourseProblemOption
 from features.dashboard.models import Enrollment
+from features.quizzes.models import Attempt, AttemptStatus, Option, Question, QuestionKind, Quiz, QuizKind
 from features.videohosting.models import DriveAuthState, StreamToken, UploadSession, VideoAsset, VideoProvider
 
 
@@ -214,7 +215,7 @@ class CacheHelperTests(TestCase):
 
 
 class CleanupExpiredTests(TestCase):
-    """The maintenance job: sweeps five dead-weight families, idempotently."""
+    """The maintenance job sweeps expired rows and finalizes timed-out quizzes."""
 
     def _seed(self) -> None:
         now = timezone.now()
@@ -236,9 +237,27 @@ class CleanupExpiredTests(TestCase):
         old_audit = AccessAuditEvent.objects.create(action="role_created", target_type="role", target_id="old")
         AccessAuditEvent.objects.filter(pk=old_audit.pk).update(created_at=now - timedelta(days=366))
         AccessAuditEvent.objects.create(action="role_created", target_type="role", target_id="fresh")
+        learner = make_user(email="quiz-cleanup@example.com")
+        course = make_course(slug="quiz-cleanup-course", status="published")
+        quiz = Quiz.objects.create(course=course, kind=QuizKind.EXAM, title="Timed", is_published=True)
+        question = Question.objects.create(quiz=quiz, kind=QuestionKind.SINGLE, prompt="Q", points=1)
+        correct = Option.objects.create(question=question, label="A", is_correct=True, order=0)
+        Option.objects.create(question=question, label="B", order=1)
+        Attempt.objects.create(
+            quiz=quiz,
+            user=learner,
+            status=AttemptStatus.IN_PROGRESS,
+            started_at=now - timedelta(hours=1),
+            deadline_at=now - timedelta(seconds=20),
+            question_order=[str(question.pk)],
+            option_order={str(question.pk): [str(correct.pk)]},
+            max_score=1,
+        )
 
     def _alive(self) -> dict[str, int]:
         from features.access.models import AuditEvent as AccessAuditEvent
+        from features.quizzes.models import Attempt as QuizAttempt
+        from features.quizzes.models import AttemptStatus as QuizAttemptStatus
         from features.videohosting.models import DriveAuthState as D
         from features.videohosting.models import StreamToken as S
         from features.videohosting.models import UploadSession as U
@@ -249,6 +268,7 @@ class CleanupExpiredTests(TestCase):
             "drive": D.objects.count(),
             "events": AuthEvent.objects.count(),
             "accessAudit": AccessAuditEvent.objects.count(),
+            "overdueQuizAttempts": QuizAttempt.objects.filter(status=QuizAttemptStatus.IN_PROGRESS).count(),
         }
 
     def test_the_command_sweeps_expired_rows_and_keeps_fresh_ones(self):
@@ -256,12 +276,24 @@ class CleanupExpiredTests(TestCase):
         out = StringIO()
         call_command("cleanup_expired", stdout=out)
         alive = self._alive()
-        self.assertEqual(alive, {"tokens": 1, "sessions": 1, "drive": 1, "events": 1, "accessAudit": 1})
+        self.assertEqual(
+            alive,
+            {"tokens": 1, "sessions": 1, "drive": 1, "events": 1, "accessAudit": 1, "overdueQuizAttempts": 0},
+        )
         run = MaintenanceRun.objects.get()
         self.assertEqual(run.status, MaintenanceRunStatus.DONE)
+        self.assertEqual(self._alive()["overdueQuizAttempts"], 0)
+        self.assertEqual(Attempt.objects.get().status, AttemptStatus.EXPIRED)
         self.assertEqual(
             run.deleted,
-            {"streamTokens": 1, "uploadSessions": 1, "driveAuthStates": 1, "authEvents": 1, "accessAuditEvents": 1},
+            {
+                "streamTokens": 1,
+                "uploadSessions": 1,
+                "driveAuthStates": 1,
+                "authEvents": 1,
+                "accessAuditEvents": 1,
+                "quizAttemptsExpired": 1,
+            },
         )
 
     def test_running_twice_leaves_identical_state(self):
@@ -287,6 +319,7 @@ class CleanupExpiredTests(TestCase):
                 "driveAuthStates": 1,
                 "authEvents": 1,
                 "accessAuditEvents": 1,
+                "quizAttemptsExpired": 1,
             },
         )
 
@@ -330,7 +363,14 @@ class MaintenanceEndpointTests(ApiTestCase):
         self.assertEqual(response.json()["status"], "done")
         self.assertEqual(
             set(response.json()["deleted"]),
-            {"streamTokens", "uploadSessions", "driveAuthStates", "authEvents", "accessAuditEvents"},
+            {
+                "streamTokens",
+                "uploadSessions",
+                "driveAuthStates",
+                "authEvents",
+                "accessAuditEvents",
+                "quizAttemptsExpired",
+            },
         )
         self.assertEqual(MaintenanceRun.objects.get().trigger, "endpoint")
 

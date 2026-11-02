@@ -16,8 +16,8 @@ from features.common.choices import CourseStatus
 from features.common.errors import Conflict, NotFound
 from features.common.messages import COURSE_NOT_FOUND
 from features.courses import services
-from features.courses.models import Course, CourseProblem
-from features.courses.serializers import course_detail, course_problem
+from features.courses.models import Course
+from features.courses.serializers import course_detail
 
 
 class CourseProgressRequestSerializer(ser.Serializer):
@@ -73,45 +73,6 @@ def course_detail_view(request: Any, slug: str) -> Response:
     if staff_view:
         response["Cache-Control"] = "private, no-store"
     return response
-
-
-def _problems_payload() -> dict[str, list[dict[str, Any]]]:
-    """The practice set, reused by both problem routes."""
-    problems = CourseProblem.objects.prefetch_related("options").all()
-    return {"items": [course_problem(problem) for problem in problems]}
-
-
-@extend_schema(
-    operation_id="problems_list",
-    summary="The shared practice problem set.",
-    auth=None,
-    responses={
-        200: OpenApiResponse(
-            response=OpenApiTypes.OBJECT, description="`{items: [CourseProblem]}` — problem + options."
-        ),
-    },
-)
-@api_view(["GET"])
-def problems_list(request: Any) -> Response:
-    """The shared practice problem set (not scoped to a course yet)."""
-    return Response(_problems_payload())
-
-
-@extend_schema(
-    operation_id="course_problems",
-    summary="The practice problem set for a course.",
-    description="Shared with the global set today — the route exists so scoping stays URL-addressable.",
-    auth=None,
-    parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
-    responses={
-        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{items: [CourseProblem]}`"),
-    },
-)
-@api_view(["GET"])
-def course_problems_view(request: Any, slug: str) -> Response:
-    """The practice problem set for a course (shared today)."""
-    _visible_course(slug, request.user)
-    return Response(_problems_payload())
 
 
 @extend_schema(

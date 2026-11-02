@@ -164,9 +164,9 @@ export interface CourseProblem {
   prompt: string;
   code: string;
   options: CourseProblemOption[];
-  correctOptionId: string;
-  explanation: string;
-  hint: string;
+  source?: 'legacy' | 'quiz';
+  kind?: 'single' | 'multiple' | 'true_false';
+  points?: number;
 }
 
 export interface CourseProblemOption {

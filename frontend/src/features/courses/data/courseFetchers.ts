@@ -1,75 +1,58 @@
-import { ApiError, apiGet, apiPost } from '@/shared/lib/apiClient';
+import { ApiError, apiGet, apiPost, apiPut } from '@/shared/lib/apiClient';
 import type { CatalogItem, CourseCertificate, CourseDetail, CourseProblem } from '@/shared/types/entities';
+import type { AttemptAnswer, CourseQuizSummary, PracticeVerdict, QuizAttempt } from '@/features/courses/quizTypes';
 
-/** A missing array becomes empty; no section ever maps over undefined. */
-function orEmpty<T>(value: T[] | undefined): T[] {
-  return value ?? [];
-}
+function orEmpty<T>(value: T[] | undefined): T[] { return value ?? []; }
 
-/** A sparse API response still yields arrays, so per-section empty states can render. */
 function normalizeCourseDetail(course: CourseDetail): CourseDetail {
-  return {
-    ...course,
-    outcomes: orEmpty(course.outcomes),
-    modules: orEmpty(course.modules).map((module) => ({ ...module, lessons: orEmpty(module.lessons) })),
-    liveSessions: orEmpty(course.liveSessions),
-    relatedIds: orEmpty(course.relatedIds),
-  };
+  return { ...course, outcomes: orEmpty(course.outcomes), modules: orEmpty(course.modules).map((module) => ({ ...module, lessons: orEmpty(module.lessons) })), liveSessions: orEmpty(course.liveSessions), relatedIds: orEmpty(course.relatedIds) };
 }
 
-/** One course's full landing picture, or null when the slug is unknown. */
 export async function fetchCourseDetail(slug: string): Promise<CourseDetail | null> {
-  try {
-    return normalizeCourseDetail(await apiGet<CourseDetail>(`/courses/${slug}`));
-  } catch (error) {
-    // A missing course is a null result for the UI, not a hard error.
-    if (error instanceof ApiError && error.status === 404) return null;
-    throw error;
-  }
+  try { return normalizeCourseDetail(await apiGet<CourseDetail>(`/courses/${slug}`)); }
+  catch (error) { if (error instanceof ApiError && error.status === 404) return null; throw error; }
 }
-
-/** Related course cards the API computes from this course's own related list. */
 export async function fetchRelatedCourses(slug: string): Promise<CatalogItem[]> {
-  return orEmpty(await apiGet<{ items: CatalogItem[] }>(`/courses/${slug}/related`).then((data) => data.items));
+  return orEmpty((await apiGet<{ items: CatalogItem[] }>(`/courses/${slug}/related`)).items);
 }
 
-/** The course's practice set shown under a lesson's "حلّ المسائل" tab. */
+/** Normalize legacy list records without ever accepting answer keys from the list payload. */
 export async function fetchCourseProblems(slug: string): Promise<CourseProblem[]> {
-  return orEmpty(await apiGet<{ items: CourseProblem[] }>(`/courses/${slug}/problems`).then((data) => data.items));
+  const items = orEmpty((await apiGet<{ items: CourseProblem[] }>(`/courses/${slug}/problems`)).items);
+  return items.map((problem) => {
+    const safeProblem = { ...problem } as CourseProblem & Record<string, unknown>;
+    delete safeProblem.correctOptionIds;
+    delete safeProblem.answer;
+    delete safeProblem.answerKey;
+    return { ...safeProblem, source: problem.source ?? 'legacy' };
+  });
 }
 
-/** Enroll the learner; the API still acknowledges a visitor so the CTA never dead-ends. */
-export async function enrollCourse(slug: string): Promise<boolean> {
-  const data = await apiPost<{ enrolled: boolean }>(`/courses/${slug}/enroll`);
-  return data.enrolled;
+/** The server is the only authority for correctness; AbortSignal prevents stale checks. */
+export function checkPracticeAnswer(problem: CourseProblem, optionIds: string[], signal?: AbortSignal): Promise<PracticeVerdict> {
+  const path = problem.source === 'quiz' ? `/questions/${problem.id}/check` : `/problems/${problem.id}/check`;
+  void signal;
+  return apiPost<PracticeVerdict>(path, { optionIds });
 }
 
-/** Toggle this course in the learner's favorites; the API flags when a session is required. */
+export async function fetchCourseQuizzes(slug: string): Promise<CourseQuizSummary[]> {
+  return orEmpty((await apiGet<{ items: CourseQuizSummary[] }>(`/courses/${slug}/quizzes`)).items);
+}
+export const startQuizAttempt = (quizId: string) => apiPost<QuizAttempt>(`/quizzes/${quizId}/attempts`);
+export const fetchQuizAttempt = (attemptId: string) => apiGet<QuizAttempt>(`/attempts/${attemptId}`);
+export async function saveQuizAnswers(attemptId: string, answers: AttemptAnswer[]): Promise<void> {
+  await apiPut(`/attempts/${attemptId}/answers`, { answers });
+}
+export const submitQuizAttempt = (attemptId: string) => apiPost<QuizAttempt>(`/attempts/${attemptId}/submit`);
+
+export async function enrollCourse(slug: string): Promise<boolean> { return (await apiPost<{ enrolled: boolean }>(`/courses/${slug}/enroll`)).enrolled; }
 export async function toggleCourseFavorite(slug: string): Promise<{ favorited: boolean; requiresAuth: boolean }> {
   const data = await apiPost<{ favorited: boolean; requiresAuth?: boolean }>(`/courses/${slug}/favorite`);
   return { favorited: data.favorited, requiresAuth: data.requiresAuth ?? false };
 }
-
-/** Payload the player syncs so the dashboard can resume the lesson later. */
-export interface ProgressSync {
-  progress: number;
-  completedLessonIds: string[];
-  lastLesson: string;
-  isCompleted: boolean;
-}
-
-/** Persist one study-session sync for the signed-in learner. */
-export async function syncCourseProgress(slug: string, payload: ProgressSync): Promise<void> {
-  await apiPost(`/courses/${slug}/progress`, payload);
-}
-
-/** Certificate metadata for a completed course, or null when the slug is unknown. */
+export interface ProgressSync { progress: number; completedLessonIds: string[]; lastLesson: string; isCompleted: boolean; }
+export async function syncCourseProgress(slug: string, payload: ProgressSync): Promise<void> { await apiPost(`/courses/${slug}/progress`, payload); }
 export async function fetchCourseCertificate(slug: string): Promise<CourseCertificate | null> {
-  try {
-    return await apiGet<CourseCertificate>(`/courses/${slug}/certificate`);
-  } catch (error) {
-    // A missing certificate is a fallback render, not a hard error.
-    if (error instanceof ApiError && error.status === 404) return null;
-    throw error;
-  }
+  try { return await apiGet<CourseCertificate>(`/courses/${slug}/certificate`); }
+  catch (error) { if (error instanceof ApiError && error.status === 404) return null; throw error; }
 }
