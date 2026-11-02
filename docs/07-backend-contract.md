@@ -101,9 +101,11 @@ Dashboard-specific projections live in `frontend/src/features/dashboard/types.ts
 - **Detail:** fetch one item by slug. The frontend **prefetches on card hover** (`dataCacheManager.prefetch(['catalog-detail', id], …)`).
 
 ### 3.2 Courses
-- `fetchCourseDetail(slug)` merges the catalog summary with modules, lessons, instructor, live sessions, and exam.
+- `fetchCourseDetail(slug)` merges the catalog summary with modules, lessons, staff-safe instructor profiles, live sessions, and exam. Additive course fields are `status`, `instructors`, and `enrollable`; lessons add `kind`, `isFreePreview`, `hasVideo`, nullable `videoSlug`, and `durationSeconds`.
+- Course status is `draft | in_review | published | archived`. Catalog/search/home/related surfaces include published courses only. Published and archived detail are public; archived responses are not enrollable. Draft/in-review detail is 404 unless the caller can edit that course, in which case it includes `isPreview: true` and unpublished lessons.
 - `fetchCourseProblems()` returns the practice set.
-- Progress and completion are tracked client-side today (seeded deterministically); a backend would persist `completedLessonIds` and progress per learner.
+- Enroll requires a published course and `courses.enroll`; anonymous callers keep the legacy acknowledgement. Archived courses remain in an existing learner's enrolled dashboard, but cannot create new enrollments.
+- Authenticated progress sync persists a validated progress percentage, lesson key, and completion flag. Archived courses require an existing enrollment for progress writes.
 
 ### 3.3 Dashboard
 - Per-section reads under the `['dashboard', …]` cache namespace: stats, upcoming events, enrolled courses, competitions, certificates, saved scholarships, favorite courses, notifications (view + drawer).
@@ -167,6 +169,33 @@ feature layout and the session model.
 | `POST` | `/courses/:slug/progress` | Sync completed lessons / progress. |
 | `POST` | `/courses/:slug/favorite` | Toggle a course in favorites. |
 | `GET` | `/courses/:slug/certificate` | Certificate metadata. |
+
+Course detail adds `status`, public `instructors`, and `enrollable`; lesson
+objects add `kind`, `isFreePreview`, `hasVideo`, `videoSlug` (always present,
+`null` when no asset is linked), and `durationSeconds`. Draft/in-review courses
+return 404 to non-editors. Authorized staff previews include unpublished lesson
+fields and use `Cache-Control: private, no-store`; archived detail remains public
+but is not enrollable.
+
+### Instructor Studio
+
+`/studio/*` responses are authenticated and `Cache-Control: private, no-store`. Course and curriculum writes delegate to `features.courses.services`; `courses.edit_own` applies only to owners/co-instructors in the registered ownership matrix. New Studio courses start as drafts. Resource links must use HTTPS; linked videos can process before publication, but publication requires a ready asset.
+
+| Method | Path | Purpose |
+| :--- | :--- | :--- |
+| `GET` | `/studio/overview` | Own/global lifecycle KPI counters (`studio.access`). |
+| `GET` · `POST` | `/studio/courses` | Search/page own or authorized global scope / create a draft. |
+| `GET` · `PATCH` · `DELETE` | `/studio/courses/:slug` | Read editor graph, edit, or delete an unenrolled course. |
+| `POST` | `/studio/courses/:slug/submit` · `/publish` · `/unpublish` | Submit, publish, or archive/return to draft through the state machine. |
+| `GET` | `/studio/courses/:slug/checklist` | Blocking/warning publish checklist. |
+| `GET` · `POST` · `DELETE` | `/studio/courses/:slug/staff[/<uuid>]` | List/add/remove course staff. |
+| `POST` | `/studio/courses/:slug/modules[/reorder]` | Add modules and reorder the complete list. |
+| `POST` | `/studio/modules/:uuid/lessons[/reorder]` | Add/reorder lessons, including cross-module moves. |
+| `PATCH` · `DELETE` | `/studio/modules/:uuid`, `/studio/lessons/:uuid` | Edit/remove curriculum objects. |
+| `PUT` · `DELETE` | `/studio/lessons/:uuid/video` | Link or unlink a video asset. |
+| `GET` · `POST` · `PATCH` · `DELETE` | `/studio/lessons/:uuid/resources[/<uuid>]` | Manage HTTPS link resources. |
+| `GET` | `/admin/review-queue` | Oldest in-review courses first (`courses.review`). |
+| `POST` | `/admin/review-queue/:slug/approve` · `/request-changes` | Approve/publish or return a course to draft with reviewer notes. |
 
 ### Scholarships
 

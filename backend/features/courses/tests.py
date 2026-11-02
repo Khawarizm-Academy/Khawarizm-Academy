@@ -16,6 +16,8 @@ from features.courses.models import (
     CourseModule,
     CourseProblem,
     CourseProblemOption,
+    CourseStaff,
+    LessonResource,
 )
 from features.courses.serializers import (
     course_catalog_item,
@@ -224,7 +226,7 @@ class CourseUrlTests(TestCase):
 
 class CourseAdminTests(TestCase):
     def test_all_models_are_registered(self):
-        for model in (Course, CourseModule, CourseProblem):
+        for model in (Course, CourseModule, CourseLesson, CourseProblem, CourseStaff, LessonResource):
             self.assertTrue(admin.site.is_registered(model))
 
 

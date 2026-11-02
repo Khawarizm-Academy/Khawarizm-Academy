@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from features.common.choices import CourseStatus
 from features.dashboard import services
 from features.dashboard.models import (
     Certificate,
@@ -48,7 +50,11 @@ def dashboard_summary(request: Any) -> Response:
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def dashboard_enrolled(request: Any) -> Response:
-    rows = Enrollment.objects.filter(user=request.user).select_related("course")
+    rows = (
+        Enrollment.objects.filter(user=request.user)
+        .filter(Q(course__status=CourseStatus.PUBLISHED) | Q(course__status=CourseStatus.ARCHIVED))
+        .select_related("course")
+    )
     return Response({"items": [enrolled_course(row) for row in rows]})
 
 
@@ -65,7 +71,9 @@ def dashboard_enrolled(request: Any) -> Response:
 @permission_classes([IsAuthenticated])
 def dashboard_saved(request: Any) -> Response:
     scholarships = SavedScholarship.objects.filter(user=request.user).select_related("scholarship")
-    favorites = FavoriteCourse.objects.filter(user=request.user).select_related("course")
+    favorites = FavoriteCourse.objects.filter(
+        user=request.user, course__status__in=(CourseStatus.PUBLISHED, CourseStatus.ARCHIVED)
+    ).select_related("course")
     return Response(
         {
             "scholarships": [saved_scholarship(row) for row in scholarships],
@@ -88,7 +96,9 @@ def dashboard_saved(request: Any) -> Response:
 @permission_classes([IsAuthenticated])
 def dashboard_competitions(request: Any) -> Response:
     competitions = SavedCompetition.objects.filter(user=request.user).select_related("competition")
-    certificates = Certificate.objects.filter(user=request.user).select_related("course")
+    certificates = Certificate.objects.filter(
+        user=request.user, course__status__in=(CourseStatus.PUBLISHED, CourseStatus.ARCHIVED)
+    ).select_related("course")
     return Response(
         {
             "competitions": [competition_item(row) for row in competitions],

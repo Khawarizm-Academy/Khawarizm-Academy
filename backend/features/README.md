@@ -15,7 +15,7 @@ which routes it serves, and the rules every feature follows — mirroring
 | **Auth** | `accounts` | `/api/auth/*` | `User`, `StudentProfile`, `InstructorProfile`, `UserSession`, `AuthEvent` | [`auth/README.md`](auth/README.md) |
 | **Access** | `access` | Permission catalog consumed by `/api/admin/roles/*` and `/api/admin/audit` | permission registry, `AccessRole`, `RoleAssignment`, access `AuditEvent` | [`access/README.md`](access/README.md) |
 | **Catalog** | `catalog` | `/api/catalog*` | `Category`, `FilterGroup`, `FilterOption` | [`catalog/README.md`](catalog/README.md) |
-| **Courses** | `courses` | `/api/courses/*`, `/api/problems` | `Course`, `CourseModule`, `CourseLesson`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` | [`courses/README.md`](courses/README.md) |
+| **Courses** | `courses` | `/api/courses/*`, `/api/problems` | lifecycle, `Course`, `CourseStaff`, `CourseModule`, `CourseLesson`, `LessonResource`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` | [`courses/README.md`](courses/README.md) |
 | **Scholarships** | `scholarships` | `/api/scholarships/*` | `Scholarship`, `ScholarshipApplication` | [`scholarships/README.md`](scholarships/README.md) |
 | **Dashboard** | `dashboard` | `/api/dashboard/*` | learner-scoped projections | [`dashboard/README.md`](dashboard/README.md) |
 | **Home** | `home` | `/api/home` | `Home*` rails | [`home/README.md`](home/README.md) |
@@ -23,12 +23,13 @@ which routes it serves, and the rules every feature follows — mirroring
 | **Competitions** | `competitions` | `/api/competitions` | `Competition` | [`competitions/README.md`](competitions/README.md) |
 | **Profile** | `profile` | `/api/profile` | — (edits `accounts.User`) | [`profile/README.md`](profile/README.md) |
 | **Admin console** | `adminconsole` | `/api/admin/*` | — (reads across features) | [`adminconsole/README.md`](adminconsole/README.md) |
+| **Instructor Studio** | `studio` | `/api/studio/*`, `/api/admin/review-queue*` | — (course authoring and moderation views over `courses`/`access`) | [`studio/README.md`](studio/README.md) |
 | **Video hosting** | `videohosting` | `/api/videos/*`, `/api/stream/*` | `VideoAsset`, `VideoRendition`, `VideoSegment`, `StreamToken`, `providers/` (one module per host) | [`videohosting/README.md`](videohosting/README.md) |
 
 Every folder is a Django app in `INSTALLED_APPS` and mounted in
-`config/urls.py`. `profile` is the one model-less feature: it installs an
-`AppConfig` so its routes and tests have a home, but ships no tables of its
-own — it only edits `accounts.User`.
+`config/urls.py`. `profile`, `adminconsole`, and `studio` are model-less
+features: they provide routes and tests while using models owned by `accounts`,
+`courses`, and the other domain apps.
 
 ---
 

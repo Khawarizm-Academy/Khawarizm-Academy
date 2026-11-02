@@ -30,17 +30,18 @@ backend/features/<feature>/
 └── README.md         what it does, routes, data, how it works
 ```
 
-A feature creates only what it needs. `profile` owns no models, so it has no
-`models.py` or `migrations/`. `common` **is** an installed app: it holds the
-shared abstract models (`UUIDModel`, `TimeStampedModel`), the choice enums, and
-`management/commands/seed_demo.py`. `adminconsole` owns no tables either — it
-reads across the other features.
+A feature creates only what it needs. `profile`, `adminconsole`, and `studio`
+own no models or migrations: they expose profile, administration, and course
+authoring routes over domain-owned tables. `common` **is** an installed app: it
+holds the shared abstract models (`UUIDModel`, `TimeStampedModel`), the choice
+enums, and `management/commands/seed_demo.py`.
 
 | Feature | App label | Owns | `services.py` — business rules |
 | :--- | :--- | :--- | :--- |
 | `auth` | `accounts` | `User`, `StudentProfile`, `InstructorProfile`, `UserSession`, `AuthEvent` | sessions: open/rotate/revoke, event recording |
+| `access` | `access` | permission registry, `AccessRole`, `RoleAssignment`, access `AuditEvent` | role hierarchy, assignment policy, effective permissions, audit |
 | `catalog` | `catalog` | `Category`, `FilterGroup`, `FilterOption` | — (pure-read engine in `service.py`) |
-| `courses` | `courses` | `Course`, `CourseModule`, `CourseLesson`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` | enroll (bumps `enrolled_count`), progress, favorite, related rail, certificate |
+| `courses` | `courses` | `Course`, `CourseStaff`, `CourseModule`, `CourseLesson`, `LessonResource`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` | lifecycle, ownership, curriculum, enroll/progress/favorite, related rail, certificate |
 | `scholarships` | `scholarships` | `Scholarship` | apply, save toggle |
 | `dashboard` | `dashboard` | learner-scoped projections | summary assembly, notification lists |
 | `home` | `home` | `HomeFeaturedCourse`, `HomeFeaturedScholarship`, `HomeCompetition`, `HomeEvent`, `HomeQuickLink` | — (curated reads) |
@@ -48,6 +49,7 @@ reads across the other features.
 | `competitions` | `competitions` | `Competition` | — |
 | `profile` | `profile` | — (edits `accounts.User`; owns no tables) | — (edits via `accounts`) |
 | `adminconsole` | `adminconsole` | — (permission-gated analytics and administration across features) | account lifecycle (email uniqueness, role⇄staff compatibility, self-protection), role manager, content-editor value coercion |
+| `studio` | `studio` | — (model-less course authoring/review API) | —; delegates to `courses.services` and `access.services` |
 | `videohosting` | `videohosting` | `VideoProvider`, `VideoAsset`, `VideoRendition`, `VideoSegment`, `StreamToken`, `ProviderAsset`, `UploadSession`, plus the `providers/` module-per-host registry | ingest + packaging in `ingest.py`/`packaging.py` (not `services.py` — the file names are the domain's) |
 
 **Why `accounts`?** The auth folder keeps the product name (`auth`) but the app

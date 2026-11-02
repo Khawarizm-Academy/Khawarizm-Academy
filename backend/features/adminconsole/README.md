@@ -85,6 +85,10 @@ adminconsole/
   (`AdminFieldKind`: text/textarea/url/number/decimal/bool/select/json/user_ref).
   `GET /api/admin/content/schema` hands that registry to the console, so adding
   a managed field is one registry row, never a new branch.
+- **Course CRUD respects the lifecycle:** generic content-editor creates set
+  `status=draft`; the course `owner` user reference synchronizes the explicit
+  owner staff row; and course deletion delegates to the lifecycle service, which
+  rejects enrolled courses instead of cascading learner access.
 
 ## Data
 

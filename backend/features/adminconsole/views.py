@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -27,7 +28,7 @@ from features.auth import services as auth_services
 from features.auth.authentication import AccessTokenAuthentication, CronSecretAuthentication
 from features.auth.models import AuthEvent, User, UserSession
 from features.auth.serializers import session_with_user, user_profile
-from features.common.choices import AuthEventKind, Role, SessionRevokeReason
+from features.common.choices import AuthEventKind, CourseStatus, Role, SessionRevokeReason
 from features.common.errors import InvalidParameter, NotFound, PermissionDenied
 from features.common.maintenance import run_cleanup
 from features.common.messages import (
@@ -484,7 +485,13 @@ def content_items(request, type_key):
     spec = services.require_content_type(type_key)
     if request.method == "POST":
         _require_content_permission(request.user, spec, "write", "POST")
-        row = services.create_content_row(spec, request.data or {})
+        with transaction.atomic():
+            defaults = {"status": CourseStatus.DRAFT} if type_key == "courses" else None
+            row = services.create_content_row(spec, request.data or {}, defaults=defaults)
+            if type_key == "courses":
+                from features.courses.services import sync_course_owner
+
+                row = sync_course_owner(row, request.user)
         return Response(serializers.content_row(spec, row), status=status.HTTP_201_CREATED)
     _require_content_permission(request.user, spec, "read", "GET")
     queryset = spec["model"].objects.all()
@@ -537,9 +544,19 @@ def content_detail(request, type_key, pk):
     if row is None:
         raise NotFound(ADMIN_CONTENT_NOT_FOUND)
     if request.method == "DELETE":
-        row.delete()
+        if type_key == "courses":
+            from features.courses.services import delete_course
+
+            delete_course(row, request.user)
+        else:
+            row.delete()
         return Response({"deleted": True, "id": str(pk)})
-    updated = services.save_content_row(spec, row, request.data or {})
+    with transaction.atomic():
+        updated = services.save_content_row(spec, row, request.data or {})
+        if type_key == "courses":
+            from features.courses.services import sync_course_owner
+
+            updated = sync_course_owner(updated, request.user)
     return Response(serializers.content_row(spec, updated))
 
 

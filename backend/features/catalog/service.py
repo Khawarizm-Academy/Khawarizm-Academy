@@ -43,7 +43,7 @@ def catalog_items() -> list[dict[str, Any]]:
 
 def build_items() -> list[dict[str, Any]]:
     """Courses and scholarships alternating, matching the original order."""
-    courses = list(Course.objects.all())
+    courses = list(Course.objects.published())
     scholarships = list(Scholarship.objects.all())
     items: list[dict[str, Any]] = []
     for index, course in enumerate(courses):
@@ -93,10 +93,12 @@ def detail_item(slug: str) -> dict[str, Any] | None:
 
 
 def _detail_data(slug: str) -> dict[str, Any] | None:
-    for model in (Course, Scholarship):
-        row = model.objects.filter(slug=slug).first()
-        if row is not None:
-            return catalog_item_for(row)
+    row = Course.objects.published().filter(slug=slug).first()
+    if row is not None:
+        return catalog_item_for(row)
+    row = Scholarship.objects.filter(slug=slug).first()
+    if row is not None:
+        return catalog_item_for(row)
     return None
 
 

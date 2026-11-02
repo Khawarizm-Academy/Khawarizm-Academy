@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     "features.profile",
     "features.adminconsole",
     "features.videohosting",
+    "features.studio",
 ]
 
 # Every account (student / instructor / admin) lives in the auth feature app.

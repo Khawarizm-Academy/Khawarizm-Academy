@@ -103,6 +103,7 @@ class ItemsContractTests(ApiTestCase):
         self.assertEqual(set(self.client.get("/api/problems").json()), {"items"})
 
     def test_course_problems_are_wrapped(self):
+        make_course(slug="course-1")
         make_problem()
         self.assertEqual(set(self.client.get("/api/courses/course-1/problems").json()), {"items"})
 

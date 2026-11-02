@@ -27,20 +27,21 @@
 
 ## 4. Layout and conventions
 - Monorepo: `backend/` (Django) + `frontend/` (Vite SPA) + `docs/` (numbered guides, `07`/`08` = API contract & backend architecture).
-- Backend: `backend/config/` (settings/urls/middleware) + `backend/features/<feature>/` — 13 Django feature apps, including the backend-only `access` policy feature; shared code in `features/common/`. Contract: `backend/features/README.md`.
+- Backend: `backend/config/` (settings/urls/middleware) + `backend/features/<feature>/` — 13 Django feature apps, including backend-only `access` policy and model-less `studio`; shared code in `features/common/`. Contract: `backend/features/README.md`.
 - App labels: `features.auth` uses label `accounts` (`AUTH_USER_MODEL = "accounts.User"`); everything else labels as its folder.
 - Serializers are the only camelCase boundary (`compact()` in `common/serializers.py`); views/models keep snake_case.
 - Tests: `python manage.py test` with shared kit `features/common/testing.py` (`ApiTestCase`, `api_client`, `make_user/admin/course/scholarship`, `authenticate`); test DB is file-backed in `/tmp` with WAL + per-worker clone files via the `config.sqlite_backend` engine (worker threads + parallel runner need it — do not revert to the in-memory default).
 - Frontend: feature-first `src/features/<f>/{components,data,types.ts}`, shared in `src/shared/`; contract docs in `docs/07-backend-contract.md`.
 - Access contract: backend permission keys and labels originate in `features/access/registry.py`; `frontend/src/shared/json/permissionCatalog.json` is an exact, test-checked mirror consumed by `shared/lib/permissions.ts` and the auth `useCan` hook.
 - Admin access APIs: `/api/admin/roles/*` owns role catalog, role CRUD, assignments, member pages, and reorder; `/api/admin/audit` pages access changes separately from the auth activity stream. These routes call `features/access/services.py`; do not duplicate grant/hierarchy rules in views.
+- Course lifecycle: `features/courses` owns `CourseStatus`, explicit `Course.owner`/`CourseStaff`, lesson resources, lifecycle validation and auditing; model-less `features/studio` exposes authenticated `/api/studio/*` authoring and `/api/admin/review-queue*` moderation. Catalog/home show published courses only; archived detail remains public but is not enrollable, while draft/in-review previews require course-editor access.
 
 ## 5. Design
 - Tokens live in the frontend (`frontend/src` CSS + Tailwind v4 theme); see `docs/01-design-system.md`.
 - Motion/type/breakpoints per `docs/01-design-system.md` (frontend-scoped; this profile focuses backend).
 
 ## 6. Data and performance
-- Content writes go through the permission-scoped admin editor or Django admin; role and user-role changes go through the access services; seed is one `@transaction.atomic` upsert pass; video progress flusher coalesces writes.
+- Content writes go through the permission-scoped admin editor or Django admin; course lifecycle/curriculum writes go through Studio and `courses.services`; role and user-role changes go through the access services; seed is one `@transaction.atomic` upsert pass; video progress flusher coalesces writes.
 - Cache: public GETs are app-cached (`features/common/cache.py`) — namespaces `catalog` (union + detail + filters), `home` (rails), `events`, `competitions`; 300 s TTL with ±10% jitter; invalidation is version bumps inside `transaction.on_commit` via the registry in `features/common/cache_invalidation.py`. Public GETs also carry an ETag + `Cache-Control` (`features/common/http_cache.py`).
 - Index conventions: UUID PKs, `slug` business keys, FK indexes automatic; videohosting declares its own indexes.
 - Counter `Course.enrolled_count` is maintained by `courses/services.py::enroll` (`F()+1` inside the enrollment transaction) — fixed in alignment Phase 6; it is no longer dead.
