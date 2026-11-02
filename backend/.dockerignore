@@ -1,4 +1,5 @@
-# The image itself needs only the dependency lock; everything else (code,
+# The image itself needs only the runtime/ingest dependency manifests; everything else (code,
 # env files, database, venv) is bind-mounted at runtime by docker-compose.yml.
 *
 !requirements.txt
+!requirements-ingest.txt

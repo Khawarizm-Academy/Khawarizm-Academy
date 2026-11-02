@@ -9,7 +9,7 @@ flow work on this machine without installing anything on the host.
 | :--- | :--- |
 | `Dockerfile` | The image: `python:3.14-slim` + ffmpeg, gcc, python3-dev, curl |
 | `docker-compose.yml` | One `backend` service: bind mount, port 8000, healthcheck |
-| `.dockerignore` | The image ships **only** `requirements.txt` — code and secrets never enter a layer |
+| `.dockerignore` | The image ships **only** the runtime and ingest requirements files — code and secrets never enter a layer |
 
 ## The one rule that saves your internet
 
@@ -20,7 +20,7 @@ database are shared live with the container:
 - editing Python code → `runserver` reloads it instantly, zero rebuild
 - editing `.env.development` → restart is enough (`docker compose restart backend`)
 - database changes → nothing to do, the db file rides the mount
-- **the only edit that triggers a rebuild is `requirements.txt`**
+- **dependency edits to `requirements.txt` or `requirements-ingest.txt` trigger a rebuild**
 
 That means your day-to-day workflow is *Mode 1* — no build, no network.
 
@@ -49,7 +49,7 @@ no host dependency):
 docker compose exec backend python manage.py ingest_video ./lesson-01.mp4 --slug course-1--lesson-1
 ```
 
-### Mode 2 — `requirements.txt` changed (cache-only network)
+### Mode 2 — requirements changed (cache-only network)
 
 ```bash
 docker compose build && docker compose up -d
@@ -94,13 +94,13 @@ needs no changes.
 | :--- | :--- |
 | any `.py` / `.env*` / `db.sqlite3` | nothing (bind mount, live) |
 | `Dockerfile` itself | from that line down — pip wheels come from the cache |
-| `requirements.txt` | the pip layer only — wheels come from the cache |
+| `requirements.txt` or `requirements-ingest.txt` | the pip layer only — wheels come from the cache |
 | base image version | everything below `FROM` — packages come from the caches |
 
 ## Housekeeping
 
 - Stop for the day: `docker compose down` (keeps the image + caches).
-- After `requirements.txt` churn the pip cache grows; reclaim only when disk
+- After requirements churn the pip cache grows; reclaim only when disk
   actually hurts: `docker builder prune` (drops **all** cached wheels — the
   next Mode 2 build re-downloads them).
 - The container is disposable on purpose: destructive commands (`down -v`,
