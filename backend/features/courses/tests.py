@@ -16,12 +16,11 @@ from features.courses.models import (
     CourseModule,
     CourseProblem,
     CourseProblemOption,
+    CourseStaff,
+    LessonResource,
 )
-from features.courses.serializers import (
-    course_catalog_item,
-    course_detail,
-    course_problem,
-)
+from features.courses.serializers import course_catalog_item, course_detail
+from features.quizzes.models import Option, Question, QuestionKind, Quiz, QuizKind
 
 
 def build_course_row() -> Course:
@@ -118,14 +117,6 @@ class CourseDetailSerializerTests(TestCase):
         self.assertEqual(course_detail(make_course())["rating"], 0)
 
 
-class CourseProblemSerializerTests(TestCase):
-    def test_shape_and_options(self):
-        build_course_row()
-        payload = course_problem(CourseProblem.objects.prefetch_related("options").get(problem_id="p1"))
-        self.assertEqual(payload["id"], "p1")
-        self.assertEqual(payload["options"], [{"id": "a", "label": "Option A"}])
-
-
 class CourseViewTests(ApiTestCase):
     def test_detail_returns_the_landing_record(self):
         build_course_row()
@@ -142,10 +133,27 @@ class CourseViewTests(ApiTestCase):
         build_course_row()
         body = self.client.get("/api/problems").json()
         self.assertEqual([problem["id"] for problem in body["items"]], ["p1"])
+        self.assertNotIn("correctOptionId", body["items"][0])
+        self.assertNotIn("explanation", body["items"][0])
+        self.assertNotIn("hint", body["items"][0])
 
     def test_course_problems_returns_the_same_set(self):
         build_course_row()
         self.assertEqual(self.client.get("/api/courses/course-1/problems").json()["items"][0]["id"], "p1")
+
+    def test_published_practice_quiz_replaces_legacy_course_set_safely(self):
+        course = build_course_row()
+        quiz = Quiz.objects.create(course=course, kind=QuizKind.PRACTICE, title="Course Practice", is_published=True)
+        question = Question.objects.create(quiz=quiz, kind=QuestionKind.SINGLE, prompt="Quiz prompt")
+        Option.objects.create(question=question, label="Correct", is_correct=True, order=0)
+        Option.objects.create(question=question, label="Wrong", order=1)
+        items = self.client.get("/api/courses/course-1/problems").json()["items"]
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["id"], str(question.pk))
+        self.assertEqual(items[0]["source"], "quiz")
+        self.assertNotIn("correctOptionId", items[0])
+        self.assertNotIn("explanation", items[0])
+        self.assertNotIn("hint", items[0])
 
     def test_related_returns_catalog_cards(self):
         build_course_row()
@@ -224,7 +232,7 @@ class CourseUrlTests(TestCase):
 
 class CourseAdminTests(TestCase):
     def test_all_models_are_registered(self):
-        for model in (Course, CourseModule, CourseProblem):
+        for model in (Course, CourseModule, CourseLesson, CourseProblem, CourseStaff, LessonResource):
             self.assertTrue(admin.site.is_registered(model))
 
 

@@ -1,10 +1,20 @@
 /** Account, session, and login types shared across the auth feature. */
 
+import type { PermissionKey } from '@/shared/lib/permissions';
+
 /** The two rendering surfaces an auth view knows about. */
 export type AuthSurface = 'desktop' | 'mobile';
 
 /** A learner is one of three roles; admin also carries Django staff rights. */
 export type AuthRole = 'student' | 'instructor' | 'admin';
+
+/** Compact role summary returned with the authenticated account. */
+export interface AuthRoleSummary {
+  id: string;
+  slug: string;
+  name: string;
+  color: string;
+}
 
 /** How an account signed in; mirrors the backend provider enum. */
 export type AuthProviderId = 'password' | 'google' | 'facebook';
@@ -20,6 +30,9 @@ export interface AuthUser {
   phone: string;
   role: AuthRole;
   isAdmin: boolean;
+  roles: AuthRoleSummary[];
+  permissions: PermissionKey[];
+  isAdministrator: boolean;
   isActive: boolean;
   membershipStatus: string;
   avatarInitials: string;
@@ -80,6 +93,9 @@ export const EMPTY_AUTH_USER: AuthUser = {
   phone: '',
   role: 'student',
   isAdmin: false,
+  roles: [],
+  permissions: [],
+  isAdministrator: false,
   isActive: true,
   membershipStatus: '',
   avatarInitials: '',

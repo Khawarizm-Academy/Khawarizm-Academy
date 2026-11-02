@@ -15,6 +15,7 @@ import {
   createContent,
   updateContent,
   deleteContent,
+  updateVideoProviderPolicy,
   uploadVideoAsset,
 } from '@/features/admin/data/adminFetchers';
 
@@ -110,6 +111,13 @@ describe('admin fetchers', () => {
 
     expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/sessions/session-1/revoke`);
     expect(lastCall().method).toBe('POST');
+  });
+
+  it('posts a provider packaging policy to the provider policy sub-route', async () => {
+    await updateVideoProviderPolicy('google_drive', 'always');
+
+    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/video-providers/google_drive/policy`);
+    expect(lastCall()).toEqual({ method: 'POST', body: { packagingPolicy: 'always' } });
   });
 
   it('updates and deletes a user through the admin endpoints', async () => {

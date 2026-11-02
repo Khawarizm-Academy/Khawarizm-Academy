@@ -7,42 +7,45 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.db.models import Prefetch
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema, inline_serializer
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework import serializers as ser
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from features.common.errors import NotFound
+from features.common.choices import CourseStatus
+from features.common.errors import Conflict, NotFound
 from features.common.messages import COURSE_NOT_FOUND
 from features.courses import services
-from features.courses.models import Course, CourseModule, CourseProblem
-from features.courses.serializers import course_detail, course_problem
+from features.courses.models import Course
+from features.courses.serializers import course_detail
 
-# The landing record walks course -> modules -> lessons + live sessions; the
-# prefetch keeps it at a constant 4 queries however many modules exist.
-DETAIL_PREFETCH = (
-    Prefetch("modules", queryset=CourseModule.objects.prefetch_related("lessons")),
-    "live_sessions",
-)
 
-# The progress sync's body — the service reads `progress`, `lastLesson`,
-# `isCompleted`, and echoes `completedLessonIds` back.
-inline_progress = inline_serializer(
-    "CourseProgressRequest",
-    fields={
-        "progress": ser.IntegerField(required=False),
-        "lastLesson": ser.CharField(required=False, allow_blank=True),
-        "isCompleted": ser.BooleanField(required=False),
-        "completedLessonIds": ser.ListField(child=ser.CharField(), required=False),
-    },
-)
+class CourseProgressRequestSerializer(ser.Serializer):
+    progress = ser.IntegerField(required=False, min_value=0, max_value=100)
+    lastLesson = ser.CharField(required=False, allow_blank=True, max_length=200)
+    isCompleted = ser.BooleanField(required=False)
+    completedLessonIds = ser.ListField(child=ser.CharField(max_length=120), required=False, max_length=1000)
+
+    def to_internal_value(self, data):
+        if not isinstance(data, dict):
+            raise ser.ValidationError("يجب أن يكون جسم الطلب كائنًا.")
+        unknown = sorted(set(data) - set(self.fields))
+        if unknown:
+            raise ser.ValidationError({key: "حقل غير معروف." for key in unknown})
+        return super().to_internal_value(data)
+
+
+def _visible_course(slug: str, user: Any) -> Course:
+    course = Course.objects.visible_to(user).filter(slug=slug).first()
+    if course is None:
+        raise NotFound(COURSE_NOT_FOUND)
+    return course
 
 
 @extend_schema(
     operation_id="course_detail",
     summary="The full landing record for one course.",
-    description="Modules, lessons, and live sessions in one payload (constant 4 queries via prefetch).",
+    description="Modules, lessons, staff, and live sessions in one payload (constant 4 queries).",
     auth=None,
     parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
     responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The CourseDetail shape.")},
@@ -50,48 +53,26 @@ inline_progress = inline_serializer(
 @api_view(["GET"])
 def course_detail_view(request: Any, slug: str) -> Response:
     """The full landing record for one course."""
-    course = Course.objects.filter(slug=slug).prefetch_related(*DETAIL_PREFETCH).first()
+    course = Course.objects.filter(slug=slug).select_related("owner", "owner__instructor_profile").first()
     if course is None:
         raise NotFound(COURSE_NOT_FOUND)
-    return Response(course_detail(course))
-
-
-def _problems_payload() -> dict[str, list[dict[str, Any]]]:
-    """The practice set, reused by both problem routes."""
-    problems = CourseProblem.objects.prefetch_related("options").all()
-    return {"items": [course_problem(problem) for problem in problems]}
-
-
-@extend_schema(
-    operation_id="problems_list",
-    summary="The shared practice problem set.",
-    auth=None,
-    responses={
-        200: OpenApiResponse(
-            response=OpenApiTypes.OBJECT, description="`{items: [CourseProblem]}` — problem + options."
-        ),
-    },
-)
-@api_view(["GET"])
-def problems_list(request: Any) -> Response:
-    """The shared practice problem set (not scoped to a course yet)."""
-    return Response(_problems_payload())
-
-
-@extend_schema(
-    operation_id="course_problems",
-    summary="The practice problem set for a course.",
-    description="Shared with the global set today — the route exists so scoping stays URL-addressable.",
-    auth=None,
-    parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
-    responses={
-        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{items: [CourseProblem]}`"),
-    },
-)
-@api_view(["GET"])
-def course_problems_view(request: Any, slug: str) -> Response:
-    """The practice problem set for a course (shared today)."""
-    return Response(_problems_payload())
+    preview = course.status in {CourseStatus.DRAFT, CourseStatus.IN_REVIEW}
+    staff_view = services.can_edit(request.user, course) if getattr(request.user, "is_authenticated", False) else False
+    if preview and not staff_view:
+        raise NotFound(COURSE_NOT_FOUND)
+    relation_rows = services.course_detail_relations(course)
+    response = Response(
+        course_detail(
+            course,
+            include_unpublished=staff_view,
+            is_preview=preview,
+            enrollable=course.status == CourseStatus.PUBLISHED,
+            relation_rows=relation_rows,
+        )
+    )
+    if staff_view:
+        response["Cache-Control"] = "private, no-store"
+    return response
 
 
 @extend_schema(
@@ -108,9 +89,7 @@ def course_problems_view(request: Any, slug: str) -> Response:
 @api_view(["GET"])
 def course_related_view(request: Any, slug: str) -> Response:
     """Related course cards for the landing rail."""
-    course = Course.objects.filter(slug=slug).first()
-    if course is None:
-        raise NotFound(COURSE_NOT_FOUND)
+    course = _visible_course(slug, request.user)
     return Response({"items": services.related_for(course)})
 
 
@@ -127,8 +106,10 @@ def course_related_view(request: Any, slug: str) -> Response:
 def course_enroll_view(request: Any, slug: str) -> Response:
     """Enroll the signed-in learner; anonymous callers get the plain acknowledgement."""
     course = Course.objects.filter(slug=slug).first()
-    if course is None:
+    if course is None or course.status in {CourseStatus.DRAFT, CourseStatus.IN_REVIEW}:
         raise NotFound(COURSE_NOT_FOUND)
+    if course.status != CourseStatus.PUBLISHED:
+        raise Conflict("هذه الدورة غير متاحة للتسجيل.", code="not_enrollable")
     if request.user.is_authenticated:
         services.enroll(request.user, course)
     return Response({"enrolled": True, "courseId": course.slug})
@@ -139,7 +120,7 @@ def course_enroll_view(request: Any, slug: str) -> Response:
     summary="Persist a progress sync for a course.",
     description="Signed-in callers save; visitors get their payload echoed back.",
     parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
-    request=inline_progress,
+    request=CourseProgressRequestSerializer,
     responses={
         200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{courseId, completedLessonIds}`"),
     },
@@ -148,11 +129,14 @@ def course_enroll_view(request: Any, slug: str) -> Response:
 def course_progress_view(request: Any, slug: str) -> Response:
     """Persist a progress sync for the signed-in learner, or echo it back for a visitor."""
     course = Course.objects.filter(slug=slug).first()
-    if course is None:
+    if course is None or course.status in {CourseStatus.DRAFT, CourseStatus.IN_REVIEW}:
         raise NotFound(COURSE_NOT_FOUND)
-    completed = request.data.get("completedLessonIds", [])
+    body = CourseProgressRequestSerializer(data=request.data)
+    body.is_valid(raise_exception=True)
+    values = body.validated_data
+    completed = values.get("completedLessonIds", [])
     if request.user.is_authenticated:
-        services.save_progress(request.user, course, request.data)
+        services.save_progress(request.user, course, values)
     return Response({"courseId": course.slug, "completedLessonIds": completed})
 
 
@@ -171,7 +155,7 @@ def course_progress_view(request: Any, slug: str) -> Response:
 @api_view(["POST"])
 def course_favorite_view(request: Any, slug: str) -> Response:
     """Toggle a course in the learner's favorites; a visitor gets a sign-in hint."""
-    course = Course.objects.filter(slug=slug).first()
+    course = Course.objects.filter(slug=slug, status__in=(CourseStatus.PUBLISHED, CourseStatus.ARCHIVED)).first()
     if course is None:
         raise NotFound(COURSE_NOT_FOUND)
     if not request.user.is_authenticated:
@@ -194,7 +178,7 @@ def course_favorite_view(request: Any, slug: str) -> Response:
 @api_view(["GET"])
 def course_certificate_view(request: Any, slug: str) -> Response:
     """Certificate metadata for a completed course."""
-    course = Course.objects.filter(slug=slug).first()
+    course = Course.objects.filter(slug=slug, status__in=(CourseStatus.PUBLISHED, CourseStatus.ARCHIVED)).first()
     if course is None:
         raise NotFound(COURSE_NOT_FOUND)
     return Response(services.certificate_payload(course))

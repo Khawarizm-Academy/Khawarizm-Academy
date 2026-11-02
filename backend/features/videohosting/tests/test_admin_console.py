@@ -14,9 +14,13 @@ from django.test import Client, TestCase, TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from features.access.models import AccessRole, RoleAssignment
+from features.common.choices import CourseLevel, CourseStatus
 from features.common.testing import ApiTestCase, api_client, authenticate, make_admin, make_user
+from features.courses.models import Course, CourseLesson, CourseModule
 from features.videohosting import diagnostics, drive_oauth, ingest, packaging
-from features.videohosting.models import DriveAuthState, DriveGrant, VideoAsset
+from features.videohosting.console import views as console_views
+from features.videohosting.models import DriveAuthState, DriveGrant, VideoAsset, VideoProvider
 from features.videohosting.tests.helpers import FakeTelegramService, ScriptedDriveHTTP
 
 
@@ -36,8 +40,14 @@ class AdminConsoleVideoTests(ApiTestCase):
 
     def test_diagnostics_payload_names_every_group(self):
         body = self.client.get("/api/admin/video-diagnostics").json()
-        self.assertEqual([g["id"] for g in body["groups"]], ["pipeline", "google_drive", "telegram"])
-        self.assertEqual([p["code"] for p in body["providers"]], ["google_drive", "telegram"])
+        self.assertEqual(
+            [g["id"] for g in body["groups"]],
+            ["pipeline", "google_drive", "telegram", "youtube", "vimeo", "external"],
+        )
+        self.assertEqual(
+            [p["code"] for p in body["providers"]],
+            ["google_drive", "telegram", "youtube", "vimeo", "external"],
+        )
         self.assertIsInstance(body["okOverall"], bool)
         self.assertIn("problems", body)
 
@@ -79,6 +89,29 @@ class AdminConsoleVideoTests(ApiTestCase):
         self.assertEqual(body["slug"], "video-detail")
         self.assertIn("progress", body)
         self.assertIn("stage", body)
+
+    def test_asset_listing_is_paged_and_caps_page_size(self):
+        for index in range(3):
+            self.client.post("/api/admin/video-assets", {"slug": f"video-{index}"}, format="json")
+        body = self.client.get("/api/admin/video-assets?page=2&pageSize=2").json()
+        self.assertEqual(body["total"], 3)
+        self.assertEqual(body["page"], 2)
+        self.assertEqual(body["pageSize"], 2)
+        self.assertEqual([row["slug"] for row in body["results"]], ["video-2"])
+        capped = self.client.get("/api/admin/video-assets?page=1&pageSize=999").json()
+        self.assertEqual(capped["pageSize"], 100)
+
+    def test_asset_row_exposes_stored_playback_protection_and_size(self):
+        asset = VideoAsset.objects.create(
+            slug="stored-meta",
+            playback_mode="raw",
+            protection="gated",
+            source_size_bytes=4096,
+        )
+        body = self.client.get(f"/api/admin/video-assets/{asset.pk}").json()
+        self.assertEqual(body["playbackMode"], "raw")
+        self.assertEqual(body["protection"], "gated")
+        self.assertEqual(body["sizeBytes"], 4096)
 
 
 class AdminConsoleVideoUploadTests(TransactionTestCase):
@@ -134,9 +167,8 @@ class AdminConsoleVideoUploadTests(TransactionTestCase):
                 if asset.status == "staged" and asset.progress == 100:
                     break
                 time.sleep(0.05)
-        self.assertEqual(asset.status, "staged", f"row error: {asset.error_message}")
-        self.assertEqual(asset.progress, 100)
-        self.assertEqual(asset.stage, "")
+        self.assertEqual(asset.status, "error", f"row error: {asset.error_message}")
+        self.assertIn("provider_requires_packaging", asset.error_message)
         self.assertEqual(asset.source_file_name, "clip.mp4")
         self.assertFalse(asset.master_playlist)
 
@@ -216,7 +248,7 @@ class AdminConsoleDriveUploadTests(TransactionTestCase):
                 if asset.status == "staged" and asset.progress == 100:
                     break
                 time.sleep(0.05)
-        self.assertEqual(asset.status, "staged", f"row error: {asset.error_message}")
+        self.assertEqual(asset.status, "ready", f"row error: {asset.error_message}")
         self.assertEqual(asset.source_file_id, "DRIVE123")
         self.assertEqual(asset.source_file_name, "lesson.mp4")
         self.assertEqual(asset.progress, 100)
@@ -234,6 +266,94 @@ class AdminConsoleVideoPermissionTests(ApiTestCase):
     def test_student_is_rejected_from_video_diagnostics(self):
         authenticate(self.client, make_user())
         self.assertEqual(self.client.get("/api/admin/video-diagnostics").status_code, 403)
+
+    def _with_role(self, permissions, email):
+        user = make_user(email=email)
+        role = AccessRole.objects.create(
+            slug=f"role-{email.split('@')[0]}",
+            name="Console test role",
+            color="cyan",
+            position=100,
+            permissions=permissions,
+        )
+        RoleAssignment.objects.create(user=user, role=role)
+        authenticate(self.client, user)
+        return user
+
+    def test_configure_permission_is_required_for_provider_settings_and_diagnostics(self):
+        self._with_role(["videos.manage_any"], "manage-only@example.com")
+        self.assertEqual(self.client.get("/api/admin/video-providers").status_code, 403)
+        self.assertEqual(self.client.get("/api/admin/video-diagnostics").status_code, 403)
+        self._with_role(["videos.configure"], "configure-only@example.com")
+        self.assertEqual(self.client.get("/api/admin/video-providers").status_code, 200)
+        self.assertEqual(self.client.get("/api/admin/video-diagnostics").status_code, 200)
+
+    def test_manage_any_is_required_for_asset_list_detail_and_delete(self):
+        asset = VideoAsset.objects.create(slug="managed-boundary")
+        self._with_role(["videos.configure"], "configure-assets@example.com")
+        self.assertEqual(self.client.get("/api/admin/video-assets").status_code, 403)
+        self.assertEqual(self.client.get(f"/api/admin/video-assets/{asset.pk}").status_code, 403)
+        self.assertEqual(self.client.delete(f"/api/admin/video-assets/{asset.pk}").status_code, 403)
+
+    def test_policy_validation_and_update_return_provider_row_and_policy(self):
+        authenticate(self.client, make_admin(email="policy-admin@example.com"))
+        invalid = self.client.post(
+            "/api/admin/video-providers/google_drive/policy",
+            {"packagingPolicy": "sometimes"},
+            format="json",
+        )
+        self.assertEqual(invalid.status_code, 400)
+        response = self.client.post(
+            "/api/admin/video-providers/google_drive/policy",
+            {"packagingPolicy": "never"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["provider"]["code"], "google_drive")
+        self.assertEqual(response.json()["provider"]["packagingPolicy"], "never")
+        self.assertEqual(response.json()["policy"], "never")
+        self.assertEqual(VideoProvider.objects.get(code="google_drive").packaging_policy, "never")
+
+    def test_delete_conflicts_for_a_published_course_lesson(self):
+        authenticate(self.client, make_admin(email="published-delete-admin@example.com"))
+        asset = VideoAsset.objects.create(slug="published-linked")
+        course = Course.objects.create(
+            slug="published-delete-course",
+            title="Published course",
+            status=CourseStatus.PUBLISHED,
+            category_label="Programming",
+            category_slug="programming",
+            thumbnail_url="https://cdn.example.com/course.png",
+            course_level=CourseLevel.BEGINNER,
+        )
+        module = CourseModule.objects.create(course=course, module_id="m-1", title="Module")
+        lesson = CourseLesson.objects.create(module=module, lesson_id="l-1", title="Lesson", video_asset=asset)
+        response = self.client.delete(f"/api/admin/video-assets/{asset.pk}")
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["code"], "asset_in_use")
+        self.assertEqual(response.json()["fields"]["lessons"][0]["id"], str(lesson.pk))
+        self.assertTrue(VideoAsset.objects.filter(pk=asset.pk).exists())
+
+    def test_delete_allows_draft_or_unlinked_asset_and_schedules_cleanup(self):
+        authenticate(self.client, make_admin(email="draft-delete-admin@example.com"))
+        asset = VideoAsset.objects.create(slug="draft-linked")
+        course = Course.objects.create(
+            slug="draft-delete-course",
+            title="Draft course",
+            status=CourseStatus.DRAFT,
+            category_label="Programming",
+            category_slug="programming",
+            thumbnail_url="https://cdn.example.com/course.png",
+            course_level=CourseLevel.BEGINNER,
+        )
+        module = CourseModule.objects.create(course=course, module_id="m-1", title="Module")
+        CourseLesson.objects.create(module=module, lesson_id="l-1", title="Lesson", video_asset=asset)
+        with mock.patch.object(console_views.remote_cleanup, "schedule_remote_delete") as cleanup:
+            response = self.client.delete(f"/api/admin/video-assets/{asset.pk}")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(VideoAsset.objects.filter(pk=asset.pk).exists())
+        cleanup.assert_called_once()
+        self.assertTrue(cleanup.call_args.args[1].is_admin)
 
 
 class AdminConsoleDriveOAuthTests(ApiTestCase):

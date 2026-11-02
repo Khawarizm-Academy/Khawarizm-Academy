@@ -66,12 +66,18 @@ def _field(name: str, attr: str, label: str, kind: str = "text", **extra: Any) -
 CONTENT_TYPES: dict[str, dict[str, Any]] = {
     "courses": {
         "model": Course,
+        "permissions": {
+            "read": ("courses.edit_any",),
+            "write": {"create": ("courses.edit_any",), "edit": ("courses.edit_any",)},
+            "delete": ("courses.delete_any",),
+        },
         "label": "الدورات",
         "keyField": "slug",
         "titleField": "title",
         "search": ("slug", "title", "instructor"),
         "fields": (
             _field("slug", "slug", "المعرّف (slug)", required=True),
+            _field("owner", "owner", "مالك الدورة", "user_ref"),
             _field("title", "title", "العنوان", required=True),
             _field("categoryLabel", "category_label", "التصنيف", required=True),
             _field(
@@ -125,6 +131,11 @@ CONTENT_TYPES: dict[str, dict[str, Any]] = {
     },
     "scholarships": {
         "model": Scholarship,
+        "permissions": {
+            "read": ("scholarships.manage",),
+            "write": {"create": ("scholarships.manage",), "edit": ("scholarships.manage",)},
+            "delete": ("scholarships.manage",),
+        },
         "label": "المنح",
         "keyField": "slug",
         "titleField": "title",
@@ -186,6 +197,11 @@ CONTENT_TYPES: dict[str, dict[str, Any]] = {
     },
     "events": {
         "model": EventItem,
+        "permissions": {
+            "read": ("events.manage",),
+            "write": {"create": ("events.manage",), "edit": ("events.manage",)},
+            "delete": ("events.manage",),
+        },
         "label": "الفعاليات",
         "keyField": "event_id",
         "titleField": "title",
@@ -203,6 +219,11 @@ CONTENT_TYPES: dict[str, dict[str, Any]] = {
     },
     "competitions": {
         "model": Competition,
+        "permissions": {
+            "read": ("competitions.manage",),
+            "write": {"create": ("competitions.manage",), "edit": ("competitions.manage",)},
+            "delete": ("competitions.manage",),
+        },
         "label": "المسابقات",
         "keyField": "competition_id",
         "titleField": "title",
@@ -239,12 +260,16 @@ USER_FIELDS: tuple[dict[str, Any], ...] = (
 )
 
 
-def user_row(user: User) -> dict[str, Any]:
+def user_row(user: User, roles: list[Any] | tuple[Any, ...] | None = None) -> dict[str, Any]:
     """A compact user row for the users table.
 
     `active_sessions` arrives as an annotation on the list queryset; the
     single-user endpoints fall back to the per-row count.
     """
+    if roles is None:
+        from features.access.services import effective_roles
+
+        roles = effective_roles(user)
     active_sessions = getattr(user, "active_sessions", None)
     if active_sessions is None:
         active_sessions = user.sessions.filter(is_active=True).count()
@@ -254,6 +279,7 @@ def user_row(user: User) -> dict[str, Any]:
         "fullName": user.full_name,
         "avatarUrl": user.avatar_url,
         "role": user.role,
+        "roles": [{"id": str(role.pk), "slug": role.slug, "name": role.name, "color": role.color} for role in roles],
         "isActive": user.is_active,
         "isStaff": user.is_staff,
         "activeSessions": active_sessions,
@@ -306,8 +332,9 @@ def event_row(event, include_email: bool = False) -> dict[str, Any]:
     return row
 
 
-def content_types_payload() -> list[dict[str, Any]]:
+def content_types_payload(types: dict[str, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """The managed content types and their editable fields, for the console UI."""
+    registry = CONTENT_TYPES if types is None else types
     return [
         {
             "key": key,
@@ -316,13 +343,15 @@ def content_types_payload() -> list[dict[str, Any]]:
             "titleField": spec["titleField"],
             "fields": list(spec["fields"]),
         }
-        for key, spec in CONTENT_TYPES.items()
+        for key, spec in registry.items()
     ]
 
 
 def _raw_value(field: dict[str, Any], obj: Any) -> Any:
     """Read one field off a row and normalize it for JSON."""
     raw = getattr(obj, field["attr"])
+    if field["kind"] == "user_ref":
+        return str(raw.pk) if raw is not None else None
     if field["kind"] == "decimal":
         return float(raw) if raw is not None else None
     return raw

@@ -6,17 +6,26 @@
 # configuration may fail.
 import json
 import os
+import shutil
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import quote
 
 from django.conf import settings
 
 from features.videohosting.drive_oauth import access_token as oauth_access_token
 from features.videohosting.drive_oauth import connected as oauth_connected
+from features.videohosting.providers import drive_uploads
 from features.videohosting.providers.base import (
     Check,
     ProviderSpec,
+    ProviderUpload,
+    ProviderUploadCompletion,
+    ProviderUploadError,
+    ProviderUploadStart,
+    ProviderUploadState,
+    ProviderUploadUnavailable,
     _identity,
     blocking_checks,
     check,
@@ -32,6 +41,7 @@ DRIVE_UPLOAD_SESSION_URL = "https://www.googleapis.com/upload/drive/v3/files?upl
 CHUNK_BYTES = 256 * 1024  # Drive's resumable protocol requires multiples of this
 RETRIES_PER_CHUNK = 3
 REQUEST_SECONDS = 30
+REMOTE_DELETE_SECONDS = 10
 
 
 # The configured credentials and the muted bearer every Drive call reads through.
@@ -327,6 +337,119 @@ def raw_stream(file_id: str, range_header: str) -> tuple[int, object, dict[str, 
     )
 
 
+def delete_remote(snapshot) -> None:
+    """Delete the captured Drive source file using the existing OAuth grant."""
+    file_id = str(getattr(snapshot, "source_file_id", "") or "")
+    if not file_id:
+        return
+    okay, bearer, detail = access_token()
+    if not okay:
+        raise RuntimeError(f"تعذّر حذف ملف Google Drive عن بُعد: {detail}")
+    request = urllib.request.Request(
+        f"https://www.googleapis.com/drive/v3/files/{quote(file_id, safe='')}",
+        method="DELETE",
+        headers={"Authorization": f"Bearer {bearer}"},
+    )
+    with urllib.request.urlopen(request, timeout=REMOTE_DELETE_SECONDS):
+        pass
+
+
+def download_source(asset, destination_path: str) -> None:
+    """Download the retained Drive source into an operator-owned local path."""
+    file_id = str(getattr(asset, "source_file_id", "") or "")
+    if not file_id:
+        raise ProviderUploadError("Google Drive source is unavailable")
+    okay, bearer, _detail = access_token()
+    if not okay:
+        raise ProviderUploadUnavailable("Google Drive authentication is unavailable")
+    request = urllib.request.Request(
+        f"https://www.googleapis.com/drive/v3/files/{quote(file_id, safe='')}?alt=media",
+        headers={"Authorization": f"Bearer {bearer}"},
+    )
+    try:
+        with (
+            urllib.request.urlopen(request, timeout=REQUEST_SECONDS) as response,
+            open(destination_path, "wb") as destination,
+        ):
+            shutil.copyfileobj(response, destination, length=1024 * 1024)
+    except urllib.error.HTTPError as error:
+        raise ProviderUploadError("Google Drive source download failed") from error
+    except OSError as error:
+        raise ProviderUploadError("Google Drive source could not be written") from error
+    except Exception as error:
+        raise ProviderUploadError("Google Drive source download failed") from error
+
+
+def _studio_bearer() -> str:
+    ok, bearer, detail = access_token()
+    if not ok:
+        raise ProviderUploadUnavailable(detail)
+    return bearer
+
+
+def _studio_start(file_name: str, mime_type: str, total: int, _session_key: str) -> ProviderUploadStart:
+    uri = drive_uploads.start_session(
+        file_name,
+        mime_type,
+        total,
+        str(getattr(settings, "GOOGLE_DRIVE_ROOT_FOLDER_ID", "")),
+        _studio_bearer(),
+    )
+    return ProviderUploadStart(upload_uri=uri)
+
+
+def _studio_probe(session) -> ProviderUploadState:
+    result = drive_uploads.probe_offset(session.upload_uri, _studio_bearer(), session.total_bytes)
+    return ProviderUploadState(next_offset=result.next_offset, file_id=result.file_id or "", complete=result.complete)
+
+
+def _studio_write(session, chunk: bytes, start: int) -> ProviderUploadState:
+    result = drive_uploads.send_chunk(session.upload_uri, _studio_bearer(), chunk, start, session.total_bytes)
+    return ProviderUploadState(next_offset=result.next_offset, file_id=result.file_id or "", complete=result.complete)
+
+
+def _studio_complete(session, _asset, plan) -> ProviderUploadCompletion:
+    file_id = str((session.metadata or {}).get("fileId", "") or "")
+    if not file_id:
+        file_id = _studio_probe(session).file_id
+    if not file_id:
+        raise ProviderUploadError("Drive did not return a file id")
+    protection = {"hls": "encrypted", "raw": "gated", "embed": "none", "external": "none"}.get(plan.mode, "")
+    return ProviderUploadCompletion(
+        asset_updates={
+            "source_file_id": file_id,
+            "source_size_bytes": session.total_bytes,
+            "source_file_name": session.file_name,
+            "mime_type": session.mime_type,
+            "playback_mode": plan.mode,
+            "protection": protection,
+            "status": "ready" if plan.mode == "raw" else "staged",
+            "progress": 100,
+            "stage": "",
+        }
+    )
+
+
+def _studio_cancel(session) -> None:
+    if not session.upload_uri:
+        return
+    try:
+        bearer = _studio_bearer()
+    except ProviderUploadUnavailable:
+        return
+    drive_uploads.cancel_session(session.upload_uri, bearer)
+
+
+DRIVE_UPLOAD = ProviderUpload(
+    start_session=_studio_start,
+    probe_offset=_studio_probe,
+    write_chunk=_studio_write,
+    complete=_studio_complete,
+    cancel=_studio_cancel,
+    download_source=download_source,
+)
+
+
 # The spec — declared last so every symbol above is already defined.
 GOOGLE_DRIVE = ProviderSpec(
     code="google_drive",
@@ -341,6 +464,8 @@ GOOGLE_DRIVE = ProviderSpec(
     },
     segment_redirect=_identity,  # Drive does not use CDN redirects like Telegram
     raw_stream=raw_stream,  # raw watch route (FFmpeg off): gatewayed media
+    delete_remote=delete_remote,
+    upload=DRIVE_UPLOAD,
     ingest=_DriveIngest(),  # store_source only; no HLS packaging
     env_checks=_drive_env_checks,
     deep_checks=_drive_deep_checks,

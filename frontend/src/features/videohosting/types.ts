@@ -1,13 +1,10 @@
-/**
- * Video hosting types — the stream contract the player consumes.
- *
- * The backend owns Telegram-backed encrypted HLS; the frontend only ever sees a
- * readiness record and a short-lived playback grant (never a Telegram URL, never
- * an AES key until the gated endpoint hands it over to the player).
- */
+/** Video hosting types — the versioned API contract consumed by the player. */
 
 /** Lifecycle of a hosted video, mirrored from the backend `VideoStatus`. */
 export type HostedVideoStatus = 'uploading' | 'processing' | 'ready' | 'staged' | 'error';
+
+export type VideoPlaybackMode = 'hls' | 'raw' | 'embed' | 'external';
+export type VideoProtection = 'encrypted' | 'gated' | 'none';
 
 /** One packaged quality variant, lowest bandwidth first. */
 export interface HostedVideoQuality {
@@ -17,7 +14,14 @@ export interface HostedVideoQuality {
   bandwidthBps: number;
 }
 
-/** `GET /videos/:slug` — what the player polls before it can mint a grant. */
+export interface VideoCaptionTrack {
+  language: string;
+  label: string;
+  url?: string;
+  isDefault: boolean;
+}
+
+/** `GET /videos/:slug` — readiness and provider-backed metadata. */
 export interface HostedVideoMeta {
   id: string;
   title?: string;
@@ -26,18 +30,55 @@ export interface HostedVideoMeta {
   /** Mounted watch sessions so far — present once the first grant is minted. */
   viewCount?: number;
   qualities: HostedVideoQuality[];
+  playbackMode?: VideoPlaybackMode;
+  protection?: VideoProtection;
+  provider?: string;
+  poster?: string;
+  mimeType?: string;
 }
 
-/** `POST /videos/:slug/token` — the playback grant, bound to this client's IP. */
+/** Server-resolved lesson metadata included with a Phase 4 playback grant. */
+export interface PlaybackLesson {
+  id: string;
+  title: string;
+  nextLessonId: string | null;
+}
+
+/**
+ * `POST /courses/:slug/lessons/:lessonId/playback` — short-lived playback grant.
+ * HLS/raw tokens are IP-bound; embed/external grants intentionally have token="".
+ */
 export interface StreamGrant {
   token: string;
   assetId: string;
-  /** Absolute master-playlist URL with the token already baked in (hls mode). */
-  masterUrl: string;
-  /** Absolute watch URL in raw mode (un-packaged source streamed by the API). */
+  /** HLS master URL; absent/empty outside HLS mode. */
+  masterUrl?: string;
+  /** HLS/raw/embed/external browser playback URL, when applicable. */
   playUrl?: string;
-  /** `hls` = encrypted HLS ladder; `raw` = the platform-streamed source file. */
-  mode?: 'hls' | 'raw';
+  mode?: VideoPlaybackMode;
   expiresAt: string;
   durationSeconds?: number;
+  protection?: VideoProtection;
+  provider?: string;
+  embedUrl?: string;
+  sourceUrl?: string;
+  poster?: string;
+  captions?: VideoCaptionTrack[];
+  resumeAt?: number;
+  qualities?: HostedVideoQuality[];
+  lesson?: PlaybackLesson;
+}
+
+/** Enrolled-only heartbeat payload accepted by the Phase 4 progress endpoint. */
+export interface LessonProgressHeartbeat {
+  positionSeconds: number;
+  durationSeconds: number;
+  watchedDeltaSeconds: number;
+}
+
+export interface LessonProgressResult {
+  positionSeconds: number;
+  watchedSeconds: number;
+  completed: boolean;
+  completedAt?: string | null;
 }

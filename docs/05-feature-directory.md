@@ -92,10 +92,13 @@ arena itself still opens inside the dashboard's competition chamber.
 
 ## Admin — `features/admin/`
 
-The staff-only console at a single responsive surface (no desktop/mobile split).
-Section tabs (`?tab=`) cover the overview, users, content, sessions, analytics,
-and activity. Users can be created, edited (any field, including role), and
-deleted; the four content types are edited through schema-driven forms.
+The permission-gated console at a single responsive surface (no desktop/mobile
+split). Section tabs (`?tab=`) cover the overview, users, content, sessions,
+analytics, activity, roles, and access audit. User list/detail and account
+mutation permissions are separate: creating an account as the default student
+uses `users.create`, while assigning any non-default role requires
+`users.assign_roles` plus hierarchy and grant checks. The four content types are
+edited through schema-driven forms with per-type permissions.
 
 - **Entry:** `pages/AdminPage.tsx` → `AdminProvider` + `AdminShell`.
 - Read more: [`admin/README.md`](../frontend/src/features/admin/README.md).

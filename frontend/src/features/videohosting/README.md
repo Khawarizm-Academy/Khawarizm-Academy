@@ -1,75 +1,53 @@
 # Video Hosting — استضافة الفيديو
 
-The player side of Telegram-backed encrypted HLS playback. This feature is the
-only place the stream endpoints are called and the only place hls.js is
-configured; it hands the courses player a tokenized master URL and an
-anti-record watermark.
+The frontend control plane for real lesson playback. The backend resolves each lesson's linked asset, checks entitlement, and returns a short-lived playback grant; this feature selects a lazy engine for that grant and mirrors its real events into the course player.
 
 ## At a glance
 
 | | |
 | :--- | :--- |
-| **Routes** | — (the courses player consumes it) |
-| **Depends on** | `features/courses` (mounts the stage), `features/auth` (the watermark identity) |
-| **Entries** | `hooks/useHlsPlayback.ts`, `data/videoHostingFetchers.ts` |
-| **Styles** | `.player-watermark` in `features/courses/courses.css` |
+| **Routes** | No standalone pages; consumed by the course player |
+| **Depends on** | `features/courses` for the single player stage and `features/auth` for per-user preferences/watermark identity |
+| **Entries** | `hooks/usePlayback.ts`, `engines/registry.ts`, `data/videoHostingFetchers.ts` |
+| **Styles** | Player surfaces live in `features/courses/courses.css` |
 
-## Purpose
+## Playback flow
 
-- **Attach:** mint a short-lived, IP-bound grant and point hls.js (or native HLS
-  on Safari) at the tokenized master playlist.
-- **Deter capture:** draw a moving viewer stamp over the frame so a recording is
-  traceable to one account.
-- **Stay thin:** the backend does tokens, manifests, and keys; this feature never
-  touches video bytes — segments resolve to Telegram's CDN.
+1. `usePlayback` requests `POST /courses/:courseSlug/lessons/:lessonId/playback`. It does not guess an asset slug or reuse cached grants. The server resolves the lesson, authorizes the viewer, and returns the supported mode, source URLs, captions, resume point, and next lesson.
+2. `resolveEngineLoader` selects an engine by grant mode/provider and loads its code only when needed: native HLS or hls.js, a progressive/raw `<video>`, YouTube, or Vimeo. Iframe engines validate their HTTPS provider origin and use `no-referrer`.
+3. Each adapter attaches to the one `PlayerStage` host and reports normalized time, state, quality, captions, readiness, and errors. The UI store has no synthetic clock; controls issue commands to the active engine.
+4. Lesson heartbeats use `PUT /courses/:courseSlug/lessons/:lessonId/progress`, are bounded/coalesced, and flush on intervals, pause/end, visibility/page exit, and player cleanup. Resume and up-next data remain server-authoritative; the next lesson requires a learner action.
 
 ## Structure
 
 ```text
 videohosting/
-├── components/
-│   └── overlays/
-│       └── WatermarkOverlay.tsx     canvas viewer stamp
+├── components/overlays/                 Error, resume, up-next, protection and watermark surfaces
 ├── data/
-│   ├── videoHostingFetchers.ts      fetchVideoMeta / mintStreamGrant
-│   └── videoSlug.ts                 lesson → hosting slug mapping
-├── hooks/
-│   └── useHlsPlayback.ts            hls.js attach + lifecycle
-├── types.ts                         HostedVideoMeta, StreamGrant
+│   ├── videoHostingFetchers.ts           Lesson grant, progress, and legacy metadata requests
+│   └── playerCopy.json / playerCopy.ts   Arabic player copy
+├── engines/
+│   ├── registry.ts                       Lazy mode/provider-to-engine mapping
+│   ├── mediaEngine.ts                    Native media lifecycle and capabilities
+│   ├── hlsEngine.ts / nativeHlsEngine.ts HLS adapters
+│   ├── fileEngine.ts                     Raw and validated external media
+│   ├── youtubeEngine.ts / vimeoEngine.ts Provider embed adapters
+│   └── types.ts                          Normalized adapter/event contract
+├── hooks/usePlayback.ts                  Grant, attach, retry, resume and progress state machine
+├── types.ts
 └── README.md
 ```
 
-## How it works
+## Boundaries and safety
 
-- **Grant.** `mintStreamGrant(slug)` → `POST /videos/:slug/token` returns an
-  absolute, tokenized `masterUrl` — or, for an un-packaged asset uploaded with
-  FFmpeg off, a `playUrl` to the gated raw watch route and `mode: 'raw'`. Every
-  mount mints a fresh grant because tokens are IP-bound and expire — a cached
-  one would be rejected later.
-- **Attach.** `useHlsPlayback` branches on the grant `mode` first: a raw grant
-  points `<video>.src` at the playUrl directly (no hls.js involved); otherwise
-  it prefers native HLS (`canPlayType`), falls back to `Hls.js`, and surfaces
-  fatal errors through the returned `status`/`reload`.
-- **Playback clock.** The courses `videoPlayerStore` exposes
-  `bindMediaElement` / `syncFromMedia`: when a real `<video>` is bound the store
-  mirrors the element (no simulated ticker), and every control (`play`, `skip`,
-  `setSpeed`, `mute`) drives the element directly. Unhosted lessons keep the
-  placeholder surface and the simulated engine.
-- **Watermark.** `WatermarkOverlay` paints the signed-in viewer's email over the
-  frame, drifting each tick so a still capture cannot mask it.
-- **Slug.** `videoHostingSlugFor(courseId, lessonId)` produces
-  `<courseId>--<lessonId>`, matching the backend ingest convention.
-
-## Data
-
-| Source | Provides |
-| :--- | :--- |
-| `data/videoHostingFetchers.ts` | `GET /videos/:slug`, `POST /videos/:slug/token` |
-| `features/auth` (`useAuth`) | the signed-in viewer identity for the watermark |
-| `features/courses` | the active course/lesson and player chrome |
+- Grant responses are private and short-lived. `usePlayback` aborts stale requests and destroys engine listeners, SDK instances, timers, and media elements on lesson changes or unmount.
+- Fatal HLS/raw token failures get a bounded fresh-grant retry; raw busy responses use bounded backoff. Other failures are surfaced with localized, cause-specific copy and a retry action.
+- The settings menu is capability-driven. Quality/caption choices are hidden when the active provider exposes no usable levels/tracks; PiP and AirPlay are shown only when the attached browser media element supports them.
+- Viewer marks are a deterrent, not DRM. The canvas watermark respects `prefers-reduced-motion`; protection badges reflect the server's actual protection mode.
+- Per-user speed, volume, quality, caption language, mute, and theater preferences use local storage only; access tokens and playback grants are never persisted there.
 
 ## Related
 
-- Backend feature: [`../../../../backend/features/videohosting/README.md`](../../../../backend/features/videohosting/README.md)
-- Player: [`../courses/README.md`](../courses/README.md)
-- Backend contract: [`docs/07-backend-contract.md`](../../../../docs/07-backend-contract.md)
+- Course player: [`../courses/README.md`](../courses/README.md)
+- Backend video feature: [`../../../../backend/features/videohosting/README.md`](../../../../backend/features/videohosting/README.md)
+- API contract: [`../../../../docs/07-backend-contract.md`](../../../../docs/07-backend-contract.md)

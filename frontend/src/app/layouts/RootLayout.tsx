@@ -6,6 +6,7 @@ import { RouteErrorBoundary } from '@/app/RouteErrorBoundary';
 import { RouteGuard } from '@/app/RouteGuard';
 import { AuthToast } from '@/features/auth/components/overlays/AuthToast';
 import { useAuth } from '@/features/auth/context/authContext';
+import { can } from '@/shared/lib/permissions';
 import { DesktopNavbar } from '@/shared/components/Navbar/DesktopNavbar';
 import { MobileHeader } from '@/shared/components/Navbar/MobileHeader';
 import { MobileBottomBar } from '@/shared/components/BottomNav/MobileBottomBar';
@@ -65,7 +66,7 @@ export const RootLayout: React.FC = () => {
               onSelectTab={selectTab}
               onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
               isAuthenticated={Boolean(user)}
-              isAdmin={Boolean(user?.isAdmin)}
+              canAccessAdmin={can(user, 'admin.access') || Boolean(user?.isAdmin)}
               onLoginClick={() => navigate(NAV_TARGETS.login)}
               onAdminClick={() => navigate('/admin')}
               onLogout={handleLogout}

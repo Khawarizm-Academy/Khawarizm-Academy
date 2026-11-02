@@ -45,7 +45,7 @@ frontend/src/
 │   ├── catalog/     (+ README.md)
 │   ├── courses/     (+ README.md)
 │   ├── dashboard/   (+ README.md)
-│   ├── auth/        (+ README.md)
+│   ├── auth/        (+ README.md; context/useCan.ts)
 │   ├── profile/     (+ README.md)
 │   ├── events/      (+ README.md)
 │   ├── competitions/(+ README.md)
@@ -55,8 +55,8 @@ frontend/src/
 │   │                Events, Footer, Form, Loading, Navbar, Placeholder,
 │   │                Search, State
 │   ├── hooks/       useCachedData, useCountdown, useHorizontalScroll
-│   ├── lib/         cacheManager, localization, navigation
-│   ├── json/        all static presentation configuration
+│   ├── lib/         cacheManager, localization, navigation, permissions
+│   ├── json/        static presentation configuration + permissionCatalog.json
 │   └── types/       entities.ts (domain interfaces)
 ├── styles/
 │   ├── tokens.css   @theme tokens + :root variables
@@ -193,6 +193,8 @@ features/<feature>/data/*.ts ──►  shared/lib/apiClient.ts    typed API fet
 ```
 
 Data access happens through **fetchers** (each feature's `data/` folder) built on `apiClient`, wrapped by `useCachedData`, which reads/writes the singleton `dataCacheManager`. See [04 · Loading, Caching & Motion](04-loading-caching-and-motion.md) and [07 · Backend Contract](07-backend-contract.md).
+
+Authorization UI reads the typed permission catalog through `shared/lib/permissions.ts`; its committed `shared/json/permissionCatalog.json` mirror is tested against the backend role catalog. Auth features consume it through `features/auth/context/useCan.ts`; route guards and navigation should not make authorization decisions from display-only role names.
 
 ---
 

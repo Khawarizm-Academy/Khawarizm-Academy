@@ -27,6 +27,50 @@ class CoursePriceType(models.TextChoices):
     PAID = "paid", "paid"
 
 
+class CourseStatus(models.TextChoices):
+    DRAFT = "draft", "Draft"
+    IN_REVIEW = "in_review", "In review"
+    PUBLISHED = "published", "Published"
+    ARCHIVED = "archived", "Archived"
+
+
+class CourseStaffKind(models.TextChoices):
+    OWNER = "owner", "Owner"
+    CO_INSTRUCTOR = "co_instructor", "Co-instructor"
+    ASSISTANT = "assistant", "Assistant"
+
+
+class LessonKind(models.TextChoices):
+    VIDEO = "video", "Video"
+    ARTICLE = "article", "Article"
+    QUIZ = "quiz", "Quiz"
+    RESOURCE = "resource", "Resource"
+
+
+class QuizKind(models.TextChoices):
+    PRACTICE = "practice", "Practice"
+    LESSON_QUIZ = "lesson_quiz", "Lesson quiz"
+    EXAM = "exam", "Exam"
+
+
+class RevealPolicy(models.TextChoices):
+    NEVER = "never", "Never"
+    AFTER_SUBMIT = "after_submit", "After submit"
+    AFTER_PASS = "after_pass", "After pass"
+    AFTER_CLOSE = "after_close", "After close"
+
+
+class QuestionKind(models.TextChoices):
+    SINGLE = "single", "Single choice"
+    MULTIPLE = "multiple", "Multiple choice"
+    TRUE_FALSE = "true_false", "True/false"
+
+
+class LessonResourceKind(models.TextChoices):
+    LINK = "link", "Link"
+    DOCUMENT_LINK = "document_link", "Document link"
+
+
 class ScholarshipCountrySlug(models.TextChoices):
     SAUDI = "saudi", "saudi"
     USA = "usa", "usa"
@@ -67,6 +111,25 @@ class VideoStatus(models.TextChoices):
     # Source stored safely, HLS packaging still pending (no FFmpeg on this host).
     STAGED = "staged", "Staged"
     ERROR = "error", "Error"
+
+
+class PlaybackMode(models.TextChoices):
+    HLS = "hls", "HLS"
+    RAW = "raw", "Raw"
+    EMBED = "embed", "Embed"
+    EXTERNAL = "external", "External"
+
+
+class Protection(models.TextChoices):
+    ENCRYPTED = "encrypted", "Encrypted"
+    GATED = "gated", "Gated"
+    NONE = "none", "None"
+
+
+class PackagingPolicy(models.TextChoices):
+    AUTO = "auto", "Auto"
+    ALWAYS = "always", "Always"
+    NEVER = "never", "Never"
 
 
 class LessonStatus(models.TextChoices):
@@ -190,3 +253,24 @@ class MaintenanceRunStatus(models.TextChoices):
     RUNNING = "running", "Running"
     DONE = "done", "Done"
     ERROR = "error", "Error"
+
+
+class AuditAction(models.TextChoices):
+    """Auditable role, account, content, and system mutations."""
+
+    ROLE_CREATED = "role_created", "Role created"
+    ROLE_UPDATED = "role_updated", "Role updated"
+    ROLE_DELETED = "role_deleted", "Role deleted"
+    ROLE_REORDERED = "role_reordered", "Roles reordered"
+    ROLE_ASSIGNED = "role_assigned", "Role assigned"
+    ROLE_REVOKED = "role_revoked", "Role revoked"
+    PERMISSION_DENIED_BURST = "permission_denied_burst", "Permission-denied burst"
+    COURSE_PUBLISHED = "course_published", "Course published"
+    COURSE_UNPUBLISHED = "course_unpublished", "Course unpublished"
+    COURSE_DELETED = "course_deleted", "Course deleted"
+    VIDEO_DELETED = "video_deleted", "Video deleted"
+    REMOTE_ORPHAN = "remote_orphan", "Remote video orphan"
+    USER_DELETED = "user_deleted", "User deleted"
+    USER_STATUS_CHANGED = "user_status_changed", "User status changed"
+    SETTINGS_CHANGED = "settings_changed", "Settings changed"
+    QUIZ_ATTEMPT_GRANTED = "quiz_attempt_granted", "Quiz attempt granted"

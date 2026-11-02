@@ -58,7 +58,10 @@ def make_user(email: str = TEST_EMAIL, role: str = Role.STUDENT, **overrides: An
     """A user row with a usable password."""
     fields: dict[str, Any] = {"email": email, "full_name": "Test Learner", "role": role, "password": TEST_PASSWORD}
     fields.update(overrides)
-    return User.objects.create_user(**fields)
+    user = User.objects.create_user(**fields)
+    from features.access.services import sync_primary_role
+
+    return sync_primary_role(user)
 
 
 def make_admin(email: str = "admin@example.com", **overrides: Any) -> User:

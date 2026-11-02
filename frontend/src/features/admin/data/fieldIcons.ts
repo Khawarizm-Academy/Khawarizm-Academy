@@ -57,6 +57,7 @@ const KIND_ICONS: Record<AdminFieldKind, LucideIcon> = {
   bool: ShieldCheck,
   select: SlidersHorizontal,
   json: FileText,
+  user_ref: UserRound,
 };
 
 /** Inputs carry the icon inside; an unknown name falls back to its kind. */

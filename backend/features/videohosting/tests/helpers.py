@@ -11,7 +11,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from features.common.choices import VideoStatus
+from features.common.choices import PlaybackMode, Protection, VideoStatus
 from features.videohosting.models import DriveGrant, VideoAsset, VideoRendition, VideoSegment
 
 MASTER = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=800000\n/api/stream/__TOKEN__/360p/index.m3u8\n"
@@ -26,6 +26,9 @@ def make_asset(**overrides) -> VideoAsset:
         "title": "Lesson 1",
         "status": VideoStatus.READY,
         "duration_seconds": 120,
+        "playback_mode": PlaybackMode.HLS,
+        "protection": Protection.ENCRYPTED,
+        "mime_type": "video/mp4",
         "master_playlist": MASTER,
     }
     fields.update(overrides)

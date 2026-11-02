@@ -8,25 +8,28 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema, inline_serializer
-from rest_framework import exceptions, status
 from rest_framework import serializers as ser
+from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from features.access.permissions import perm
+from features.access.services import has_perm, user_role_map
 from features.adminconsole import serializers, services
+from features.adminconsole.permissions import permission_for_methods, require_any_permission
 from features.adminconsole.serializers import USER_FIELDS
 from features.auth import services as auth_services
 from features.auth.authentication import AccessTokenAuthentication, CronSecretAuthentication
 from features.auth.models import AuthEvent, User, UserSession
-from features.auth.permissions import IsAdminRole
 from features.auth.serializers import session_with_user, user_profile
-from features.common.choices import AuthEventKind, Role, SessionRevokeReason
-from features.common.errors import InvalidParameter, NotFound
+from features.common.choices import AuthEventKind, CourseStatus, Role, SessionRevokeReason
+from features.common.errors import InvalidParameter, NotFound, PermissionDenied
 from features.common.maintenance import run_cleanup
 from features.common.messages import (
     ADMIN_CONTENT_NOT_FOUND,
@@ -73,6 +76,18 @@ def _page(queryset, request):
     return {"total": total, "page": page, "pageSize": PAGE_SIZE, "results": rows}
 
 
+def _content_permission_keys(spec, action: str, method: str | None = None) -> tuple[str, ...]:
+    permissions = spec.get("permissions", {})
+    value = permissions.get(action, ())
+    if action == "write":
+        value = value.get("create" if method == "POST" else "edit", ())
+    return (value,) if isinstance(value, str) else tuple(value)
+
+
+def _require_content_permission(user, spec, action: str, method: str | None = None) -> None:
+    require_any_permission(user, *_content_permission_keys(spec, action, method))
+
+
 @extend_schema(
     operation_id="admin_overview",
     summary="Headline counts: users, sessions, activity, content totals.",
@@ -81,7 +96,7 @@ def _page(queryset, request):
     },
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("admin.access")])
 @scoped_throttle("admin_burst")
 def overview(request):
     """Headline numbers for the console home, including content totals."""
@@ -148,12 +163,12 @@ def overview(request):
     responses={201: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The created UserRow.")},
 )
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, permission_for_methods(GET="users.view", POST="users.create")])
 @scoped_throttle("admin_burst")
 def users(request):
     """Paged, filterable user list (GET) or a new account (POST)."""
     if request.method == "POST":
-        user = services.create_user_account(request.data or {})
+        user = services.create_user_account(request.data or {}, acting_user=request.user)
         return Response(serializers.user_row(user), status=status.HTTP_201_CREATED)
     queryset = User.objects.all()
     role = request.query_params.get("role")
@@ -169,8 +184,15 @@ def users(request):
     rows = queryset.annotate(active_sessions=Count("sessions", filter=Q(sessions__is_active=True)))[
         (page - 1) * PAGE_SIZE : page * PAGE_SIZE
     ]
+    rows = list(rows)
+    roles_by_user = user_role_map([row.pk for row in rows], actor=request.user)
     return Response(
-        {"total": total, "page": page, "pageSize": PAGE_SIZE, "results": [serializers.user_row(u) for u in rows]}
+        {
+            "total": total,
+            "page": page,
+            "pageSize": PAGE_SIZE,
+            "results": [serializers.user_row(row, roles=roles_by_user.get(row.pk, [])) for row in rows],
+        }
     )
 
 
@@ -212,7 +234,9 @@ def users(request):
     },
 )
 @api_view(["GET", "PATCH", "DELETE"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes(
+    [IsAuthenticated, permission_for_methods(GET="users.view", PATCH="users.edit", DELETE="users.delete")]
+)
 @scoped_throttle("admin_burst")
 def user_detail(request, user_id):
     """One user's detail (GET), an account edit (PATCH), or removal (DELETE)."""
@@ -220,30 +244,45 @@ def user_detail(request, user_id):
     if user is None:
         raise NotFound(ADMIN_USER_NOT_FOUND)
     if request.method == "PATCH":
-        services.update_user_account(user, request.data or {}, acting_user=request.user)
-        return Response(serializers.user_row(user))
+        if "role" in (request.data or {}):
+            require_any_permission(request.user, "users.assign_roles")
+        updated_user = services.update_user_account(user, request.data or {}, acting_user=request.user)
+        return Response(serializers.user_row(updated_user))
     if request.method == "DELETE":
         services.delete_user_account(user, acting_user=request.user)
         return Response({"deleted": True, "id": str(user_id)})
-    return Response(serializers.admin_user_detail(user, request.auth.id))
+    detail = serializers.admin_user_detail(user, request.auth.id)
+    if not has_perm(request.user, "sessions.view_any"):
+        detail["sessions"] = []
+    if not has_perm(request.user, "audit.view"):
+        detail["events"] = []
+    return Response(detail)
 
 
 @extend_schema(
-    operation_id="admin_user_set_role",
-    summary="Promote or demote a role (an admin cannot change their own).",
+    methods=["POST"],
+    operation_id="admin_user_set_role_legacy",
+    summary="Legacy promote or demote operation.",
     parameters=[OpenApiParameter("user_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
     request=inline_serializer(
-        "AdminRoleChange", fields={"role": ser.ChoiceField(choices=["student", "instructor", "admin"])}
+        "AdminRoleChangeLegacyRequest",
+        fields={"role": ser.ChoiceField(choices=["student", "instructor", "admin"])},
     ),
-    responses={
-        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The updated user profile."),
-        400: OpenApiResponse(
-            response=ErrorSerializer, description="`invalid_parameter` — unknown role or self-change."
-        ),
-    },
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The updated user profile.")},
 )
-@api_view(["POST"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@extend_schema(
+    methods=["PATCH"],
+    operation_id="admin_user_set_role_patch",
+    summary="Legacy promote or demote operation (PATCH form).",
+    parameters=[OpenApiParameter("user_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+    request=inline_serializer(
+        "AdminRoleChangePatchRequest",
+        fields={"role": ser.ChoiceField(choices=["student", "instructor", "admin"])},
+    ),
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The updated user profile.")},
+)
+@api_view(["POST", "PATCH"])
+@permission_classes([IsAuthenticated, perm("users.assign_roles")])
 @scoped_throttle("admin_burst")
 def set_role(request, user_id):
     """Promote or demote a role; an admin cannot change their own."""
@@ -269,7 +308,7 @@ def set_role(request, user_id):
     },
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("sessions.view_any")])
 @scoped_throttle("admin_burst")
 def sessions(request):
     """Every session across every user, active first."""
@@ -295,7 +334,7 @@ def sessions(request):
     },
 )
 @api_view(["POST"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("users.revoke_sessions")])
 @scoped_throttle("admin_burst")
 def revoke_session(request, session_id):
     """Force-logout one device anywhere in the fleet."""
@@ -326,7 +365,7 @@ def revoke_session(request, session_id):
     },
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("analytics.view_platform")])
 @scoped_throttle("admin_burst")
 def logins_series(request):
     """Daily login counts for the activity chart."""
@@ -352,7 +391,7 @@ def logins_series(request):
     },
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("analytics.view_platform")])
 @scoped_throttle("admin_burst")
 def devices(request):
     """Session footprint breakdown by OS / browser / device type."""
@@ -376,7 +415,7 @@ def devices(request):
     },
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("audit.view")])
 @scoped_throttle("admin_burst")
 def events(request):
     """The most recent audit rows, optionally filtered by kind."""
@@ -396,11 +435,21 @@ def events(request):
     },
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("admin.access")])
 @scoped_throttle("admin_burst")
 def content_schema(request):
     """The managed content types and their editable fields."""
-    return Response({"types": serializers.content_types_payload(), "userFields": list(USER_FIELDS)})
+    visible = {
+        key: spec
+        for key, spec in services.CONTENT_TYPES.items()
+        if any(has_perm(request.user, permission) for permission in _content_permission_keys(spec, "read"))
+    }
+    user_fields = list(USER_FIELDS)
+    if not has_perm(request.user, "users.edit"):
+        user_fields = []
+    elif not has_perm(request.user, "users.assign_roles"):
+        user_fields = [field for field in user_fields if field["name"] != "role"]
+    return Response({"types": serializers.content_types_payload(visible), "userFields": user_fields})
 
 
 @extend_schema(
@@ -429,14 +478,22 @@ def content_schema(request):
     responses={201: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The created row.")},
 )
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated])
 @scoped_throttle("admin_burst")
 def content_items(request, type_key):
     """Paged content rows (GET) or a new row (POST) for one managed type."""
     spec = services.require_content_type(type_key)
     if request.method == "POST":
-        row = services.create_content_row(spec, request.data or {})
+        _require_content_permission(request.user, spec, "write", "POST")
+        with transaction.atomic():
+            defaults = {"status": CourseStatus.DRAFT} if type_key == "courses" else None
+            row = services.create_content_row(spec, request.data or {}, defaults=defaults)
+            if type_key == "courses":
+                from features.courses.services import sync_course_owner
+
+                row = sync_course_owner(row, request.user)
         return Response(serializers.content_row(spec, row), status=status.HTTP_201_CREATED)
+    _require_content_permission(request.user, spec, "read", "GET")
     queryset = spec["model"].objects.all()
     query = request.query_params.get("q")
     if query:
@@ -476,18 +533,30 @@ def content_items(request, type_key):
     },
 )
 @api_view(["PATCH", "DELETE"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated])
 @scoped_throttle("admin_burst")
 def content_detail(request, type_key, pk):
     """Edit (PATCH) or delete (DELETE) one content row."""
     spec = services.require_content_type(type_key)
+    action = "delete" if request.method == "DELETE" else "write"
+    _require_content_permission(request.user, spec, action, request.method)
     row = spec["model"].objects.filter(pk=pk).first()
     if row is None:
         raise NotFound(ADMIN_CONTENT_NOT_FOUND)
     if request.method == "DELETE":
-        row.delete()
+        if type_key == "courses":
+            from features.courses.services import delete_course
+
+            delete_course(row, request.user)
+        else:
+            row.delete()
         return Response({"deleted": True, "id": str(pk)})
-    updated = services.save_content_row(spec, row, request.data or {})
+    with transaction.atomic():
+        updated = services.save_content_row(spec, row, request.data or {})
+        if type_key == "courses":
+            from features.courses.services import sync_course_owner
+
+            updated = sync_course_owner(updated, request.user)
     return Response(serializers.content_row(spec, updated))
 
 
@@ -520,15 +589,17 @@ def content_detail(request, type_key, pk):
 def maintenance_cleanup(request):
     """Run `cleanup_expired` inline — 202 with the run's status body.
 
-    Two callers share it: an admin (session bearer) and the platform cron
+    Two callers share it: an authorized user (session bearer) and the platform cron
     (Vercel sends `Authorization: Bearer $CRON_SECRET`, which cannot hold a
     user session). `CronSecretAuthentication` marks the cron path as
-    `request.auth == "cron"`; everything else must be staff, so the gate
+    `request.auth == "cron"`; other users must hold `system.maintenance`, so the gate
     stays explicit here instead of trusting `AllowAny`.
     """
     is_cron = request.auth == "cron"
-    if not is_cron and not (request.user and request.user.is_staff):
-        raise exceptions.PermissionDenied()
+    if not is_cron and not (
+        request.user and request.user.is_authenticated and has_perm(request.user, "system.maintenance")
+    ):
+        raise PermissionDenied()
     trigger = "cron" if is_cron else "endpoint"
     # 202 per the job pattern: the caller gets a status resource immediately;
     # the work itself is inline (chunked deletes finish well inside the

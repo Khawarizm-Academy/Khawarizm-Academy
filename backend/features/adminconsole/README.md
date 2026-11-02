@@ -1,7 +1,7 @@
 # Admin Console — لوحة الإدارة
 
-The staff-only surface that watches and controls the whole platform: every
-account, every device session, the login series, and the recent audit trail.
+The permission-gated administration surface for accounts, device sessions,
+analytics, managed content, custom roles, and access-audit history.
 
 This feature **owns no tables.** It reads across `accounts` (users, sessions,
 events) and answers with the same payload shapes `features/auth/serializers.py`
@@ -12,9 +12,9 @@ already defines, so there is one definition of "a session row" in the codebase.
 | | |
 | :--- | :--- |
 | **App label** | `adminconsole` |
-| **Routes** | `GET /api/admin/overview`, `GET|POST /api/admin/users`, `GET|PATCH|DELETE /api/admin/users/:id`, `POST /api/admin/users/:id/role`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events`, `GET /api/admin/content/schema`, `GET|POST /api/admin/content/:type`, `PATCH|DELETE /api/admin/content/:type/:id`, `GET /api/admin/video-providers`, `GET|POST /api/admin/video-assets`, `POST /api/admin/video-assets/upload`, `GET|DELETE /api/admin/video-assets/:id`, `GET /api/admin/video-diagnostics` |
+| **Routes** | `/api/admin/roles/*`, `/api/admin/audit`, `GET /api/admin/overview`, `GET|POST /api/admin/users`, `GET|PATCH|DELETE /api/admin/users/:id`, legacy `POST|PATCH /api/admin/users/:id/role`, `PUT /api/admin/users/:id/roles`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events`, `GET /api/admin/content/schema`, `GET|POST /api/admin/content/:type`, `PATCH|DELETE /api/admin/content/:type/:id`, and the existing video-console routes |
 | **Owns** | — (reads across features) |
-| **Imports** | `User`, `UserSession`, `AuthEvent` (accounts); `user_profile`, `session_payload`, `session_with_user`; `Course`/`Scholarship`/`EventItem`/`Competition` (content) |
+| **Imports** | `User`, `UserSession`, `AuthEvent` (accounts); access roles and audit events; `user_profile`, `session_payload`, `session_with_user`; `Course`/`Scholarship`/`EventItem`/`Competition` (content) |
 | **Frontend twin** | `frontend/src/features/admin/` |
 
 ## Purpose
@@ -30,8 +30,10 @@ and delete any account** and **manage the four managed content types**
 adminconsole/
 ├── apps.py           AppConfig (label "adminconsole")
 ├── serializers.py     USER_FIELDS + the CONTENT_TYPES registry (the editor's schema)
-├── services.py        account lifecycle (uniqueness, role⇄staff, self-protection) + content-editor value coercion
-├── views.py          thin staff-only views + the two label maps
+├── services.py        account lifecycle + content-editor value coercion/user_ref validation
+├── views.py           thin method- and content-permission-gated views
+├── role_views.py      role CRUD, assignment, membership, reorder, and access-audit endpoints
+├── permissions.py     method-specific permission factories
 ├── urls.py           /api/admin routes
 ├── admin.py          (none — it owns no models)
 ├── tests.py          permissions, filters, the current-session flag, the 400s, content CRUD
@@ -40,10 +42,21 @@ adminconsole/
 
 ## How it works
 
-- **Every view is double-gated:** `IsAuthenticated` then `IsAdminRole`
-  (`features/auth/permissions.py`), which reads `user.is_staff` — so a Django
-  staff member is an admin even without the `admin` role, and a learner gets a
-  403 with the console's `Bearer` scheme advertised (not a 401).
+- **Authorization is granular and server-enforced:** each existing admin method
+  requires its Phase 2 access key (`users.view`, `users.create`, `sessions.view_any`,
+  `analytics.view_platform`, etc.); managed-content permissions are declared per
+  type. Frontend navigation is only a convenience—the API remains authoritative.
+  The legacy `is_staff`/superuser bridge still grants the canonical administrator
+  permission set for existing staff accounts.
+- **Role management is a separate resource API:** `/roles/catalog` is generated
+  from `features/access/registry.py`; `/roles` and its member endpoints use the
+  access services for hierarchy, grant ceilings, last-administrator protection,
+  audit writes, and optimistic `expectedUpdatedAt` conflicts. `/audit` pages and
+  filters those access events; it is distinct from `/events` (`AuthEvent`).
+- **User creation cannot self-elevate:** `users.create` may create a default
+  student, while any non-default role goes through `users.assign_roles` and the
+  same hierarchy/grant checks as the role manager. Legacy single-role POST and
+  PATCH remain supported during the planned transition.
 - **The current session is marked, not guessed:** `session_payload(s,
   request.auth.id)` is passed the caller's session id, so `isCurrent` is true
   only for the device the admin is browsing from. This is the same helper the
@@ -58,17 +71,24 @@ adminconsole/
   `{"detail": ...}` shape as everything else.
 - **Role changes keep Django in sync:** setting a role to `admin` sets
   `is_staff`, and any other role clears it, then `ensure_profile` creates the
-  matching profile row. An admin cannot change their own role.
+  matching profile row. Role assignment is separately gated; an admin cannot
+  change their own role through the legacy endpoint.
 - **Accounts are fully managed:** `POST /api/admin/users` creates an account
   (email lowercased + a password), `PATCH /api/admin/users/:id` updates any
   subset of `USER_FIELDS`, `DELETE /api/admin/users/:id` removes it. An admin
   cannot demote or delete their own account.
-- **The content editor is schema-driven:** `serializers.py` declares
+- **The content editor is schema-driven and permission-filtered:**
+  `CONTENT_TYPES` declares per-type read/write/delete keys, and schema responses
+  include only content types the caller can read. `serializers.py` declares
   `USER_FIELDS` and `CONTENT_TYPES` — one row per managed type listing its
   label, the model it maps to, its key field, and the fields the form renders
-  (`AdminFieldKind`: text/textarea/url/number/decimal/bool/select/json).
+  (`AdminFieldKind`: text/textarea/url/number/decimal/bool/select/json/user_ref).
   `GET /api/admin/content/schema` hands that registry to the console, so adding
   a managed field is one registry row, never a new branch.
+- **Course CRUD respects the lifecycle:** generic content-editor creates set
+  `status=draft`; the course `owner` user reference synchronizes the explicit
+  owner staff row; and course deletion delegates to the lifecycle service, which
+  rejects enrolled courses instead of cascading learner access.
 
 ## Data
 
@@ -77,6 +97,7 @@ adminconsole/
 | `accounts.User` | user rows, role counts, the users table, user create/edit/delete |
 | `accounts.UserSession` | device rows, the active/total counts, the os/browser/device breakdown |
 | `accounts.AuthEvent` | the daily login series and the recent-activity stream |
+| `access.AccessRole`, `access.RoleAssignment`, `access.AuditEvent` | role definitions, effective user-role summaries, and paged access-change audit history |
 | `accounts.serializers` | the payload shapes, shared with `/api/auth/*` |
 | `courses.Course`, `scholarships.Scholarship`, `events.EventItem`, `competitions.Competition` | the four managed content types |
 | `videohosting` (via `diagnostics.py`) | provider `available`/`reason` gating, asset health columns, and the staged `/admin/video-diagnostics` report |

@@ -10,6 +10,13 @@ import type { AuthUser } from '@/features/auth/types';
 
 const LEARNER: AuthUser = { ...EMPTY_AUTH_USER, id: 'user-1', email: 'ahmad@example.com' };
 const ADMIN: AuthUser = { ...EMPTY_AUTH_USER, id: 'user-2', email: 'admin@example.com', role: 'admin', isAdmin: true };
+const CONTENT_MODERATOR: AuthUser = {
+  ...EMPTY_AUTH_USER,
+  id: 'user-3',
+  email: 'moderator@example.com',
+  permissions: ['admin.access'],
+};
+const SUPER_ADMIN: AuthUser = { ...EMPTY_AUTH_USER, id: 'user-4', isAdministrator: true };
 
 const routeWithMeta = (meta: Partial<RouteMeta>, path = '/dashboard'): RouteDefinition => ({
   path,
@@ -61,6 +68,16 @@ describe('RouteGuard', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  it('waits for permission routes to resolve the session before rendering', () => {
+    const { navigate } = renderGuard(
+      routeWithMeta({ requiresPermission: 'admin.access' }, '/admin'),
+      authValue({ isReady: false }),
+    );
+
+    expect(screen.queryByTestId('page')).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('sends a guest to the login page carrying where they were headed', () => {
     const { navigate } = renderGuard(routeWithMeta({ requiresAuth: true }), authValue());
 
@@ -86,13 +103,22 @@ describe('RouteGuard', () => {
     expect(navigate).toHaveBeenCalledWith('/login?next=%2Fprofile%3Ftab%3Dsecurity', { replace: true });
   });
 
-  it('treats the admin flag as auth too, so a guest never reaches the console', () => {
+  it('treats the legacy admin flag as auth too, so a guest never reaches the console', () => {
     const { navigate } = renderGuard(routeWithMeta({ requiresAdmin: true }, '/admin'), authValue());
 
     expect(navigate).toHaveBeenCalledWith('/login?next=%2Fadmin', { replace: true });
   });
 
-  it('bounces a signed-in learner away from the admin console', () => {
+  it('sends a signed-out permission reader to login with the current URL', () => {
+    const { navigate } = renderGuard(
+      routeWithMeta({ requiresPermission: 'admin.access' }, '/admin'),
+      authValue(),
+    );
+
+    expect(navigate).toHaveBeenCalledWith('/login?next=%2Fadmin', { replace: true });
+  });
+
+  it('bounces a signed-in learner away from the legacy admin console', () => {
     const { navigate } = renderGuard(
       routeWithMeta({ requiresAdmin: true }, '/admin'),
       authValue({ user: LEARNER })
@@ -102,10 +128,50 @@ describe('RouteGuard', () => {
     expect(navigate).toHaveBeenCalledWith('/', { replace: true });
   });
 
-  it('lets an admin into the admin console', () => {
+  it('lets a legacy admin into the admin console', () => {
     const { navigate } = renderGuard(
       routeWithMeta({ requiresAdmin: true }, '/admin'),
       authValue({ user: ADMIN })
+    );
+
+    expect(screen.getByTestId('page')).toBeTruthy();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('bounces a signed-in reader without the required permission home', () => {
+    const { navigate } = renderGuard(
+      routeWithMeta({ requiresPermission: 'admin.access' }, '/admin'),
+      authValue({ user: LEARNER }),
+    );
+
+    expect(screen.queryByTestId('page')).toBeNull();
+    expect(navigate).toHaveBeenCalledWith('/', { replace: true });
+  });
+
+  it('allows a reader with one required permission from the catalog', () => {
+    const { navigate } = renderGuard(
+      routeWithMeta({ requiresPermission: 'admin.access' }, '/admin'),
+      authValue({ user: CONTENT_MODERATOR }),
+    );
+
+    expect(screen.getByTestId('page')).toBeTruthy();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('treats a permission array as an any-of requirement', () => {
+    const { navigate } = renderGuard(
+      routeWithMeta({ requiresPermission: ['admin.access', 'roles.manage'] }, '/admin'),
+      authValue({ user: CONTENT_MODERATOR }),
+    );
+
+    expect(screen.getByTestId('page')).toBeTruthy();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('lets an administrator bypass individual permission requirements', () => {
+    const { navigate } = renderGuard(
+      routeWithMeta({ requiresPermission: 'system.maintenance' }, '/admin'),
+      authValue({ user: SUPER_ADMIN }),
     );
 
     expect(screen.getByTestId('page')).toBeTruthy();

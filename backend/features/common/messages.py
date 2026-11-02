@@ -11,6 +11,21 @@ from __future__ import annotations
 
 # --- Not found ----------------------------------------------------------------
 COURSE_NOT_FOUND = "الدورة غير موجودة"
+PUBLISH_ISSUE_MESSAGES = {
+    "title_missing": "أدخل عنوان الدورة.",
+    "description_short": "اكتب وصفًا لا يقل عن 80 حرفًا.",
+    "thumbnail_missing": "أضف صورة غلاف للدورة.",
+    "category_missing": "اختر تصنيفًا للدورة.",
+    "no_published_lessons": "أضف درسًا منشورًا واحدًا على الأقل.",
+    "lesson_video_missing": "اربط فيديو بهذا الدرس.",
+    "lesson_video_not_ready": "انتظر حتى يصبح الفيديو جاهزًا.",
+    "lesson_article_empty": "أضف محتوى إلى درس المقالة.",
+    "price_inconsistent": "أضف ملصق السعر للدورة المدفوعة.",
+    "outcomes_few": "أضف ثلاثة مخرجات تعليمية على الأقل.",
+    "lesson_duration_unknown": "تحقق من مدة كل درس.",
+    "no_quiz": "أضف اختبارًا واحدًا على الأقل.",
+    "no_free_preview": "حدد درسًا واحدًا على الأقل كمعاينة مجانية.",
+}
 SCHOLARSHIP_NOT_FOUND = "المنحة غير موجودة"
 CATALOG_ITEM_NOT_FOUND = "العنصر غير موجود"
 VIDEO_NOT_FOUND = "الفيديو غير موجود"
@@ -28,6 +43,15 @@ NOT_READY_STAGED = "الفيديو مرفوع بانتظار التغليف — 
 NOT_READY_PROCESSING = "الفيديو قيد المعالجة"
 NOT_READY_ERROR = "فشلت معالجة الفيديو — راجع لوحة الإدارة"
 NOT_READY = "الفيديو غير جاهز للعرض"
+NOT_ENTITLED = "لا تملك صلاحية مشاهدة هذا الفيديو."
+NO_VIDEO = "لا يوجد فيديو مرتبط بهذا الدرس."
+PROVIDER_REQUIRES_PACKAGING = "هذا المزوّد يحتاج إلى خادم دائم وFFmpeg لتغليف الفيديو قبل رفعه."
+OFFSET_MISMATCH = "تغيّر موضع الرفع؛ استأنف من الإزاحة الحالية."
+RAW_BUSY = "خدمة الفيديو مشغولة مؤقتًا؛ أعد المحاولة بعد قليل."
+ASSET_IN_USE = "لا يمكن حذف الفيديو لأنه مرتبط بدروس منشورة."
+UPLOAD_SESSION_EXPIRED = "انتهت جلسة الرفع لدى المزوّد؛ ابدأ رفعًا جديدًا."
+INVALID_VIDEO_LINK = "رابط الفيديو غير صالح أو غير مدعوم."
+INVALID_CAPTION = "ملف الترجمة غير صالح؛ استخدم WebVTT صحيحًا وبحجم لا يتجاوز 512 كيلوبايت."
 
 
 def provider_no_direct(provider_code: str) -> str:

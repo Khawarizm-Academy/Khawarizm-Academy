@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from features.common.choices import VideoStatus
-from features.common.testing import ApiTestCase, authenticate
+from features.common.testing import ApiTestCase, authenticate, make_admin, make_course
+from features.courses.models import CourseLesson, CourseModule
 from features.videohosting.tests.helpers import KEY_HEX, make_asset
 
 
@@ -17,16 +18,38 @@ class ProviderRouteTests(ApiTestCase):
         response = self.client.get("/api/videos/providers")
         self.assertEqual(response.status_code, 200)
         payload = response.json()["results"]
-        self.assertEqual([row["code"] for row in payload], ["google_drive", "telegram"])
-        self.assertEqual(payload[0]["capabilities"]["resumableUpload"], True)
+        rows = {row["code"]: row for row in payload}
+        self.assertEqual(set(rows), {"google_drive", "telegram", "youtube", "vimeo", "external"})
+        self.assertTrue(rows["google_drive"]["capabilities"]["resumableUpload"])
+        self.assertEqual(rows["youtube"]["kind"], "link")
+        self.assertEqual(rows["external"]["kind"], "link")
 
 
 class RouteTests(ApiTestCase):
     def test_meta_route_returns_asset(self):
-        make_asset()
+        asset = make_asset()
+        course = make_course()
+        module = CourseModule.objects.create(course=course, module_id="module-1", title="Module 1")
+        CourseLesson.objects.create(
+            module=module,
+            lesson_id="lesson-1",
+            title="Lesson 1",
+            video_asset=asset,
+            is_free_preview=True,
+        )
         response = self.client.get("/api/videos/course-1--lesson-1")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["id"], "course-1--lesson-1")
+
+    def test_meta_hides_non_entitled_asset_and_token_returns_403(self):
+        make_asset(slug="private-asset")
+        hidden = self.client.get("/api/videos/private-asset")
+        self.assertEqual(hidden.status_code, 404)
+
+        authenticate(self.client)
+        denied = self.client.post("/api/videos/private-asset/token", HTTP_X_FORWARDED_FOR="10.0.0.1")
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(denied.json()["code"], "not_entitled")
 
     def test_meta_route_404s_on_missing(self):
         response = self.client.get("/api/videos/nope")
@@ -39,13 +62,13 @@ class RouteTests(ApiTestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_token_route_refuses_unready_asset(self):
-        authenticate(self.client)
+        authenticate(self.client, make_admin())
         make_asset(status=VideoStatus.PROCESSING)
         response = self.client.post("/api/videos/course-1--lesson-1/token", HTTP_X_FORWARDED_FOR="10.0.0.1")
         self.assertEqual(response.status_code, 409)
 
     def test_full_playback_flow_from_token_to_segment(self):
-        authenticate(self.client)
+        authenticate(self.client, make_admin())
         make_asset()
         minted = self.client.post("/api/videos/course-1--lesson-1/token", HTTP_X_FORWARDED_FOR="10.0.0.1").json()
         token = minted["token"]
@@ -67,7 +90,7 @@ class RouteTests(ApiTestCase):
         self.assertIn("api.telegram.org/file/", segment["Location"])
 
     def test_playback_routes_reject_a_foreign_ip(self):
-        authenticate(self.client)
+        authenticate(self.client, make_admin())
         make_asset()
         minted = self.client.post("/api/videos/course-1--lesson-1/token", HTTP_X_FORWARDED_FOR="10.0.0.1").json()
         response = self.client.get(f"/api/stream/{minted['token']}/master.m3u8", HTTP_X_FORWARDED_FOR="10.0.0.9")
@@ -78,7 +101,7 @@ class RouteTests(ApiTestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_segment_route_404s_on_missing_index(self):
-        authenticate(self.client)
+        authenticate(self.client, make_admin())
         make_asset()
         minted = self.client.post("/api/videos/course-1--lesson-1/token", HTTP_X_FORWARDED_FOR="10.0.0.1").json()
         response = self.client.get(f"/api/stream/{minted['token']}/360p/99.ts", HTTP_X_FORWARDED_FOR="10.0.0.1")

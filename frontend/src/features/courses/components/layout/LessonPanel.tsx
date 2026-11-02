@@ -25,7 +25,7 @@ export const LessonPanel: React.FC = () => {
           {courseCopy.player.completedLabel}
         </span>
       ) : (
-        <button type="button" onClick={completeLesson} className="btn-outline-blue self-start text-sm">
+        <button type="button" onClick={() => completeLesson()} className="btn-outline-blue self-start text-sm">
           <ClipboardCheck size={16} />
           {courseCopy.player.markComplete}
         </button>

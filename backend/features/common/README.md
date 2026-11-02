@@ -40,11 +40,14 @@ package; it depends on no feature.
 
 ## The maintenance job (`maintenance.py` + `cleanup_expired`)
 
-Sweeps four dead-weight families — expired `StreamToken`s, `UploadSession`s
+Sweeps five dead-weight families — expired `StreamToken`s, `UploadSession`s
 stale past 7 days, expired `DriveAuthState`s, `AuthEvent`s past
-`AUTH_EVENT_RETENTION_DAYS` (env, default 180) — in **chunks of 500, one
-transaction per chunk**. Idempotent: deleting an already-deleted row deletes
-nothing, so re-runs converge. An overlap guard (the newest still-`running`
+`AUTH_EVENT_RETENTION_DAYS` (env, default 180), and access `AuditEvent`s past
+`AUDIT_RETENTION_DAYS` (env, default 365) — in **chunks of 500, one transaction
+per chunk**. It also asks the quiz service to grade overdue in-progress attempts
+after their ten-second grace period and reports that count as
+`quizAttemptsExpired`. Idempotent: deleting an already-deleted row deletes nothing,
+and already-graded attempts are skipped, so re-runs converge. An overlap guard (the newest still-`running`
 `MaintenanceRun`, younger than 60 min) makes a concurrent second run exit 0
 with `skipped, still running`; every run leaves its per-family delete counts
 on its `MaintenanceRun` row (`trigger` = command | endpoint | cron).

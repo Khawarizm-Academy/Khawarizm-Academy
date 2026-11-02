@@ -5,11 +5,13 @@ import { RoleBadge } from '@/features/admin/components/cards/Badges';
 import { ADMIN_NAV_GROUPS, SECTION_LABELS } from '@/features/admin/types';
 import { SECTION_ICONS, initialsOf } from '@/features/admin/data/adminFormatters';
 import type { AdminSectionKey } from '@/features/admin/types';
-import type { AuthRole } from '@/features/auth/types';
+import type { AuthRole, AuthUser } from '@/features/auth/types';
+import { allowedSectionsFor } from '@/features/admin/data/adminSectionAccess';
 
 interface SectionNavProps {
   currentSection: AdminSectionKey;
   onSelect: (section: AdminSectionKey) => void;
+  actor: AuthUser | null;
 }
 
 /** One item shape the rail and the pill strip both render. */
@@ -59,6 +61,7 @@ export const AdminSectionNav: React.FC<SectionNavProps & { operator: RailOperato
   currentSection,
   onSelect,
   operator,
+  actor,
 }) => (
   <aside dir="rtl" className="admin-side" aria-label="أقسام لوحة الإدارة">
     <div className="admin-side-top">
@@ -72,14 +75,16 @@ export const AdminSectionNav: React.FC<SectionNavProps & { operator: RailOperato
 
       <div className="admin-side-scroll">
         {ADMIN_NAV_GROUPS.map((group) => (
+          group.sections.some((section) => allowedSectionsFor(actor).has(section)) && (
           <div key={group.id} className="admin-side-group">
             <span className="admin-side-group-label">{group.label}</span>
             <nav className="admin-side-nav">
-              {group.sections.map((section) =>
+              {group.sections.filter((section) => allowedSectionsFor(actor).has(section)).map((section) =>
                 sectionButton(section, currentSection, onSelect, 'admin-nav-item')
               )}
             </nav>
           </div>
+          )
         ))}
       </div>
     </div>
@@ -89,9 +94,9 @@ export const AdminSectionNav: React.FC<SectionNavProps & { operator: RailOperato
 );
 
 /** Mobile strip: the same registry, rendered as horizontally scrolling pills. */
-export const AdminMobileTabs: React.FC<SectionNavProps> = ({ currentSection, onSelect }) => (
+export const AdminMobileTabs: React.FC<SectionNavProps> = ({ currentSection, onSelect, actor }) => (
   <nav className="admin-pills" aria-label="أقسام لوحة الإدارة">
-    {ADMIN_NAV_GROUPS.flatMap((group) => group.sections).map((section) =>
+    {ADMIN_NAV_GROUPS.flatMap((group) => group.sections).filter((section) => allowedSectionsFor(actor).has(section)).map((section) =>
       sectionButton(section, currentSection, onSelect, 'admin-pill')
     )}
   </nav>

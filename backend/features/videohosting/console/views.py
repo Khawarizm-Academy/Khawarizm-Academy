@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 from tempfile import gettempdir
 
-from django.db import connections
+from django.db import connections, transaction
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema, inline_serializer
 from rest_framework import serializers as ser
@@ -17,8 +17,11 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from features.auth.permissions import IsAdminRole
+from features.access.permissions import perm
+from features.adminconsole.permissions import permission_for_methods
+from features.common.choices import CourseStatus, PackagingPolicy
 from features.common.errors import (
+    AssetInUse,
     Conflict,
     InvalidParameter,
     NotFound,
@@ -36,7 +39,8 @@ from features.common.messages import (
     unknown_provider,
 )
 from features.common.schemas import ErrorSerializer
-from features.videohosting import diagnostics, drive_oauth, ingest
+from features.courses.models import CourseLesson
+from features.videohosting import diagnostics, drive_oauth, ingest, remote_cleanup
 from features.videohosting.models import VideoAsset, VideoProvider, VideoSystemConfig
 from features.videohosting.providers import ensure_defaults, provider_listing
 
@@ -77,6 +81,10 @@ def _asset_row(asset, *, include_error: bool = False) -> dict:
         "title": asset.title,
         "status": asset.status,
         "provider": asset.provider.code if asset.provider else None,
+        "playbackMode": asset.playback_mode,
+        "protection": asset.protection,
+        "sizeBytes": asset.source_size_bytes,
+        "sourceSizeBytes": asset.source_size_bytes,
         "progress": asset.progress,
         "stage": asset.stage,
         "qualities": asset.renditions.count(),
@@ -90,6 +98,27 @@ def _asset_row(asset, *, include_error: bool = False) -> dict:
 
 
 VIDEO_UPLOAD_MAX_BYTES = 2**31  # Bot uploads cap at ~2GB
+MAX_ASSET_PAGE_SIZE = 100
+
+
+def _asset_page(request):
+    """Return a stable, bounded page without changing the legacy results key."""
+    try:
+        page = int(request.query_params.get("page", "1"))
+        page_size = int(request.query_params.get("pageSize", "100"))
+    except (TypeError, ValueError) as exc:
+        raise InvalidParameter("قيمة الصفحة أو حجمها غير صالحة.") from exc
+    page = max(page, 1)
+    page_size = min(max(page_size, 1), MAX_ASSET_PAGE_SIZE)
+    queryset = VideoAsset.objects.select_related("provider").prefetch_related("renditions").order_by("slug")
+    total = queryset.count()
+    rows = queryset[(page - 1) * page_size : page * page_size]
+    return {
+        "total": total,
+        "page": page,
+        "pageSize": page_size,
+        "results": [_asset_row(asset, include_error=True) for asset in rows],
+    }
 
 
 def _login_page(okay: bool, detail: str) -> HttpResponse:
@@ -111,7 +140,7 @@ def _login_page(okay: bool, detail: str) -> HttpResponse:
     responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{results: [Provider + gate]}`")},
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("videos.configure")])
 def video_providers(request):
     """Admin provider list enriched with availability gate info."""
     return Response({"results": provider_listing(include_gate=True)})
@@ -120,7 +149,11 @@ def video_providers(request):
 @extend_schema(
     methods=["GET"],
     operation_id="admin_video_assets_list",
-    summary="List the first 100 assets (with error info).",
+    summary="List a stable, bounded page of assets (with error info).",
+    parameters=[
+        OpenApiParameter("page", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+        OpenApiParameter("pageSize", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+    ],
     request=None,
     responses={
         200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{results: [AssetRow]}`"),
@@ -146,9 +179,9 @@ def video_providers(request):
     },
 )
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, permission_for_methods(GET="videos.manage_any", POST="videos.manage_any")])
 def video_assets(request):
-    """List first 100 assets or create a new one after provider resolution."""
+    """List a page of assets or create a new one after provider resolution."""
     ensure_defaults()
     if request.method == "POST":
         data = request.data or {}
@@ -175,8 +208,7 @@ def video_assets(request):
             )
         except Exception as exc:
             raise InvalidParameter(CREATE_FAILED) from exc
-    assets = VideoAsset.objects.select_related("provider").prefetch_related("renditions").all()[:100]
-    return Response({"results": [_asset_row(a, include_error=True) for a in assets]})
+    return Response(_asset_page(request))
 
 
 @extend_schema(
@@ -185,7 +217,7 @@ def video_assets(request):
     responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{authUrl}`")},
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("videos.configure")])
 def video_drive_oauth_start(request):
     """Open the consent dance — Google's URL for the admin's browser."""
     try:
@@ -223,7 +255,7 @@ def video_drive_oauth_callback(request):
     },
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("videos.configure")])
 def video_drive_oauth_status(request):
     """The admin-safe connection state — account email, no tokens."""
     grant = drive_oauth.connected()
@@ -244,7 +276,7 @@ def video_drive_oauth_status(request):
     responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{connected: false}`")},
 )
 @api_view(["POST"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("videos.configure")])
 def video_drive_oauth_disconnect(request):
     """Revoke the grant at Google and drop the persisted credential."""
     drive_oauth.revoke()
@@ -265,7 +297,7 @@ def video_drive_oauth_disconnect(request):
 )
 @api_view(["POST"])
 @parser_classes([MultiPartParser, FormParser])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("videos.manage_any")])
 def video_asset_upload(request):
     """Accept the actual video file, then ingest it in a worker thread."""
     ensure_defaults()
@@ -345,14 +377,38 @@ def _run_ingest_worker(slug: str, file_path: str) -> None:
     responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{deleted: true, id}`")},
 )
 @api_view(["GET", "DELETE"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("videos.manage_any")])
 def video_asset_detail(request, asset_id):
     """GET tracker shape / DELETE the asset."""
-    asset = VideoAsset.objects.filter(pk=asset_id).first()
+    asset = VideoAsset.objects.select_related("provider").prefetch_related("renditions").filter(pk=asset_id).first()
     if asset is None:
         raise NotFound(ADMIN_VIDEO_NOT_FOUND)
     if request.method == "DELETE":
-        asset.delete()
+        with transaction.atomic():
+            published_lessons = list(
+                CourseLesson.objects.filter(
+                    video_asset_id=asset.pk,
+                    module__course__status=CourseStatus.PUBLISHED,
+                )
+                .select_related("module__course")
+                .order_by("module__course__slug", "module__order", "order", "lesson_id")
+            )
+            if published_lessons:
+                raise AssetInUse(
+                    [
+                        {
+                            "id": str(lesson.pk),
+                            "lessonId": lesson.lesson_id,
+                            "title": lesson.title,
+                            "course": lesson.module.course.slug,
+                            "courseSlug": lesson.module.course.slug,
+                            "courseTitle": lesson.module.course.title,
+                        }
+                        for lesson in published_lessons
+                    ]
+                )
+            remote_cleanup.schedule_remote_delete(asset, request.user, request)
+            asset.delete()
         return Response({"deleted": True, "id": str(asset_id)})
     return Response(_asset_row(asset, include_error=True))
 
@@ -364,7 +420,7 @@ def video_asset_detail(request, asset_id):
     responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="Per-check results.")},
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("videos.configure")])
 def video_diagnostics(request):
     """Staged validation — shallow (default) or deep (live API probes)."""
     deep = (request.query_params.get("deep") or "").lower() in {"1", "true", "yes"}
@@ -386,7 +442,7 @@ def video_diagnostics(request):
     responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{useFfmpeg}`")},
 )
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated, IsAdminRole])
+@permission_classes([IsAuthenticated, perm("videos.configure")])
 def video_system_config(request):
     """Get or update the global video system config singleton."""
     if request.method == "POST":
@@ -400,3 +456,36 @@ def video_system_config(request):
         raise InvalidParameter(MISSING_USE_FFMPEG)
     config = VideoSystemConfig.get_instance()
     return Response({"useFfmpeg": config.use_ffmpeg})
+
+
+@extend_schema(
+    operation_id="admin_video_provider_policy_update",
+    summary="Set one provider's packaging policy.",
+    parameters=[OpenApiParameter("code", OpenApiTypes.STR, OpenApiParameter.PATH)],
+    request=inline_serializer(
+        "VideoProviderPolicyUpdate",
+        fields={"packagingPolicy": ser.ChoiceField(choices=PackagingPolicy.values)},
+    ),
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The updated provider row and policy.")},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, perm("videos.configure")])
+def video_provider_policy(request, code):
+    """Update only the provider packaging policy through the configure permission."""
+    policy = (request.data or {}).get("packagingPolicy")
+    if policy not in PackagingPolicy.values:
+        raise InvalidParameter("سياسة التغليف يجب أن تكون auto أو always أو never.")
+    ensure_defaults()
+    provider = VideoProvider.objects.filter(code=code).first()
+    if provider is None:
+        raise NotFound(unknown_provider(code))
+    provider.packaging_policy = policy
+    provider.save(update_fields=["packaging_policy", "updated_at"])
+    row = next(item for item in provider_listing(include_gate=True) if item["code"] == provider.code)
+    return Response(
+        {
+            "provider": row,
+            "policy": provider.packaging_policy,
+            "packagingPolicy": provider.packaging_policy,
+        }
+    )

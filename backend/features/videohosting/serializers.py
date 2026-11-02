@@ -30,33 +30,75 @@ def asset_meta(asset: Any) -> dict[str, Any]:
         durationSeconds=asset.duration_seconds,
         viewCount=asset.view_count if asset.view_count else None,
         qualities=_qualities(asset),
+        playbackMode=asset.playback_mode,
+        protection=asset.protection,
+        provider=asset.provider.code if asset.provider_id else None,
+        poster=asset.poster_url,
+        mimeType=asset.mime_type,
     )
 
 
-def minted_token(asset: Any, raw_token: str, token_row: Any, master_url: str) -> dict[str, Any]:
+def minted_token(
+    asset: Any,
+    raw_token: str,
+    token_row: Any,
+    master_url: str,
+    *,
+    mode: str | None = None,
+    expires_at: Any = None,
+    embed_url: str = "",
+    source_url: str = "",
+    captions: list[dict[str, Any]] | None = None,
+    resume_at: int | None = None,
+) -> dict[str, Any]:
     """The playback grant — the raw token appears here and nowhere else.
 
-    An un-packaged (raw) asset swaps the HLS master for a platform-run
-    direct watch URL; the player branches on `mode`.
+    The stored playback mode is authoritative. Link grants deliberately carry
+    an empty token; only the public safe embed/source URL is sent to the player.
     """
-    is_raw = not (asset.master_playlist or "").strip()
+    playback_mode = mode or asset.playback_mode
+    if playback_mode == "hls" or playback_mode == "raw":
+        play_url = master_url
+    elif playback_mode == "embed":
+        play_url = embed_url
+    elif playback_mode == "external":
+        play_url = source_url
+    else:
+        play_url = ""
+    expiry = token_row.expires_at if token_row is not None else expires_at
     grant = compact(
-        token=raw_token,
+        token="" if playback_mode in {"embed", "external"} else raw_token,
         assetId=asset.slug,
-        masterUrl="" if is_raw else master_url,
-        playUrl=master_url,
-        mode="raw" if is_raw else "hls",
-        expiresAt=token_row.expires_at.isoformat(),
+        masterUrl=master_url if playback_mode == "hls" else "",
+        playUrl=play_url,
+        mode=playback_mode,
+        expiresAt=expiry.isoformat() if hasattr(expiry, "isoformat") else expiry,
         durationSeconds=asset.duration_seconds,
+        protection=asset.protection,
+        provider=asset.provider.code if asset.provider_id else None,
+        embedUrl=embed_url if playback_mode == "embed" else None,
+        sourceUrl=source_url if playback_mode == "external" else None,
+        poster=asset.poster_url,
+        captions=captions or None,
+        resumeAt=resume_at,
+        qualities=_qualities(asset) if playback_mode == "hls" else None,
     )
+    if playback_mode in {"embed", "external"}:
+        grant["token"] = ""
     return grant
 
 
 def provider_payload(provider: Any) -> dict[str, Any]:
+    from features.videohosting.providers import spec_for
+
+    spec = spec_for(provider.code)
     return compact(
         code=provider.code,
         name=provider.name,
         enabled=provider.is_enabled,
         isDefault=provider.is_default,
         capabilities=provider.capabilities or {},
+        kind=spec.kind if spec else "storage",
+        needs=sorted(spec.needs) if spec else [],
+        packagingPolicy=provider.packaging_policy,
     )

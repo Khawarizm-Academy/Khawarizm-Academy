@@ -43,7 +43,12 @@ class UserManager(BaseUserManager):
         extra.setdefault("role", Role.ADMIN)
         extra.setdefault("is_staff", True)
         extra.setdefault("is_superuser", True)
-        return self._create_user(email, password, **extra)
+        user = self._create_user(email, password, **extra)
+        # Import lazily: access services depend on the auth user model.
+        from features.access.services import sync_primary_role
+
+        sync_primary_role(user)
+        return user
 
 
 class User(AbstractUser):

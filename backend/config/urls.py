@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/", include("features.auth.urls")),
     path("api/", include("features.catalog.urls")),
     path("api/", include("features.courses.urls")),
+    path("api/", include("features.quizzes.urls")),
     path("api/", include("features.scholarships.urls")),
     path("api/", include("features.dashboard.urls")),
     path("api/", include("features.home.urls")),
@@ -29,5 +30,6 @@ urlpatterns = [
     path("api/", include("features.competitions.urls")),
     path("api/", include("features.profile.urls")),
     path("api/", include("features.adminconsole.urls")),
+    path("api/", include("features.studio.urls")),
     path("api/", include("features.videohosting.urls")),
 ]

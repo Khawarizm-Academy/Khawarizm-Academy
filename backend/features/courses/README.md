@@ -1,75 +1,54 @@
 # Courses — الدورات التدريبية
 
-The full course lifecycle: catalog summary, landing page, in-browser player
-curriculum, practice problems, enroll/progress, and certificate metadata.
+The course domain owns the public catalog/detail payload, learner enrollment and progress, and the additive course-authoring lifecycle. Instructors author through the model-less [`studio`](../studio/README.md) API; this feature remains the source of course models, permissions, and mutation rules.
 
 ## At a glance
 
 | | |
 | :--- | :--- |
 | **App label** | `courses` |
-| **Routes** | `GET /api/courses/:slug`, `GET /api/courses/:slug/problems`, `GET /api/problems`, `GET /api/courses/:slug/related`, `POST /api/courses/:slug/enroll`, `POST /api/courses/:slug/favorite`, `POST /api/courses/:slug/progress`, `GET /api/courses/:slug/certificate` |
-| **Owns** | `Course`, `CourseModule`, `CourseLesson`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` |
+| **Public routes** | `GET /api/courses/:slug`, `GET /api/courses/:slug/related`, `POST /api/courses/:slug/enroll`, `POST /api/courses/:slug/favorite`, `POST /api/courses/:slug/progress`, `GET /api/courses/:slug/certificate` |
+| **Authoring routes** | `/api/studio/*` (owned by the model-less `studio` app) |
+| **Models** | `Course`, `CourseStaff`, `CourseModule`, `CourseLesson`, `LessonResource`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` |
 | **Frontend twin** | `frontend/src/features/courses/` |
 
-## Purpose
+Legacy problem and course-quiz list/check routes are implemented by [`../quizzes/README.md`](../quizzes/README.md); the `CourseProblem` tables remain owned here for migration-safe compatibility.
 
-Owns the course domain. `Course` carries both the **card/summary** fields (used
-by catalog) and the **detail** fields (tagline, about, instructor bio, outcomes,
-exam, related IDs). Modules, lessons and live sessions describe the player.
-Problems describe the reusable practice set.
+## Lifecycle and visibility
 
-## Structure
+`Course.status` is `draft`, `in_review`, `published`, or `archived`; existing rows default to `published`. New Studio and generic admin-editor courses start as drafts so course creation cannot bypass the publish checklist. Ownership is explicit through `Course.owner` and `CourseStaff`; legacy free-text instructor names are never used to guess an owner. Assigning or changing an owner through the admin content editor also synchronizes the owner staff row and fills the catalog instructor name only when that display field is blank.
+
+Catalog, search, filters, related rails, and home-featured courses include only published rows. Published and archived detail records remain public; archived detail has `enrollable: false`. Draft and in-review detail returns 404 except to an authorized course editor, who receives `isPreview: true` and unpublished lesson metadata with `Cache-Control: private, no-store`. Archived courses already enrolled learners can still open remain in their dashboard, but new enrollment/progress cannot create access; learner favorites, certificate cards, and priority/live-session summaries omit private lifecycle states. The course detail response retains its four-query bound.
+
+Publishing validates the course and published lessons, checks linked video readiness, records the lifecycle audit event, and lets the existing cache-invalidation registry bump catalog/home versions on commit. Unpublishing a course with enrollments archives it; an unenrolled course returns to draft. Courses with enrollments cannot be hard-deleted, including through the generic admin content route, which delegates course deletion to the lifecycle service.
+
+## Authoring data
+
+- `CourseStaff` has one row per course/user, with `owner`, `co_instructor`, or `assistant` kind. The partial unique constraint permits at most one explicit owner; legacy owner fields remain nullable until assigned deliberately.
+- `CourseModule` and `CourseLesson` have stable string IDs and `updated_at` values. Reorders require the complete ordered ID list and use bulk updates; cross-module lesson moves use the Studio `moves` contract. Studio writes serialize on the course row, and `expectedUpdatedAt` is checked against a freshly locked row to prevent stale overwrites.
+- Lessons add `kind`, `content`, `is_free_preview`, `is_published`, optional `video_asset`, and derived duration seconds. Linking is permitted while video processing; publication requires readiness.
+- `LessonResource` stores HTTPS links only. Hosted file uploads are not supported by this feature.
+- `recompute_course_stats()` derives published lesson count, total seconds, and the legacy Arabic duration display from lesson rows.
+
+## Structure and services
 
 ```text
 courses/
-├── apps.py           AppConfig (label "courses")
-├── models.py         Course, CourseModule, CourseLesson, CourseLiveSession, CourseProblem, CourseProblemOption
-├── serializers.py    course_catalog_item, module, lesson, live_session, course_detail, course_problem
-├── services.py       enroll, save_progress, toggle_favorite, related_for, certificate_payload
-├── views.py          course detail/problems/related/enroll/favorite/progress/certificate; problems_list
-├── urls.py           /api/courses/* and /api/problems
-├── admin.py          Course/Module/Problem with inlines
-├── migrations/       schema history
+├── models.py         Course, staff, curriculum, resources, sessions, problems
+├── serializers.py    stable public catalog/detail and lesson payloads
+├── services.py       lifecycle, ownership, authorization, curriculum, progress
+├── views.py          public detail/related/enroll/favorite/progress/certificate
+├── urls.py           /api/courses/*
+├── admin.py          registered models, course/module/lesson inline editing
+├── migrations/       additive lifecycle schema; no heuristic owner backfill
 └── README.md
 ```
 
-## How it works
-
-- **One row, two serializations:** `course_catalog_item(course)` returns the
-  `CatalogItem` with `type: 'course'` (for the catalog and related rail).
-  `course_detail(course)` merges that base with detail fields to produce the
-  merged record the landing/player expect.
-- **Nested reads:** `module()` and `lesson()` serialize `course.modules.all()`
-  and each module's `lessons.all()`; `live_session()` serializes
-  `course.live_sessions.all()`. The 404 on a missing course returns the Arabic
-  message `الدورة غير موجودة`.
-- **Problems are shared:** `problems_list` and `course_problems_view` both
-  return the same `CourseProblem` set with prefetched options. The related rail
-  filters `Course` by `slug__in(course.related_ids)`.
-- **Mutations persist for a signed-in learner:** `services.enroll` does
-  `get_or_create` on `dashboard.Enrollment` and, on a new row only, bumps
-  `Course.enrolled_count` atomically (`F()+1` inside the same transaction, the
-  catalog cache bumped after commit — re-enrolling changes nothing);
-  `services.save_progress` writes `progress`, `last_lesson` and
-  `is_completed` onto that row; `services.toggle_favorite` toggles a
-  `dashboard.FavoriteCourse`. The dashboard models are imported *inside* the
-  services so `courses` never depends on `dashboard` at module load. A visitor
-  keeps the old acknowledgement — `enroll` and `progress` echo the course id
-  back and `favorite` answers `{favorited: false, requiresAuth: true}`. All
-  three 404 first on a missing course.
-
-## Data
-
-| Source | Provides |
-| :--- | :--- |
-| `Course` | title, category, thumbnail, rating, duration, lessons, instructor, level, price, language, tagline, about, instructor details, review/enrolled counts, outcomes, exam params, related IDs |
-| `CourseModule`/`CourseLesson` | curriculum |
-| `CourseLiveSession` | weekly live review sessions |
-| `CourseProblem` + `CourseProblemOption` | practice set |
+Business rules live in `services.py`; views resolve request data and serialize. `course_detail_relations()` loads curriculum, staff profiles, and sessions in three bounded queries in addition to the course row. Public instructor objects contain only `{id, name, headline, avatarUrl}` and never account email or credential data.
 
 ## Related
 
-- Catalog (browse): [`../catalog/README.md`](../catalog/README.md)
-- Dashboard (enrollments): [`../dashboard/README.md`](../dashboard/README.md)
+- Catalog (published browse): [`../catalog/README.md`](../catalog/README.md)
+- Dashboard (archived enrollments): [`../dashboard/README.md`](../dashboard/README.md)
+- Studio API: [`../studio/README.md`](../studio/README.md)
 - Backend contract: [`../../../docs/07-backend-contract.md`](../../../docs/07-backend-contract.md)

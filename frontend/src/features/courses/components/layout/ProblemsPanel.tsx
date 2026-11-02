@@ -1,169 +1,63 @@
-import React, { useState } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, ClipboardList, Lightbulb, XCircle } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, ClipboardList, Lightbulb, LoaderCircle, RotateCcw, XCircle } from 'lucide-react';
 import { useCoursePlayer } from '@/features/courses/context/coursePlayerContext';
+import { checkPracticeAnswer } from '@/features/courses/data/courseFetchers';
 import { courseCopy } from '@/features/courses/data/courseCopy';
 import { courseEmptyStates } from '@/features/courses/data/courseStates';
 import { CourseSectionEmpty } from '@/features/courses/components/states/CourseSectionEmpty';
-import type { CourseProblemOption } from '@/shared/types/entities';
+import type { CourseProblem, CourseProblemOption } from '@/shared/types/entities';
+import type { PracticeVerdict } from '@/features/courses/quizTypes';
 
-/** Every practice option renders the same grammar; only the tone changes. */
-type OptionTone = 'idle' | 'correct' | 'wrong' | 'dim';
-
-const OPTION_CLASS: Record<OptionTone, string> = {
-  idle: 'player-option player-option-idle',
-  correct: 'player-option player-option-correct',
-  wrong: 'player-option player-option-wrong',
-  dim: 'player-option player-option-idle opacity-50',
-};
-
-/** The state mark shown on the option pill, per tone. */
-const MARK_BY_TONE: Record<OptionTone, { icon: LucideIcon | null; className: string }> = {
-  idle: { icon: null, className: '' },
-  correct: { icon: CheckCircle2, className: 'text-success-500' },
-  wrong: { icon: XCircle, className: 'text-danger-500' },
-  dim: { icon: null, className: '' },
-};
-
-/** RTL answer letters in order, matched to option position. */
-const OPTION_LETTERS = ['أ', 'ب', 'ج', 'د'];
-
-/** Tone a single option gets once a choice is made; correct beats the picked one. */
-function optionTone(optionId: string, problemId: string, selectedId: string | null): OptionTone {
-  if (!selectedId) return 'idle';
-  if (optionId === problemId) return 'correct';
-  if (optionId === selectedId) return 'wrong';
-  return 'dim';
-}
-
-/** Problem tab: unlimited-attempt practice set with instant feedback and a hint. */
 export const ProblemsPanel: React.FC = () => {
-  const { problems, activeLesson } = useCoursePlayer();
+  const { problems, activeLesson, problemsLoading, problemsError, retryProblems } = useCoursePlayer();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [verdict, setVerdict] = useState<PracticeVerdict | null>(null);
+  const [pending, setPending] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(false);
-
+  const requestRef = useRef(0);
+  const controllerRef = useRef<AbortController | null>(null);
   const problem = currentIndex < problems.length ? problems[currentIndex] : null;
-  const options = problem?.options ?? [];
 
+  useEffect(() => () => controllerRef.current?.abort(), []);
   const moveTo = (index: number) => {
-    setCurrentIndex(index);
-    setSelectedId(null);
-    setShowHint(false);
+    controllerRef.current?.abort();
+    requestRef.current += 1;
+    setCurrentIndex(index); setSelectedIds([]); setVerdict(null); setCheckError(null); setPending(false); setShowHint(false);
   };
-
-  const panelHead = (
-    <div className="player-panel-head">
-      <ClipboardCheck size={16} className="text-blue-400 shrink-0" />
-      <div className="flex flex-col gap-0.5">
-        <h2 className="player-panel-title">{courseCopy.player.problemsTitle}</h2>
-        <span className="text-[11px] text-slate-400 font-body">{courseCopy.player.practiceLabel}</span>
-      </div>
-    </div>
-  );
-
+  const choose = async (problemValue: CourseProblem, optionId: string | string[]) => {
+    const next = Array.isArray(optionId) ? optionId : problemValue.kind === 'multiple' ? (selectedIds.includes(optionId) ? selectedIds.filter((id) => id !== optionId) : [...selectedIds, optionId]) : [optionId];
+    setSelectedIds(next); setVerdict(null); setCheckError(null); setShowHint(false);
+    if (!next.length) return;
+    controllerRef.current?.abort();
+    const controller = new AbortController(); controllerRef.current = controller;
+    const sequence = ++requestRef.current; setPending(true);
+    try {
+      const result = await checkPracticeAnswer(problemValue, next, controller.signal);
+      if (sequence === requestRef.current && !controller.signal.aborted) setVerdict(result);
+    } catch (error) {
+      if (sequence === requestRef.current && !controller.signal.aborted) setCheckError(error instanceof Error ? error.message : 'تعذّر التحقق. حاول مرة أخرى.');
+    } finally { if (sequence === requestRef.current) setPending(false); }
+  };
+  const head = <div className="player-panel-head"><ClipboardCheck size={16} className="text-blue-400" /><div><h2 className="player-panel-title">{courseCopy.player.problemsTitle}</h2><span className="text-[11px] text-slate-400 font-body">{courseCopy.player.practiceLabel}</span></div></div>;
   if (!activeLesson) return null;
-
-  // No practice set for this lesson yet — show the empty chamber, not a blank panel.
-  if (!problem) {
-    return (
-      <div className="player-panel">
-        {panelHead}
-        <CourseSectionEmpty copy={courseEmptyStates.problems} icon={<ClipboardList size={18} />} />
-      </div>
-    );
-  }
-
-  const isCorrect = selectedId === problem.correctOptionId;
-
-  return (
-    <div className="player-panel">
-      {panelHead}
-
-      <p className="player-problem-prompt">{problem.prompt}</p>
-
-      <pre className="player-code">{problem.code}</pre>
-
-      <div className="flex flex-col gap-2.5">
-        {options.map((option: CourseProblemOption, index: number) => {
-          const tone = optionTone(option.id, problem.correctOptionId, selectedId);
-          const mark = MARK_BY_TONE[tone];
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setSelectedId(option.id)}
-              disabled={selectedId !== null}
-              className={`${OPTION_CLASS[tone]} animate-pop-in`}
-              style={{ animationDelay: `${index * 55}ms` }}
-            >
-              <span className="player-option-mark border-navy-600/60">
-                {mark.icon ? (
-                  <mark.icon size={13} className={mark.className} />
-                ) : (
-                  OPTION_LETTERS[index]
-                )}
-              </span>
-              <span className="flex-1 text-sm">{option.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {selectedId && (
-        <div className={`${isCorrect ? 'player-feedback player-feedback-ok' : 'player-feedback player-feedback-bad'} animate-fade-in-up`}>
-          {isCorrect ? (
-            <CheckCircle2 size={17} className="text-success-500 shrink-0" />
-          ) : (
-            <XCircle size={17} className="text-danger-500 shrink-0" />
-          )}
-          <div className="flex flex-col gap-1.5">
-            <span className="font-display font-bold">{isCorrect ? courseCopy.player.problemCorrect : courseCopy.player.problemWrong}</span>
-            <span className="text-slate-300">{problem.explanation}</span>
-          </div>
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={() => setShowHint((open) => !open)}
-        className="link-action link-action-blue self-start"
-      >
-        <Lightbulb size={14} />
-        {courseCopy.player.problemHint}
-      </button>
-
-      {showHint && (
-        <p className="text-sm text-slate-400 font-body bg-navy-950/60 border border-navy-600/40 rounded-xl px-4 py-3 animate-fade-in-up">
-          {problem.hint}
-        </p>
-      )}
-
-      <div className="player-pager">
-        <button
-          type="button"
-          onClick={() => moveTo(currentIndex - 1)}
-          disabled={currentIndex === 0}
-          className="btn-pill-subtle px-4 py-2 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <ChevronRight size={14} />
-          {courseCopy.player.problemPrevious}
-        </button>
-
-        <span className="text-xs text-slate-400 font-body tabular-nums">
-          {courseCopy.player.problemProgress} {currentIndex + 1} من {problems.length}
-        </span>
-
-        <button
-          type="button"
-          onClick={() => moveTo(currentIndex + 1)}
-          disabled={currentIndex === problems.length - 1}
-          className="btn-pill-subtle px-4 py-2 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {courseCopy.player.problemNext}
-          <ChevronLeft size={14} />
-        </button>
-      </div>
-    </div>
-  );
+  if (problemsLoading) return <div className="player-panel" role="status">{head}<LoaderCircle className="animate-spin text-blue-400" aria-label="جاري التحميل" /></div>;
+  if (problemsError) return <div className="player-panel" role="alert">{head}<p className="text-sm text-slate-300">تعذّر تحميل المسائل.</p><button type="button" className="btn-pill-subtle self-start" onClick={() => void retryProblems()}><RotateCcw size={14} />{courseCopy.player.retryLabel}</button></div>;
+  if (!problem) return <div className="player-panel">{head}<CourseSectionEmpty copy={courseEmptyStates.problems} icon={<ClipboardList size={18} />} /></div>;
+  const multiple = problem.kind === 'multiple';
+  return <div className="player-panel">
+    {head}<p className="player-problem-prompt">{problem.prompt}</p>{problem.code && <pre className="player-code">{problem.code}</pre>}
+    <fieldset className="flex flex-col gap-2.5" aria-label={`خيارات المسألة: ${problem.prompt}`}>
+      <legend className="sr-only">خيارات الإجابة</legend>{problem.options.map((option: CourseProblemOption, index) => <label key={option.id} className={`player-option ${selectedIds.includes(option.id) ? 'player-option-selected' : 'player-option-idle'} cursor-pointer`}>
+        <input className="sr-only" type={multiple ? 'checkbox' : 'radio'} name={`problem-${problem.id}`} checked={selectedIds.includes(option.id)} onChange={() => void choose(problem, option.id)} disabled={pending} />
+        <span className="player-option-mark">{selectedIds.includes(option.id) ? <CheckCircle2 size={13} /> : ['أ', 'ب', 'ج', 'د'][index]}</span><span className="flex-1 text-sm">{option.label}</span>
+      </label>)}</fieldset>
+    {pending && <p className="text-xs text-slate-400" role="status">جارٍ التحقق…</p>}
+    {checkError && <div className="player-feedback player-feedback-bad" role="alert"><XCircle size={17} /><div><strong>{checkError}</strong><button type="button" className="link-action link-action-blue mr-3" onClick={() => selectedIds.length && void choose(problem, selectedIds)}><RotateCcw size={14} />{courseCopy.player.retryLabel}</button></div></div>}
+    {verdict && <div className={`player-feedback ${verdict.correct ? 'player-feedback-ok' : 'player-feedback-bad'}`} role="status">{verdict.correct ? <CheckCircle2 size={17} /> : <XCircle size={17} />}<div><strong>{verdict.correct ? courseCopy.player.problemCorrect : courseCopy.player.problemWrong}</strong>{verdict.explanation && <p className="text-slate-300 mt-1">{verdict.explanation}</p>}</div></div>}
+    {verdict?.hint && <button type="button" onClick={() => setShowHint((open) => !open)} className="link-action link-action-blue self-start"><Lightbulb size={14} />{courseCopy.player.problemHint}</button>}
+    {showHint && verdict?.hint && <p className="text-sm text-slate-400 bg-navy-950/60 border border-navy-600/40 rounded-xl px-4 py-3">{verdict.hint}</p>}
+    <div className="player-pager"><button type="button" onClick={() => moveTo(currentIndex - 1)} disabled={!currentIndex} className="btn-pill-subtle px-4 py-2 text-xs"><ChevronRight size={14} />{courseCopy.player.problemPrevious}</button><span className="text-xs text-slate-400">{courseCopy.player.problemProgress} {currentIndex + 1} من {problems.length}</span><button type="button" onClick={() => moveTo(currentIndex + 1)} disabled={currentIndex === problems.length - 1} className="btn-pill-subtle px-4 py-2 text-xs">{courseCopy.player.problemNext}<ChevronLeft size={14} /></button></div>
+  </div>;
 };

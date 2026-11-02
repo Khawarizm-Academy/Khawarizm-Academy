@@ -1,0 +1,12 @@
+[
+  {"key":"overview","label":"نظرة عامة","icon":"LayoutDashboard","group":"المنصة","permission":"admin.access"},
+  {"key":"users","label":"المستخدمون","icon":"Users","group":"المنصة","permission":"users.view"},
+  {"key":"sessions","label":"الجلسات","icon":"MonitorSmartphone","group":"المنصة","permission":"sessions.view_any"},
+  {"key":"content","label":"إدارة المحتوى","icon":"LayoutList","group":"المحتوى والفيديو","permission":"admin.access"},
+  {"key":"videos","label":"استضافة الفيديو","icon":"Video","group":"المحتوى والفيديو","permission":"admin.access"},
+  {"key":"system","label":"فحص المنظومة","icon":"HeartPulse","group":"المحتوى والفيديو","permission":"system.maintenance"},
+  {"key":"analytics","label":"التحليلات","icon":"TrendingUp","group":"المتابعة","permission":"analytics.view_platform"},
+  {"key":"activity","label":"سجل النشاط","icon":"Activity","group":"المتابعة","permission":"audit.view"},
+  {"key":"roles","label":"الأدوار والصلاحيات","icon":"ShieldCheck","group":"الوصول","permission":"roles.view"},
+  {"key":"audit","label":"سجل التدقيق","icon":"ScrollText","group":"الوصول","permission":"audit.view"}
+]

@@ -1,279 +1,109 @@
 # 07 · Backend Contract
 
-The frontend is **fully API-driven** — there are no mocks. A Django + DRF service
-with a Postgres/SQLite database in `backend/` implements this contract, so this
-document is both the specification and the reference for what is built. See
-[`backend/README.md`](../backend/README.md) for how to run it.
+The frontend is **fully API-driven** — there are no mocks. Django + DRF in `backend/` implements this contract. See [`backend/README.md`](../backend/README.md) for setup and [08 · Backend Architecture](08-backend-architecture.md) for internal boundaries.
 
-This page describes the environment, the domain entities, the data flows the UI
-expects, and the REST surface that serves them.
+## 1. Environment and response conventions
 
----
+Frontend profiles select `VITE_API_BASE_URL`; the backend selects `.env.<DJANGO_ENV>` unless Vercel supplies environment variables. Payload keys are camelCase at the serializer boundary. Lists use a top-level object (`items`, `results`, or a named collection); errors use `{detail, code, fields?}`.
 
-## 1. Environment
+Private/admin/Studio/playback responses are not app-cached. Token-bearing HLS manifests, keys, captions, and raw ranges are `Cache-Control: no-store`; Studio responses are `private, no-store`; raw Drive responses are bounded `206` ranges with `private, no-store`. HLS segment responses are `302` redirects, so the backend does not proxy encrypted segment bytes.
 
-Both sides read their configuration from **profiles** (dev + production), so
-origins change without editing code.
+## 2. Core course and auth surfaces
 
-**Frontend** — Vite loads the profile by mode:
+The existing auth, catalog, course, dashboard, profile, admin, and Studio course-authoring routes remain as described by the feature modules. Course playback adds the video contracts below. Course lifecycle still controls entitlement: published lessons can be previewed when marked free-preview, enrolled learners need `lessons.watch`, course staff/owners and authorized video admins may manage or watch according to the access policy; draft/in-review content is private.
 
-| File | Loaded by | Purpose |
+### Practice, quizzes, and exams
+
+The quiz API is owned by `backend/features/quizzes/` and mounted under `/api/`. Learner attempt/check routes require authentication, enforce enrollment and server-side unlock/deadline rules, and return `private, no-store` responses. Active question payloads omit correctness, explanations, and hints; only the finished-result service can reveal feedback according to the quiz policy.
+
+| Method | Path | Contract |
 | :--- | :--- | :--- |
-| `frontend/.env.development` | `npm run dev` | `VITE_API_BASE_URL=http://localhost:8000/api` |
-| `frontend/.env.production` | `npm run build` | Production API origin |
-| `frontend/.env.local` (gitignored) | any | Machine-specific override |
+| `GET` | `/courses/<slug>/quizzes` | `{items:[...]}` published quiz summaries with `attemptsUsed`, `attemptsLeft`, `bestPercent`, `passed`, and `locked`. |
+| `GET` | `/courses/<slug>/problems` · `/problems` | Legacy `{items}` envelopes retained; correct IDs, explanations, and hints are stripped. A published course practice quiz replaces the legacy shared set. |
+| `POST` | `/quizzes/<id>/attempts` | Start or resume; returns stable question/option ordering, `serverNow`, `deadlineAt`, and no answer key. |
+| `GET` | `/attempts/<id>` | In-progress attempt plus saved `answers`, or a finished result filtered by reveal policy. |
+| `PUT` | `/attempts/<id>/answers` | `{answers:[{questionId,optionIds}]}`; validates option ownership and never grades. |
+| `POST` | `/attempts/<id>/submit` | Idempotently grades on the server and returns score/pass state plus feedback only when allowed. |
+| `POST` | `/questions/<id>/check` · `/problems/<problem_id>/check` | Server-side practice answer check; rate-limited by `quiz_check`. |
 
-`VITE_API_BASE_URL` is **required**: the app always reads the API at that origin
-(no fallback), so a missing value throws at startup. The backend must be running.
+Authoring routes under `/studio/` require course-scoped `quizzes.*` permissions and private/no-store responses: `/studio/courses/<slug>/quizzes`, `/studio/quizzes/<id>` (including publish/unpublish), `/studio/quizzes/<id>/questions` and `/questions/reorder`, `/studio/questions/<id>`, `/studio/quizzes/<id>/import`, `/stats`, `/attempts`, `/results.csv`, and `/extra-attempts`. Mutations are throttled by `studio_write`; import supports dry-run before atomic commit; CSV exports escape formula-prefixed cells. The `cleanup_expired` job also grades overdue attempts after the ten-second grace period and reports `quizAttemptsExpired`.
 
-**Backend** — `config/settings.py` loads the profile named by `DJANGO_ENV`
-(default `development`) with `python-dotenv`:
+## 3. Video hosting contract
 
-| File | Loaded when | Purpose |
+The video control plane stores metadata, playback plans, manifests, keys, captions, grants, and provider references. Bytes remain with the provider. Current routes are mounted under `/api/` from `backend/features/videohosting/urls.py`.
+
+### Public/learner playback
+
+| Method | Path | Contract |
 | :--- | :--- | :--- |
-| `backend/.env.development` | `DJANGO_ENV` unset / `development` | Local dev |
-| `backend/.env.production` | `DJANGO_ENV=production` | Production deploy |
+| `GET` | `/videos/providers` | Authenticated provider registry: `{results: [...]}`; no gate diagnostics. |
+| `GET` | `/videos/:slug` | Entitlement-filtered readiness/metadata: `status`, `durationSeconds`, `qualities`, `playbackMode`, `protection`, provider and poster fields. Non-entitled/missing assets are 404. |
+| `POST` | `/videos/:slug/token` | Authenticated entitlement check, optional body `{lessonRef:{course,lesson}}`; mints one IP-bound, expiring grant only when the asset is `ready`. |
+| `POST` | `/courses/:slug/lessons/:lesson_id/playback` | Resolves the lesson's linked asset without clients constructing a video slug; returns the grant plus `resumeAt` and `{lesson,nextLessonId}`. Requires authentication, enrollment/preview/staff/owner/admin entitlement, and a linked ready asset. |
+| `GET` | `/videos/:slug/raw?token=...` | Gated Drive raw mode. Accepts `Range`; returns a provider-authenticated, bounded `206` window only. Provider URLs/bearers are never returned. |
+| `GET` | `/stream/:token/captions/:lang.vtt` | Caption through a valid HLS/raw grant; WebVTT, `no-store`. |
+| `GET` | `/stream/:token/master.m3u8` | Rewrites stored `__TOKEN__` placeholders for an HLS grant; `no-store`. |
+| `GET` | `/stream/:token/:quality/index.m3u8` | Rewrites one rendition playlist; `no-store`. |
+| `GET` | `/stream/:token/key/:quality` | Returns the 16-byte AES-128 key for the IP-bound grant; `no-store`. |
+| `GET` | `/stream/:token/:quality/:index.ts` | Validates the grant and returns `302` to the provider/CDN path; Telegram serves ciphertext directly. |
+| `PUT` | `/courses/:slug/lessons/:lesson_id/progress` | Authenticated lesson heartbeat: bounded/monotonic `positionSeconds`, `durationSeconds`, `watchedSeconds`, `completed`; returns the persisted lesson progress and is `private, no-store`. |
 
-```env
-DJANGO_DEBUG=true
-DJANGO_SECRET_KEY=dev-only-change-me
-DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
-DJANGO_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-```
+A minted grant has `mode: hls | raw | embed | external`. HLS carries `masterUrl`, `qualities`, captions, token and expiry; raw carries a gated `playUrl` and captions; embed carries only the allow-listed `embedUrl` and an empty token; external carries only the validated `sourceUrl` and an empty token. Lesson playback may additionally carry `resumeAt` and the next lesson. Link providers are not private storage and do not receive bearer tokens.
 
-Real environment variables always win over the profile file, so in deployment you
-set these in the platform/host environment. `DJANGO_CORS_ALLOWED_ORIGINS` is a
-comma-separated allow-list of the frontend origins, and a non-debug run **fails
-loudly** while `DJANGO_SECRET_KEY` is still a placeholder.
+Tokens are shown only at mint time, bound to the minting IP, and expire (`STREAM_TOKEN_TTL_HOURS`, default 6; free preview uses `VIDEO_GRANT_TTL_PREVIEW_MINUTES`, default 30). `StreamToken` stores only SHA-256. Stored manifests contain `__TOKEN__`, not a usable URL. Drive upload-session URIs, OAuth refresh/access tokens, and provider credentials remain server-side. Telegram redirect URLs use the configured read-only stream bot where available and expose encrypted segment bytes only.
 
-**On Vercel**, the profile files are skipped (Vercel sets `VERCEL=1`); set the
-values as Project Environment Variables instead. `DATABASE_URL` selects Postgres
-and `.vercel.app` hosts/origins are allowed automatically. Without
-`DATABASE_URL`, the build bundles an SQLite file that is read-only at runtime,
-so writes do not persist.
+Raw reads normalize a single byte range to `VIDEO_RAW_RANGE_CAP_BYTES` (default 8 MiB), reject malformed/unsatisfiable ranges, require a valid upstream `206`, and use a process-wide `VIDEO_RAW_MAX_CONCURRENT` bound (default 4). A busy raw gateway returns `503` with `Retry-After`.
 
-The UI is written against the shapes below, so the two sides evolve independently.
+### Instructor Studio video library and upload protocol
 
-**Fetcher seam.** Every feature exposes its data through a small fetcher module; components never call the network directly:
+All these routes require authentication, return `private, no-store`, and are authorized per ownership. `videos.manage_own` covers owned assets; `videos.manage_any` bypasses ownership. `videos.upload` is required for storage creation/upload; `videos.use_embed` is required for YouTube/Vimeo/external links.
 
-| Feature | Fetcher | Returns |
+| Method | Path | Contract |
 | :--- | :--- | :--- |
-| Catalog | `features/catalog/data/catalogFetcher.ts` | `CatalogItem[]` (server-side filter/sort/paginate) |
-| Courses | `features/courses/data/courseFetchers.ts` | `CourseDetail`, `CourseProblem[]`, related, certificate |
-| Dashboard | `features/dashboard/data/dashboardFetchers.ts` | stats, enrolled courses, notifications, certificates, … |
-| Scholarships | `features/scholarships/data/scholarshipFetchers.ts` | one `CatalogItem` (scholarship) |
-| Home | `features/home/data/homeFetcher.ts` | featured courses/scholarships, competition, events, quick links |
-| Profile | `features/profile/data/profileFetchers.ts` | `UserProfileData` (read + patch) |
+| `GET` | `/studio/video-providers` | `[...]` provider rows with `code`, `name`, `kind`, `needs`, `available`, `reason`, `packagingPolicy`, and effective plan. |
+| `GET` · `POST` | `/studio/videos` | Paged owned/all library (`results,total,page,pageSize`) or create a storage asset (`201`) with a server-generated slug. `scope=all` requires `videos.manage_any`. |
+| `POST` | `/studio/videos/link` | Create a ready `embed`/`external` asset from a validated HTTPS provider URL. Requires `videos.use_embed`. |
+| `PATCH` · `DELETE` | `/studio/videos/:asset_id` | Edit title/poster or delete an unlinked owned asset; deletion schedules remote cleanup and refuses published links. |
+| `POST` | `/studio/videos/:asset_id/captions` | Create one WebVTT track: `{language,label,isDefault,vtt}`; max 512 KiB and one language per asset. |
+| `DELETE` | `/studio/videos/:asset_id/captions/:language` | Delete an owned language track. |
+| `POST` | `/studio/videos/:asset_id/upload` | Start a provider session with `{fileName,sizeBytes,mimeType}`; returns `{sessionId,chunkSize,offset}` and never returns `upload_uri`. Max source is `VIDEO_UPLOAD_MAX_BYTES` (default 2 GiB), quota is `VIDEO_USER_QUOTA_BYTES` (default 20 GiB unless `videos.manage_any`). |
+| `PUT` | `/studio/uploads/:session_id/chunk` | Raw binary chunk with strict `Content-Range`; returns `{offset,complete}`. The configured relay chunk is `VIDEO_UPLOAD_CHUNK_BYTES` (default 4 MiB). Duplicate accepted ranges are idempotent; out-of-order ranges return the authoritative offset. |
+| `GET` · `DELETE` | `/studio/uploads/:session_id` | Poll `{sessionId,chunkSize,offset,total,status}` or cancel the caller's session. Managers may access another user's session. |
+| `POST` | `/studio/uploads/:session_id/complete` | Finalize the provider upload and return the asset row; idempotent while complete/processing. |
 
-The network seam is `frontend/src/shared/lib/apiClient.ts` (`apiGet` / `apiPost` / `apiPatch` / `buildQuery`, plus `ApiError`). Fetchers stay thin: the component and its cache key never change.
+The Studio asset row exposes catalog metadata (`id`, `slug`, `title`, `status`, `provider`, `sizeBytes`, `playbackMode`, `protection`, lesson links, timestamps), never upload URIs, provider paths, or credentials.
 
----
+### Admin video console
 
-## 2. Domain entities
+Admin video routes are owned by `videohosting.console`, mounted under `/api/admin/`. The console uses granular permissions rather than one generic staff gate: `videos.configure` for provider policy, system config, diagnostics, and Drive OAuth; `videos.manage_any` for the global asset list/create/upload/detail/delete; `videos.manage_own` for owned Studio assets; `videos.upload`, `videos.use_embed`, `videos.package`, and `videos.watch_any` are separate catalog permissions. `administrator` implies the catalog; instructor templates receive Studio/upload/own-management, while elevated packaging/configuration remains explicit.
 
-From `frontend/src/shared/types/entities.ts`:
-
-| Entity | Represents |
-| :--- | :--- |
-| `Course` | A course summary (list/card level). |
-| `Scholarship` | A scholarship summary (list/card level). |
-| `CourseDetail` | The merged course record used by landing, player, and certificate. |
-| `CourseModule` | A curriculum module grouping lessons. |
-| `CourseLesson` | A single lesson (id, title, duration, status, media source). |
-| `CourseProblem` / `CourseProblemOption` | A practice problem and its answer options. |
-| `CourseLiveSession` | A scheduled live session for a course. |
-| `CourseExam` | The comprehensive exam unlocked after completion. |
-| `Competition` | A competition/challenge (used in the dashboard arena + banner). |
-| `EventItem` | An event/workshop item. |
-
-Type aliases: `CourseLessonStatus` (`locked` / `available` / `completed`, etc.) and `LiveSessionState` (`live` / `upcoming` / `ended`).
-
-Catalog items are typed by `CatalogItem` (`frontend/src/shared/types/entities.ts`), a discriminated shape used by both courses and scholarships with a `type: 'course' | 'scholarship'` field.
-
-Dashboard-specific projections live in `frontend/src/features/dashboard/types.ts` and cover: `EnrolledCourse`, `LiveSessionInfo`, `DashboardStats`, `UpcomingEvent`, `DashboardNotification`, `NotificationItemData`, `SavedScholarshipItem`, `FavoriteCourseItem`, `CompetitionItem`, `CertificateItem`.
-
----
-
-## 3. Data flows the UI expects
-
-### 3.1 Catalog
-- **List:** filter by `type` / field / level / language / cost / country / status, sort, and paginate (6 per page). Expected to be paged server-side; the frontend keys the cache by the full filter object.
-- **Detail:** fetch one item by slug. The frontend **prefetches on card hover** (`dataCacheManager.prefetch(['catalog-detail', id], …)`).
-
-### 3.2 Courses
-- `fetchCourseDetail(slug)` merges the catalog summary with modules, lessons, instructor, live sessions, and exam.
-- `fetchCourseProblems()` returns the practice set.
-- Progress and completion are tracked client-side today (seeded deterministically); a backend would persist `completedLessonIds` and progress per learner.
-
-### 3.3 Dashboard
-- Per-section reads under the `['dashboard', …]` cache namespace: stats, upcoming events, enrolled courses, competitions, certificates, saved scholarships, favorite courses, notifications (view + drawer).
-- **Mutations** the chambers imply: enroll/unenroll, save/unsave a scholarship, toggle a favorite, submit a scholarship application, submit a competition solution, mark a notification read.
-
-### 3.4 Auth
-- Email login and social OAuth (Google, Facebook) — the browser verifies with Firebase, the server exchanges the ID token for a session. See [08 · Backend Architecture](08-backend-architecture.md) → Configuring Firebase.
-- Flow: `GET /auth/config` (public web config) → `POST /auth/firebase` (identity → session) → `POST /auth/refresh` (rotation) → `GET /auth/me`; logout calls `dataCacheManager.clear()`.
-
----
-
-## 4. REST surface
-
-A conventional resource layout that matches the frontend's reads and mutations.
-Each path is owned by a feature app and mounted in `backend/config/urls.py`
-under `/api/`.
-
-**Response shapes.** Payloads use camelCase keys matching `entities.ts` and each
-feature's `types.ts`. Empty/`None` fields are omitted (the backend `compact` helper).
-List endpoints answer a top-level object — `{"items": [...]}` for plain lists, named
-keys where two collections ride one call (`saved`, `competitions`, `notifications`);
-never a bare array.
-
-**Errors share one envelope** (`backend/features/common/errors.py`):
-`{"detail": <Arabic line>, "code": <machine key>, "fields"?: {input: [messages]}}`.
-`ApiError` in `apiClient.ts` carries `status` + `code`; the auth flow keys its
-states off codes (`login_locked`, `session_invalid`, `expired`,
-`signed_in_elsewhere`, `revoked_by_admin`, `token_invalid`, …). Generic codes
-follow the status: `invalid_parameter` (400), `not_found` (404),
-`permission_denied` (403), `not_authenticated` (401), `conflict` (409),
-`throttled` (429), `payload_too_large` (413), `upstream_unavailable` (502).
-
-**Current user.** The browser verifies identity with Firebase Auth; the server
-exchanges the Firebase ID token for a `UserSession` (HS256 access token +
-rotating refresh token). `GET /auth/config` ships the public web config to the
-browser. See [08 · Backend Architecture](08-backend-architecture.md) for the
-feature layout and the session model.
-
-### Auth
-
-| Method | Path | Purpose |
+| Method | Path | Contract |
 | :--- | :--- | :--- |
-| `GET` | `/auth/config` | The public Firebase web config (web-config trio; public by design). |
-| `POST` | `/auth/firebase` | Firebase ID token → session (access + rotating refresh tokens). |
-| `POST` | `/auth/refresh` | Rotate the refresh token, mint a fresh access token. |
-| `GET` | `/auth/me` | Current user profile. |
-| `POST` | `/auth/logout` | End the session. |
-| `GET` / `POST` | `/auth/sessions` · `/auth/sessions/:id/revoke` | List live sessions (`{"items": [...]}`) / revoke one. |
+| `GET` | `/admin/video-providers` | `{results:[...]}` registry rows with `available`/`reason` gate. |
+| `POST` | `/admin/video-providers/:code/policy` | Set `packagingPolicy: auto | always | never`; returns provider row plus `policy`/`packagingPolicy`. |
+| `GET` · `POST` | `/admin/video-assets` | Bounded page `{total,page,pageSize,results}` (`pageSize` max 100), or register an asset after provider resolution. |
+| `POST` | `/admin/video-assets/upload` | Multipart `{file,slug,title?,provider?}`; returns `202` and starts a real-server worker; poll the detail row's `progress`, `stage`, `status`, `error`. |
+| `GET` · `DELETE` | `/admin/video-assets/:id` | Poll one tracker row or delete, refusing assets linked to published lessons and scheduling remote cleanup. |
+| `GET` · `POST` | `/admin/video-system-config` | Read/update `{useFfmpeg:boolean}` global packaging toggle. |
+| `GET` | `/admin/video-diagnostics?deep=true` | Shallow env/pipeline checks by default; `deep=true` adds live Telegram Bot API and Drive OAuth/token/1-byte write probes. |
+| `GET` | `/admin/video-drive/oauth/start` | `{authUrl}`; admin-only consent start. |
+| `GET` | `/admin/video-drive/oauth/callback` | Public, origin-exempt Google redirect; validates one-use state, stores the grant, and returns neutral HTML — never a token. |
+| `GET` | `/admin/video-drive/oauth/status` | `{connected,accountEmail,status,error}` only. |
+| `POST` | `/admin/video-drive/oauth/disconnect` | Best-effort Google revoke and stored-grant deletion; returns `{connected:false}`. |
 
-### Catalog & courses
+Admin asset rows contain `id,slug,title,status,provider,playbackMode,protection,sizeBytes,sourceSizeBytes,progress,stage,qualities,viewCount,lastViewedAt,createdAt` and a truncated `error` on list/detail. Diagnostics returns `checkedAt`, `deep`, `okOverall`, `summary`, `problems`, `groups`, and `providers` with per-check severity/hints.
 
-| Method | Path | Purpose |
-| :--- | :--- | :--- |
-| `GET` | `/catalog` | Paged, filterable list (`type`, `q`, `field`, `level`, `language`, `cost`, `country`, `status`, `sort`, `page`, `ids`). |
-| `GET` | `/catalog/:slug` | Single course or scholarship detail. |
-| `GET` | `/courses/:slug` | Course detail (modules, lessons, sessions, exam). |
-| `GET` | `/courses/:slug/problems` | Practice problems (`{"items": [...]}`). |
-| `GET` | `/problems` | The shared practice set (`{"items": [...]}`). |
-| `GET` | `/courses/:slug/related` | Related-course rail (`{"items": [...]}`). |
-| `POST` | `/courses/:slug/enroll` | Enroll the learner. |
-| `POST` | `/courses/:slug/progress` | Sync completed lessons / progress. |
-| `POST` | `/courses/:slug/favorite` | Toggle a course in favorites. |
-| `GET` | `/courses/:slug/certificate` | Certificate metadata. |
+## 4. Provider decisions and settings
 
-### Scholarships
+The registry currently contains `google_drive`, `telegram`, `youtube`, `vimeo`, and `external`. Link providers produce `embed`/`external` responses. Storage behavior is deliberately not symmetric:
 
-| Method | Path | Purpose |
-| :--- | :--- | :--- |
-| `GET` | `/scholarships/:slug` | Scholarship detail. |
-| `POST` | `/scholarships/:slug/apply` | Submit an application. |
-| `POST` | `/scholarships/:slug/save` | Save / unsave. |
+- **Telegram:** HLS packaging is required; raw fallback is a spike S-1 NO-GO on the hosted Bot API (20 MiB `getFile` download limit and expiring URLs are unsuitable for general lessons). Studio requires a persistent writable `VIDEO_SPOOL_DIR`; the packaging host must also provide persistent FFmpeg. If the resolved plan cannot package, upload-init/ingest fails with `provider_requires_packaging` before storing a new source; it does not leave a new Telegram asset staged indefinitely. HLS uses AES-128 keys and six-second segments, with provider/CDN redirects for ciphertext.
+- **Google Drive:** OAuth user grant (least-privilege `drive.file`) is stored server-side in `DriveGrant`; files remain private in the configured folder. S-2 rejects Drive-backed HLS as the v1 private origin. Current Drive playback is authenticated raw media through `files.get?alt=media` with bounded Range and no direct browser bearer/URL. Studio’s 4 MiB relay is 16 × Drive’s 256 KiB alignment; incomplete sessions are probed and resumed from the provider’s authoritative offset. S-3 protocol tests are offline/fake-transport only; live OAuth/account acceptance is still outstanding because no real test account was used.
 
-### Dashboard
+Typed settings in `config/settings.py` include `VIDEO_HOSTING_DEFAULT_PROVIDER` (`google_drive`), `VIDEO_HOSTING_USE_FFMPEG` (`bool`, default true), `VIDEO_UPLOAD_MAX_BYTES` (2 GiB), `VIDEO_UPLOAD_CHUNK_BYTES` (4 MiB), `VIDEO_USER_QUOTA_BYTES` (20 GiB), `VIDEO_SPOOL_DIR`, `VIDEO_RAW_RANGE_CAP_BYTES` (8 MiB), `VIDEO_RAW_MAX_CONCURRENT` (4), `STREAM_TOKEN_TTL_HOURS` (6), `VIDEO_GRANT_TTL_PREVIEW_MINUTES` (30), and `VIDEO_EMBED_ALLOWED_HOSTS`. Provider credentials and OAuth client settings are backend-only.
 
-| Method | Path | Purpose |
-| :--- | :--- | :--- |
-| `GET` | `/dashboard` | Summary (stats, priority cards). |
-| `GET` | `/dashboard/enrolled` | Enrolled courses (`{"items": [...]}`). |
-| `GET` | `/dashboard/saved` | Saved scholarships + favorite courses. |
-| `GET` | `/dashboard/competitions` | Competitions + certificates. |
-| `GET` | `/dashboard/notifications` | Notifications list. |
-| `POST` | `/dashboard/notifications/:id/read` | Mark one read. |
-
-### Content & profile
-
-| Method | Path | Purpose |
-| :--- | :--- | :--- |
-| `GET` | `/home` | Home rails: featured courses, scholarships, competition, events, quick links. |
-| `GET` | `/events` | Events & seminars list. |
-| `GET` | `/competitions` | Competitions list. |
-| `GET` | `/profile` | Profile preferences. |
-| `PATCH` | `/profile` | Update profile / preferences / reminders. |
-
-### Admin
-
-Staff-only (`IsAdminRole`), under `/admin`:
-
-| Method | Path | Purpose |
-| :--- | :--- | :--- |
-| `GET` | `/admin/overview` | Headline counts + content counts. |
-| `GET` · `POST` | `/admin/users` | Paged accounts / create one. |
-| `GET` · `PATCH` · `DELETE` | `/admin/users/:id` | One account: detail, edit a subset, delete. |
-| `POST` | `/admin/users/:id/role` | Change role (keeps `is_staff` in sync). |
-| `GET` | `/admin/sessions` | Device sessions fleet-wide. |
-| `POST` | `/admin/sessions/:id/revoke` | Force-logout one device. |
-| `GET` | `/admin/analytics/logins` · `/devices` | Login series, os/browser/device breakdown. |
-| `GET` | `/admin/events` | Recent audit trail. |
-| `GET` · `POST` | `/admin/maintenance/cleanup` | Run the retention cleanup inline — 202 `{id, status, deleted}` (staff bearer, or the platform cron's `Bearer $CRON_SECRET`). |
-| `GET` | `/admin/content/schema` | `{types, userFields}` — drives every admin form. |
-| `GET` · `POST` | `/admin/content/:type` | Paged rows / create (`courses`, `scholarships`, `events`, `competitions`). |
-| `PATCH` · `DELETE` | `/admin/content/:type/:id` | Edit / remove one content row. |
-| `GET` | `/admin/video-providers` | Registry rows + `available`/`reason` from each provider's env checks. |
-| `GET` · `POST` | `/admin/video-assets` | Asset rows (`progress`, `stage`, `error`, `qualities`, `createdAt`) / record one (refused with its reason if the provider's checks fail). |
-| `POST` | `/admin/video-assets/upload` | Multipart file upload (`provider` query optional) → `202` + asset row; a worker thread then ingests via the **chosen** provider and the row's `progress`/`stage`/`status` follow it. Refused with its reason when the provider's env checks fail; unknown codes are refused, never defaulted. Real-server only (not ephemeral serverless). |
-| `GET` · `DELETE` | `/admin/video-assets/:id` | The tracker's poll target / remove one asset. |
-| `GET` | `/admin/video-diagnostics?deep=true` | Staged video validation — pipeline, Telegram env (+ Bot API on deep), Drive env + grant (+ mint + 1-byte write probe on deep). |
-| `GET` | `/admin/video-drive/oauth/start` | Admin opens the consent dance → `{authUrl}`; the single-use CSRF `state` banks server-side. |
-| `GET` | `/admin/video-drive/oauth/callback` | **Public** (Google's redirect target): validates `state`, trades the `code`, stores the grant server-side, and returns a neutral HTML landing page — never a token. |
-| `GET` | `/admin/video-drive/oauth/status` | `{connected, accountEmail, status, error}` — the account email and grant state only; tokens never leave the backend. |
-| `POST` | `/admin/video-drive/oauth/disconnect` | Revokes the grant at Google (best effort) and deletes the stored credential row. |
-
-### Video hosting
-
-A hosting provider (Telegram channel or Google Drive) is the data plane
-(unlimited storage); the backend is the control plane only and never proxies a
-video byte. Providers are registered as one module each under
-`features/videohosting/providers/` — adding one is a single file plus an env
-block. Playback routes carry a minted token — hls.js cannot send an
-`Authorization` header on a segment fetch, so the token **is** the grant
-(IP-bound, expiring, stored hashed).
-
-| Method | Path | Purpose |
-| :--- | :--- | :--- |
-| `GET` | `/videos/providers` | The registry rows (enabled, capabilities, camelCase). |
-| `GET` | `/videos/:slug` | Readiness, duration, and the rendition ladder. |
-| `POST` | `/videos/:slug/token` | Mint a playback grant (auth required). |
-| `GET` | `/stream/:token/master.m3u8` | Master playlist, `__TOKEN__` swapped for the caller's token. |
-| `GET` | `/stream/:token/:quality/index.m3u8` | Rendition media playlist. |
-| `GET` | `/stream/:token/key/:quality` | The 16-byte AES-128 key for one rendition (`no-store`). |
-| `GET` | `/stream/:token/:quality/:index.ts` | **302** straight to Telegram's CDN (browser fetches the encrypted segment). |
-
-The stored playlists keep `__TOKEN__` placeholders, so a database dump contains
-no usable URL; only the SHA-256 of each grant is stored.
-
-**Ingest & staging.** `manage.py ingest_video <file> --slug <slug> --package
-auto|force|never` pushes the source into Telegram, then (when the host has
-FFmpeg and is not Vercel) packages the AES-128 HLS ladder. `auto` follows the
-host, `force` requires the packaging host, and `never` — or a missing FFmpeg —
-**stages** the source (`status=staged`, renditions cleared, no master
-playlist): the video is stored safely and can be packaged later by re-running
-with `force` on a machine that has FFmpeg. A staged asset refuses playback
-with a message that names the fix.
-
-**Admin endpoints (under `/api/`).** The console reads the same modules:
-`GET /admin/video-providers` (rows carry `available`/`reason` from the env
-checks — the select gate; Telegram is selectable the moment its checks pass),
-`GET/POST/DELETE /admin/video-assets` (asset rows carry `error`/`qualities`/
-`createdAt`; POST refuses a provider whose checks fail, with its Arabic
-reason), and `GET /admin/video-diagnostics?deep=true` — the staged validation:
-one check per thing that can silently break playback (FFmpeg, the serverless
-guard, each provider's env keys, and on deep runs the live Bot API / Google
-OAuth + folder calls), each failing check naming WHY and its fix.
-
----
+Migration `0010` backfills legacy rows with a master playlist as `hls/encrypted`, Drive source rows as `raw/gated`, and uniquely resolvable `<course>--<lesson>` links; ambiguous links are logged and skipped. It does not infer ambiguous ownership or provider state. `manage.py package_pending` now recovers stale `processing`/legacy `staged` rows older than its age threshold when a persistent spool and provider source-download hook exist; it forces HLS packaging, locks concurrent runs, skips rows without a package-capable target/source, and redacts provider URIs from errors. This recovery path does not change the rule that new unsupported Telegram plans fail before storing a source.
 
 ## 5. Integration guidance
 
-1. **Keep the fetcher seam.** Replace the body of a fetcher; do not rewire components.
-2. **Keep cache keys deterministic.** Server pagination must map cleanly to the frontend's `['catalog-items', filters]` key.
-3. **Match the entity types.** If a payload diverges from `entities.ts`, update the type at the boundary — not with `as` casts inside components.
-4. **Preserve the SWR contract.** Responses should be cacheable client-side under the existing `staleTime` / `cacheTime` values; invalidate the right namespace after a mutation (`dataCacheManager.invalidate(...)`).
-5. **Errors are data.** Return structured errors so the data-section error state can show a message and a retry — never an endless spinner.
-6. **Auth clears the cache.** Logout invalidates and clears `dataCacheManager`.
+Keep frontend fetchers at the feature boundary, preserve camelCase response shapes, treat `code` as the stable error contract, and do not expose provider URLs or session URIs to the browser. A real Drive OAuth/upload/raw-playback acceptance remains an external follow-up, not a passed test.

@@ -1,164 +1,79 @@
 # Admin Console — لوحة الإدارة
 
-The staff-only console, inside its own immersive shell: a grouped section rail,
-a slim top bar, and a registry-driven page head — over the same celestial canvas
-as every other page. One responsive surface, never a Desktop/Mobile split: the
-tables reflow through `admin.css`, and a section twin would only duplicate them.
+The permission-gated console lives inside one responsive RTL shell. API authorization remains granular per method and video capability; the `requiresAdmin` route guard only controls navigation.
 
 ## At a glance
 
 | | |
 | :--- | :--- |
 | **Route** | `/admin` |
-| **Shell** | Hidden (`hideShell`) — the console owns its own rail + top bar |
-| **Guard** | `requiresAdmin` in `routes.json`; a learner is bounced to `/` |
+| **Shell** | Hidden (`hideShell`) — the console owns its rail + top bar |
+| **Guard** | `requiresAdmin` in `routes.json`; backend permissions remain authoritative |
 | **Entry** | `pages/AdminPage.tsx` |
 | **State provider** | `context/AdminProvider.tsx` |
-| **Styles** | `admin.css` (concept classes `admin-*`), imported once from `src/styles/globals.css` |
+| **Styles** | `admin.css`, imported once from `src/styles/globals.css` |
 
-## Purpose
+## Video sections
 
-Eight sections, selected by `?tab=` so a section is linkable. The rail groups
-them into `ADMIN_NAV_GROUPS` (المنصة / المحتوى والفيديو / المتابعة), and every
-section opens with its `SECTION_DETAILS` headline, so no view hand-draws a
-page header:
+`overview`, `videos`, and `system` share the provider registry and asset tracker. The video view uploads a real file, receives `202`, then polls `progress`, `stage`, `status`, and `error` until a terminal state. Unavailable providers are disabled with the backend `reason`; the FFmpeg banner points to diagnostics. The system view runs shallow checks by default and calls live provider probes only after the admin requests a deep run.
 
-| Tab | Answers |
+The console exposes separate controls for:
+
+- provider availability and packaging policy (`auto`, `always`, `never`);
+- global `useFfmpeg` toggle;
+- paged assets with quality count, view ledger, progress/stage, and bounded error text;
+- Drive OAuth consent/status/disconnect;
+- diagnostics for pipeline, Telegram, and Drive.
+
+A provider policy is not a promise that all providers behave alike. Telegram has no general raw fallback and requires persistent spool/FFmpeg packaging; Drive is private raw Range playback in v1, not Drive-backed HLS. Missing Telegram packaging prerequisites reject the upload plan rather than leaving new uploads staged indefinitely.
+
+## Data and permissions
+
+`data/adminFetchers.ts` is the network seam. Video fetchers include `fetchVideoProviders`, `updateVideoProviderPolicy`, `fetchVideoAssets`, `fetchVideoDiagnostics(deep)`, `fetchVideoSystemConfig`, `updateVideoSystemConfig`, `createVideoAsset`, `uploadVideoAsset(file,onProgress)`, `fetchVideoAsset`, `deleteVideoAsset`, and `startDriveOAuth`.
+
+The canonical backend permission registry is the source of truth:
+
+| Permission | Console/feature responsibility |
 | :--- | :--- |
-| `overview` | headline counts (users, active sessions, logins, revocations) + the video health strip |
-| `users` | every account — arrived through signup, never created here — with role filter, search, and an inspector (view/edit/promote/revoke/delete) |
-| `content` | generic content manager with sub-tabs (courses, scholarships, events, competitions), schema-driven forms |
-| `videos` | hosted video assets: upload (FFmpeg-aware), review statuses/errors, delete |
-| `system` | the staged video diagnostics: pipeline / Telegram / Google Drive, why not, and the fix hint — with an opt-in deep run against the live provider APIs |
-| `sessions` | every device session, active/closed filter, search by mail or IP |
-| `analytics` | the login series chart and the OS / browser / device breakdown |
-| `activity` | the most recent audit rows, filterable by kind |
+| `videos.configure` | provider policy, system FFmpeg toggle, diagnostics, Drive OAuth |
+| `videos.manage_any` | global provider asset list/create/upload/detail/delete |
+| `videos.manage_own` | owned Studio video metadata/caption/delete flows |
+| `videos.upload` | Studio storage upload initiation; implies `studio.access` |
+| `videos.use_embed` | validated YouTube/Vimeo/external link creation |
+| `videos.package` | explicit permission for FFmpeg packaging capability |
+| `videos.watch_any` | entitlement override for playback |
 
-## Structure
+The backend still checks ownership and method-specific permission. `administrator` implies the permission catalog; the route guard does not replace API authorization.
 
-```text
-admin/
-├── pages/
-│   └── AdminPage.tsx                    mounts the provider + shell
-├── components/
-│   ├── cards/                           Badges, StatCard, LoginSeriesChart,
-│   │                                    DeviceBreakdownLists, UserProfileCard
-│   ├── chrome/                          AdminHeader, AdminSectionNav, AdminPageHead,
-│   │                                    AdminNotice
-│   ├── controls/                        AdminSearchBox, RoleSelect, ConfirmAction,
-│   │                                    AdminToggle, AdminFieldInput
-│   ├── layout/                          AdminShell, UsersTable, SessionsTable,
-│   │                                    EventList, ContentTable
-│   ├── overlays/                        ContentFormModal
-│   ├── states/                          AdminEmptyState
-│   ├── toolbar/                         AdminPagination
-│   └── views/                           OverviewView, UsersView, SessionsView,
-│                                        AnalyticsView, ActivityView,
-│                                        VideoHostingView, AdminSystemView,
-│                                        UserDetailPanel
-├── context/
-│   ├── adminContext.ts                  context + useAdmin()
-│   └── AdminProvider.tsx                all section data, filters, actions
-├── data/
-│   ├── adminContentForm.ts              form values, grouped editor stacks, payloads
-│   ├── adminFetchers.ts                 one function per /api/admin route
-│   ├── adminFormatters.ts               labels, dates, counts, section icon maps
-│   └── fieldIcons.ts                    one icon per field name / kind
-├── types.ts                             API payloads, nav groups, section details,
-│                                        filter option lists
-├── admin.css                            feature concept classes
-└── README.md
-```
+## Current video endpoints
 
-## How it works
-
-- **The registry answers everything:** `ADMIN_NAV_GROUPS` and
-  `ADMIN_SECTION_KEYS` drive the rail and the URL, `SECTION_DETAILS` supplies
-  every page's h1 + mandate line (rendered by `AdminPageHead`), and
-  `SECTION_ICONS` one icon per section. A new section is a new key plus map
-  entries — never a new `if`.
-- **The shell obeys the RTL document:** the document is already
-  `dir="rtl"`, so `AdminShell` puts the rail first (far right), then the
-  column of top bar — page head — pills strip — section view. `admin-container`
-  centers the column (`max-w-[1280px] mx-auto`) so nothing hugs the edge.
-- **Accounts arrive via signup only.** There is no create-user flow: no button,
-  no modal, no fetcher. The inspector's `UserEditor` seeds inputs from the
-  schema-driven `userFields`, keeps a `تغييرات غير محفوظة` dirty chip, resets
-  to the saved values, and its close (backdrop or Escape) asks before discard.
-- **Schema-driven editing:** `adminContentForm.ts` is the one source for
-  `AdminFormValue`, `groupEditorFields` (essentials / prose / structured
-  stacks with `FIELD_GROUP_LABELS`), and payload validation. Both
-  `ContentFormModal` and the inline `UserEditor` render from it; inputs come
-  from `AdminFieldInput` keyed by `field.kind`, with LTR handling for
-  emails, urls, slugs, and numeric kinds.
-- **Icons instead of prose:** `fieldIcons.ts` maps field names (kind
-  fallbacks) to lucide icons, `ADMIN_*_FILTERS` lists the segmented-control
-  options, and every empty/error state carries an icon via `AdminEmptyState`
-  (its `OctagonAlert` tone marks a failed load with a retry button).
-- **Realistic verbs, not jargon:** Google Drive's consent button reads
-  «ربط حساب Google» — the platform links the academy's existing account,
-  it does not grant it anything new.
-- **Video hosting:** one upload path (`uploadVideoAsset` with real byte
-  progress), which 202s when the file lands and then polls the server's
-  `progress`/`stage` until a terminal state. The dropdown greys unready
-  providers and states each blocker inline; the FFmpeg miss is a banner
-  pointing at `?tab=system`.
-- **One provider, eight sections:** `AdminProvider` loads section data
-  through `useCachedData` and gates only the *first* load of the active tab
-  with a `DataSectionSkeleton variant="list"`, so switching tabs never
-  flashes. Video data loads only while `overview` / `videos` / `system` are
-  open; the deep diagnostics run only after the admin presses its button.
-- **Mutations report, never swallow:** `changeRole`, `revokeSession`,
-  `updateUser`, `deleteUser`, and the content/video mutations surface
-  failures through the console-wide `AdminNotice` banner.
-
-## Data
-
-| Source | Provides |
-| :--- | :--- |
-| `data/adminFetchers.ts` | `fetchOverview`, `fetchUsers`, `fetchUserDetail`, `updateUserRole`, `fetchSessions`, `revokeAdminSession`, `fetchLoginSeries`, `fetchDeviceBreakdown`, `fetchEvents`, `updateAdminUser`, `deleteAdminUser`, `fetchContentSchema`, `fetchContent`, `createContent`, `updateContent`, `deleteContent`, `fetchVideoProviders`, `fetchVideoAssets`, `fetchVideoDiagnostics(deep)`, `fetchVideoAsset(id)`, `uploadVideoAsset(file, onProgress)`, `createVideoAsset`, `deleteVideoAsset`, `startDriveOAuth` |
-| `data/adminContentForm.ts` | `AdminFormValue`, `emptyFormValues`, `toFormValues`, `toPayloadValues`, `groupEditorFields`, `FIELD_GROUP_ORDER`, `FIELD_GROUP_LABELS` |
-| `data/adminFormatters.ts` | `formatCount`, `formatDateTime`, `formatShortDateTime`, `formatDayLabel`, `formatLastSeen(Short)`, `initialsOf`, `SECTION_ICONS`, `METRIC_ICONS`, `REVOKE_REASON_LABELS`, `EVENT_KIND_LABELS` |
-| `data/fieldIcons.ts` | `fieldIcon(field)` — name map with kind fallback |
-| `types.ts` | `ADMIN_NAV_GROUPS`, `ADMIN_SECTION_KEYS`, `SECTION_DETAILS`, `ROLE_FILTERS`, `ACTIVE_FILTERS`, `LOGIN_RANGES`, `EVENT_KIND_FILTERS` |
-| `@/shared/lib/apiClient` | every request goes through the Bearer + silent-refresh client |
-
-## Notes
-
-- The console is **one responsive surface**. Do not split it into
-  Desktop/Mobile view pairs: the tables reflow through `admin.css`, and the
-  extra files would only duplicate the sections. Below `lg` the rail becomes
-  a scrolling pills strip; below `md` the top bar steps aside for the page
-  head alone.
-- `admin/errors` from a 403 render as a full-panel state, not a crash — a
-  non-staff reader who lands here is told plainly that they cannot manage the
-  platform.
-
-## Endpoints
+All paths are relative to `/api/`.
 
 | Method | Path | Notes |
 | :--- | :--- | :--- |
-| `GET` | `/admin/overview` | The home counts + `content` sub-counts. |
-| `GET` | `/admin/users` | Paged accounts; `q`, `role`, `page`. |
-| `PATCH` | `/admin/users/:id` | Update subset; returns `AdminUserRow`. Self-demotion rejected. |
-| `DELETE` | `/admin/users/:id` | `{deleted:true,id}`; self-delete rejected. |
-| `GET` | `/admin/content/schema` | `{types, userFields}` (schema-driven forms). |
-| `GET` | `/admin/content/:type` | Paged rows; `q` filters by key/title fields. |
-| `POST` | `/admin/content/:type` | Create row from schema fields; returns `ContentRow`. |
-| `PATCH` | `/admin/content/:type/:id` | Update subset; returns `ContentRow`. |
-| `DELETE` | `/admin/content/:type/:id` | `{deleted:true,id}`. |
-| `GET` | `/admin/video-providers` | Rows carry `available`/`reason` — the select gate. |
-| `GET` | `/admin/video-assets` | Assets carry `error`/`qualities`/`createdAt`. |
-| `POST` | `/admin/video-assets` | `{slug,title?,provider?}` registration route — the console always uploads a real file. |
-| `POST` | `/admin/video-assets/upload` | Multipart `{file,slug,title?,provider?}` → `202` with the asset row; the ingest worker then drives `progress`/`stage`/`status` on the polled detail row. Needs a real server host. |
-| `GET` | `/admin/video-assets/:id` | The tracker's poll target — same shape as the list row. |
-| `DELETE` | `/admin/video-assets/:id` | `{deleted:true,id}`. |
-| `GET` | `/admin/video-drive/oauth/start` | Returns Google's consent `authUrl`; tokens live in Django. |
-| `GET` | `/admin/video-diagnostics?deep=true` | The staged validation; shallow stays offline, deep calls the providers' APIs. |
+| `GET` | `/admin/video-providers` | `{results}` registry rows with `available`/`reason`. |
+| `POST` | `/admin/video-providers/:code/policy` | Persists `packagingPolicy`; returns provider plus policy fields. |
+| `GET` · `POST` | `/admin/video-assets` | Bounded `{total,page,pageSize,results}` page or registration. |
+| `POST` | `/admin/video-assets/upload` | Multipart `{file,slug,title?,provider?}` → `202`; needs a real server worker. |
+| `GET` · `DELETE` | `/admin/video-assets/:id` | Poll tracker row or delete; published lesson links block deletion. |
+| `GET` · `POST` | `/admin/video-system-config` | Read/update `{useFfmpeg}`. |
+| `GET` | `/admin/video-diagnostics?deep=true` | Shallow by default; deep performs live Telegram/Drive probes. |
+| `GET` | `/admin/video-drive/oauth/start` | `{authUrl}` only; OAuth tokens stay in Django. |
+| `GET` | `/admin/video-drive/oauth/callback` | Google redirect; neutral HTML, no token response. |
+| `GET` | `/admin/video-drive/oauth/status` | `{connected,accountEmail,status,error}`. |
+| `POST` | `/admin/video-drive/oauth/disconnect` | Revoke/delete stored grant. |
+
+The asset row includes `id,slug,title,status,provider,playbackMode,protection,sizeBytes,sourceSizeBytes,progress,stage,qualities,viewCount,lastViewedAt,createdAt`, plus a truncated `error` on list/detail. Diagnostics includes `checkedAt`, `deep`, `okOverall`, `summary`, `problems`, `groups`, and `providers` with severity and fix hints.
+
+## Upload behavior
+
+The admin multipart path streams the incoming file to a temporary server path and starts the ingest worker. It is not an ephemeral Vercel packaging path: Vercel cannot run FFmpeg or retain the required Telegram spool. Studio’s separate resumable API uses a default 4 MiB raw binary relay chunk and never exposes provider upload URIs. The frontend only renders server progress after the initial HTTP upload progress.
+
+Playback grants are mode-aware (`hls`, `raw`, `embed`, `external`). HLS/raw grants are expiring and IP-bound; the backend stores only token hashes. Drive raw play URLs are platform-gated and bounded by Range/no-store rules. HLS manifests, keys, captions, Studio, admin, and raw responses are private/no-store as applicable.
 
 ## Related
 
 - Backend contract: [`../../../../docs/07-backend-contract.md`](../../../../docs/07-backend-contract.md)
-- Backend twin: [`../../../../../backend/features/adminconsole/README.md`](../../../../../backend/features/adminconsole/README.md)
-- Auth (guards, sessions, the API client): [`../auth/README.md`](../auth/README.md)
+- Backend architecture: [`../../../../docs/08-backend-architecture.md`](../../../../docs/08-backend-architecture.md)
+- Video feature: [`../../../../../backend/features/videohosting/README.md`](../../../../../backend/features/videohosting/README.md)
 - Routing & guards: [`../../../../docs/03-routing-and-navigation.md`](../../../../docs/03-routing-and-navigation.md)

@@ -92,7 +92,7 @@
     "title": "لوحة الإدارة — أكاديمية خوارزم",
     "description": "إدارة المستخدمين والأجهزة وتحليلات الدخول.",
     "hideShell": true,
-    "requiresAdmin": true,
+    "requiresPermission": "admin.access",
     "skeletonVariant": "dashboard"
   },
   {

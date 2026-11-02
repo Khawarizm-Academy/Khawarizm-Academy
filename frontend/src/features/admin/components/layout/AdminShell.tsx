@@ -14,8 +14,13 @@ import { AnalyticsView } from '@/features/admin/components/views/AnalyticsView';
 import { ActivityView } from '@/features/admin/components/views/ActivityView';
 import { VideoHostingView } from '@/features/admin/components/views/VideoHostingView';
 import { AdminSystemView } from '@/features/admin/components/views/AdminSystemView';
+import { RolesView } from '@/features/admin/components/views/RolesView';
+import { AuditLogView } from '@/features/admin/components/views/AuditLogView';
+import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
 import { SECTION_LABELS } from '@/features/admin/types';
 import type { AdminSectionKey } from '@/features/admin/types';
+import { canAccessAdminSection } from '@/features/admin/data/adminSectionAccess';
+import roleCopy from '@/features/admin/data/roleCopy.json';
 
 /** One view per section, keyed by the `?tab=` value the provider reads. */
 const SECTION_VIEWS: Record<AdminSectionKey, React.FC> = {
@@ -27,6 +32,8 @@ const SECTION_VIEWS: Record<AdminSectionKey, React.FC> = {
   sessions: SessionsView,
   analytics: AnalyticsView,
   activity: ActivityView,
+  roles: RolesView,
+  audit: AuditLogView,
 };
 
 /** Console chrome: rail, top bar, page head, mobile pills, and the account page. */
@@ -46,6 +53,7 @@ export const AdminShell: React.FC = () => {
         currentSection={currentSection}
         onSelect={selectSection}
         operator={{ fullName: user.fullName, email: user.email, avatarUrl: user.avatarUrl, role: user.role }}
+        actor={user}
       />
 
       <main className="admin-main">
@@ -64,13 +72,17 @@ export const AdminShell: React.FC = () => {
 
               {/* The pills strip is the only section nav below the desktop rail */}
               <div className="lg:hidden">
-                <AdminMobileTabs currentSection={currentSection} onSelect={selectSection} />
+                <AdminMobileTabs currentSection={currentSection} onSelect={selectSection} actor={user} />
               </div>
 
               {/* Every section window gets the same h1 rhythm: registry answers it */}
               <section className="animate-fade-in-up animation-delay-100">
                 <h2 className="sr-only">{SECTION_LABELS[currentSection]}</h2>
-                <ActiveView />
+                {canAccessAdminSection(user, currentSection) ? (
+                  <ActiveView />
+                ) : (
+                  <AdminEmptyState title={roleCopy.forbiddenTitle} hint={roleCopy.forbiddenHint} />
+                )}
               </section>
             </>
           )}

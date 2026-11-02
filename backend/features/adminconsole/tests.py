@@ -5,10 +5,16 @@ from __future__ import annotations
 from django.test import TestCase
 from django.urls import reverse
 
+from features.access import services as access_services
+from features.access.models import AccessRole
+from features.adminconsole import services as admin_services
 from features.auth import services
 from features.auth.models import User
-from features.common.choices import AuthEventKind, Role, SessionRevokeReason
+from features.common.choices import AuthEventKind, CourseStaffKind, CourseStatus, Role, SessionRevokeReason
+from features.common.errors import InvalidParameter
 from features.common.testing import ApiTestCase, FakeRequest, authenticate, make_admin, make_user
+from features.courses.models import Course, CourseStaff
+from features.dashboard.models import Enrollment
 
 
 class AdminConsoleUrlTests(TestCase):
@@ -27,8 +33,100 @@ class AdminConsolePermissionTests(ApiTestCase):
         self.assertEqual(self.client.get("/api/admin/overview").status_code, 403)
 
     def test_staff_flag_is_enough_without_admin_role(self):
-        authenticate(self.client, make_user(is_staff=True))
+        legacy_staff = User.objects.create_user(
+            email="legacy.staff@example.com",
+            password="pass",
+            role=Role.STUDENT,
+            is_staff=True,
+        )
+        authenticate(self.client, legacy_staff)
         self.assertEqual(self.client.get("/api/admin/overview").status_code, 200)
+
+
+class GranularAdminPermissionTests(ApiTestCase):
+    def _actor(self, permissions: list[str], email: str) -> User:
+        administrator = make_admin(email=f"owner-{email}")
+        role = AccessRole.objects.create(
+            slug=f"test-{email.split('@')[0].replace('.', '-')}",
+            name="Test permission role",
+            description="Least-privilege test role",
+            color="cyan",
+            position=100,
+            permissions=permissions,
+        )
+        user = make_user(email=email)
+        access_services.assign_roles(administrator, user, [role.pk])
+        authenticate(self.client, user)
+        return user
+
+    def test_users_view_does_not_unlock_sessions_or_role_writes(self):
+        self._actor(["users.view"], "viewer@example.com")
+        target = make_user(email="target@example.com")
+
+        users = self.client.get("/api/admin/users")
+        self.assertEqual(users.status_code, 200)
+        self.assertIn("roles", users.json()["results"][0])
+        detail = self.client.get(f"/api/admin/users/{target.pk}")
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["sessions"], [])
+        self.assertEqual(detail.json()["events"], [])
+        self.assertEqual(self.client.get("/api/admin/sessions").status_code, 403)
+        self.assertEqual(
+            self.client.post("/api/admin/users", {"email": "blocked@example.com"}, format="json").status_code, 403
+        )
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/roles",
+                {"name": "Forbidden", "color": "cyan", "permissions": []},
+                format="json",
+            ).status_code,
+            403,
+        )
+
+    def test_users_create_cannot_grant_an_elevated_legacy_role(self):
+        self._actor(["users.create"], "creator@example.com")
+        blocked = self.client.post(
+            "/api/admin/users",
+            {"email": "blocked-admin@example.com", "role": Role.ADMIN},
+            format="json",
+        )
+        self.assertEqual(blocked.status_code, 403)
+        self.assertFalse(User.objects.filter(email="blocked-admin@example.com").exists())
+
+        created = self.client.post(
+            "/api/admin/users",
+            {"email": "created-student@example.com", "role": Role.STUDENT},
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+        self.assertFalse(User.objects.get(email="created-student@example.com").is_staff)
+
+    def test_content_schema_only_returns_types_the_actor_can_read(self):
+        self._actor(["scholarships.manage"], "scholarship-editor@example.com")
+        schema = self.client.get("/api/admin/content/schema")
+        self.assertEqual(schema.status_code, 200)
+        self.assertEqual([item["key"] for item in schema.json()["types"]], ["scholarships"])
+        self.assertEqual(schema.json()["userFields"], [])
+        self.assertEqual(self.client.get("/api/admin/content/scholarships").status_code, 200)
+        self.assertEqual(self.client.get("/api/admin/content/events").status_code, 403)
+
+    def test_analytics_audit_and_session_permissions_are_separate(self):
+        self._actor(["analytics.view_platform"], "analytics@example.com")
+        self.assertEqual(self.client.get("/api/admin/analytics/logins").status_code, 200)
+        self.assertEqual(self.client.get("/api/admin/events").status_code, 403)
+
+        self._actor(["audit.view"], "audit@example.com")
+        self.assertEqual(self.client.get("/api/admin/events").status_code, 200)
+        self.assertEqual(self.client.get("/api/admin/analytics/devices").status_code, 403)
+
+        self._actor(["sessions.view_any"], "sessions@example.com")
+        self.assertEqual(self.client.get("/api/admin/sessions").status_code, 200)
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/sessions/00000000-0000-0000-0000-000000000001/revoke", {}, format="json"
+            ).status_code,
+            403,
+        )
 
 
 class AdminConsoleOverviewTests(ApiTestCase):
@@ -107,6 +205,13 @@ class AdminConsoleUserTests(ApiTestCase):
         target = make_user(email="badrole@example.com")
         response = self.client.post(f"/api/admin/users/{target.id}/role", {"role": "wizard"}, format="json")
         self.assertEqual(response.status_code, 400)
+
+    def test_legacy_role_endpoint_accepts_patch_without_removing_post_compatibility(self):
+        target = make_user(email="patch-role@example.com")
+        response = self.client.patch(f"/api/admin/users/{target.id}/role", {"role": Role.INSTRUCTOR}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["role"], Role.INSTRUCTOR)
+        self.assertTrue(target.role_assignments.filter(role__slug="instructor").exists())
 
 
 class AdminConsoleSessionTests(ApiTestCase):
@@ -228,14 +333,41 @@ class AdminConsoleUserMutationTests(ApiTestCase):
         self.assertEqual(response.status_code, 201)
         self.assertTrue(User.objects.filter(email="new@example.com").exists())
         # A student profile is created for the new account.
-        self.assertTrue(User.objects.get(email="new@example.com").student_profile)
+        created = User.objects.get(email="new@example.com")
+        self.assertTrue(created.student_profile)
+        self.assertFalse(created.role_assignments.exists())
 
     def test_create_admin_gets_staff_rights(self):
         self.client.post("/api/admin/users", {"email": "boss@example.com", "role": Role.ADMIN}, format="json")
-        self.assertTrue(User.objects.get(email="boss@example.com").is_staff)
+        boss = User.objects.get(email="boss@example.com")
+        self.assertTrue(boss.is_staff)
+        self.assertTrue(boss.role_assignments.filter(role__slug="admin").exists())
+
+    def test_create_instructor_gets_access_assignment_and_both_profiles(self):
+        response = self.client.post(
+            "/api/admin/users",
+            {"email": "new.instructor@example.com", "role": Role.INSTRUCTOR},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        instructor = User.objects.get(email="new.instructor@example.com")
+        self.assertEqual(instructor.role, Role.INSTRUCTOR)
+        self.assertTrue(instructor.role_assignments.filter(role__slug="instructor").exists())
+        self.assertTrue(instructor.student_profile)
+        self.assertTrue(instructor.instructor_profile)
 
     def test_create_without_email_is_a_bad_request(self):
         self.assertEqual(self.client.post("/api/admin/users", {"role": Role.STUDENT}, format="json").status_code, 400)
+
+    def test_create_rejects_an_unknown_role_without_creating_an_account(self):
+        response = self.client.post(
+            "/api/admin/users",
+            {"email": "invalid.role@example.com", "role": "wizard"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], "invalid_parameter")
+        self.assertFalse(User.objects.filter(email="invalid.role@example.com").exists())
 
     def test_create_duplicate_email_is_a_bad_request(self):
         make_user(email="taken@example.com")
@@ -257,14 +389,46 @@ class AdminConsoleUserMutationTests(ApiTestCase):
 
     def test_patch_role_keeps_django_staff_in_sync(self):
         target = make_user(email="promote@example.com")
-        self.client.patch(f"/api/admin/users/{target.id}", {"role": Role.ADMIN}, format="json")
+        response = self.client.patch(f"/api/admin/users/{target.id}", {"role": Role.ADMIN}, format="json")
+        self.assertEqual(response.json()["role"], Role.ADMIN)
+        self.assertTrue(response.json()["isStaff"])
         target.refresh_from_db()
         self.assertEqual(target.role, Role.ADMIN)
         self.assertTrue(target.is_staff)
+        self.assertTrue(target.role_assignments.filter(role__slug="admin").exists())
 
     def test_patch_cannot_demote_your_own_account(self):
         response = self.client.patch(f"/api/admin/users/{self.admin.id}", {"role": Role.STUDENT}, format="json")
         self.assertEqual(response.status_code, 400)
+
+    def test_patch_rolls_back_account_fields_when_role_assignment_fails(self):
+        from features.access.models import AccessRole
+
+        AccessRole.objects.get(slug="instructor").delete()
+        target = make_user(email="rollback.role@example.com", full_name="Before")
+        response = self.client.patch(
+            f"/api/admin/users/{target.id}",
+            {"fullName": "After", "role": Role.INSTRUCTOR},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], "role_missing")
+        target.refresh_from_db()
+        self.assertEqual(target.full_name, "Before")
+        self.assertEqual(target.role, Role.STUDENT)
+
+    def test_legacy_role_patch_reports_role_missing_after_template_deletion(self):
+        from features.access.models import AccessRole
+
+        AccessRole.objects.get(slug="instructor").delete()
+        target = make_user(email="missing.instructor@example.com")
+        response = self.client.post(
+            f"/api/admin/users/{target.id}/role",
+            {"role": Role.INSTRUCTOR},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], "role_missing")
 
     def test_patch_never_changes_the_email_identity(self):
         target = make_user(email="identity@example.com")
@@ -309,6 +473,68 @@ class AdminConsoleContentTests(ApiTestCase):
         # Email is the account identity: exposed to the form but read-only.
         email_field = next(field for field in body["userFields"] if field["name"] == "email")
         self.assertTrue(email_field["readonly"])
+
+    def test_user_ref_coercer_resolves_existing_accounts_and_supports_clearing(self):
+        target = make_user(email="user-ref@example.com")
+        field = {"name": "owner", "attr": "owner", "kind": "user_ref", "label": "Owner"}
+        values = admin_services.values_for({"fields": [field]}, {"owner": str(target.pk)}, create=True)
+        self.assertEqual(values["owner"], target)
+        cleared = admin_services.values_for({"fields": [field]}, {"owner": None}, create=False)
+        self.assertIsNone(cleared["owner"])
+        with self.assertRaises(InvalidParameter):
+            admin_services.values_for({"fields": [field]}, {"owner": "not-a-user-id"}, create=True)
+
+    def test_course_owner_user_ref_synchronizes_owner_staff_row(self):
+        owner_one = make_user(email="content-owner-one@example.com", role=Role.INSTRUCTOR, full_name="Owner One")
+        owner_two = make_user(email="content-owner-two@example.com", role=Role.INSTRUCTOR, full_name="Owner Two")
+        created = self.client.post(
+            "/api/admin/content/courses",
+            {
+                "slug": "admin-owner-course",
+                "owner": str(owner_one.pk),
+                "title": "Admin-owned course",
+                "categoryLabel": "Programming",
+                "categorySlug": "programming",
+                "thumbnailUrl": "https://cdn.example.com/admin-owner.png",
+                "courseLevel": "beginner",
+            },
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+        course = Course.objects.get(slug="admin-owner-course")
+        self.assertEqual(course.owner_id, owner_one.pk)
+        self.assertEqual(course.status, CourseStatus.DRAFT)
+        self.assertEqual(course.instructor, "Owner One")
+        self.assertTrue(CourseStaff.objects.filter(course=course, user=owner_one, kind=CourseStaffKind.OWNER).exists())
+
+        reassigned = self.client.patch(
+            f"/api/admin/content/courses/{course.pk}", {"owner": str(owner_two.pk)}, format="json"
+        )
+        self.assertEqual(reassigned.status_code, 200)
+        course.refresh_from_db()
+        self.assertEqual(course.owner_id, owner_two.pk)
+        self.assertFalse(CourseStaff.objects.filter(course=course, user=owner_one).exists())
+        self.assertTrue(CourseStaff.objects.filter(course=course, user=owner_two, kind=CourseStaffKind.OWNER).exists())
+        # The catalog display is only derived while blank; edits keep intentional copy.
+        self.assertEqual(course.instructor, "Owner One")
+
+        cleared = self.client.patch(f"/api/admin/content/courses/{course.pk}", {"owner": None}, format="json")
+        self.assertEqual(cleared.status_code, 200)
+        self.assertFalse(CourseStaff.objects.filter(course=course, kind=CourseStaffKind.OWNER).exists())
+
+        Enrollment.objects.create(user=make_user(email="admin-owner-enrollee@example.com"), course=course)
+        blocked_delete = self.client.delete(f"/api/admin/content/courses/{course.pk}")
+        self.assertEqual(blocked_delete.status_code, 409)
+        self.assertEqual(blocked_delete.json()["code"], "has_enrollments")
+        self.assertTrue(Course.objects.filter(pk=course.pk).exists())
+
+    def test_content_write_rejects_fields_outside_the_declared_schema(self):
+        response = self.client.post(
+            "/api/admin/content/events",
+            {"eventId": "strict-fields", "title": "Valid", "unexpected": "ignored before Phase 2"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_events_can_be_listed_created_updated_and_deleted(self):
         created = self.client.post(
@@ -360,7 +586,7 @@ class AdminUsersQueryGuardTests(ApiTestCase):
             user = make_user(email=f"guarded-{index}@example.com")
             services.open_session(user, FakeRequest(), "password")  # one active session each
         authenticate(self.client, make_admin(email="guard-admin@example.com"))
-        with self.assertNumQueries(4):  # auth + touch + total count + annotated page slice
+        with self.assertNumQueries(6):  # auth/touch/count/page plus two constant-query role-summary reads
             body = self.client.get("/api/admin/users").json()
         self.assertEqual(body["total"], 4)
         self.assertTrue(all(row["activeSessions"] == 1 for row in body["results"]))

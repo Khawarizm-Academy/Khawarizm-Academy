@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from features.auth.models import User
+from features.common.choices import CourseStatus
 from features.dashboard.models import (
     DashboardNotification,
     DashboardStat,
@@ -29,8 +30,15 @@ from features.dashboard.serializers import (
 
 def summary(user: User) -> dict[str, Any]:
     """Everything the dashboard header/main view needs in one payload."""
-    priority = PriorityContinue.objects.filter(user=user).select_related("course").first()
-    live = ImminentLiveSession.objects.filter(user=user).select_related("session__course").first()
+    visible_statuses = (CourseStatus.PUBLISHED, CourseStatus.ARCHIVED)
+    priority = (
+        PriorityContinue.objects.filter(user=user, course__status__in=visible_statuses).select_related("course").first()
+    )
+    live = (
+        ImminentLiveSession.objects.filter(user=user, session__course__status__in=visible_statuses)
+        .select_related("session__course")
+        .first()
+    )
     stats = DashboardStat.objects.filter(user=user).first()
     return {
         "stats": dashboard_stats(stats) if stats else None,
