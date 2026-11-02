@@ -12,8 +12,8 @@ import os
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from features.access.services import bootstrap_system_roles, sync_primary_role
 from features.auth.models import User
-from features.auth.services import ensure_profile
 from features.catalog.models import Category, FilterGroup, FilterOption
 from features.common.choices import (
     CategorySlug,
@@ -295,6 +295,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options["flush"]:
             self._flush()
+        bootstrap_system_roles()
         self._seed_reference()
         users = self._seed_users()
         content = self._seed_content()
@@ -358,7 +359,7 @@ class Command(BaseCommand):
         if created:
             admin.set_password(os.environ.get("DJANGO_DEMO_ADMIN_PASSWORD", "admin12345"))
             admin.save()
-        ensure_profile(admin)
+        sync_primary_role(admin)
 
         student, _ = User.objects.get_or_create(
             email="ahmad.q@example.com",
@@ -371,7 +372,7 @@ class Command(BaseCommand):
                 "timezone": "الرياض (GMT+3)",
             },
         )
-        ensure_profile(student)
+        sync_primary_role(student)
         student.student_profile.learning_level = "intermediate"
         student.student_profile.interests = ["الذكاء الاصطناعي", "تحليل البيانات", "البرمجة والتطوير"]
         student.student_profile.notifications = {
@@ -385,7 +386,7 @@ class Command(BaseCommand):
             email="salem.otaibi@example.com",
             defaults={"role": Role.INSTRUCTOR, "full_name": "د. سالم العتيبي"},
         )
-        ensure_profile(instructor)
+        sync_primary_role(instructor)
         instructor.instructor_profile.headline = "أستاذ الذكاء الاصطناعي"
         instructor.instructor_profile.credential = "أستاذ مشارك · جامعة الملك سعود"
         instructor.instructor_profile.save()

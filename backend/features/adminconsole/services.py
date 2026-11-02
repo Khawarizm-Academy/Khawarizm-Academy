@@ -12,13 +12,13 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 
 from features.adminconsole.serializers import CONTENT_TYPES, USER_FIELDS
 from features.auth import services as auth_services
 from features.auth.models import User
 from features.common.choices import Role
-from features.common.errors import InvalidParameter
+from features.common.errors import InvalidParameter, RoleMissing
 from features.competitions.models import Competition
 from features.courses.models import Course
 from features.events.models import EventItem
@@ -31,6 +31,28 @@ CONTENT_COUNTS = {"courses": Course, "scholarships": Scholarship, "events": Even
 # --- Account lifecycle -------------------------------------------------------
 
 
+def _assign_legacy_role(user: User, role: str, acting_user: User) -> User:
+    """Translate the still-supported student/instructor/admin API to role IDs."""
+    if role not in Role.values:
+        raise InvalidParameter("دور غير صالح.")
+    if role == Role.STUDENT:
+        role_ids = []  # the student role is implicit and never stored as an assignment
+    else:
+        from features.access.models import AccessRole
+        from features.access.services import assign_roles
+
+        access_role = AccessRole.objects.filter(slug=role).first()
+        if access_role is None:
+            raise RoleMissing("الدور المطلوب غير موجود في مدير الأدوار.")
+        role_ids = [access_role.pk]
+        return assign_roles(acting_user, user, role_ids)
+
+    from features.access.services import assign_roles
+
+    return assign_roles(acting_user, user, role_ids)
+
+
+@transaction.atomic
 def create_user_account(data: dict[str, Any]) -> User:
     """Create an account from the console's user form (email is the identity)."""
     values = values_for({"fields": USER_FIELDS}, data, create=True)
@@ -39,14 +61,22 @@ def create_user_account(data: dict[str, Any]) -> User:
         raise InvalidParameter("البريد الإلكتروني مطلوب.")
     if User.objects.filter(email=email).exists():
         raise InvalidParameter("البريد الإلكتروني مستخدم بالفعل.")
+    requested_role = values.get("role", Role.STUDENT)
+    if requested_role not in Role.values:
+        raise InvalidParameter("دور غير صالح.")
+    if requested_role == Role.INSTRUCTOR:
+        from features.access.models import AccessRole
+
+        if not AccessRole.objects.filter(slug="instructor").exists():
+            raise RoleMissing("دور المدرّب غير موجود في مدير الأدوار.")
     password = data.get("password") or None
     user = User.objects.create_user(email=email, password=password, **{k: v for k, v in values.items() if k != "email"})
-    user.is_staff = user.role == Role.ADMIN
-    user.save(update_fields=["is_staff"])
-    auth_services.ensure_profile(user)
-    return user
+    from features.access.services import sync_primary_role
+
+    return sync_primary_role(user)
 
 
+@transaction.atomic
 def update_user_account(user: User, data: dict[str, Any], acting_user: User) -> User:
     """Apply the console's account edits, keeping Django staff rights in sync."""
     values = values_for({"fields": USER_FIELDS}, data, create=False)
@@ -54,15 +84,21 @@ def update_user_account(user: User, data: dict[str, Any], acting_user: User) -> 
     values.pop("email", None)
     if "role" in values and is_self(acting_user, user) and values["role"] != Role.ADMIN:
         raise InvalidParameter("لا يمكنك خفض دورك الخاص.")
+    requested_role = values.pop("role", None)
+    if requested_role is not None and requested_role not in Role.values:
+        raise InvalidParameter("دور غير صالح.")
+    if requested_role is not None:
+        user = _assign_legacy_role(user, requested_role, acting_user)
+    else:
+        user = User.objects.select_for_update().get(pk=user.pk)
     for attr, value in values.items():
         setattr(user, attr, value)
-    if "role" in values:
-        user.is_staff = values["role"] == Role.ADMIN
     try:
         user.save()
     except IntegrityError as exc:
         raise InvalidParameter("تعذّر حفظ التعديلات: قيمة مكرّرة.") from exc
-    auth_services.ensure_profile(user)
+    if requested_role is None:
+        auth_services.ensure_profile(user)
     return user
 
 
@@ -79,11 +115,7 @@ def set_role(user: User, role: str, acting_user: User) -> User:
         raise InvalidParameter("لا يمكنك تغيير دورك الخاص.")
     if role not in Role.values:
         raise InvalidParameter("دور غير صالح.")
-    user.role = role
-    user.is_staff = role == Role.ADMIN
-    user.save(update_fields=["role", "is_staff"])
-    auth_services.ensure_profile(user)
-    return user
+    return _assign_legacy_role(user, role, acting_user)
 
 
 def is_self(acting_user: User, user: User) -> bool:

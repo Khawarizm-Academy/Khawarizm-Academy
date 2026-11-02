@@ -13,6 +13,7 @@ which routes it serves, and the rules every feature follows — mirroring
 | :--- | :--- | :--- | :--- | :--- |
 | **common** | `common` | — | shared abstract models, choices, `seed_demo` | [`common/README.md`](common/README.md) |
 | **Auth** | `accounts` | `/api/auth/*` | `User`, `StudentProfile`, `InstructorProfile`, `UserSession`, `AuthEvent` | [`auth/README.md`](auth/README.md) |
+| **Access** | `access` | — (Phase 1; role manager routes arrive in Phase 2) | permission registry, `AccessRole`, `RoleAssignment`, access `AuditEvent` | [`access/README.md`](access/README.md) |
 | **Catalog** | `catalog` | `/api/catalog*` | `Category`, `FilterGroup`, `FilterOption` | [`catalog/README.md`](catalog/README.md) |
 | **Courses** | `courses` | `/api/courses/*`, `/api/problems` | `Course`, `CourseModule`, `CourseLesson`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` | [`courses/README.md`](courses/README.md) |
 | **Scholarships** | `scholarships` | `/api/scholarships/*` | `Scholarship`, `ScholarshipApplication` | [`scholarships/README.md`](scholarships/README.md) |

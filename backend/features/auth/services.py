@@ -16,11 +16,12 @@ from features.common.throttling import LOCKOUT_THRESHOLD, LOCKOUT_WINDOW_SECONDS
 
 
 def ensure_profile(user: User) -> None:
-    """Every user gets the profile row its role expects."""
-    if user.role == Role.INSTRUCTOR:
+    """Every account has learner preferences; studio users also get instructor data."""
+    StudentProfile.objects.get_or_create(user=user)
+    from features.access.services import has_perm
+
+    if has_perm(user, "studio.access"):
         InstructorProfile.objects.get_or_create(user=user)
-    elif user.role == Role.STUDENT:
-        StudentProfile.objects.get_or_create(user=user)
 
 
 def upsert_firebase_user(identity: dict) -> User:
@@ -36,7 +37,9 @@ def upsert_firebase_user(identity: dict) -> User:
         user.avatar_url = user.avatar_url or identity["picture"]
     user.last_seen_at = timezone.now()
     user.save()
-    ensure_profile(user)
+    from features.access.services import sync_primary_role
+
+    sync_primary_role(user)
     return user
 
 

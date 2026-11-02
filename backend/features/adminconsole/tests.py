@@ -27,7 +27,13 @@ class AdminConsolePermissionTests(ApiTestCase):
         self.assertEqual(self.client.get("/api/admin/overview").status_code, 403)
 
     def test_staff_flag_is_enough_without_admin_role(self):
-        authenticate(self.client, make_user(is_staff=True))
+        legacy_staff = User.objects.create_user(
+            email="legacy.staff@example.com",
+            password="pass",
+            role=Role.STUDENT,
+            is_staff=True,
+        )
+        authenticate(self.client, legacy_staff)
         self.assertEqual(self.client.get("/api/admin/overview").status_code, 200)
 
 
@@ -228,14 +234,41 @@ class AdminConsoleUserMutationTests(ApiTestCase):
         self.assertEqual(response.status_code, 201)
         self.assertTrue(User.objects.filter(email="new@example.com").exists())
         # A student profile is created for the new account.
-        self.assertTrue(User.objects.get(email="new@example.com").student_profile)
+        created = User.objects.get(email="new@example.com")
+        self.assertTrue(created.student_profile)
+        self.assertFalse(created.role_assignments.exists())
 
     def test_create_admin_gets_staff_rights(self):
         self.client.post("/api/admin/users", {"email": "boss@example.com", "role": Role.ADMIN}, format="json")
-        self.assertTrue(User.objects.get(email="boss@example.com").is_staff)
+        boss = User.objects.get(email="boss@example.com")
+        self.assertTrue(boss.is_staff)
+        self.assertTrue(boss.role_assignments.filter(role__slug="admin").exists())
+
+    def test_create_instructor_gets_access_assignment_and_both_profiles(self):
+        response = self.client.post(
+            "/api/admin/users",
+            {"email": "new.instructor@example.com", "role": Role.INSTRUCTOR},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        instructor = User.objects.get(email="new.instructor@example.com")
+        self.assertEqual(instructor.role, Role.INSTRUCTOR)
+        self.assertTrue(instructor.role_assignments.filter(role__slug="instructor").exists())
+        self.assertTrue(instructor.student_profile)
+        self.assertTrue(instructor.instructor_profile)
 
     def test_create_without_email_is_a_bad_request(self):
         self.assertEqual(self.client.post("/api/admin/users", {"role": Role.STUDENT}, format="json").status_code, 400)
+
+    def test_create_rejects_an_unknown_role_without_creating_an_account(self):
+        response = self.client.post(
+            "/api/admin/users",
+            {"email": "invalid.role@example.com", "role": "wizard"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], "invalid_parameter")
+        self.assertFalse(User.objects.filter(email="invalid.role@example.com").exists())
 
     def test_create_duplicate_email_is_a_bad_request(self):
         make_user(email="taken@example.com")
@@ -257,14 +290,46 @@ class AdminConsoleUserMutationTests(ApiTestCase):
 
     def test_patch_role_keeps_django_staff_in_sync(self):
         target = make_user(email="promote@example.com")
-        self.client.patch(f"/api/admin/users/{target.id}", {"role": Role.ADMIN}, format="json")
+        response = self.client.patch(f"/api/admin/users/{target.id}", {"role": Role.ADMIN}, format="json")
+        self.assertEqual(response.json()["role"], Role.ADMIN)
+        self.assertTrue(response.json()["isStaff"])
         target.refresh_from_db()
         self.assertEqual(target.role, Role.ADMIN)
         self.assertTrue(target.is_staff)
+        self.assertTrue(target.role_assignments.filter(role__slug="admin").exists())
 
     def test_patch_cannot_demote_your_own_account(self):
         response = self.client.patch(f"/api/admin/users/{self.admin.id}", {"role": Role.STUDENT}, format="json")
         self.assertEqual(response.status_code, 400)
+
+    def test_patch_rolls_back_account_fields_when_role_assignment_fails(self):
+        from features.access.models import AccessRole
+
+        AccessRole.objects.get(slug="instructor").delete()
+        target = make_user(email="rollback.role@example.com", full_name="Before")
+        response = self.client.patch(
+            f"/api/admin/users/{target.id}",
+            {"fullName": "After", "role": Role.INSTRUCTOR},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], "role_missing")
+        target.refresh_from_db()
+        self.assertEqual(target.full_name, "Before")
+        self.assertEqual(target.role, Role.STUDENT)
+
+    def test_legacy_role_patch_reports_role_missing_after_template_deletion(self):
+        from features.access.models import AccessRole
+
+        AccessRole.objects.get(slug="instructor").delete()
+        target = make_user(email="missing.instructor@example.com")
+        response = self.client.post(
+            f"/api/admin/users/{target.id}/role",
+            {"role": Role.INSTRUCTOR},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], "role_missing")
 
     def test_patch_never_changes_the_email_identity(self):
         target = make_user(email="identity@example.com")

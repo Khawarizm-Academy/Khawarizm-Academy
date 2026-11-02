@@ -96,6 +96,7 @@ INSTALLED_APPS = [
     "features.common",
     # Feature apps — one folder per product feature, mirroring the frontend.
     "features.auth",
+    "features.access",
     "features.catalog",
     "features.courses",
     "features.scholarships",

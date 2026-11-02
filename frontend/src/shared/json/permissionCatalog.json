@@ -1,0 +1,674 @@
+[
+  {
+    "key": "administrator",
+    "group": "general",
+    "label": "مشرف كامل — يتجاوز كل الصلاحيات",
+    "description": "تتيح صلاحية «مشرف كامل — يتجاوز كل الصلاحيات» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "admin.access",
+      "studio.access",
+      "courses.enroll",
+      "courses.favorite",
+      "lessons.watch",
+      "quizzes.attempt",
+      "certificates.view_own",
+      "reviews.write",
+      "scholarships.save",
+      "scholarships.apply",
+      "competitions.join",
+      "events.register",
+      "profile.edit_own",
+      "discussions.post",
+      "discussions.reply_own",
+      "discussions.moderate",
+      "reviews.reply_own",
+      "courses.create",
+      "courses.edit_own",
+      "courses.edit_any",
+      "courses.delete_own",
+      "courses.delete_any",
+      "courses.submit_for_review",
+      "courses.publish",
+      "courses.review",
+      "courses.manage_staff",
+      "curriculum.edit_own",
+      "curriculum.edit_any",
+      "live_sessions.manage_own",
+      "live_sessions.manage_any",
+      "announcements.post",
+      "certificates.manage",
+      "reviews.moderate",
+      "students.view_own",
+      "students.view_any",
+      "analytics.view_own",
+      "analytics.view_any",
+      "videos.upload",
+      "videos.manage_own",
+      "videos.manage_any",
+      "videos.use_embed",
+      "videos.package",
+      "videos.watch_any",
+      "videos.configure",
+      "quizzes.create",
+      "quizzes.edit_own",
+      "quizzes.edit_any",
+      "quizzes.results_own",
+      "quizzes.results_any",
+      "quizzes.reset_attempts",
+      "scholarships.manage",
+      "events.manage",
+      "competitions.manage",
+      "catalog.manage",
+      "home.curate",
+      "users.view",
+      "users.create",
+      "users.edit",
+      "users.delete",
+      "users.assign_roles",
+      "users.revoke_sessions",
+      "sessions.view_any",
+      "analytics.view_platform",
+      "audit.view",
+      "roles.view",
+      "roles.manage",
+      "system.maintenance"
+    ]
+  },
+  {
+    "key": "admin.access",
+    "group": "general",
+    "label": "الدخول إلى لوحة الإدارة",
+    "description": "تتيح صلاحية «الدخول إلى لوحة الإدارة» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "studio.access",
+    "group": "general",
+    "label": "الدخول إلى استوديو المدرّب",
+    "description": "تتيح صلاحية «الدخول إلى استوديو المدرّب» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "courses.enroll",
+    "group": "learning",
+    "label": "التسجيل في الدورات",
+    "description": "تتيح صلاحية «التسجيل في الدورات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "courses.favorite",
+    "group": "learning",
+    "label": "إضافة الدورات للمفضلة",
+    "description": "تتيح صلاحية «إضافة الدورات للمفضلة» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "lessons.watch",
+    "group": "learning",
+    "label": "مشاهدة دروس الدورات المسجّل بها",
+    "description": "تتيح صلاحية «مشاهدة دروس الدورات المسجّل بها» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "quizzes.attempt",
+    "group": "learning",
+    "label": "حلّ الاختبارات",
+    "description": "تتيح صلاحية «حلّ الاختبارات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "certificates.view_own",
+    "group": "learning",
+    "label": "عرض شهاداتي",
+    "description": "تتيح صلاحية «عرض شهاداتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "reviews.write",
+    "group": "learning",
+    "label": "كتابة تقييم للدورة",
+    "description": "تتيح صلاحية «كتابة تقييم للدورة» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "scholarships.save",
+    "group": "learning",
+    "label": "حفظ المنح",
+    "description": "تتيح صلاحية «حفظ المنح» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "scholarships.apply",
+    "group": "learning",
+    "label": "التقديم على المنح",
+    "description": "تتيح صلاحية «التقديم على المنح» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "competitions.join",
+    "group": "learning",
+    "label": "دخول المسابقات",
+    "description": "تتيح صلاحية «دخول المسابقات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "events.register",
+    "group": "learning",
+    "label": "التسجيل في الفعاليات",
+    "description": "تتيح صلاحية «التسجيل في الفعاليات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "profile.edit_own",
+    "group": "learning",
+    "label": "تعديل ملفي الشخصي",
+    "description": "تتيح صلاحية «تعديل ملفي الشخصي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "discussions.post",
+    "group": "learning",
+    "label": "طرح الأسئلة والمشاركة في نقاش الدروس",
+    "description": "تتيح صلاحية «طرح الأسئلة والمشاركة في نقاش الدروس» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "discussions.reply_own",
+    "group": "courses",
+    "label": "الرد على أسئلة دوراتي",
+    "description": "تتيح صلاحية «الرد على أسئلة دوراتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "discussions.moderate",
+    "group": "courses",
+    "label": "إدارة النقاشات (إخفاء/تثبيت) في كل الدورات",
+    "description": "تتيح صلاحية «إدارة النقاشات (إخفاء/تثبيت) في كل الدورات» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": []
+  },
+  {
+    "key": "reviews.reply_own",
+    "group": "courses",
+    "label": "الرد علنًا على تقييمات دوراتي",
+    "description": "تتيح صلاحية «الرد علنًا على تقييمات دوراتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "courses.create",
+    "group": "courses",
+    "label": "إنشاء دورات",
+    "description": "تتيح صلاحية «إنشاء دورات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "studio.access"
+    ]
+  },
+  {
+    "key": "courses.edit_own",
+    "group": "courses",
+    "label": "تعديل دوراتي",
+    "description": "تتيح صلاحية «تعديل دوراتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "courses.edit_any",
+    "group": "courses",
+    "label": "تعديل أي دورة",
+    "description": "تتيح صلاحية «تعديل أي دورة» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "courses.edit_own"
+    ]
+  },
+  {
+    "key": "courses.delete_own",
+    "group": "courses",
+    "label": "حذف دوراتي",
+    "description": "تتيح صلاحية «حذف دوراتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "courses.delete_any",
+    "group": "courses",
+    "label": "حذف أي دورة",
+    "description": "تتيح صلاحية «حذف أي دورة» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "courses.delete_own"
+    ]
+  },
+  {
+    "key": "courses.submit_for_review",
+    "group": "courses",
+    "label": "إرسال الدورة للمراجعة",
+    "description": "تتيح صلاحية «إرسال الدورة للمراجعة» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "courses.publish",
+    "group": "courses",
+    "label": "نشر الدورات مباشرةً",
+    "description": "تتيح صلاحية «نشر الدورات مباشرةً» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "courses.submit_for_review"
+    ]
+  },
+  {
+    "key": "courses.review",
+    "group": "courses",
+    "label": "مراجعة واعتماد دورات الآخرين",
+    "description": "تتيح صلاحية «مراجعة واعتماد دورات الآخرين» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": []
+  },
+  {
+    "key": "courses.manage_staff",
+    "group": "courses",
+    "label": "إدارة مدرّبي الدورة المشاركين",
+    "description": "تتيح صلاحية «إدارة مدرّبي الدورة المشاركين» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "curriculum.edit_own",
+    "group": "courses",
+    "label": "تعديل منهج دوراتي (وحدات ودروس)",
+    "description": "تتيح صلاحية «تعديل منهج دوراتي (وحدات ودروس)» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "curriculum.edit_any",
+    "group": "courses",
+    "label": "تعديل منهج أي دورة",
+    "description": "تتيح صلاحية «تعديل منهج أي دورة» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "curriculum.edit_own"
+    ]
+  },
+  {
+    "key": "live_sessions.manage_own",
+    "group": "courses",
+    "label": "جدولة الجلسات المباشرة لدوراتي",
+    "description": "تتيح صلاحية «جدولة الجلسات المباشرة لدوراتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "live_sessions.manage_any",
+    "group": "courses",
+    "label": "إدارة كل الجلسات المباشرة",
+    "description": "تتيح صلاحية «إدارة كل الجلسات المباشرة» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "live_sessions.manage_own"
+    ]
+  },
+  {
+    "key": "announcements.post",
+    "group": "courses",
+    "label": "نشر إعلانات في دوراتي",
+    "description": "تتيح صلاحية «نشر إعلانات في دوراتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "certificates.manage",
+    "group": "courses",
+    "label": "إصدار الشهادات وإلغاؤها",
+    "description": "تتيح صلاحية «إصدار الشهادات وإلغاؤها» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": []
+  },
+  {
+    "key": "reviews.moderate",
+    "group": "courses",
+    "label": "إدارة تقييمات الدورات",
+    "description": "تتيح صلاحية «إدارة تقييمات الدورات» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": []
+  },
+  {
+    "key": "students.view_own",
+    "group": "students",
+    "label": "عرض طلاب دوراتي وتقدّمهم",
+    "description": "تتيح صلاحية «عرض طلاب دوراتي وتقدّمهم» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "students.view_any",
+    "group": "students",
+    "label": "عرض كل الطلاب",
+    "description": "تتيح صلاحية «عرض كل الطلاب» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "students.view_own"
+    ]
+  },
+  {
+    "key": "analytics.view_own",
+    "group": "students",
+    "label": "تحليلات دوراتي",
+    "description": "تتيح صلاحية «تحليلات دوراتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "analytics.view_any",
+    "group": "students",
+    "label": "تحليلات كل الدورات",
+    "description": "تتيح صلاحية «تحليلات كل الدورات» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "analytics.view_own"
+    ]
+  },
+  {
+    "key": "videos.upload",
+    "group": "videos",
+    "label": "رفع الفيديوهات",
+    "description": "تتيح صلاحية «رفع الفيديوهات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "studio.access"
+    ]
+  },
+  {
+    "key": "videos.manage_own",
+    "group": "videos",
+    "label": "إدارة فيديوهاتي",
+    "description": "تتيح صلاحية «إدارة فيديوهاتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "videos.manage_any",
+    "group": "videos",
+    "label": "إدارة كل الفيديوهات",
+    "description": "تتيح صلاحية «إدارة كل الفيديوهات» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "videos.manage_own"
+    ]
+  },
+  {
+    "key": "videos.use_embed",
+    "group": "videos",
+    "label": "استخدام مصادر غير محمية (يوتيوب/فيميو/رابط)",
+    "description": "تتيح صلاحية «استخدام مصادر غير محمية (يوتيوب/فيميو/رابط)» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "videos.package",
+    "group": "videos",
+    "label": "تشغيل تغليف FFmpeg",
+    "description": "تتيح صلاحية «تشغيل تغليف FFmpeg» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "videos.watch_any",
+    "group": "videos",
+    "label": "مشاهدة أي فيديو دون تسجيل",
+    "description": "تتيح صلاحية «مشاهدة أي فيديو دون تسجيل» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": []
+  },
+  {
+    "key": "videos.configure",
+    "group": "videos",
+    "label": "إعداد مزوّدي الفيديو ووضع FFmpeg",
+    "description": "تتيح صلاحية «إعداد مزوّدي الفيديو ووضع FFmpeg» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": []
+  },
+  {
+    "key": "quizzes.create",
+    "group": "quizzes",
+    "label": "إنشاء اختبارات",
+    "description": "تتيح صلاحية «إنشاء اختبارات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "studio.access"
+    ]
+  },
+  {
+    "key": "quizzes.edit_own",
+    "group": "quizzes",
+    "label": "تعديل اختباراتي",
+    "description": "تتيح صلاحية «تعديل اختباراتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "quizzes.edit_any",
+    "group": "quizzes",
+    "label": "تعديل أي اختبار",
+    "description": "تتيح صلاحية «تعديل أي اختبار» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "quizzes.edit_own"
+    ]
+  },
+  {
+    "key": "quizzes.results_own",
+    "group": "quizzes",
+    "label": "نتائج اختباراتي",
+    "description": "تتيح صلاحية «نتائج اختباراتي» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "quizzes.results_any",
+    "group": "quizzes",
+    "label": "نتائج كل الاختبارات",
+    "description": "تتيح صلاحية «نتائج كل الاختبارات» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "quizzes.results_own"
+    ]
+  },
+  {
+    "key": "quizzes.reset_attempts",
+    "group": "quizzes",
+    "label": "منح محاولة إضافية لطالب",
+    "description": "تتيح صلاحية «منح محاولة إضافية لطالب» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": []
+  },
+  {
+    "key": "scholarships.manage",
+    "group": "content",
+    "label": "إدارة المنح",
+    "description": "تتيح صلاحية «إدارة المنح» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "events.manage",
+    "group": "content",
+    "label": "إدارة الفعاليات",
+    "description": "تتيح صلاحية «إدارة الفعاليات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "competitions.manage",
+    "group": "content",
+    "label": "إدارة المسابقات",
+    "description": "تتيح صلاحية «إدارة المسابقات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "catalog.manage",
+    "group": "content",
+    "label": "إدارة التصنيفات والفلاتر",
+    "description": "تتيح صلاحية «إدارة التصنيفات والفلاتر» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "home.curate",
+    "group": "content",
+    "label": "تنسيق الصفحة الرئيسية",
+    "description": "تتيح صلاحية «تنسيق الصفحة الرئيسية» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "users.view",
+    "group": "users",
+    "label": "عرض المستخدمين",
+    "description": "تتيح صلاحية «عرض المستخدمين» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "users.create",
+    "group": "users",
+    "label": "إنشاء حسابات",
+    "description": "تتيح صلاحية «إنشاء حسابات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "users.view"
+    ]
+  },
+  {
+    "key": "users.edit",
+    "group": "users",
+    "label": "تعديل الحسابات",
+    "description": "تتيح صلاحية «تعديل الحسابات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "users.view"
+    ]
+  },
+  {
+    "key": "users.delete",
+    "group": "users",
+    "label": "حذف الحسابات",
+    "description": "تتيح صلاحية «حذف الحسابات» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "users.view"
+    ]
+  },
+  {
+    "key": "users.assign_roles",
+    "group": "users",
+    "label": "إسناد الأدوار للمستخدمين",
+    "description": "تتيح صلاحية «إسناد الأدوار للمستخدمين» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "users.view"
+    ]
+  },
+  {
+    "key": "users.revoke_sessions",
+    "group": "users",
+    "label": "إنهاء جلسات المستخدمين",
+    "description": "تتيح صلاحية «إنهاء جلسات المستخدمين» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "users.view"
+    ]
+  },
+  {
+    "key": "sessions.view_any",
+    "group": "users",
+    "label": "عرض كل الجلسات",
+    "description": "تتيح صلاحية «عرض كل الجلسات» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "analytics.view_platform",
+    "group": "users",
+    "label": "تحليلات المنصة",
+    "description": "تتيح صلاحية «تحليلات المنصة» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "audit.view",
+    "group": "users",
+    "label": "عرض سجل التدقيق",
+    "description": "تتيح صلاحية «عرض سجل التدقيق» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "roles.view",
+    "group": "roles",
+    "label": "عرض الأدوار",
+    "description": "تتيح صلاحية «عرض الأدوار» هذا الإجراء للمستخدم.",
+    "elevated": false,
+    "implies": [
+      "admin.access"
+    ]
+  },
+  {
+    "key": "roles.manage",
+    "group": "roles",
+    "label": "إنشاء الأدوار وتعديلها وحذفها",
+    "description": "تتيح صلاحية «إنشاء الأدوار وتعديلها وحذفها» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "roles.view"
+    ]
+  },
+  {
+    "key": "system.maintenance",
+    "group": "system",
+    "label": "تشغيل مهام الصيانة",
+    "description": "تتيح صلاحية «تشغيل مهام الصيانة» هذا الإجراء للمستخدم.",
+    "elevated": true,
+    "implies": [
+      "admin.access"
+    ]
+  }
+]

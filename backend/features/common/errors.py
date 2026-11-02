@@ -116,3 +116,29 @@ def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response |
         payload["fields"] = fields
     response.data = payload
     return response
+
+
+class PermissionDenied(exceptions.APIException):
+    """A forbidden action rendered with the existing permission_denied code."""
+
+    status_code = status.HTTP_403_FORBIDDEN
+    default_code = "permission_denied"
+    default_detail = "ليس لديك الصلاحية المطلوبة."
+
+
+class RoleHasMembers(Conflict):
+    """A role with members needs an explicit replacement before deletion."""
+
+    default_code = "role_has_members"
+    default_detail = "لا يمكن حذف دور ما زال له أعضاء قبل إعادة إسنادهم."
+
+    def __init__(self, detail=None, *, count: int | None = None):
+        self.count = count
+        super().__init__(detail)
+
+
+class RoleMissing(InvalidParameter):
+    """A legacy account-role request points to a role removed by an administrator."""
+
+    default_code = "role_missing"
+    default_detail = "الدور المطلوب غير موجود."
