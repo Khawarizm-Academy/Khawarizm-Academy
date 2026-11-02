@@ -7,7 +7,7 @@ Branch: `Chore/AccessStudioBaseline` → PR into `Feature/AccessStudio`. Date: 2
 | Artifact | Result |
 | :--- | :--- |
 | `plan/PLAN.md` | The supplied 1,684-line upgrade plan is checked in on `Feature/AccessStudio` (commit `3c28574`). The integration branch was created from `main` and pushed. |
-| `.github/workflows/frontend.yml` | Added Node 22 frontend CI for `main`/`Feature/**`: `npm ci`, lint, TypeScript build check, Vitest, production build with the documented dummy API URL, and cancellation of superseded runs. GitHub PR run is pending until this branch is pushed/opened as a PR. |
+| `.github/workflows/frontend.yml` | Added Node 22 frontend CI for `main`/`Feature/**`: `npm ci`, lint, TypeScript build check, Vitest, production build with the documented dummy API URL, and cancellation of superseded runs. PR #45's frontend workflow passed. |
 | `.github/workflows/backend.yml` | Added `Feature/**` to backend push/PR triggers. The old workflow did not run against the integration branch, which would have left backend changes ungated. |
 | `frontend/eslint.config.js` | Added per-feature `no-restricted-imports` enforcement. Same-feature imports remain permitted; `auth/context` and `videohosting/*` are the two service boundaries. Pre-existing cross-feature import sites are enumerated individually with an explanatory comment rather than broad feature exemptions. A synthetic unauthorized import was rejected by ESLint. |
 | `backend/config/middleware.py`, `backend/config/tests.py` | Fixed request-ID context token ownership: the token now lives on the individual request rather than shared middleware instance state. Added a deterministic two-thread regression test. |
@@ -35,7 +35,7 @@ The backend environment was recreated with pinned runtime and development requir
 | Frontend: `npm ci`, lint, `npx tsc -b`, `npm test`, build | Pass on Node 22.23.4; **76 tests in 9 files**. The build emitted the existing large-chunk advisory only. |
 | `git diff --check` | Pass. |
 
-A Gitleaks directory scan of the working tree found no leaks. The local `gitleaks detect` invocation reported zero commits despite Git exposing 185 commits; that history scan is treated as **inconclusive**, not as proof of a clean history. The backend CI job still runs the repository's pinned Gitleaks command on the PR/full checkout and must be reviewed before merge.
+A Gitleaks directory scan of the working tree found no leaks. The local `gitleaks detect` invocation reported zero commits despite Git exposing 185 commits, so it was treated as inconclusive. The authoritative PR backend CI history scan succeeded: **194 commits / 41.35 MB scanned; no leaks found**.
 
 ## Parity evidence
 
@@ -51,7 +51,7 @@ The first concurrent browser run exposed 500s caused by the shared middleware to
 
 ## GitHub state and human handoff
 
-The checkout was expanded from shallow to full history (185 commits visible). At inspection time, the public repository had one tag (`backend-skills-v1`), no GitHub Releases, no rulesets, and no open PRs in the displayed recent PR history. `main` branch protection currently requires only `lint · checks · tests · audit`; branch protection was not changed. **Human action:** after the new frontend workflow has run successfully once, add its required status check to `main` branch protection, as Appendix D/P0.3 requires. The exact published status context will be recorded after the PR run.
+The checkout was expanded from shallow to full history (185 commits visible before the new phase commits). At inspection time, the public repository had one tag (`backend-skills-v1`), no GitHub Releases, no rulesets, and no earlier open PRs in the displayed recent PR history. PR [#45](https://github.com/Khawarizm-Academy/Khawarizm-Academy/pull/45) is mergeable and all **five checks passed** at commit `3620c42`: backend CI, frontend CI, both Vercel previews, and Vercel Preview Comments. `main` branch protection currently requires only `lint · checks · tests · audit`; branch protection was not changed. **Human action:** add the frontend job status context `lint · typecheck · tests · build` to the required checks for `main`, as Appendix D/P0.3 requires.
 
 ## Discovered / resolved
 
@@ -64,6 +64,6 @@ The checkout was expanded from shallow to full history (185 commits visible). At
 
 ## Remaining before Phase 0 can be closed
 
-1. Push this phase branch, open the PR into `Feature/AccessStudio`, and wait for both backend and frontend GitHub checks; review the Gitleaks history-scan result (the local history scan was inconclusive).
-2. Complete the human-only branch-protection update for the new frontend check. Do not change the main branch protection from this session.
-3. Do not add demo video content until the owner confirms its URL/licence.
+1. Merge PR #45 into `Feature/AccessStudio`; the backend/frontend CI and preview checks are green.
+2. Complete the human-only branch-protection update by requiring `lint · typecheck · tests · build` on `main`. Do not change main branch protection from this session.
+3. Keep demo video content unseeded until the owner confirms its URL/licence; this is a later-phase dependency, not a Phase 0 data change.
