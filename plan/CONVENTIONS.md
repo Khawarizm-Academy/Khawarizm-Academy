@@ -23,11 +23,11 @@
 6. **Every user-facing string is a named constant in `features/common/messages.py`.** Feature NOT_FOUND constants import from there.
 7. **Data over branches:** kind/type dispatch uses dicts/tables (see `catalog/filters.py`), not growing `if` chains.
 8. **One-line why-comments** explain decisions, not what the code does; no banner comments.
-9. **All migrations additive/backward-compatible.** No phase may require a data migration or a destructive step.
+9. **Migrations stay additive/backward-compatible.** No destructive migration is allowed. For the Access/Studio upgrade, `plan/PLAN.md` §0.5 A3 permits only idempotent, reversible-no-op `RunPython` seed/backfill steps.
 10. **Refactor phases prove parity:** re-run the Phase-0 capture (`/tmp/opencode/parity/capture.sh`), diff with `/tmp/opencode/parity/diff.py` — zero or every diff explained in the phase notes.
 
 ## Workflow per phase
 
-- One branch per phase off `Refactor/BackendSkills` (master plan §3); commit messages `feat|fix|refactor|docs|chore|test(<scope>): <imperative summary>` in the repo's existing style.
+- For the Access/Studio upgrade, one branch per phase off `Feature/AccessStudio` as defined in `plan/PLAN.md`; older alignment work used `Refactor/BackendSkills`. Commit messages remain `feat|fix|refactor|docs|chore|test(<scope>): <imperative summary>` in the repo's existing style.
 - Every phase commits its result notes like `plan/phase-<n>-result.md` (summary of what changed, gates, evidence) — the trail lives with the plan.
 - Gates before every merge: ruff (Phase 1 and on), `check`, `makemigrations --check --dry-run`, `migrate`, `test` — recorded in the phase result file.

@@ -1,12 +1,11 @@
 name: backend-ci
 
-# Every push and PR to main / the alignment base branch must pass the four
-# Django gates plus lint, dependency audit, secrets scan, and the deploy check.
+# Main, Feature/*, and legacy Refactor/* branches pass the backend quality gates.
 on:
   push:
-    branches: [main, "Refactor/*"]
+    branches: [main, "Refactor/*", "Feature/**"]
   pull_request:
-    branches: [main, "Refactor/*"]
+    branches: [main, "Refactor/*", "Feature/**"]
 
 # Stop the superseded run on the same ref — pushes go in close succession.
 concurrency:

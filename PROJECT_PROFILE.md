@@ -46,14 +46,14 @@
 ## 7. SEO and deployment
 - SPA (client-rendered) at Vercel; API at `backend` Vercel project (`vercel.json` runs `migrate` + `collectstatic` at build; its cron hits `/api/admin/maintenance/cleanup` daily at `0 3 * * *` — Hobby plan allows at most once/day; the 6h cadence is self-hosted cron only).
 - Canonical: SPA `https://khawarizmacademy.vercel.app` `(?)`; API target `https://khawarizm.vercel.app` (origin names verified from `.env.production`).
-- Env profiles: `.env.development` committed (dev defaults + placeholders) · `.env.production` git-ignored, real keys on the box · Vercel uses Project Environment Variables.
-- CI: `.github/workflows/backend.yml` runs on every push/PR touching `main`/`Refactor/*` — ruff check+format, `check`, `spectacular --fail-on-warn`, `makemigrations --check`, `migrate`, `test -v2 --parallel`, `check --deploy`, pip-audit, gitleaks (whole history). Branch protection on `main` requires it.
+- Env profiles: backend `.env.development` is committed with development defaults/placeholders; backend `.env.production` is gitignored and holds real keys only on the host. `frontend/.env.production` is intentionally tracked and contains only the public `VITE_API_BASE_URL`; Vercel uses Project Environment Variables.
+- CI: `.github/workflows/backend.yml` runs backend checks on `main`, `Feature/**`, and legacy `Refactor/*`; `.github/workflows/frontend.yml` runs lint, typecheck, tests, and build on `main`/`Feature/**`. `main` currently requires the backend check; add the frontend check to branch protection after it has run once.
 - OpenAPI contract: `/api/schema` (YAML) + Swagger UI `/api/schema/docs` — public and origin-exempt; generated with drf-spectacular 0.30 (`ContractAutoSchema` appends the shared error envelope to every operation).
 
 ## 8. Known pitfalls
 - Every `/api/` request needs an allowed `Origin: http://localhost:5173` header (`config/middleware.py`); curls/tests without it 403.
 - `/api/admin/*` requires Firebase-issued accounts (`FIREBASE_ALLOW_DEV_TOKENS` off) to escape dev-token-only mode for staff flows `(?)`.
-- SQLite dev (and self-hosted) runs on WAL + `busy_timeout=10000` + `IMMEDIATE` transactions with the `config.sqlite_backend` engine; the test DB is a file in `/tmp` cloned per parallel worker (`khawarizm-test-db_N.sqlite3`). Do not revert any of this — the upload ingest's worker thread and the parallel runner both need it (the in-memory shared-cache default table-locks the ingest thread).
+- SQLite dev (and self-hosted) runs on WAL + `busy_timeout=10000` + `IMMEDIATE` transactions with the `config.sqlite_backend` engine; the test DB is a file in `/tmp` cloned per parallel worker (`khawarizm-test-db_N.sqlite3`). Do not revert this — the upload ingest's worker thread and the parallel runner both need it (the in-memory shared-cache default table-locks the ingest thread).
 - Search: exclude `backend/.venv/`, `backend/staticfiles/`, `__pycache__` — they bury real results.
-- Excluding `frontend/.env.production` from git on purpose; bare un-ignores at repo root would re-include it — keep the `frontend/` exception when editing `.gitignore`.
+- Keep backend `.env.production` out of git. The tracked frontend `frontend/.env.production` is public configuration, not a secret; `.gitignore` explicitly re-includes it.
 - Django admin (`/admin/`) needs the same origin handling as the API when run behind Vite dev proxy.
