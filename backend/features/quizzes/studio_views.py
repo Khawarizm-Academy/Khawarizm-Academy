@@ -8,7 +8,13 @@ from typing import Any
 from django.db import transaction
 from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiTypes,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -402,11 +408,18 @@ def _import_row(row: Any, index: int) -> tuple[dict[str, Any] | None, dict[str, 
         return None, {"row": index, "errors": [str(getattr(exc, "detail", exc))]}
 
 
-@extend_schema(
-    operation_id="studio_quizzes",
-    methods=["GET", "POST"],
-    parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT), 201: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="studio_quiz_list",
+        parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
+        responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+    ),
+    post=extend_schema(
+        operation_id="studio_quiz_create",
+        parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
+        request=OpenApiTypes.OBJECT,
+        responses={201: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+    ),
 )
 @api_view(["GET", "POST"])
 @authentication_classes([AccessTokenAuthentication])
@@ -427,11 +440,29 @@ def course_quizzes(request, slug):
     return _private(Response(_quiz_row(quiz), status=status.HTTP_201_CREATED))
 
 
-@extend_schema(
-    operation_id="studio_quiz_detail",
-    methods=["GET", "PATCH", "DELETE"],
-    parameters=[OpenApiParameter("quiz_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT), 409: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+@extend_schema_view(
+    get=extend_schema(
+        operation_id="studio_quiz_detail",
+        parameters=[OpenApiParameter("quiz_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+        responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+    ),
+    patch=extend_schema(
+        operation_id="studio_quiz_update",
+        parameters=[OpenApiParameter("quiz_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+        request=OpenApiTypes.OBJECT,
+        responses={
+            200: OpenApiResponse(response=OpenApiTypes.OBJECT),
+            409: OpenApiResponse(response=OpenApiTypes.OBJECT),
+        },
+    ),
+    delete=extend_schema(
+        operation_id="studio_quiz_delete",
+        parameters=[OpenApiParameter("quiz_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
+        responses={
+            200: OpenApiResponse(response=OpenApiTypes.OBJECT),
+            409: OpenApiResponse(response=OpenApiTypes.OBJECT),
+        },
+    ),
 )
 @api_view(["GET", "PATCH", "DELETE"])
 @authentication_classes([AccessTokenAuthentication])
@@ -455,6 +486,11 @@ def quiz_detail(request, quiz_id):
     return _private(Response({"deleted": True, "id": str(quiz_id)}))
 
 
+@extend_schema(
+    operation_id="studio_quiz_publish",
+    request=None,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT), 422: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
 @api_view(["POST"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -473,6 +509,11 @@ def publish_quiz(request, quiz_id):
     return _private(Response(_quiz_row(quiz)))
 
 
+@extend_schema(
+    operation_id="studio_quiz_unpublish",
+    request=None,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
 @api_view(["POST"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -485,6 +526,11 @@ def unpublish_quiz(request, quiz_id):
     return _private(Response(_quiz_row(quiz)))
 
 
+@extend_schema(
+    operation_id="studio_question_create",
+    request=OpenApiTypes.OBJECT,
+    responses={201: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
 @api_view(["POST"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -501,6 +547,11 @@ def create_question(request, quiz_id):
     return _private(Response(_question_row(question), status=status.HTTP_201_CREATED))
 
 
+@extend_schema(
+    operation_id="studio_questions_reorder",
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
 @api_view(["POST"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -520,6 +571,20 @@ def reorder_questions(request, quiz_id):
     return _private(Response({"items": [_question_row(q) for q in quiz.questions.prefetch_related("options").all()]}))
 
 
+@extend_schema_view(
+    put=extend_schema(
+        operation_id="studio_question_update",
+        request=OpenApiTypes.OBJECT,
+        responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+    ),
+    delete=extend_schema(
+        operation_id="studio_question_delete",
+        responses={
+            200: OpenApiResponse(response=OpenApiTypes.OBJECT),
+            409: OpenApiResponse(response=OpenApiTypes.OBJECT),
+        },
+    ),
+)
 @api_view(["PUT", "DELETE"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -548,6 +613,11 @@ def question_detail(request, question_id):
     return _private(Response(row))
 
 
+@extend_schema(
+    operation_id="studio_questions_import",
+    request={"application/json": OpenApiTypes.OBJECT, "text/csv": OpenApiTypes.STR},
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
 @api_view(["POST"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -577,6 +647,10 @@ def import_questions(request, quiz_id):
     return _private(Response({"dryRun": dry_run, "committed": committed, "valid": len(valid), "errors": errors}))
 
 
+@extend_schema(
+    operation_id="studio_quiz_stats",
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
 @api_view(["GET"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -586,6 +660,14 @@ def quiz_stats(request, quiz_id):
     return _private(Response(services.quiz_stats(quiz)))
 
 
+@extend_schema(
+    operation_id="studio_quiz_attempts",
+    parameters=[
+        OpenApiParameter("page", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+        OpenApiParameter("pageSize", OpenApiTypes.INT, OpenApiParameter.QUERY, required=False),
+    ],
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
 @api_view(["GET"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -634,6 +716,10 @@ def _csv_cell(value: Any) -> str:
     return "'" + text if text.startswith(("=", "+", "-", "@")) else text
 
 
+@extend_schema(
+    operation_id="studio_quiz_results_csv",
+    responses={(200, "text/csv"): OpenApiResponse(response=OpenApiTypes.BINARY, description="CSV attempt export.")},
+)
 @api_view(["GET"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -678,6 +764,11 @@ def quiz_results_csv(request, quiz_id):
     return response
 
 
+@extend_schema(
+    operation_id="studio_quiz_extra_attempts",
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
 @api_view(["POST"])
 @authentication_classes([AccessTokenAuthentication])
 @permission_classes([IsAuthenticated])
