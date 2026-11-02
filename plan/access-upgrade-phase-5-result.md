@@ -33,5 +33,8 @@ The frontend validates engine contracts with mocked SDKs and API seams; it does 
 
 ## Integration closeout
 
-- Feature commit and PR details are pending the Phase 5 integration step.
-- Production `main` remains unchanged; the planned target is `Feature/AccessStudio`.
+- Feature commit: `5f8f06b` on `Feature/PlayerSystem`.
+- PR [#51](https://github.com/Khawarizm-Academy/Khawarizm-Academy/pull/51) was squash-merged into `Feature/AccessStudio` on 2026-11-02 as `a8f940cdfdb5d442de875b1c09ac7f73389a5398`.
+- At merge, GitHub showed zero failing checks, one successful check, and six pending checks. Local frontend gates were green; following the owner's instruction to avoid unnecessary waits, integration proceeded without claiming the pending checks completed.
+- The local `Feature/AccessStudio` branch is fast-forwarded to the merge commit.
+- Production `main` remains unchanged.
