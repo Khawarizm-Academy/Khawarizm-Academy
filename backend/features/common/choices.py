@@ -190,3 +190,22 @@ class MaintenanceRunStatus(models.TextChoices):
     RUNNING = "running", "Running"
     DONE = "done", "Done"
     ERROR = "error", "Error"
+
+
+class AuditAction(models.TextChoices):
+    """Auditable role, account, content, and system mutations."""
+
+    ROLE_CREATED = "role_created", "Role created"
+    ROLE_UPDATED = "role_updated", "Role updated"
+    ROLE_DELETED = "role_deleted", "Role deleted"
+    ROLE_REORDERED = "role_reordered", "Roles reordered"
+    ROLE_ASSIGNED = "role_assigned", "Role assigned"
+    ROLE_REVOKED = "role_revoked", "Role revoked"
+    PERMISSION_DENIED_BURST = "permission_denied_burst", "Permission-denied burst"
+    COURSE_PUBLISHED = "course_published", "Course published"
+    COURSE_UNPUBLISHED = "course_unpublished", "Course unpublished"
+    COURSE_DELETED = "course_deleted", "Course deleted"
+    VIDEO_DELETED = "video_deleted", "Video deleted"
+    USER_DELETED = "user_deleted", "User deleted"
+    USER_STATUS_CHANGED = "user_status_changed", "User status changed"
+    SETTINGS_CHANGED = "settings_changed", "Settings changed"

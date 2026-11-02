@@ -13,10 +13,11 @@ describe('routes', () => {
     }
   });
 
-  it('locks the admin console behind the admin flag and off the site shell', () => {
+  it('locks the admin console behind admin.access and off the site shell', () => {
     const admin = findRoute('/admin')?.route;
 
-    expect(admin?.meta.requiresAdmin).toBe(true);
+    expect(admin?.meta.requiresPermission).toBe('admin.access');
+    expect(admin?.meta.requiresAdmin).toBeUndefined();
     expect(admin?.meta.hideShell).toBe(true);
     // Off the site shell: it renders its own internal tabs, so it has no nav tab.
     expect(admin?.meta.activeTab).toBeUndefined();

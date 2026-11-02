@@ -9,7 +9,7 @@
 
 ## 2. Stack
 - Frontend: React 19.2 + TypeScript ~6.0, Vite 8, Tailwind v4, lucide icons; data via per-feature `*Fetchers.ts` over `shared/lib/apiClient.ts`; tests Vitest + Testing Library.
-- Backend: Python 3.14, Django 6.1.2 + DRF 3.18.3, function-based views; auth = Firebase ID-token verify → HS256 access JWT + hashed rotating refresh sessions.
+- Backend: Python 3.14, Django 6.1.2 + DRF 3.18.3, function-based views; auth = Firebase ID-token verify → HS256 access JWT + hashed rotating refresh sessions. Canonical role/permission policy lives in `backend/features/access`; legacy `User.role`/`is_staff` remain synchronized compatibility fields.
 - Database: dev SQLite (`backend/db.sqlite3`, untracked) · production Postgres via `DATABASE_URL` (managed, sslmode=require). Tiny tables (seed = 3 courses, 2 scholarships).
 - Cache / queue: app cache via `features/common/cache.py` (namespaced versioned keys `kh:<ns>:v<n>:<digest>`, 300 s ±10% TTL) + HTTP ETag layer; LocMem by default, Redis via optional `REDIS_URL`. No task queue — background work is threads (upload ingest) + cron (cleanup).
 - Hosting: Vercel serverless (read-only FS, `/tmp` scratch) **or** self-hosted Docker with gunicorn + FFmpeg. Frontend on Vercel.
@@ -18,7 +18,7 @@
 - Backend install: `cd backend && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
 - Backend run: `cd backend && source .venv/bin/activate && python manage.py migrate && python manage.py runserver 127.0.0.1:8000`
 - Backend checks: `python manage.py check` · `python manage.py makemigrations --check --dry-run` · `python manage.py migrate` · `python manage.py check --deploy` · `python manage.py spectacular --fail-on-warn` (OpenAPI must generate with zero warnings)
-- Backend tests: `python manage.py test` (451 tests, ~40 s serial) · `python manage.py test --parallel` (~7 s; CI runs `test -v2 --parallel`)
+- Backend tests: `python manage.py test` · `python manage.py test --parallel` (CI runs `test -v2 --parallel`; the row-lock concurrency regression runs only on databases supporting `select_for_update`).
 - Backend seed: `python manage.py seed_demo` (idempotent)
 - Backend cleanup job: `python manage.py cleanup_expired` (idempotent; self-hosted cron every 6h)
 - Video ingest: `python manage.py ingest_video <file> --slug <slug>` (FFmpeg host only, never Vercel)
@@ -27,11 +27,12 @@
 
 ## 4. Layout and conventions
 - Monorepo: `backend/` (Django) + `frontend/` (Vite SPA) + `docs/` (numbered guides, `07`/`08` = API contract & backend architecture).
-- Backend: `backend/config/` (settings/urls/middleware) + `backend/features/<feature>/` — 12 apps mirroring `frontend/src/features/`; shared code in `features/common/`. Contract: `backend/features/README.md`.
+- Backend: `backend/config/` (settings/urls/middleware) + `backend/features/<feature>/` — 13 Django feature apps, including the backend-only `access` policy feature; shared code in `features/common/`. Contract: `backend/features/README.md`.
 - App labels: `features.auth` uses label `accounts` (`AUTH_USER_MODEL = "accounts.User"`); everything else labels as its folder.
 - Serializers are the only camelCase boundary (`compact()` in `common/serializers.py`); views/models keep snake_case.
 - Tests: `python manage.py test` with shared kit `features/common/testing.py` (`ApiTestCase`, `api_client`, `make_user/admin/course/scholarship`, `authenticate`); test DB is file-backed in `/tmp` with WAL + per-worker clone files via the `config.sqlite_backend` engine (worker threads + parallel runner need it — do not revert to the in-memory default).
 - Frontend: feature-first `src/features/<f>/{components,data,types.ts}`, shared in `src/shared/`; contract docs in `docs/07-backend-contract.md`.
+- Access contract: backend permission keys and labels originate in `features/access/registry.py`; `frontend/src/shared/json/permissionCatalog.json` is an exact, test-checked mirror consumed by `shared/lib/permissions.ts` and the auth `useCan` hook.
 
 ## 5. Design
 - Tokens live in the frontend (`frontend/src` CSS + Tailwind v4 theme); see `docs/01-design-system.md`.

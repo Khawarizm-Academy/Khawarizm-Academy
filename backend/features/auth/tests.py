@@ -53,19 +53,24 @@ class UserModelTests(TestCase):
 
     def test_is_admin_true_for_admin_role_or_staff(self):
         self.assertTrue(make_user(email="a@example.com", role=Role.ADMIN).is_admin)
-        self.assertTrue(make_user(email="b@example.com", is_staff=True).is_admin)
+        staff_only = User.objects.create_user(email="b@example.com", password="pass", role=Role.STUDENT, is_staff=True)
+        self.assertTrue(staff_only.is_admin)
         self.assertFalse(make_user(email="c@example.com").is_admin)
+        superuser = User.objects.create_superuser(email="root@example.com", password="pass")
+        self.assertTrue(superuser.is_superuser)
+        self.assertTrue(superuser.role_assignments.filter(role__slug="admin").exists())
 
 
 class ProfileServiceTests(TestCase):
     def test_ensure_profile_creates_a_student_profile(self):
-        user = make_user()
+        user = User.objects.create_user(email="profile.student@example.com", password="pass")
         services.ensure_profile(user)
         self.assertTrue(StudentProfile.objects.filter(user=user).exists())
 
     def test_ensure_profile_creates_an_instructor_profile(self):
         user = make_user(email="ins@example.com", role=Role.INSTRUCTOR)
         services.ensure_profile(user)
+        self.assertTrue(StudentProfile.objects.filter(user=user).exists())
         self.assertTrue(InstructorProfile.objects.filter(user=user).exists())
 
 
@@ -82,8 +87,50 @@ class UserProfileSerializerTests(TestCase):
         user = make_user()
         services.ensure_profile(user)
         keys = user_profile(user).keys()
-        for key in ("id", "email", "role", "learningLevel", "interests", "notifications", "language", "timezone"):
+        for key in (
+            "id",
+            "email",
+            "role",
+            "learningLevel",
+            "interests",
+            "notifications",
+            "language",
+            "timezone",
+            "roles",
+            "permissions",
+            "isAdministrator",
+        ):
             self.assertIn(key, keys)
+
+    def test_access_payload_is_additive_and_default_role_is_implicit(self):
+        user = make_user(email="payload.student@example.com")
+        payload = user_profile(user)
+        legacy_keys = {
+            "id",
+            "email",
+            "fullName",
+            "phone",
+            "role",
+            "isAdmin",
+            "isActive",
+            "membershipStatus",
+            "avatarInitials",
+            "avatarUrl",
+            "language",
+            "timezone",
+            "learningLevel",
+            "interests",
+            "notifications",
+            "headline",
+            "credential",
+            "createdAt",
+            "lastSeenAt",
+        }
+        self.assertTrue(legacy_keys.issubset(payload))
+        self.assertEqual(set(payload) - legacy_keys, {"roles", "permissions", "isAdministrator"})
+        self.assertEqual([role["slug"] for role in payload["roles"]], ["student"])
+        self.assertFalse(payload["isAdministrator"])
+        self.assertFalse(payload["isAdmin"])
 
 
 class SessionServiceTests(TestCase):
@@ -183,6 +230,10 @@ class AuthViewTests(ApiTestCase):
             "/api/auth/firebase", {"idToken": "dev:teach@example.com:instructor"}, format="json"
         ).json()
         self.assertEqual(body["user"]["role"], Role.INSTRUCTOR)
+        self.assertEqual({role["slug"] for role in body["user"]["roles"]}, {"instructor", "student"})
+        self.assertIn("studio.access", body["user"]["permissions"])
+        self.assertNotIn("courses.publish", body["user"]["permissions"])
+        self.assertFalse(body["user"]["isAdministrator"])
 
     def test_refresh_rotates_the_token(self):
         body = self.client.post("/api/auth/firebase", {"idToken": "dev:rot@example.com"}, format="json").json()
@@ -473,6 +524,7 @@ class AdminConsoleViewTests(ApiTestCase):
         self.assertEqual(body["role"], "instructor")
         target.refresh_from_db()
         self.assertEqual(target.role, "instructor")
+        self.assertTrue(target.role_assignments.filter(role__slug="instructor").exists())
 
     def test_admin_cannot_change_own_role(self):
         admin = make_admin()

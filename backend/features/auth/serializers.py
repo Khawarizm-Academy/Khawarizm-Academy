@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from features.access.registry import PERMISSION_KEYS
+from features.access.services import effective_permissions, effective_roles
 from features.auth.models import User, UserSession
 
 
@@ -9,6 +11,7 @@ def user_profile(user: User) -> dict:
     """The account payload every client stores after login."""
     profile = getattr(user, "student_profile", None)
     instructor = getattr(user, "instructor_profile", None)
+    permissions = effective_permissions(user)
     return {
         "id": str(user.id),
         "email": user.email,
@@ -16,6 +19,12 @@ def user_profile(user: User) -> dict:
         "phone": user.phone,
         "role": user.role,
         "isAdmin": user.is_admin,
+        "roles": [
+            {"id": str(role.pk), "slug": role.slug, "name": role.name, "color": role.color}
+            for role in effective_roles(user)
+        ],
+        "permissions": [key for key in PERMISSION_KEYS if key in permissions],
+        "isAdministrator": "administrator" in permissions,
         "isActive": user.is_active,
         "membershipStatus": user.membership_status,
         "avatarInitials": user.avatar_initials,

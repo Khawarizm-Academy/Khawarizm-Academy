@@ -16,6 +16,7 @@ import {
 import { NotFoundPage } from '@/app/pages/NotFoundPage';
 import routesJson from '@/shared/json/routes.json';
 import type { NavTabKey } from '@/shared/lib/localization';
+import type { PermissionKey } from '@/shared/lib/permissions';
 
 export type SkeletonVariant = 'home' | 'catalog' | 'detail' | 'dashboard' | 'default';
 
@@ -29,6 +30,7 @@ export interface RouteMeta {
   immersive?: boolean; // page owns its own nav, so no navbar and no footer
   requiresAuth?: boolean; // signed-in readers only
   requiresAdmin?: boolean; // admin readers only
+  requiresPermission?: PermissionKey | PermissionKey[]; // readers with at least one listed permission
 }
 
 /** Raw (unhydrated) shape of a `routes.json` entry. */
@@ -43,6 +45,7 @@ interface RawRoute {
   immersive?: boolean;
   requiresAuth?: boolean;
   requiresAdmin?: boolean;
+  requiresPermission?: PermissionKey | PermissionKey[];
   skeletonVariant: SkeletonVariant;
 }
 
@@ -80,8 +83,28 @@ const PAGE_BY_PATH: Record<string, ComponentType> = {
 
 /** Every route, from routes.json plus its page. Order comes from the JSON. */
 export const routes: RouteDefinition[] = (routesJson as RawRoute[]).map((route) => {
-  const { title, description, activeTab, tabsByQuery, hideShell, immersive, requiresAuth, requiresAdmin } = route;
-  const meta: RouteMeta = { title, description, activeTab, tabsByQuery, hideShell, immersive, requiresAuth, requiresAdmin };
+  const {
+    title,
+    description,
+    activeTab,
+    tabsByQuery,
+    hideShell,
+    immersive,
+    requiresAuth,
+    requiresAdmin,
+    requiresPermission,
+  } = route;
+  const meta: RouteMeta = {
+    title,
+    description,
+    activeTab,
+    tabsByQuery,
+    hideShell,
+    immersive,
+    requiresAuth,
+    requiresAdmin,
+    requiresPermission,
+  };
   const page = PAGE_BY_PATH[route.path];
 
   if (route.redirect) {

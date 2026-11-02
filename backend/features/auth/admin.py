@@ -1,12 +1,32 @@
-"""Django admin — the data editor for accounts, sessions, and audit rows."""
+"""Django admin — account inspection, session controls, and audit rows."""
 
 from __future__ import annotations
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
+from features.access.models import RoleAssignment
+from features.access.services import sync_primary_role
 from features.auth.models import AuthEvent, InstructorProfile, StudentProfile, User, UserSession
 from features.common.choices import SessionRevokeReason
+
+
+class RoleAssignmentInline(admin.TabularInline):
+    model = RoleAssignment
+    fk_name = "user"
+    extra = 0
+    can_delete = False
+    fields = ("role", "assigned_by", "created_at")
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(User)
@@ -15,14 +35,22 @@ class UserAdmin(BaseUserAdmin):
     list_display = ["email", "full_name", "role", "is_staff", "is_active", "date_joined"]
     list_filter = ["role", "is_staff", "is_active"]
     search_fields = ["email", "full_name", "firebase_uid"]
+    readonly_fields = ("role",)
+    inlines = (RoleAssignmentInline,)
     fieldsets = (
         (None, {"fields": ("email", "password")}),
+        (
+            "Account role",
+            {
+                "fields": ("role",),
+                "description": "يُدار من مدير الأدوار",
+            },
+        ),
         (
             "Identity",
             {
                 "fields": (
                     "firebase_uid",
-                    "role",
                     "full_name",
                     "phone",
                     "avatar_url",
@@ -36,7 +64,11 @@ class UserAdmin(BaseUserAdmin):
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Dates", {"fields": ("last_login", "last_seen_at", "date_joined")}),
     )
-    add_fieldsets = ((None, {"classes": ("wide",), "fields": ("email", "password1", "password2", "role")}),)
+    add_fieldsets = ((None, {"classes": ("wide",), "fields": ("email", "password1", "password2")}),)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        sync_primary_role(obj)
 
 
 @admin.register(StudentProfile)

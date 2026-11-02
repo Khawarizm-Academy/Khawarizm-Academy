@@ -11,7 +11,7 @@ interface DesktopNavbarProps {
   unreadCount?: number;
   /** Signed-in account state, fed by the app layer so shared chrome stays dumb. */
   isAuthenticated?: boolean;
-  isAdmin?: boolean;
+  canAccessAdmin?: boolean;
   onLoginClick?: () => void;
   onAdminClick?: () => void;
   onLogout?: () => void;
@@ -23,7 +23,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
   onNotificationsClick,
   unreadCount = 3,
   isAuthenticated = false,
-  isAdmin = false,
+  canAccessAdmin = false,
   onLoginClick,
   onAdminClick,
   onLogout,
@@ -144,7 +144,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
           </button>
 
           {/* Admin console entry, admins only */}
-          {isAuthenticated && isAdmin && (
+          {isAuthenticated && canAccessAdmin && (
             <button
               onClick={onAdminClick}
               aria-label="لوحة الإدارة"

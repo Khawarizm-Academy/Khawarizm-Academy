@@ -220,8 +220,8 @@ def user_detail(request, user_id):
     if user is None:
         raise NotFound(ADMIN_USER_NOT_FOUND)
     if request.method == "PATCH":
-        services.update_user_account(user, request.data or {}, acting_user=request.user)
-        return Response(serializers.user_row(user))
+        updated_user = services.update_user_account(user, request.data or {}, acting_user=request.user)
+        return Response(serializers.user_row(updated_user))
     if request.method == "DELETE":
         services.delete_user_account(user, acting_user=request.user)
         return Response({"deleted": True, "id": str(user_id)})
