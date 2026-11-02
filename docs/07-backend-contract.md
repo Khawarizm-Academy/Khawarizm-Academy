@@ -49,6 +49,26 @@ Studio responses are authenticated, private, and `no-store`; authorization is pe
 | `POST` | `/studio/courses/<slug>/duplicate` | Copies modules, lessons, resources, and quizzes into a unique draft slug. Videos are omitted unless `keepVideos=true`, which re-links existing assets without copying provider files. |
 | `POST` | `/studio/courses/bulk-archive` | Archives a selected permission-scoped list of course slugs and returns `{archived}`. |
 
+Phase 10 adds private teaching surfaces:
+
+| Method | Path | Contract |
+| :--- | :--- | :--- |
+| `GET` · `POST` | `/studio/courses/<slug>/live-sessions` | Course-scoped list/create; session timestamps and IANA timezone are authoritative, meeting hosts are allow-listed HTTPS, and responses include server time. |
+| `GET` · `PUT` · `PATCH` · `DELETE` | `/studio/courses/<slug>/live-sessions/<uuid>` | Retrieve/update/delete a managed session; `POST .../<uuid>/cancel` and `POST .../<uuid>/recording` cancel or attach an HTTPS URL/ready hosted asset. Mutations emit the Phase 11 live-session hook. |
+| `GET` | `/studio/live-sessions` | Global calendar rows only for courses visible under `live_sessions.manage_own/any`; meeting/replay links are private and no-store. |
+| `GET` | `/studio/students/courses` · `/studio/students?course=<slug>` | Staff-scoped course selector and paginated roster. Full learner email is returned only to `students.view_any`; all other viewers receive server-masked values. |
+| `GET` | `/studio/students.csv?course=<slug>` | CSV export with formula-injection escaping and the same server-side email masking. |
+| `GET` · `POST` | `/studio/students/<uuid>` · `/studio/students/<uuid>/notes?course=<slug>` | Learner progress/quiz detail and private staff-authored notes. `POST .../nudge` is limited to one nudge per student/course per 24 hours; `POST .../extra-attempt` issues a course-scoped quiz grant. |
+| `GET` | `/studio/analytics/overview?range=7|30|90` · `/studio/analytics/courses/<slug>?range=7|30|90` | SQL-aggregated, permission-scoped analytics; ratings explicitly report unavailable until Phase 11 provides a real source. |
+| `GET` | `/studio/announcements/courses` | Staff-scoped course selector; returns only assigned courses where the caller can post. |
+| `GET` · `POST` | `/courses/<slug>/announcements` | Enrolled learners or course staff can list; authorized course staff can create. Daily quota is three per course. |
+| `GET` · `PUT` · `PATCH` · `DELETE` | `/courses/<slug>/announcements/<uuid>` | Read for enrolled learners/course staff; update/delete for authorized staff. `POST .../<uuid>/pin` changes the single pinned announcement. |
+
+Public course detail always carries `canReadAnnouncements` for the current
+request. Meeting/replay URLs, notes, and announcement-read capability are
+personalized; those responses use `private, no-store`, and clients scope any
+derived cache by user id.
+
 ## 4. Video hosting contract
 
 The video control plane stores metadata, playback plans, manifests, keys, captions, grants, and provider references. Bytes remain with the provider. Current routes are mounted under `/api/` from `backend/features/videohosting/urls.py`.

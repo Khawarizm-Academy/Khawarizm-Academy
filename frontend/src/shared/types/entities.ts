@@ -131,6 +131,7 @@ export interface CourseDetail {
   outcomes: string[];
   modules: CourseModule[];
   liveSessions: CourseLiveSession[];
+  canReadAnnouncements?: boolean;
   exam: CourseExam;
   relatedIds: string[];
 }
@@ -146,10 +147,20 @@ export interface CourseCertificate {
 /** A Google Meet weekly review session — a launchpad, never an embedded call. */
 export interface CourseLiveSession {
   id: string;
+  uuid?: string;
   title: string;
   state: LiveSessionState;
   dateLabel: string;
   timeLabel: string;
+  status?: 'scheduled' | 'live' | 'ended' | 'cancelled';
+  startsAt?: string | null;
+  serverNow?: string;
+  durationMinutes?: number;
+  timezone?: string;
+  meetUrl?: string | null;
+  recordingUrl?: string | null;
+  recordingAssetId?: string | null;
+  notes?: string;
 }
 
 /** Comprehensive end-of-course exam parameters shown before it unlocks. */

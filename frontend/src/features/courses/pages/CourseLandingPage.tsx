@@ -1,17 +1,21 @@
 import React from 'react';
 import { useParams } from '@/app/routerContext';
+import { useAuth } from '@/features/auth/context/authContext';
 import { CourseDetailProvider } from '@/features/courses/context/CourseDetailProvider';
 import { useCourseDetail } from '@/features/courses/context/courseDetailContext';
 import { DesktopCourseLandingView } from '@/features/courses/components/views/CourseLandingView/DesktopCourseLandingView';
 import { MobileCourseLandingView } from '@/features/courses/components/views/CourseLandingView/MobileCourseLandingView';
 import { CourseNotFound } from '@/features/courses/components/states/CourseNotFound';
+import { LearnerAnnouncementBanner } from '@/features/studio/announcements/components/LearnerAnnouncementBanner';
 import type { CourseLandingCourse } from '@/features/courses/types';
 
 interface CourseLandingNoticesProps {
   course: CourseLandingCourse;
+  courseSlug: string;
+  canReadAnnouncements: boolean;
 }
 
-const CourseLandingNotices: React.FC<CourseLandingNoticesProps> = ({ course }) => (
+const CourseLandingNotices: React.FC<CourseLandingNoticesProps> = ({ course, courseSlug, canReadAnnouncements }) => (
   <div className="w-full flex flex-col gap-3" aria-label="معلومات حالة الدورة">
     {course.isPreview && (
       <div
@@ -29,11 +33,12 @@ const CourseLandingNotices: React.FC<CourseLandingNoticesProps> = ({ course }) =
         هذه الدورة مؤرشفة حاليًا، والتسجيل فيها غير متاح.
       </div>
     )}
+    {canReadAnnouncements && <LearnerAnnouncementBanner courseSlug={courseSlug} />}
   </div>
 );
 
-const CourseLandingContent: React.FC = () => {
-  const { course, isLoading } = useCourseDetail();
+const CourseLandingContent: React.FC<{ courseSlug: string }> = ({ courseSlug }) => {
+  const { course, isLoading, isEnrolled, isEnrollmentPending } = useCourseDetail();
   const landingCourse = course as CourseLandingCourse | null;
 
   if (!landingCourse && !isLoading) {
@@ -47,7 +52,7 @@ const CourseLandingContent: React.FC = () => {
   return (
     <main className="content-container">
       <>
-        {landingCourse && <CourseLandingNotices course={landingCourse} />}
+        {landingCourse && <CourseLandingNotices course={landingCourse} courseSlug={courseSlug} canReadAnnouncements={landingCourse.canReadAnnouncements === true && !(isEnrolled && isEnrollmentPending)} />}
         <DesktopCourseLandingView />
         <MobileCourseLandingView />
       </>
@@ -58,10 +63,11 @@ const CourseLandingContent: React.FC = () => {
 /** Throws nothing at the surface layer; the provider owns state, the shell owns chrome. */
 export const CourseLandingPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { user } = useAuth();
 
   return (
-    <CourseDetailProvider slug={slug}>
-      <CourseLandingContent />
+    <CourseDetailProvider key={`${slug}:${user?.id ?? 'anonymous'}`} slug={slug}>
+      <CourseLandingContent courseSlug={slug} />
     </CourseDetailProvider>
   );
 };

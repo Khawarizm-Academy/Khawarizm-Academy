@@ -12,6 +12,7 @@ import { PlayerSyllabusDrawer } from '@/features/courses/components/overlays/Pla
 import { PlayerMiniPlayer } from '@/features/courses/components/overlays/PlayerMiniPlayer';
 import { CoursePlayerSkeleton } from '@/features/courses/components/states/CoursePlayerSkeleton';
 import { CourseNotFound } from '@/features/courses/components/states/CourseNotFound';
+import { LiveSessionPlayerCard } from '@/features/courses/components/cards/LiveSessionPlayerCard';
 
 /** Responsive learner player. The real media stage is mounted once across surfaces. */
 export const CoursePlayerView: React.FC = () => {
@@ -45,6 +46,7 @@ export const CoursePlayerView: React.FC = () => {
             <CoursePathSidebar />
           </div>
 
+          {course.liveSessions.length > 0 && <section className="player-live-sessions" aria-label={courseCopy.landing.liveTitle}><h2 className="player-live-sessions-title">{courseCopy.landing.liveTitle}</h2><div className="player-live-sessions-grid">{course.liveSessions.map((session) => <LiveSessionPlayerCard key={session.uuid || session.id} session={session} />)}</div></section>}
           <PlayerSyllabusDrawer />
         </>
       ) : (

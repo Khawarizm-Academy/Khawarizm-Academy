@@ -30,6 +30,22 @@ Publishing validates the course and published lessons, checks linked video readi
 - `LessonResource` stores HTTPS links only. Hosted file uploads are not supported by this feature.
 - `recompute_course_stats()` derives published lesson count, total seconds, and the legacy Arabic duration display from lesson rows.
 
+## Live sessions and private course detail
+
+`CourseLiveSession` stores an authoritative `starts_at`, duration, IANA timezone,
+validated meeting URL, optional recording URL/asset, and cancellation status.
+Serialization derives Arabic date/time labels and `upcoming|live|past` state
+from the timestamp; `refresh_states()` only synchronizes the compatibility
+columns during maintenance. The one-time backfill accepts only an exact seeded
+`YYYY-MM-DD` plus `HH:MM` pair, rejects ambiguous/nonexistent DST wall times,
+and marks other rows `تاريخ غير محدد` for instructor correction.
+
+Studio management routes live in `live_sessions_urls.py`. Public course detail
+keeps meeting/replay links and notes redacted unless the current user is an
+enrolled learner or authorized course editor; those personalized responses are
+`private, no-store`. The same response carries `canReadAnnouncements` so the
+frontend requests private announcements only for an authorized reader.
+
 ## Structure and services
 
 ```text

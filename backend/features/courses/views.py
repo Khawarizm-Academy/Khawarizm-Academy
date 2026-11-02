@@ -14,6 +14,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from features.access.services import has_perm
+from features.announcements.services import can_read as can_read_course_announcements
 from features.common.choices import CourseStatus
 from features.common.errors import Conflict, NotFound, PermissionDenied
 from features.common.messages import COURSE_NOT_FOUND
@@ -63,6 +64,14 @@ def course_detail_view(request: Any, slug: str) -> Response:
     staff_view = services.can_edit(request.user, course) if getattr(request.user, "is_authenticated", False) else False
     if preview and not staff_view:
         raise NotFound(COURSE_NOT_FOUND)
+    enrolled = bool(
+        getattr(request.user, "is_authenticated", False)
+        and course.status in {CourseStatus.PUBLISHED, CourseStatus.ARCHIVED}
+        and has_perm(request.user, "lessons.watch")
+        and Enrollment.objects.filter(user=request.user, course=course).exists()
+    )
+    can_read_announcements = can_read_course_announcements(request.user, course)
+    include_private_session_data = staff_view or enrolled
     relation_rows = services.course_detail_relations(course)
     response = Response(
         course_detail(
@@ -70,10 +79,12 @@ def course_detail_view(request: Any, slug: str) -> Response:
             include_unpublished=staff_view,
             is_preview=preview,
             enrollable=course.status == CourseStatus.PUBLISHED,
+            include_private_session_data=include_private_session_data,
+            can_read_announcements=can_read_announcements,
             relation_rows=relation_rows,
         )
     )
-    if staff_view:
+    if include_private_session_data or can_read_announcements:
         response["Cache-Control"] = "private, no-store"
     return response
 

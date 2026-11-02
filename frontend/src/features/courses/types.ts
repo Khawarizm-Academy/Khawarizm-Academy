@@ -24,6 +24,7 @@ export interface CourseLifecycleFields {
   status?: CourseStatus;
   isPreview?: boolean;
   enrollable?: boolean;
+  canReadAnnouncements?: boolean;
   instructors?: CourseInstructor[];
 }
 

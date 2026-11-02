@@ -1,5 +1,5 @@
-import React from 'react';
-import { Activity, BookOpen, ChartNoAxesCombined, Inbox, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Activity, BookOpen, CalendarDays, ChartNoAxesCombined, Inbox, Users } from 'lucide-react';
 import { useNavigate } from '@/app/routerContext';
 import { useAuth } from '@/features/auth/context/authContext';
 import { can } from '@/shared/lib/permissions';
@@ -11,6 +11,22 @@ import { StudioSkeleton } from '@/features/studio/components/states/StudioSkelet
 import { StudioEmpty } from '@/features/studio/components/states/StudioEmpty';
 import { OnboardingChecklist } from '@/features/studio/components/views/OnboardingChecklist';
 import { useStudio } from '@/features/studio/context/studioContext';
+import { fetchGlobalLiveSessions } from '@/features/studio/liveSessions/liveSessionFetchers';
+import type { StudioLiveSession } from '@/features/studio/liveSessions/types';
+import { LiveSessionCountdown } from '@/shared/components/LiveSessionCountdown';
+
+const UpcomingSessionsStrip: React.FC<{ onOpen: () => void }> = ({ onOpen }) => {
+  const [sessions, setSessions] = useState<StudioLiveSession[]>([]);
+  useEffect(() => {
+    let active = true;
+    void fetchGlobalLiveSessions().then((result) => {
+      if (active) setSessions(result.items.filter((item) => item.state === 'upcoming' && item.startsAt).slice(0, 4));
+    }).catch(() => { if (active) setSessions([]); });
+    return () => { active = false; };
+  }, []);
+  if (!sessions.length) return null;
+  return <section className="studio-panel studio-upcoming-sessions"><div className="flex items-center justify-between gap-3"><SectionHeading title="جلسات قادمة" /><button type="button" className="btn-outline-blue" onClick={onOpen}>كل الجلسات</button></div><div className="studio-activity-list">{sessions.map((session) => <button type="button" className="studio-activity-row" key={`${session.courseSlug}-${session.uuid || session.id}`} onClick={onOpen}><CalendarDays size={16} /><span><strong>{session.title}</strong><small>{session.courseTitle} · {session.dateLabel} · {session.timeLabel} · <LiveSessionCountdown startsAt={session.startsAt} serverNow={session.serverNow} className="text-xs text-cyan-200 font-mono" /></small></span></button>)}</div></section>;
+};
 
 export const HomeView: React.FC = () => {
   const nav = useNavigate();
@@ -51,6 +67,7 @@ export const HomeView: React.FC = () => {
               </div>
             </section>
           )}
+          {can(user, 'live_sessions.manage_own') && <UpcomingSessionsStrip onOpen={() => nav('/studio/live-sessions')} />}
           {can(user, 'analytics.view_own') && (
             <section className="studio-panel">
               <SectionHeading title="أداء آخر ٣٠ يومًا" />

@@ -10,10 +10,12 @@ import re
 import uuid
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import F, Sum
 from django.utils import timezone
@@ -29,6 +31,7 @@ from features.common.choices import (
     CourseStatus,
     LessonKind,
     LessonResourceKind,
+    LiveSessionState,
     VideoStatus,
 )
 from features.common.errors import (
@@ -53,6 +56,156 @@ from features.courses.models import (
 _SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _STABLE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$")
 _RESERVED_SLUGS = frozenset({"new", "learn", "certificate"})
+_LIVE_ALLOWED_HOSTS_DEFAULT = frozenset(
+    {"meet.google.com", "zoom.us", "teams.microsoft.com", "teams.live.com", "whereby.com"}
+)
+_ARABIC_WEEKDAYS = ("الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد")
+_ARABIC_MONTHS = (
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+)
+_SEEDED_DATE_RE = re.compile(r"^(?P<year>20\d{2})-(?P<month>0[1-9]|1[0-2])-(?P<day>[0-3]\d)$")
+_SEEDED_TIME_RE = re.compile(r"^(?P<hour>[01]\d|2[0-3]):(?P<minute>[0-5]\d)$")
+
+
+def live_session_timezone(value: str | None) -> ZoneInfo:
+    """Resolve an instructor-supplied timezone without breaking serialization."""
+    candidate = (value or getattr(settings, "TIME_ZONE", "UTC")).strip()
+    try:
+        return ZoneInfo(candidate)
+    except (ZoneInfoNotFoundError, ValueError):
+        try:
+            return ZoneInfo(getattr(settings, "TIME_ZONE", "UTC"))
+        except (ZoneInfoNotFoundError, ValueError):
+            return ZoneInfo("UTC")
+
+
+def _arabic_digits(value: str) -> str:
+    return value.translate(str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩"))
+
+
+def format_live_session_labels(starts_at: datetime | None, timezone_name: str | None) -> tuple[str, str]:
+    """Return Arabic date/time labels in the session's display timezone."""
+    if starts_at is None:
+        return "", ""
+    if timezone.is_naive(starts_at):
+        starts_at = timezone.make_aware(starts_at, timezone.get_current_timezone())
+    local = starts_at.astimezone(live_session_timezone(timezone_name))
+    hour = local.hour % 12 or 12
+    period = "ص" if local.hour < 12 else "م"
+    date_label = (
+        f"{_ARABIC_WEEKDAYS[local.weekday()}، {_arabic_digits(str(local.day))} "
+        f"{_ARABIC_MONTHS[local.month - 1]} {_arabic_digits(str(local.year))}"
+    )
+    time_label = f"{_arabic_digits(str(hour))}:{_arabic_digits(f'{local.minute:02d}')} {period}"
+    return date_label, time_label
+
+
+def live_session_state(row: Any, now: datetime | None = None) -> str:
+    """Compute the compatibility state from the timestamp, not stale storage."""
+    if row.starts_at is None:
+        return row.state or LiveSessionState.UPCOMING
+    if row.status == CourseLiveSession.STATUS_CANCELLED:
+        return LiveSessionState.PAST
+    now = now or timezone.now()
+    end = row.starts_at + timedelta(minutes=max(1, row.duration_minutes or 0))
+    if now < row.starts_at:
+        return LiveSessionState.UPCOMING
+    if now < end:
+        return LiveSessionState.LIVE
+    return LiveSessionState.PAST
+
+
+def live_session_labels(row: Any) -> tuple[str, str]:
+    """Prefer derived labels while keeping hand-authored legacy rows readable."""
+    if row.starts_at is None:
+        return row.date_label or "تاريخ غير محدد", row.time_label or "—"
+    return format_live_session_labels(row.starts_at, row.timezone)
+
+
+def allowed_live_hosts() -> frozenset[str]:
+    configured = getattr(settings, "LIVE_ALLOWED_HOSTS", _LIVE_ALLOWED_HOSTS_DEFAULT)
+    values = configured.split(",") if isinstance(configured, str) else configured
+    return frozenset(str(item).strip().lower().rstrip(".") for item in values if str(item).strip())
+
+
+def validate_live_meet_url(value: str | None) -> str:
+    """Validate a learner-facing meeting URL without ever fetching it."""
+    value = (value or "").strip()
+    if not value:
+        return ""
+    if len(value) > 400 or any(ord(character) < 32 for character in value):
+        raise InvalidParameter("رابط الجلسة يجب أن يكون HTTPS ومن مضيف مسمو.")
+    try:
+        parsed = urlparse(value)
+        host = (parsed.hostname or "").lower().rstrip(".")
+    except ValueError:
+        raise InvalidParameter("رابط الجلسة يجب أن يكون HTTPS ومن مضيف مسمو.") from None
+    if parsed.scheme != "https" or not host or parsed.username or parsed.password:
+        raise InvalidParameter("رابط الجلسة يجب أن يكون HTTPS ومن مضيف مسمو.")
+    hosts = allowed_live_hosts()
+    if host not in hosts and not any(host.endswith(f".{allowed}") for allowed in hosts):
+        raise InvalidParameter("مضيف رابط الجلسة غير مسموح.")
+    return value
+
+
+def refresh_states(now: datetime | None = None) -> int:
+    """Synchronize stored compatibility state/status for timestamped sessions."""
+    now = now or timezone.now()
+    changed = 0
+    for row in CourseLiveSession.objects.filter(starts_at__isnull=False).only(
+        "id", "starts_at", "duration_minutes", "state", "status"
+    ).iterator(chunk_size=500):
+        state = live_session_state(row, now)
+        status = row.status
+        if status != CourseLiveSession.STATUS_CANCELLED:
+            status = {
+                LiveSessionState.UPCOMING: CourseLiveSession.STATUS_SCHEDULED,
+                LiveSessionState.LIVE: CourseLiveSession.STATUS_LIVE,
+                LiveSessionState.PAST: CourseLiveSession.STATUS_ENDED,
+            }[state]
+        if row.state != state or row.status != status:
+            CourseLiveSession.objects.filter(pk=row.pk).update(state=state, status=status)
+            changed += 1
+    return changed
+
+
+def backfill_live_session_timestamps(*, queryset: Any | None = None) -> dict[str, int]:
+    """Backfill only the unambiguous YYYY-MM-DD + HH:MM seeded pattern."""
+    base_queryset = queryset if queryset is not None else CourseLiveSession.objects.all()
+    rows = base_queryset.filter(starts_at__isnull=True).order_by("pk")
+    updated = ambiguous = 0
+    for row in rows.iterator(chunk_size=500):
+        date_match = _SEEDED_DATE_RE.fullmatch((row.date_label or "").strip())
+        time_match = _SEEDED_TIME_RE.fullmatch((row.time_label or "").strip())
+        if date_match and time_match:
+            try:
+                naive = datetime(
+                    int(date_match.group("year")),
+                    int(date_match.group("month")),
+                    int(date_match.group("day")),
+                    int(time_match.group("hour")),
+                    int(time_match.group("minute")),
+                )
+                session_zone = live_session_timezone(row.timezone)
+                first_fold = naive.replace(tzinfo=session_zone, fold=0)
+                second_fold = naive.replace(tzinfo=session_zone, fold=1)
+                starts_at = first_fold if first_fold.utcoffset() == second_fold.utcoffset() else None
+            except (TypeError, ValueError):
+                starts_at = None
+            if starts_at is not None:
+                labels = format_live_session_labels(starts_at, row.timezone)
+                CourseLiveSession.objects.filter(pk=row.pk, starts_at__isnull=True).update(
+                    starts_at=starts_at, date_label=labels[0], time_label=labels[1]
+                )
+                updated += 1
+                continue
+        if row.date_label != "تاريخ غير محدد":
+            CourseLiveSession.objects.filter(pk=row.pk, starts_at__isnull=True).update(date_label="تاريخ غير محدد")
+            ambiguous += 1
+    return {"updated": updated, "ambiguous": ambiguous}
+
+
 _COURSE_FIELDS = {
     "title",
     "categoryLabel",

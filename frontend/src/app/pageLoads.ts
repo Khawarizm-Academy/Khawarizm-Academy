@@ -20,7 +20,9 @@ export const StudioNewCoursePage = lazy(() => import('../features/studio/pages/S
 export const StudioProfilePage = lazy(() => import('../features/studio/pages/StudioProfilePage').then((m) => ({ default: m.StudioProfilePage })));
 export const StudioCourseEditorPage = lazy(() => import('../features/studio/pages/StudioCourseEditorPage').then((m) => ({ default: m.StudioCourseEditorPage })));
 export const StudioVideosPage = lazy(() => import('../features/studio/pages/StudioVideosPage').then((m) => ({ default: m.StudioVideosPage })));
-export const StudioQuizzesPage = lazy(() => import('../features/studio/pages/StudioPlaceholderPages').then((m) => ({ default: m.StudioQuizzesPage })));
-export const StudioQuizEditorPage = lazy(() => import('../features/studio/pages/StudioPlaceholderPages').then((m) => ({ default: m.StudioQuizEditorPage })));
-export const StudioStudentsPage = lazy(() => import('../features/studio/pages/StudioPlaceholderPages').then((m) => ({ default: m.StudioStudentsPage })));
-export const StudioAnalyticsPage = lazy(() => import('../features/studio/pages/StudioPlaceholderPages').then((m) => ({ default: m.StudioAnalyticsPage })));
+export const StudioQuizzesPage = lazy(() => import('../features/studio/quizzes/pages/StudioQuizzesPage').then((m) => ({ default: m.StudioQuizzesPage })));
+export const StudioQuizEditorPage = lazy(() => import('../features/studio/quizzes/pages/StudioQuizEditorPage').then((m) => ({ default: m.StudioQuizEditorPage })));
+export const StudioStudentsPage = lazy(() => import('../features/studio/students/StudioStudentsPage').then((m) => ({ default: m.StudioStudentsPage })));
+export const StudioAnalyticsPage = lazy(() => import('../features/studio/analytics/StudioAnalyticsPage').then((m) => ({ default: m.StudioAnalyticsPage })));
+export const StudioLiveSessionsPage = lazy(() => import('../features/studio/liveSessions/StudioLiveSessionsPage').then((m) => ({ default: m.StudioLiveSessionsPage })));
+export const StudioAnnouncementsPage = lazy(() => import('../features/studio/announcements/pages/StudioAnnouncementsPage').then((m) => ({ default: m.StudioAnnouncementsPage })));

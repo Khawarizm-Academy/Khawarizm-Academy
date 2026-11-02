@@ -2,7 +2,9 @@
   { "key": "home", "label": "الرئيسية", "icon": "LayoutDashboard", "permission": "studio.access", "route": "/studio", "mobile": true },
   { "key": "courses", "label": "دوراتي", "icon": "BookOpen", "permission": "studio.access", "route": "/studio/courses", "mobile": true },
   { "key": "videos", "label": "مكتبة الفيديو", "icon": "Video", "permission": "videos.manage_own", "route": "/studio/videos", "mobile": true },
+  { "key": "live-sessions", "label": "الجلسات", "icon": "CalendarDays", "permission": "live_sessions.manage_own", "route": "/studio/live-sessions", "mobile": false },
   { "key": "quizzes", "label": "الاختبارات", "icon": "Brain", "permission": "quizzes.edit_own", "route": "/studio/quizzes", "mobile": false },
+  { "key": "announcements", "label": "الإعلانات", "icon": "Megaphone", "permission": "announcements.post", "route": "/studio/announcements", "mobile": false },
   { "key": "students", "label": "الطلاب", "icon": "Users", "permission": "students.view_own", "route": "/studio/students", "mobile": true },
   { "key": "analytics", "label": "التحليلات", "icon": "ChartNoAxesCombined", "permission": "analytics.view_own", "route": "/studio/analytics", "mobile": false },
   { "key": "profile", "label": "ملفي التدريبي", "icon": "UserRound", "permission": "studio.access", "route": "/studio/profile", "mobile": false }

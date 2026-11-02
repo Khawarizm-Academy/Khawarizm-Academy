@@ -72,6 +72,10 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-secret-key")
 DEBUG = env_bool("DJANGO_DEBUG", DJANGO_ENV == "development" and not IS_VERCEL)
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["localhost", "127.0.0.1", "khawarizm-academy.firebaseapp.com"])
+LIVE_ALLOWED_HOSTS = env_list(
+    "LIVE_ALLOWED_HOSTS",
+    ["meet.google.com", "zoom.us", "teams.microsoft.com", "teams.live.com", "whereby.com"],
+)
 if IS_VERCEL:
     # Accept the project domain, this deployment, and every preview URL.
     ALLOWED_HOSTS = [*ALLOWED_HOSTS, ".vercel.app"]
@@ -109,6 +113,7 @@ INSTALLED_APPS = [
     "features.videohosting",
     "features.studio",
     "features.quizzes",
+    "features.announcements",
 ]
 
 # Every account (student / instructor / admin) lives in the auth feature app.
