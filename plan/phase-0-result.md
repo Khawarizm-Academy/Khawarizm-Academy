@@ -62,8 +62,9 @@ The checkout was expanded from shallow to full history (185 commits visible befo
 - `frontend/.env.production` is tracked and contains only the public `VITE_API_BASE_URL`; the backend production env file is the secret-bearing, ignored file.
 - The existing explicit ESLint allow-list records pre-existing cross-feature import sites for future extraction; these remain visible technical debt, not silently permitted patterns.
 
-## Remaining before Phase 0 can be closed
+## Phase 0 closeout
 
-1. Merge PR #45 into `Feature/AccessStudio`; the backend/frontend CI and preview checks are green.
-2. Complete the human-only branch-protection update by requiring `lint · typecheck · tests · build` on `main`. Do not change main branch protection from this session.
-3. Keep demo video content unseeded until the owner confirms its URL/licence; this is a later-phase dependency, not a Phase 0 data change.
+- PR [#45](https://github.com/Khawarizm-Academy/Khawarizm-Academy/pull/45) was squash-merged into `Feature/AccessStudio` on 2026-11-02 as `8b7f3db`.
+- At phase branch head `f26e214`, all five checks passed: backend CI, frontend CI, both Vercel previews, and Vercel Preview Comments. The backend check includes the full-history Gitleaks scan.
+- `main` branch protection remains unchanged. Human handoff: add the required check `lint · typecheck · tests · build` to `main` before the next release; no branch-protection settings were changed here.
+- Video content remains unseeded until the owner confirms a demo source/licence; that decision is required only before a later video-content phase.
