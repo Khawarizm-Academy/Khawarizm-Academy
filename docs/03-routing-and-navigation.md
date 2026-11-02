@@ -52,6 +52,10 @@ In one sentence: **the JSON says what a path is, the TSX says what renders it, t
 | `/dashboard/enrolled` | redirect → `/dashboard?view=enrolled` | `dashboard` | — | `dashboard` |
 | `/profile` | page (redirects to `/dashboard?view=profile`) | `profile` | standard | `default` |
 | `/admin` | page (Admin console) | — | `hideShell` | `dashboard` |
+| `/studio` | page (Studio home) | — | `immersive` | `dashboard` |
+| `/studio/courses` | page (Studio course list) | — | `immersive` | `dashboard` |
+| `/studio/courses/new` | page (Studio new course) | — | `immersive` | `dashboard` |
+| `/studio/courses/:slug` | page (Studio editor placeholder in Phase 7) | — | `immersive` | `dashboard` |
 | `/login` | page (Login) | — | `hideShell` | `default` |
 | `/auth` | redirect → `/login` | — | `hideShell` | `default` |
 | `*` | page (NotFound) | — | standard | `default` |

@@ -14,6 +14,7 @@ Every product feature lives in its own folder under `frontend/src/features/` and
 | **Events** | `/events` | Complete | [`events/README.md`](../frontend/src/features/events/README.md) |
 | **Competitions** | `/competitions` | Complete | [`competitions/README.md`](../frontend/src/features/competitions/README.md) |
 | **Admin** | `/admin` | Complete | [`admin/README.md`](../frontend/src/features/admin/README.md) |
+| **Studio** | `/studio/*` | Phase 7 shell/home/course list | [`studio/README.md`](../frontend/src/features/studio/README.md) |
 | **Video hosting** | — (consumed by the courses player) | Complete | [`videohosting/README.md`](../frontend/src/features/videohosting/README.md) |
 
 ---
@@ -114,6 +115,7 @@ Features compose a shared layer. The components, hooks, and config used most oft
 | Smart search box | `shared/components/Search/SmartSearchBox.tsx` | home, catalog, dashboard |
 | Course / scholarship cards | `shared/components/Cards/{CourseCard,ScholarshipCard}.tsx` | home, catalog |
 | Sliding segmented control | `shared/components/Controls/SlidingSegmentedControl.tsx` | dashboard, profile |
+| Workspace chrome | `shared/components/Workspace/` | dashboard, Studio |
 | Page / data skeletons | `shared/components/Loading/{PageSkeleton,DataSectionSkeleton}.tsx` | app shell, all data sections |
 | State panel | `shared/components/State/StatePanel.tsx` | scholarships, courses, error boundary |
 | Detail view | `shared/components/Detail/ItemDetailView.tsx` | scholarships (pattern reused by courses) |

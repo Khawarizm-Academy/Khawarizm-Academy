@@ -207,6 +207,115 @@ def create_course(owner: Any, data: Mapping[str, Any]) -> Course:
 
 
 @transaction.atomic
+def duplicate_course(course: Course, actor: Any, *, keep_videos: bool = False) -> Course:
+    """Copy the authoring graph into a new draft, never copying provider files."""
+    course = Course.objects.select_for_update().get(pk=course.pk)
+    _require_action(actor, course, "courses.edit_own", "courses.edit_any", fallback={CourseStaffKind.OWNER})
+    base = re.sub(r"[^a-z0-9]+", "-", course.slug.lower()).strip("-") or "course"
+    slug = f"{base}-copy"
+    suffix = 2
+    while Course.objects.filter(slug=slug).exists():
+        slug = f"{base}-copy-{suffix}"
+        suffix += 1
+    fields = {
+        field.name: getattr(course, field.name)
+        for field in Course._meta.fields
+        if field.name not in {"id", "slug", "owner", "status", "submitted_at", "published_at", "review_note", "updated_at"}
+    }
+    fields.update(slug=slug, owner=actor, status=CourseStatus.DRAFT, submitted_at=None, published_at=None, review_note="")
+    clone = Course.objects.create(**fields)
+    CourseStaff.objects.create(course=clone, user=actor, kind=CourseStaffKind.OWNER)
+    lesson_map: dict[Any, CourseLesson] = {}
+    for module in course.modules.all():
+        copied_module = CourseModule.objects.create(course=clone, module_id=module.module_id, title=module.title, order=module.order)
+        for lesson in module.lessons.select_related("video_asset").all():
+            copied_lesson = CourseLesson.objects.create(
+                module=copied_module,
+                lesson_id=lesson.lesson_id,
+                title=lesson.title,
+                duration=lesson.duration,
+                summary=lesson.summary,
+                order=lesson.order,
+                kind=lesson.kind,
+                video_asset=lesson.video_asset if keep_videos else None,
+                is_free_preview=lesson.is_free_preview,
+                is_published=lesson.is_published,
+                content=lesson.content,
+                duration_seconds=lesson.duration_seconds,
+            )
+            lesson_map[lesson.pk] = copied_lesson
+            for resource in lesson.resources.all():
+                LessonResource.objects.create(
+                    lesson=copied_lesson,
+                    title=resource.title,
+                    url=resource.url,
+                    kind=resource.kind,
+                    order=resource.order,
+                )
+    from features.quizzes.models import Option, Question, Quiz
+
+    for quiz in course.quizzes.prefetch_related("questions__options").all():
+        copied_quiz = Quiz.objects.create(
+            course=clone,
+            lesson=lesson_map.get(quiz.lesson_id),
+            kind=quiz.kind,
+            title=quiz.title,
+            instructions=quiz.instructions,
+            is_published=False,
+            order=quiz.order,
+            time_limit_minutes=quiz.time_limit_minutes,
+            pass_threshold=quiz.pass_threshold,
+            max_attempts=quiz.max_attempts,
+            draw_count=quiz.draw_count,
+            shuffle_questions=quiz.shuffle_questions,
+            shuffle_options=quiz.shuffle_options,
+            reveal_policy=quiz.reveal_policy,
+            unlock_progress_percent=quiz.unlock_progress_percent,
+            created_by=actor,
+        )
+        for question in quiz.questions.all():
+            copied_question = Question.objects.create(
+                quiz=copied_quiz,
+                kind=question.kind,
+                prompt=question.prompt,
+                code=question.code,
+                explanation=question.explanation,
+                hint=question.hint,
+                points=question.points,
+                order=question.order,
+                partial_credit=question.partial_credit,
+            )
+            Option.objects.bulk_create(
+                [
+                    Option(
+                        question=copied_question,
+                        label=option.label,
+                        is_correct=option.is_correct,
+                        order=option.order,
+                    )
+                    for option in question.options.all()
+                ]
+            )
+    return clone
+
+
+@transaction.atomic
+def bulk_archive_courses(slugs: list[str], actor: Any) -> int:
+    if not has_perm(actor, "courses.edit_any") and not has_perm(actor, "courses.edit_own"):
+        raise PermissionDenied()
+    rows = list(studio_course_queryset(actor).select_for_update().filter(slug__in=slugs))
+    if len(rows) != len(set(slugs)):
+        raise PermissionDenied()
+    changed = 0
+    for course in rows:
+        if course.status != CourseStatus.ARCHIVED:
+            course.status = CourseStatus.ARCHIVED
+            course.save(update_fields=["status", "updated_at"])
+            changed += 1
+    return changed
+
+
+@transaction.atomic
 def sync_course_owner(course: Course, actor: Any) -> Course:
     """Synchronize an admin-edited owner FK with the explicit staff relation."""
     if not has_perm(actor, "courses.edit_any"):

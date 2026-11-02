@@ -13,8 +13,11 @@ Writes carry the `studio_write` scoped throttle.
 ## Routes
 
 - `GET /studio/overview`
+- `GET/PATCH /studio/profile` — instructor headline, sanitized bio, credential, expertise, and HTTPS avatar URL.
 - `GET/POST /studio/courses`
+- `POST /studio/courses/bulk-archive`
 - `GET/PATCH/DELETE /studio/courses/<slug>`
+- `POST /studio/courses/<slug>/duplicate` — copies the authoring graph and quiz structures; video assets are re-linked only when `keepVideos=true`.
 - `POST /studio/courses/<slug>/{submit,publish,unpublish}`
 - `GET /studio/courses/<slug>/checklist`
 - `GET/POST/DELETE /studio/courses/<slug>/staff[/<uuid>]`

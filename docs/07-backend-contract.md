@@ -28,7 +28,19 @@ The quiz API is owned by `backend/features/quizzes/` and mounted under `/api/`. 
 
 Authoring routes under `/studio/` require course-scoped `quizzes.*` permissions and private/no-store responses: `/studio/courses/<slug>/quizzes`, `/studio/quizzes/<id>` (including publish/unpublish), `/studio/quizzes/<id>/questions` and `/questions/reorder`, `/studio/questions/<id>`, `/studio/quizzes/<id>/import`, `/stats`, `/attempts`, `/results.csv`, and `/extra-attempts`. Mutations are throttled by `studio_write`; import supports dry-run before atomic commit; CSV exports escape formula-prefixed cells. The `cleanup_expired` job also grades overdue attempts after the ten-second grace period and reports `quizAttemptsExpired`.
 
-## 3. Video hosting contract
+## 3. Studio contract
+
+Studio responses are authenticated, private, and `no-store`; authorization is permission- and ownership-scoped rather than role-name scoped.
+
+| Method | Path | Contract |
+| :--- | :--- | :--- |
+| `GET` | `/studio/overview` | `{courses,enrollments,inReview,readiness,inbox,recentActivity,series}`; the series contains real 30-day enrollment counts. |
+| `GET` · `PATCH` | `/studio/profile` | Instructor profile `{headline,bio,credential,expertise,avatarUrl}`; profile rows are ensured on first access and avatar URLs must be HTTPS. |
+| `GET` · `POST` | `/studio/courses` | Permission-scoped course page or draft creation. List rows include lifecycle status and computed readiness. |
+| `POST` | `/studio/courses/<slug>/duplicate` | Copies modules, lessons, resources, and quizzes into a unique draft slug. Videos are omitted unless `keepVideos=true`, which re-links existing assets without copying provider files. |
+| `POST` | `/studio/courses/bulk-archive` | Archives a selected permission-scoped list of course slugs and returns `{archived}`. |
+
+## 4. Video hosting contract
 
 The video control plane stores metadata, playback plans, manifests, keys, captions, grants, and provider references. Bytes remain with the provider. Current routes are mounted under `/api/` from `backend/features/videohosting/urls.py`.
 
@@ -93,7 +105,7 @@ Admin video routes are owned by `videohosting.console`, mounted under `/api/admi
 
 Admin asset rows contain `id,slug,title,status,provider,playbackMode,protection,sizeBytes,sourceSizeBytes,progress,stage,qualities,viewCount,lastViewedAt,createdAt` and a truncated `error` on list/detail. Diagnostics returns `checkedAt`, `deep`, `okOverall`, `summary`, `problems`, `groups`, and `providers` with per-check severity/hints.
 
-## 4. Provider decisions and settings
+## 5. Provider decisions and settings
 
 The registry currently contains `google_drive`, `telegram`, `youtube`, `vimeo`, and `external`. Link providers produce `embed`/`external` responses. Storage behavior is deliberately not symmetric:
 
@@ -104,6 +116,6 @@ Typed settings in `config/settings.py` include `VIDEO_HOSTING_DEFAULT_PROVIDER` 
 
 Migration `0010` backfills legacy rows with a master playlist as `hls/encrypted`, Drive source rows as `raw/gated`, and uniquely resolvable `<course>--<lesson>` links; ambiguous links are logged and skipped. It does not infer ambiguous ownership or provider state. `manage.py package_pending` now recovers stale `processing`/legacy `staged` rows older than its age threshold when a persistent spool and provider source-download hook exist; it forces HLS packaging, locks concurrent runs, skips rows without a package-capable target/source, and redacts provider URIs from errors. This recovery path does not change the rule that new unsupported Telegram plans fail before storing a source.
 
-## 5. Integration guidance
+## 6. Integration guidance
 
 Keep frontend fetchers at the feature boundary, preserve camelCase response shapes, treat `code` as the stable error contract, and do not expose provider URLs or session URIs to the browser. A real Drive OAuth/upload/raw-playback acceptance remains an external follow-up, not a passed test.

@@ -1,0 +1,10 @@
+import React from 'react';
+import { StudioShell } from '@/features/studio/components/layout/StudioShell';
+import { StudioProvider } from '@/features/studio/context/StudioProvider';
+import { StudioPlaceholder } from '@/features/studio/components/states/StudioPlaceholder';
+export const StudioCourseEditorPage: React.FC = () => <StudioProvider><StudioShell><StudioPlaceholder title="محرر الدورة" /></StudioShell></StudioProvider>;
+export const StudioVideosPage: React.FC = () => <StudioProvider><StudioShell><StudioPlaceholder title="مكتبة الفيديو" /></StudioShell></StudioProvider>;
+export const StudioQuizzesPage: React.FC = () => <StudioProvider><StudioShell><StudioPlaceholder title="الاختبارات" /></StudioShell></StudioProvider>;
+export const StudioQuizEditorPage: React.FC = () => <StudioProvider><StudioShell><StudioPlaceholder title="محرر الاختبار" /></StudioShell></StudioProvider>;
+export const StudioStudentsPage: React.FC = () => <StudioProvider><StudioShell><StudioPlaceholder title="الطلاب" /></StudioShell></StudioProvider>;
+export const StudioAnalyticsPage: React.FC = () => <StudioProvider><StudioShell><StudioPlaceholder title="التحليلات" /></StudioShell></StudioProvider>;

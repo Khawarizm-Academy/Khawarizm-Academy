@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from urllib.parse import urlparse
 from typing import Any
 
 from rest_framework import serializers
@@ -114,6 +116,28 @@ class ReviewNoteRequest(StrictSerializer):
     note = serializers.CharField(allow_blank=False, max_length=10000)
 
 
+class InstructorProfileRequest(StrictSerializer):
+    headline = serializers.CharField(required=False, allow_blank=True, max_length=160)
+    bio = serializers.CharField(required=False, allow_blank=True, max_length=2000)
+    credential = serializers.CharField(required=False, allow_blank=True, max_length=200)
+    expertise = serializers.ListField(
+        required=False,
+        child=serializers.CharField(max_length=80, allow_blank=False),
+        max_length=10,
+    )
+    avatarUrl = serializers.URLField(required=False, allow_blank=True, max_length=400)
+
+    def validate_avatarUrl(self, value):
+        if value and urlparse(value).scheme != "https":
+            raise serializers.ValidationError("يجب أن يبدأ رابط الصورة بـ https.")
+        return value
+
+
+def _sanitized_markdown(value: str) -> str:
+    """Keep Markdown text while removing executable/raw HTML on render."""
+    return re.sub(r"<[^>]*>", "", value or "")
+
+
 def resource_row(row: Any) -> dict[str, Any]:
     return compact(id=str(row.pk), title=row.title, url=row.url, kind=row.kind, order=row.order)
 
@@ -184,6 +208,18 @@ def course_row(course: Any) -> dict[str, Any]:
         lessonsCount=course.lessons_count,
         enrolledCount=course.enrolled_count,
         updatedAt=course.updated_at,
+        readiness=getattr(course, "studio_readiness", None),
+    )
+
+
+def instructor_profile(user: Any) -> dict[str, Any]:
+    profile = getattr(user, "instructor_profile", None)
+    return compact(
+        headline=getattr(profile, "headline", ""),
+        bio=_sanitized_markdown(getattr(profile, "bio", "")),
+        credential=getattr(profile, "credential", ""),
+        expertise=getattr(profile, "expertise", []) or [],
+        avatarUrl=user.avatar_url,
     )
 
 

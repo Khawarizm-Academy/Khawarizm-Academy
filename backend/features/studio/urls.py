@@ -22,7 +22,9 @@ def _no_store(view):
 urlpatterns = [
     # Static collection/action routes precede parameterized routes.
     path("studio/overview", _no_store(views.overview), name="studio-overview"),
+    path("studio/profile", _no_store(views.profile), name="studio-profile"),
     path("studio/courses", _no_store(views.courses), name="studio-courses"),
+    path("studio/courses/bulk-archive", _no_store(views.bulk_archive), name="studio-course-bulk-archive"),
     path("studio/courses/<slug:slug>/staff", _no_store(views.staff), name="studio-course-staff"),
     path(
         "studio/courses/<slug:slug>/staff/<str:staff_id>",
@@ -32,6 +34,7 @@ urlpatterns = [
     path("studio/courses/<slug:slug>/submit", _no_store(views.submit), name="studio-course-submit"),
     path("studio/courses/<slug:slug>/publish", _no_store(views.publish), name="studio-course-publish"),
     path("studio/courses/<slug:slug>/unpublish", _no_store(views.unpublish), name="studio-course-unpublish"),
+    path("studio/courses/<slug:slug>/duplicate", _no_store(views.duplicate), name="studio-course-duplicate"),
     path("studio/courses/<slug:slug>/checklist", _no_store(views.checklist), name="studio-course-checklist"),
     path("studio/courses/<slug:slug>/modules/reorder", _no_store(views.module_reorder), name="studio-module-reorder"),
     path("studio/courses/<slug:slug>/modules", _no_store(views.modules), name="studio-modules"),

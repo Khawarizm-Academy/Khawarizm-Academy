@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import uuid
+from datetime import timedelta
 from typing import Any
 
 from django.db.models import Count, Q, Sum
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework import serializers as drf_serializers
 from rest_framework import status
@@ -16,7 +19,8 @@ from rest_framework.response import Response
 from features.access.permissions import perm
 from features.access.services import has_object_perm, has_perm
 from features.adminconsole.permissions import permission_for_methods
-from features.auth.models import User
+from features.auth.models import InstructorProfile, User
+from features.dashboard.models import Enrollment
 from features.common.choices import CourseStaffKind, CourseStatus
 from features.common.errors import InvalidParameter, NotFound, PermissionDenied
 from features.common.messages import COURSE_NOT_FOUND
@@ -147,13 +151,62 @@ def overview(request: Any) -> Response:
     queryset = services.studio_course_queryset(request.user)
     counts = {row["status"]: row["total"] for row in queryset.values("status").annotate(total=Count("id"))}
     enrollment_total = queryset.aggregate(total=Sum("enrolled_count"))["total"] or 0
+    recent_courses = list(queryset.order_by("-updated_at", "slug")[:10])
+    since = timezone.now() - timedelta(days=30)
+    series_rows = (
+        Enrollment.objects.filter(course__in=queryset, created_at__gte=since)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(total=Count("id"))
+        .order_by("day")
+    )
+    series_by_day = {row["day"].isoformat(): row["total"] for row in series_rows}
+    days = [(since.date() + timedelta(days=index)).isoformat() for index in range(31)]
     return _response(
         {
             "courses": {status_value: counts.get(status_value, 0) for status_value in CourseStatus.values},
             "enrollments": enrollment_total,
             "inReview": counts.get(CourseStatus.IN_REVIEW, 0),
+            "readiness": round(sum(services.publish_checklist(course)["completeness"] for course in recent_courses) / len(recent_courses)) if recent_courses else 0,
+            "inbox": [],
+            "recentActivity": [
+                {"kind": "course_updated", "title": course.title, "courseSlug": course.slug, "at": course.updated_at}
+                for course in recent_courses
+            ],
+            "series": [{"date": day, "enrollments": series_by_day.get(day, 0)} for day in days],
         }
     )
+
+
+@extend_schema(
+    methods=["GET"],
+    operation_id="studio_profile_read",
+    summary="Read the signed-in instructor profile.",
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
+@extend_schema(
+    methods=["PATCH"],
+    operation_id="studio_profile_update",
+    summary="Update the signed-in instructor profile.",
+    request=serializers.InstructorProfileRequest,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
+)
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated, perm("studio.access")])
+@scoped_throttle("studio_write")
+def profile(request: Any) -> Response:
+    row, _ = InstructorProfile.objects.get_or_create(user=request.user)
+    if request.method == "PATCH":
+        values = _body(serializers.InstructorProfileRequest, request.data)
+        avatar_url = values.pop("avatarUrl", None)
+        if avatar_url is not None:
+            request.user.avatar_url = avatar_url
+            request.user.save(update_fields=["avatar_url"])
+        for key, value in values.items():
+            setattr(row, key, value)
+        row.save()
+    request.user.instructor_profile = row
+    return _response(serializers.instructor_profile(request.user))
 
 
 @extend_schema(
@@ -205,10 +258,43 @@ def courses(request: Any) -> Response:
         )
     page = _page(request)
     total = queryset.count()
-    rows = queryset.order_by("-updated_at", "slug")[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
+    rows = queryset.prefetch_related("modules__lessons__video_asset").order_by("-updated_at", "slug")[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
+    for row in rows:
+        row.studio_readiness = services.publish_checklist(row)["completeness"]
     return _response(
         {"items": [serializers.course_row(row) for row in rows], "total": total, "page": page, "pageSize": PAGE_SIZE}
     )
+
+
+@extend_schema(
+    operation_id="studio_course_duplicate",
+    summary="Duplicate a course graph without copying provider video files.",
+    parameters=[OpenApiParameter("keepVideos", OpenApiTypes.BOOL, OpenApiParameter.QUERY)],
+    responses={201: OpenApiResponse(description="Duplicated draft course.")},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@scoped_throttle("studio_write")
+def duplicate(request: Any, slug: str) -> Response:
+    course = _course(slug, editor=True)
+    cloned = services.duplicate_course(course, request.user, keep_videos=request.query_params.get("keepVideos") == "true")
+    return _response(_editor_payload(_course(cloned.slug, editor=True)), code=status.HTTP_201_CREATED)
+
+
+@extend_schema(
+    operation_id="studio_course_bulk_archive",
+    summary="Archive selected owned courses.",
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiResponse(description="Archive count.")},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@scoped_throttle("studio_write")
+def bulk_archive(request: Any) -> Response:
+    slugs = request.data.get("slugs", []) if isinstance(request.data, dict) else []
+    if not isinstance(slugs, list) or not slugs or any(not isinstance(slug, str) for slug in slugs):
+        raise InvalidParameter("أرسل قائمة slugs صالحة.", code="invalid_slugs")
+    return _response({"archived": services.bulk_archive_courses(slugs, request.user)})
 
 
 def _editor_payload(course: Course) -> dict[str, Any]:
