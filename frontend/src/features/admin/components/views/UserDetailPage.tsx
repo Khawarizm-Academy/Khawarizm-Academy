@@ -11,8 +11,12 @@ import { DEVICE_LABELS } from '@/features/admin/types';
 import { formatDateTime, formatLastSeen, initialsOf } from '@/features/admin/data/adminFormatters';
 import { AdminFieldInput, type AdminFormValue } from '@/features/admin/components/controls/AdminFieldInput';
 import { ConfirmAction } from '@/features/admin/components/controls/ConfirmAction';
+import { RoleChips } from '@/features/admin/components/controls/RoleChips';
 import { toFormValues, toPayloadValues } from '@/features/admin/data/adminContentForm';
-import type { AdminField, AdminUserInput } from '@/features/admin/types';
+import { fetchRoles, setUserRoles } from '@/features/admin/data/roleFetchers';
+import type { AdminField, AdminRole, AdminUserInput } from '@/features/admin/types';
+import type { AuthRoleSummary } from '@/features/auth/types';
+import { useCachedData } from '@/shared/hooks/useCachedData';
 
 interface UserEditorProps {
   fields: AdminField[];
@@ -110,6 +114,9 @@ export const UserDetailPage: React.FC = () => {
   } = useAdmin();
   const [isEditorDirty, setIsEditorDirty] = useState(false);
   const [isConfirmingClose, setIsConfirmingClose] = useState(false);
+  const [isSavingRoles, setIsSavingRoles] = useState(false);
+  const roleOptions = useCachedData<AdminRole[]>(['admin-roles'], fetchRoles, { initialData: [] });
+  const availableRoles: AuthRoleSummary[] = (roleOptions.data ?? []).map(({ id, slug, name, color }) => ({ id, slug, name, color }));
 
   const fields = useMemo(() => contentSchema?.userFields ?? [], [contentSchema]);
 
@@ -168,6 +175,13 @@ export const UserDetailPage: React.FC = () => {
     if (ok) goBack();
   };
 
+  const handleRolesChange = async (roles: AuthRoleSummary[]) => {
+    setIsSavingRoles(true);
+    await setUserRoles(profile.id, roles.map((role) => role.id));
+    await refresh();
+    setIsSavingRoles(false);
+  };
+
   return (
     <div className="admin-detail-page">
       <button type="button" className="admin-ghost-btn self-start" onClick={requestBack}>
@@ -204,7 +218,14 @@ export const UserDetailPage: React.FC = () => {
             {profile.email}
           </span>
           <span className="admin-detail-hero-meta">
-            <RoleBadge role={profile.role} />
+            {profile.roles?.length ? (
+              <RoleChips
+                roles={profile.roles}
+                available={availableRoles.length ? availableRoles : profile.roles}
+                disabled={isSavingRoles || profile.id === currentUser?.id}
+                onChange={handleRolesChange}
+              />
+            ) : <RoleBadge role={profile.role} />}
             <ActiveBadge isActive={profile.isActive} />
             <span className="admin-detail-hero-sub">آخر ظهور {formatLastSeen(profile.lastSeenAt)}</span>
           </span>

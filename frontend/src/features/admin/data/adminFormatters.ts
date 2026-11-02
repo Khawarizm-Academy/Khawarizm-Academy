@@ -1,6 +1,6 @@
 /** Display helpers shared by every console view: timestamps, counts, initials. */
 
-import { Activity, Video, BookOpen, CalendarDays, Globe, GraduationCap, HeartPulse, LayoutDashboard, LayoutList, LogIn, LogOut, MonitorSmartphone, ShieldCheck, TrendingUp, Trophy, UserPlus, Users, type LucideIcon } from 'lucide-react';
+import { Activity, Video, BookOpen, CalendarDays, Globe, GraduationCap, HeartPulse, LayoutDashboard, LayoutList, LogIn, LogOut, MonitorSmartphone, ScrollText, ShieldCheck, TrendingUp, Trophy, UserPlus, Users, type LucideIcon } from 'lucide-react';
 import type { AdminSectionKey } from '@/features/admin/types';
 
 /** One icon per section; the rail, the pills, and the header all read this map. */
@@ -13,6 +13,8 @@ export const SECTION_ICONS: Record<AdminSectionKey, LucideIcon> = {
   activity: Activity,
   videos: Video,
   system: HeartPulse,
+  roles: ShieldCheck,
+  audit: ScrollText,
 };
 
 /** Icons the overview cards use, keyed by the card's metric name. */

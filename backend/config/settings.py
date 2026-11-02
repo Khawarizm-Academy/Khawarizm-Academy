@@ -331,6 +331,7 @@ if REDIS_URL:
 # $CRON_SECRET` when that project env var exists, so it is accepted as a
 # fallback name; unset means the cron path is dead and only staff can run it.
 AUTH_EVENT_RETENTION_DAYS = env_int("AUTH_EVENT_RETENTION_DAYS", 180)
+AUDIT_RETENTION_DAYS = env_int("AUDIT_RETENTION_DAYS", 365)
 MAINTENANCE_CRON_SECRET = os.environ.get("MAINTENANCE_CRON_SECRET") or os.environ.get("CRON_SECRET", "")
 
 REST_FRAMEWORK = {

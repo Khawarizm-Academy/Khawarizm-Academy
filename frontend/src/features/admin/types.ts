@@ -1,6 +1,8 @@
 /** API shapes for the staff console: users, sessions, audit rows, analytics. */
 
 import { DEVICE_LABELS, ROLE_LABELS, type AuthRole, type AuthUser } from '@/features/auth/types';
+import type { PermissionKey } from '@/shared/lib/permissions';
+import adminSectionsJson from '@/features/admin/data/adminSections.json';
 
 // The console renders roles and devices with the auth feature's Arabic labels.
 export { DEVICE_LABELS, ROLE_LABELS };
@@ -17,7 +19,7 @@ export interface Paged<T> {
 export type AdminContentTypeKey = 'courses' | 'scholarships' | 'events' | 'competitions';
 
 /** The input a schema field maps onto; drives the generic form renderer. */
-export type AdminFieldKind = 'text' | 'textarea' | 'url' | 'number' | 'decimal' | 'bool' | 'select' | 'json';
+export type AdminFieldKind = 'text' | 'textarea' | 'url' | 'number' | 'decimal' | 'bool' | 'select' | 'json' | 'user_ref';
 
 /** One `{value,label}` choice for a `select` field. */
 export interface AdminFieldOption {
@@ -97,6 +99,7 @@ export interface AdminUserRow {
   fullName: string;
   avatarUrl: string;
   role: AuthRole;
+  roles?: AuthUser['roles'];
   isActive: boolean;
   isStaff: boolean;
   activeSessions: number;
@@ -184,65 +187,49 @@ export interface LoginSeries {
 }
 
 /** The console's sections; each one is a `?tab=` value. */
-export type AdminSectionKey = 'overview' | 'users' | 'content' | 'videos' | 'system' | 'sessions' | 'analytics' | 'activity';
-
-/** One rail group: a quiet label above its related sections. */
-export interface AdminNavGroup {
-  id: string;
+export type AdminSectionKey = 'overview' | 'users' | 'content' | 'videos' | 'system' | 'sessions' | 'analytics' | 'activity' | 'roles' | 'audit';
+export interface AdminSectionDefinition {
+  key: AdminSectionKey;
   label: string;
-  sections: AdminSectionKey[];
+  icon: string;
+  group: string;
+  permission: PermissionKey;
 }
-
-export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
-  { id: 'platform', label: 'المنصة', sections: ['overview', 'users', 'sessions'] },
-  { id: 'publishing', label: 'المحتوى والفيديو', sections: ['content', 'videos', 'system'] },
-  { id: 'insight', label: 'المتابعة', sections: ['analytics', 'activity'] },
-];
-
+export const ADMIN_SECTIONS = adminSectionsJson as AdminSectionDefinition[];
+/** Backwards-compatible grouped view; the source of truth is adminSections.json. */
+export interface AdminNavGroup { id: string; label: string; sections: AdminSectionKey[]; }
+export const ADMIN_NAV_GROUPS: AdminNavGroup[] = Array.from(
+  ADMIN_SECTIONS.reduce((groups, section) => {
+    const current = groups.get(section.group) ?? [];
+    current.push(section.key);
+    groups.set(section.group, current);
+    return groups;
+  }, new Map<string, AdminSectionKey[]>())
+).map(([label, sections]) => ({ id: label, label, sections }));
+export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ADMIN_SECTIONS.map((section) => section.key);
+/** The h1 + one-line description under every section name. */
+export const SECTION_DETAILS: Record<AdminSectionKey, { title: string; sub: string }> = {
+  overview: { title: 'نظرة عامة', sub: 'مؤشرات المنصة لحظة بلحظة: الحسابات والجلسات ونشاط الدخول.' },
+  users: { title: 'الحسابات', sub: 'كل حساب مسجّل مع دوره وحالته — افتح الحساب لتعديل بياناته أو إدارة أجهزته.' },
+  content: { title: 'إدارة المحتوى', sub: 'الدورات والمنح والفعاليات والمسابقات — إضافة وتعديل وأرشفة من مكان واحد.' },
+  videos: { title: 'استضافة الفيديو', sub: 'أصول الفيديو المخزّنة، وخط الرفع والتغليف الذي يشغّلها داخل المنصة.' },
+  system: { title: 'فحص المنظومة', sub: 'صحة خط التغليف واتصال مُزوّدي الاستضافة قبل اعتمادها للطلاب.' },
+  sessions: { title: 'الجلسات', sub: 'كل الأجهزة التي دخلت على المنصة، مع إنهاء أي جلسة عن بُعد.' },
+  analytics: { title: 'التحليلات', sub: 'تسجيلات الدخول اليومية وتوزيع أجهزة الجمهور عبر الإطار الزمني.' },
+  activity: { title: 'سجل النشاط', sub: 'أحدث أحداث الدخول والخروج والتجديد والإبطال على مستوى المنصة.' },
+  roles: { title: 'الأدوار والصلاحيات', sub: 'أنشئ أدوارًا واضحة، اضبط صلاحياتها، ووزّعها بأمان على الحسابات.' },
+  audit: { title: 'سجل التدقيق', sub: 'تتبّع تغييرات الأدوار والصلاحيات وإسنادها مع فروق مفهومة.' },
+};
+/** Arabic labels come from the same data registry. */
+export const SECTION_LABELS: Record<AdminSectionKey, string> = Object.fromEntries(
+  ADMIN_SECTIONS.map((section) => [section.key, section.label])
+) as Record<AdminSectionKey, string>;
 export const EVENT_KIND_LABELS: Record<AdminEventKind, string> = {
   login: 'دخول',
   logout: 'خروج',
   refresh: 'تجديد',
   revoked: 'إبطال',
   rejected: 'مرفوض',
-};
-
-export const ADMIN_SECTION_KEYS: AdminSectionKey[] = ADMIN_NAV_GROUPS.flatMap((group) => group.sections);
-
-/** The h1 + one-line description under every section name. */
-export const SECTION_DETAILS: Record<AdminSectionKey, { title: string; sub: string }> = {
-  overview: {
-    title: 'نظرة عامة',
-    sub: 'مؤشرات المنصة لحظة بلحظة: الحسابات والجلسات ونشاط الدخول.',
-  },
-  users: {
-    title: 'الحسابات',
-    sub: 'كل حساب مسجّل مع دوره وحالته — افتح الحساب لتعديل بياناته أو إدارة أجهزته.',
-  },
-  content: {
-    title: 'إدارة المحتوى',
-    sub: 'الدورات والمنح والفعاليات والمسابقات — إضافة وتعديل وأرشفة من مكان واحد.',
-  },
-  videos: {
-    title: 'استضافة الفيديو',
-    sub: 'أصول الفيديو المخزّنة، وخط الرفع والتغليف الذي يشغّلها داخل المنصة.',
-  },
-  system: {
-    title: 'فحص المنظومة',
-    sub: 'صحة خط التغليف واتصال مُزوّدي الاستضافة قبل اعتمادها للطلاب.',
-  },
-  sessions: {
-    title: 'الجلسات',
-    sub: 'كل الأجهزة التي دخلت على المنصة، مع إنهاء أي جلسة عن بُعد.',
-  },
-  analytics: {
-    title: 'التحليلات',
-    sub: 'تسجيلات الدخول اليومية وتوزيع أجهزة الجمهور عبر الإطار الزمني.',
-  },
-  activity: {
-    title: 'سجل النشاط',
-    sub: 'أحدث أحداث الدخول والخروج والتجديد والإبطال على مستوى المنصة.',
-  },
 };
 
 /** Filter values shared by the tables. */
@@ -279,19 +266,6 @@ export const EVENT_KIND_FILTERS: Array<{ id: AdminEventKind | 'all'; label: stri
 ];
 
 /** Arabic labels for every section, event kind, and revoke reason. */
-export const SECTION_LABELS: Record<AdminSectionKey, string> = {
-  overview: 'نظرة عامة',
-  users: 'المستخدمون',
-  content: 'إدارة المحتوى',
-  videos: 'استضافة الفيديو',
-  system: 'فحص المنظومة',
-  sessions: 'الجلسات',
-  analytics: 'التحليلات',
-  activity: 'سجل النشاط',
-};
-
-
-
 export const REVOKE_REASON_LABELS: Record<string, string> = {
   logout: 'سجّل الخروج',
   signed_in_elsewhere: 'دخل من جهاز آخر',
@@ -314,6 +288,18 @@ export const VIDEO_STAGE_LABELS: Record<string, string> = {
   packaging: 'تغليف HLS',
   publishing: 'رفع المقاطع',
 };
+
+export type RoleTemplateKey = 'instructor' | 'senior_instructor' | 'teaching_assistant' | 'content_moderator' | 'support_agent' | 'content_manager';
+export interface RolePermission { key: PermissionKey; label: string; description: string; elevated: boolean; implies: PermissionKey[]; }
+export interface RolePermissionGroup { key: string; label: string; permissions: RolePermission[]; }
+export interface RoleTemplate { key: RoleTemplateKey; label: string; description: string; permissions: PermissionKey[]; }
+export interface RoleCatalog { groups: RolePermissionGroup[]; templates: RoleTemplate[]; colors: string[]; }
+export interface AdminRole { id: string; slug: string; name: string; description: string; color: string; position: number; permissions: PermissionKey[]; isSystem: boolean; isDefault: boolean; templateKey?: RoleTemplateKey | null; memberCount: number; canManage: boolean; createdAt: string; updatedAt: string; }
+export interface RoleMember { id: string; email: string; fullName: string; avatarUrl?: string; roles: Array<{ id: string; slug: string; name: string; color: string }>; isActive?: boolean; }
+export type RoleMembersPage = Paged<RoleMember>;
+export interface AuditRow { id: string; action: string; actor: { id: string; name: string; email?: string } | null; targetType: string; targetId: string; targetName?: string; detail: { before?: Record<string, unknown>; after?: Record<string, unknown>; added?: string[]; removed?: string[] } | string; createdAt: string; }
+export type AuditPage = Paged<AuditRow>;
+export interface RoleCreateInput { name: string; slug?: string; color: string; description?: string; permissions: PermissionKey[]; templateKey?: RoleTemplateKey; }
 
 /** `GET/POST /admin/video-system-config` — global toggles, e.g. FFmpeg packaging. */
 export interface AdminVideoSystemConfig {

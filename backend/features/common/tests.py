@@ -213,7 +213,7 @@ class CacheHelperTests(TestCase):
 
 
 class CleanupExpiredTests(TestCase):
-    """The maintenance job: sweeps the four dead-weight families, idempotently."""
+    """The maintenance job: sweeps five dead-weight families, idempotently."""
 
     def _seed(self) -> None:
         now = timezone.now()
@@ -230,8 +230,14 @@ class CleanupExpiredTests(TestCase):
         old_created = now - timedelta(days=1 + 180)  # one day past the default retention
         AuthEvent.objects.filter(pk=old_event.pk).update(created_at=old_created)
         AuthEvent.objects.create(kind=AuthEventKind.LOGIN)
+        from features.access.models import AuditEvent as AccessAuditEvent
+
+        old_audit = AccessAuditEvent.objects.create(action="role_created", target_type="role", target_id="old")
+        AccessAuditEvent.objects.filter(pk=old_audit.pk).update(created_at=now - timedelta(days=366))
+        AccessAuditEvent.objects.create(action="role_created", target_type="role", target_id="fresh")
 
     def _alive(self) -> dict[str, int]:
+        from features.access.models import AuditEvent as AccessAuditEvent
         from features.videohosting.models import DriveAuthState as D
         from features.videohosting.models import StreamToken as S
         from features.videohosting.models import UploadSession as U
@@ -241,6 +247,7 @@ class CleanupExpiredTests(TestCase):
             "sessions": U.objects.count(),
             "drive": D.objects.count(),
             "events": AuthEvent.objects.count(),
+            "accessAudit": AccessAuditEvent.objects.count(),
         }
 
     def test_the_command_sweeps_expired_rows_and_keeps_fresh_ones(self):
@@ -248,10 +255,13 @@ class CleanupExpiredTests(TestCase):
         out = StringIO()
         call_command("cleanup_expired", stdout=out)
         alive = self._alive()
-        self.assertEqual(alive, {"tokens": 1, "sessions": 1, "drive": 1, "events": 1})
+        self.assertEqual(alive, {"tokens": 1, "sessions": 1, "drive": 1, "events": 1, "accessAudit": 1})
         run = MaintenanceRun.objects.get()
         self.assertEqual(run.status, MaintenanceRunStatus.DONE)
-        self.assertEqual(run.deleted, {"streamTokens": 1, "uploadSessions": 1, "driveAuthStates": 1, "authEvents": 1})
+        self.assertEqual(
+            run.deleted,
+            {"streamTokens": 1, "uploadSessions": 1, "driveAuthStates": 1, "authEvents": 1, "accessAuditEvents": 1},
+        )
 
     def test_running_twice_leaves_identical_state(self):
         self._seed()
@@ -269,7 +279,14 @@ class CleanupExpiredTests(TestCase):
         result = run_cleanup(trigger="command")
         self.assertEqual(result["status"], "done")
         self.assertEqual(
-            result["deleted"], {"streamTokens": 1, "uploadSessions": 1, "driveAuthStates": 1, "authEvents": 1}
+            result["deleted"],
+            {
+                "streamTokens": 1,
+                "uploadSessions": 1,
+                "driveAuthStates": 1,
+                "authEvents": 1,
+                "accessAuditEvents": 1,
+            },
         )
 
 
@@ -311,7 +328,8 @@ class MaintenanceEndpointTests(ApiTestCase):
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json()["status"], "done")
         self.assertEqual(
-            set(response.json()["deleted"]), {"streamTokens", "uploadSessions", "driveAuthStates", "authEvents"}
+            set(response.json()["deleted"]),
+            {"streamTokens", "uploadSessions", "driveAuthStates", "authEvents", "accessAuditEvents"},
         )
         self.assertEqual(MaintenanceRun.objects.get().trigger, "endpoint")
 

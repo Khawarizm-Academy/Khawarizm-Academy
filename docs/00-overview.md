@@ -42,7 +42,7 @@ The shared canvas, typography, elevation, and motion system are identical across
 | **Auth** | Login & returning-user flow with social providers, terms modal, toast | `/login` |
 | **Events** | Events & seminars destination: featured keynote + upcoming grid | `/events` |
 | **Competitions** | Competitions & challenges destination: banner + card grid | `/competitions` |
-| **Admin** | Staff-only console: accounts & roles, content editor, sessions, analytics, activity | `/admin` |
+| **Admin** | Permission-gated console: accounts & roles, content editor, sessions, analytics, activity | `/admin` |
 
 Full descriptions, file maps, and links to each feature README live in [05 · Feature Directory](05-feature-directory.md).
 

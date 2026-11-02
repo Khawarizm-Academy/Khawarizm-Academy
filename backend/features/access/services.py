@@ -15,7 +15,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Max, Q
+from django.db.models import Case, Count, IntegerField, Max, Q, Subquery, When
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.text import slugify
@@ -138,6 +138,10 @@ def has_perm(user: Any, key: str) -> bool:
         if _strict_permission_checks():
             raise ValueError(f"Unknown permission key: {key}")
         return False
+    # The legacy admin bridge is an unconditional full-catalog grant; avoid
+    # loading role rows merely to answer a single permission check.
+    if getattr(user, "is_admin", False):
+        return True
     return key in effective_permissions(user)
 
 
@@ -379,6 +383,7 @@ def _save_role(role: Any) -> Any:
     return role
 
 
+@transaction.atomic
 def create_role(
     actor: Any,
     data: Mapping[str, Any] | None = None,
@@ -387,8 +392,13 @@ def create_role(
     **overrides: Any,
 ):
     """Create a role after hierarchy, catalog, color, and grant validation."""
+    _lock_role_mutation_guard(actor)
     values = dict(data or {})
     values.update(overrides)
+    allowed_fields = {"name", "slug", "color", "description", "permissions", "position", "template_key", "templateKey"}
+    unknown_fields = sorted(set(values) - allowed_fields)
+    if unknown_fields:
+        _raise_invalid(f"حقول غير معروفة: {', '.join(unknown_fields)}")
     template_key = values.get("template_key", values.get("templateKey", "")) or ""
     template = ROLE_TEMPLATES.get(template_key) if template_key else None
     if template_key and template is None:
@@ -884,6 +894,7 @@ def reorder_roles(actor: Any, ordered_ids: Sequence[Any], *, request: Any = None
 
     AccessRole, _RoleAssignment, _AuditEvent, _User = _model_classes()
     with transaction.atomic():
+        _lock_role_mutation_guard(actor)
         all_roles = list(AccessRole.objects.select_for_update().order_by("-position", "name"))
         by_id = {str(role.pk): role for role in all_roles}
         unknown = [str(role_id) for role_id in ids if str(role_id) not in by_id]
@@ -919,7 +930,7 @@ def reorder_roles(actor: Any, ordered_ids: Sequence[Any], *, request: Any = None
                 detail={"before": {"position": old_position}, "after": {"position": role.position}},
                 request=request,
             )
-        return list(AccessRole.objects.order_by("-position", "name"))
+        return list(AccessRole.objects.order_by("is_default", "-position", "name", "pk"))
 
 
 def sync_primary_role(user: Any):
@@ -1032,3 +1043,179 @@ def bootstrap_system_roles(*, apps=None, using: str | None = None) -> dict[str, 
             batch_size=500,
         )
     return result
+
+
+# --- Phase 2 role-manager read and batch services ----------------------------
+
+
+def _roles_with_member_counts():
+    """Annotate every role with the real member count in one database query."""
+    AccessRole, _RoleAssignment, _AuditEvent, UserModel = _model_classes()
+    all_users = UserModel.objects.order_by().values().annotate(total=Count("pk")).values("total")[:1]
+    return AccessRole.objects.annotate(
+        member_count=Case(
+            When(is_default=True, then=Subquery(all_users, output_field=IntegerField())),
+            default=Count("assignments"),
+            output_field=IntegerField(),
+        )
+    )
+
+
+def list_roles() -> list[Any]:
+    """Return roles with computed member counts and the implicit default last."""
+    return list(_roles_with_member_counts().order_by("is_default", "-position", "name", "pk"))
+
+
+def get_role(role_id: Any):
+    """Return one role with its member count, or the shared 404 exception."""
+    AccessRole, _RoleAssignment, _AuditEvent, _UserModel = _model_classes()
+    try:
+        return _roles_with_member_counts().get(pk=getattr(role_id, "pk", role_id))
+    except (AccessRole.DoesNotExist, ValueError, TypeError, ValidationError) as exc:
+        raise NotFound("الدور المطلوب غير موجود.") from exc
+
+
+def user_role_map(user_ids: Sequence[Any], actor: Any = None) -> dict[Any, list[Any]]:
+    """Bulk-load explicit role summaries plus the shared implicit default role."""
+    ids = list(dict.fromkeys(user_ids))
+    if not ids:
+        return {}
+    AccessRole, RoleAssignment, _AuditEvent, _UserModel = _model_classes()
+    default_role = None
+    if _is_authenticated(actor):
+        snapshot = actor.__dict__.get(_ACCESS_CACHE_ATTR)
+        if snapshot is not None:
+            default_role = next((role for role in snapshot[0] if role.is_default), None)
+    if default_role is None:
+        default_role = AccessRole.objects.filter(is_default=True).first()
+    result: dict[Any, list[Any]] = {user_id: [] for user_id in ids}
+    assignments = (
+        RoleAssignment.objects.filter(user_id__in=ids)
+        .select_related("role")
+        .order_by("user_id", "-role__position", "role__name", "role__slug")
+    )
+    for assignment in assignments:
+        result.setdefault(assignment.user_id, []).append(assignment.role)
+    for user_id in ids:
+        if default_role is not None:
+            result[user_id].append(default_role)
+    return result
+
+
+def role_members_page(
+    role_id: Any,
+    *,
+    query: str = "",
+    page: int = 1,
+    page_size: int = 20,
+    actor: Any = None,
+) -> tuple[int, list[Any], dict[Any, list[Any]]]:
+    """Return a stable user page and a constant-query role summary map.
+
+    The implicit student role is membership for every account; ordinary roles
+    are scoped through their explicit assignment rows.
+    """
+    if isinstance(page, bool) or page < 1:
+        raise InvalidParameter("رقم الصفحة غير صالح.")
+    if isinstance(page_size, bool) or page_size < 1:
+        raise InvalidParameter("حجم الصفحة غير صالح.")
+    page_size = min(page_size, 100)
+    needle = str(query or "").strip()
+    if len(needle) > 160:
+        raise InvalidParameter("نص البحث طويل جدًا.")
+
+    role = get_role(role_id)
+    _AccessRole, _RoleAssignment, _AuditEvent, UserModel = _model_classes()
+    queryset = UserModel.objects.all()
+    if not role.is_default:
+        queryset = queryset.filter(role_assignments__role_id=role.pk)
+    if needle:
+        queryset = queryset.filter(Q(email__icontains=needle) | Q(full_name__icontains=needle))
+    if not role.is_default:
+        queryset = queryset.distinct()
+    total = queryset.count()
+    users = list(queryset.order_by("email", "pk")[(page - 1) * page_size : page * page_size])
+    role_map = user_role_map([user.pk for user in users], actor=actor)
+    return total, users, role_map
+
+
+def bulk_add_role_members(
+    actor: Any,
+    role_id: Any,
+    user_ids: Sequence[Any],
+    *,
+    request: Any = None,
+) -> list[dict[str, Any]]:
+    """Add a role to many users in one outer transaction with per-ID outcomes."""
+    if not isinstance(user_ids, (list, tuple)):
+        raise InvalidParameter("قائمة الحسابات غير صالحة.")
+    ids = list(user_ids)
+    if len(ids) > 100:
+        raise InvalidParameter("لا يمكن إسناد الدور لأكثر من 100 حساب في الطلب الواحد.")
+    if len(ids) != len({str(user_id) for user_id in ids}):
+        raise InvalidParameter("لا يمكن تكرار الحساب في القائمة.")
+
+    _AccessRole, RoleAssignment, _AuditEvent, _UserModel = _model_classes()
+    outcomes: list[dict[str, Any]] = []
+    with transaction.atomic():
+        _lock_role_mutation_guard(actor)
+        role = _role_by_id(role_id, lock=True)
+        if role.is_default:
+            raise InvalidParameter("الدور الافتراضي لا يُسند صراحةً؛ كل حساب عضو فيه تلقائيًا.")
+        for raw_user_id in ids:
+            user_key = str(raw_user_id)
+            try:
+                existing_ids = list(
+                    RoleAssignment.objects.filter(user_id=raw_user_id).values_list("role_id", flat=True)
+                )
+                desired_ids = existing_ids if role.pk in existing_ids else [*existing_ids, role.pk]
+                assign_roles(actor, raw_user_id, desired_ids, request=request)
+            except (PermissionDenied, NotFound, InvalidParameter, Conflict) as exc:
+                code = getattr(exc, "default_code", None) or getattr(exc, "code", None) or "invalid_parameter"
+                outcomes.append({"userId": user_key, "ok": False, "code": str(code)})
+            except ValueError, TypeError, ValidationError:
+                outcomes.append({"userId": user_key, "ok": False, "code": "invalid_parameter"})
+            else:
+                outcomes.append({"userId": user_key, "ok": True})
+    return outcomes
+
+
+def audit_page(
+    *,
+    action: str | None = None,
+    actor_id: Any = None,
+    target_type: str | None = None,
+    target_id: str | None = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[int, list[Any]]:
+    """Filter and page access audit events with a stable newest-first order."""
+    if isinstance(page, bool) or page < 1:
+        raise InvalidParameter("رقم الصفحة غير صالح.")
+    if isinstance(page_size, bool) or page_size < 1:
+        raise InvalidParameter("حجم الصفحة غير صالح.")
+    page_size = min(page_size, 100)
+    if action and action not in AuditAction.values:
+        raise InvalidParameter("إجراء التدقيق غير معروف.")
+    if actor_id:
+        try:
+            actor_id = uuid.UUID(str(actor_id))
+        except (TypeError, ValueError) as exc:
+            raise InvalidParameter("معرّف المنفّذ غير صالح.") from exc
+    if target_type and len(target_type) > 80:
+        raise InvalidParameter("نوع الهدف طويل جدًا.")
+    if target_id and len(target_id) > 128:
+        raise InvalidParameter("معرّف الهدف طويل جدًا.")
+    _AccessRole, _RoleAssignment, AuditEvent, _UserModel = _model_classes()
+    queryset = AuditEvent.objects.select_related("actor")
+    if action:
+        queryset = queryset.filter(action=action)
+    if actor_id:
+        queryset = queryset.filter(actor_id=actor_id)
+    if target_type:
+        queryset = queryset.filter(target_type=target_type)
+    if target_id:
+        queryset = queryset.filter(target_id=target_id)
+    total = queryset.count()
+    rows = list(queryset.order_by("-created_at", "-pk")[(page - 1) * page_size : page * page_size])
+    return total, rows

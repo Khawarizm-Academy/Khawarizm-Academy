@@ -47,7 +47,7 @@ reads across the other features.
 | `events` | `events` | `EventItem` | — |
 | `competitions` | `competitions` | `Competition` | — |
 | `profile` | `profile` | — (edits `accounts.User`; owns no tables) | — (edits via `accounts`) |
-| `adminconsole` | `adminconsole` | — (staff analytics across features) | account lifecycle (email uniqueness, role⇄staff, self-protection), content-editor value coercion |
+| `adminconsole` | `adminconsole` | — (permission-gated analytics and administration across features) | account lifecycle (email uniqueness, role⇄staff compatibility, self-protection), role manager, content-editor value coercion |
 | `videohosting` | `videohosting` | `VideoProvider`, `VideoAsset`, `VideoRendition`, `VideoSegment`, `StreamToken`, `ProviderAsset`, `UploadSession`, plus the `providers/` module-per-host registry | ingest + packaging in `ingest.py`/`packaging.py` (not `services.py` — the file names are the domain's) |
 
 **Why `accounts`?** The auth folder keeps the product name (`auth`) but the app
@@ -220,7 +220,8 @@ Authentication is layered so each file has exactly one job:
 | `auth/tokens.py` | mint/decode the HS256 access token; hash the refresh token |
 | `auth/services.py` | `open_session` / `rotate_session` / `upsert_firebase_user` / `record_event` |
 | `auth/authentication.py` | Bearer header → a live `UserSession`, or a coded 401 |
-| `auth/permissions.py` | `IsAdminRole` |
+| `access/permissions.py` | Canonical permission factories used by the API |
+| `adminconsole/permissions.py` | Method-specific admin permission mapping |
 | `auth/serializers.py` | the payloads every other feature imports |
 
 Three behaviours are worth knowing before you touch any of them:
@@ -232,12 +233,28 @@ Three behaviours are worth knowing before you touch any of them:
 - **A 401 explains itself.** `AccessTokenAuthentication.authenticate_header`
   returns `"Bearer"` so DRF keeps 401 (not 403), and `SessionAuthError` renders
   `{"code": ..., "detail": ...}` — the SPA maps `code` to its sign-out copy.
-  Admin rights are Django's `is_staff`, so the built-in admin site and
-  `ModelBackend` permissions keep working unchanged.
+  The admin API is authorized per method through the canonical access
+  permissions, and managed-content access is additionally declared per content
+  type. Legacy `is_staff`/superuser compatibility remains: those accounts map
+  to the `administrator` permission, so no legacy access is removed.
 
 Development signs in with a synthetic `dev:<email>` token when
 `FIREBASE_ALLOW_DEV_TOKENS` is on and no `FIREBASE_PROJECT_ID` is set, so the
 whole flow is testable without a Firebase project.
+
+### Admin authorization and roles
+
+The admin API does not apply one blanket staff-only check. Each method maps to
+an access permission, while each managed content type declares its read, write,
+and delete permission metadata; content schemas expose only types the caller
+can read. User list/detail and account mutations are separate permissions:
+creating a default student uses `users.create`, while assigning a non-default
+role requires `users.assign_roles` plus hierarchy and grant checks.
+
+The completed Role Manager is exposed under `/api/admin/roles`: catalog,
+list/detail CRUD, reorder, paged and bulk role membership, and user role
+replacement. `/api/admin/audit` is the access-mutation audit trail; it is
+distinct from `/api/admin/events`, which serves `AuthEvent` activity.
 
 ### Configuring Firebase
 
@@ -308,10 +325,11 @@ Details and the current rate/TTL values: [`backend/README.md`](../backend/README
 
 ## 10. Jobs — one scheduled cleanup, idempotent by construction
 
-`features/common/maintenance.py::run_cleanup` sweeps four dead-weight families
+`features/common/maintenance.py::run_cleanup` sweeps five dead-weight families
 (expired stream tokens, stale upload sessions, expired Drive auth states, auth
-events past `AUTH_EVENT_RETENTION_DAYS`) in chunks of 500, one transaction per
-chunk. It is **idempotent** — deleting an already-deleted row deletes nothing —
+events past `AUTH_EVENT_RETENTION_DAYS`, and access `AuditEvent` rows past
+`AUDIT_RETENTION_DAYS`, which defaults to 365 days) in chunks of 500, one
+transaction per chunk. It is **idempotent** — deleting an already-deleted row deletes nothing —
 and **overlap-guarded**: a second concurrent run exits 0 with
 `skipped, still running`, so cron + a manual trigger never fight. Every run
 leaves its per-family delete counts on a `MaintenanceRun` ledger row.

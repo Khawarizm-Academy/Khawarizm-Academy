@@ -3,9 +3,10 @@ import { Eye } from 'lucide-react';
 import { UserAvatar } from '@/shared/components/Artwork/UserAvatar';
 import { ActiveBadge } from '@/features/admin/components/cards/Badges';
 import { RoleSelect } from '@/features/admin/components/controls/RoleSelect';
+import { RoleChips } from '@/features/admin/components/controls/RoleChips';
 import { formatCount, formatLastSeenShort, formatShortDateTime, initialsOf } from '@/features/admin/data/adminFormatters';
 import type { AdminUserRow } from '@/features/admin/types';
-import type { AuthRole } from '@/features/auth/types';
+import type { AuthRole, AuthRoleSummary } from '@/features/auth/types';
 
 interface UsersTableProps {
   rows: AdminUserRow[];
@@ -14,6 +15,8 @@ interface UsersTableProps {
   changingRoleId: string | null;
   onOpen: (userId: string) => void;
   onChangeRole: (userId: string, role: AuthRole) => void;
+  availableRoles?: AuthRoleSummary[];
+  onSetRoles?: (userId: string, roles: AuthRoleSummary[]) => Promise<void>;
 }
 
 const COLUMNS = ['المستخدم', 'الدور', 'الحالة', 'الجلسات النشطة', 'تاريخ الانضمام', 'آخر ظهور'];
@@ -25,6 +28,8 @@ export const UsersTable: React.FC<UsersTableProps> = ({
   changingRoleId,
   onOpen,
   onChangeRole,
+  availableRoles = [],
+  onSetRoles,
 }) => (
   <div className="admin-table">
     <div className="admin-table-head" aria-hidden="true">
@@ -61,11 +66,11 @@ export const UsersTable: React.FC<UsersTableProps> = ({
 
         <div className="admin-cell">
           <span className="admin-cell-label">الدور</span>
-          <RoleSelect
-            value={row.role}
-            disabled={row.id === currentUserId || changingRoleId === row.id}
-            onChange={(role) => onChangeRole(row.id, role)}
-          />
+          {row.roles?.length ? <RoleChips roles={row.roles} available={availableRoles.length ? availableRoles : row.roles} disabled={row.id === currentUserId} onChange={onSetRoles ? (roles) => onSetRoles(row.id, roles) : undefined} /> : <RoleSelect
+              value={row.role}
+              disabled={row.id === currentUserId || changingRoleId === row.id}
+              onChange={(role) => onChangeRole(row.id, role)}
+            />}
         </div>
 
         <div className="admin-cell">

@@ -199,20 +199,31 @@ feature layout and the session model.
 
 ### Admin
 
-Staff-only (`IsAdminRole`), under `/admin`:
+Admin routes under `/admin` are authorized per HTTP method and, for managed
+content, per content type through the `features/access` permission catalog;
+they are not one uniform staff-only gate. Legacy `is_staff`/superuser accounts
+remain compatible by mapping to the `administrator` permission.
 
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
 | `GET` | `/admin/overview` | Headline counts + content counts. |
-| `GET` · `POST` | `/admin/users` | Paged accounts / create one. |
-| `GET` · `PATCH` · `DELETE` | `/admin/users/:id` | One account: detail, edit a subset, delete. |
-| `POST` | `/admin/users/:id/role` | Change role (keeps `is_staff` in sync). |
+| `GET` · `POST` | `/admin/users` | List accounts (`users.view`) / create one (`users.create`); a new default student needs no role assignment. |
+| `GET` · `PATCH` · `DELETE` | `/admin/users/:id` | One account: detail (`users.view`), edit (`users.edit`), or delete (`users.delete`); role changes additionally require `users.assign_roles`. |
+| `POST` · `PATCH` | `/admin/users/:id/role` | Legacy single-role promote/demote endpoint; role assignment keeps legacy fields in sync. |
+| `PUT` | `/admin/users/:id/roles` | Replace explicit role assignments; requires `users.assign_roles` and hierarchy/grant checks. |
+| `GET` | `/admin/roles/catalog` | Permission groups, role templates, and supported colors. |
+| `GET` · `POST` | `/admin/roles` | List roles / create a role or materialize a template. |
+| `GET` · `PATCH` · `DELETE` | `/admin/roles/:id` | Role detail CRUD, with hierarchy, grant, and system-role protections. |
+| `POST` | `/admin/roles/reorder` | Reorder editable roles. |
+| `GET` · `POST` | `/admin/roles/:id/members` | Paged role members / bulk membership assignment. |
+| `DELETE` | `/admin/roles/:id/members/:userId` | Remove one explicit role assignment. |
 | `GET` | `/admin/sessions` | Device sessions fleet-wide. |
 | `POST` | `/admin/sessions/:id/revoke` | Force-logout one device. |
 | `GET` | `/admin/analytics/logins` · `/devices` | Login series, os/browser/device breakdown. |
-| `GET` | `/admin/events` | Recent audit trail. |
+| `GET` | `/admin/events` | Recent `AuthEvent` activity (login, logout, refresh, revocation, rejection); distinct from the access-mutation audit trail. |
+| `GET` | `/admin/audit` | Paged and filterable access-mutation audit trail for role and assignment changes. |
 | `GET` · `POST` | `/admin/maintenance/cleanup` | Run the retention cleanup inline — 202 `{id, status, deleted}` (staff bearer, or the platform cron's `Bearer $CRON_SECRET`). |
-| `GET` | `/admin/content/schema` | `{types, userFields}` — drives every admin form. |
+| `GET` | `/admin/content/schema` | `{types, userFields}` — content types are filtered by read permission; the registry carries read/write/delete metadata, and `user_ref` fields are asynchronous account references. |
 | `GET` · `POST` | `/admin/content/:type` | Paged rows / create (`courses`, `scholarships`, `events`, `competitions`). |
 | `PATCH` · `DELETE` | `/admin/content/:type/:id` | Edit / remove one content row. |
 | `GET` | `/admin/video-providers` | Registry rows + `available`/`reason` from each provider's env checks. |
