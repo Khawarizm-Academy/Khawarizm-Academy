@@ -89,11 +89,14 @@ class RequestIDMiddleware(MiddlewareMixin):
         inbound = request.headers.get(REQUEST_ID_HEADER, "")
         request_id = inbound if _REQUEST_ID_RE.fullmatch(inbound) else uuid.uuid4().hex
         request.request_id = request_id
-        self._token = set_request_id(request_id)
+        request._request_id_context_token = set_request_id(request_id)
 
     def process_response(self, request: HttpRequest, response):
         response[REQUEST_ID_HEADER] = getattr(request, "request_id", "")
-        reset_request_id(self._token)
+        token = getattr(request, "_request_id_context_token", None)
+        if token is not None:
+            del request._request_id_context_token
+            reset_request_id(token)
         return response
 
 
