@@ -40,5 +40,8 @@
 
 ## Integration closeout
 
-- Feature commit, integration PR, and remote check state will be recorded after the branch is pushed and merged into `Feature/AccessStudio`.
+- Feature commit: `52f8a2e` on `Feature/VideoPlatform`.
+- PR [#50](https://github.com/Khawarizm-Academy/Khawarizm-Academy/pull/50) was squash-merged into `Feature/AccessStudio` on 2026-11-02 as `e2f82047d1b6514c82792acb61d604e4fec4573d`.
+- At merge time, GitHub showed zero failing checks, one successful check, and six pending checks. Following the owner's instruction to avoid unnecessary waits, integration proceeded after local backend/frontend gates passed; this note does not claim the pending remote checks completed.
+- The local `Feature/AccessStudio` branch is fast-forwarded to the merge commit.
 - Production `main` remains unchanged; Phase 4 targets the project integration branch.
