@@ -25,13 +25,15 @@ export class ApiError extends Error {
   status: number;
   code?: string;
   fields?: Record<string, unknown>;
+  retryAfter?: string;
 
-  constructor(status: number, message: string, code?: string, fields?: Record<string, unknown>) {
+  constructor(status: number, message: string, code?: string, fields?: Record<string, unknown>, retryAfter?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.fields = fields;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -114,7 +116,13 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
 
   if (!response.ok) {
     const payload = await readErrorBody(response);
-    throw new ApiError(response.status, payload.detail ?? `API ${response.status}: ${response.statusText}`, payload.code, payload.fields);
+    throw new ApiError(
+      response.status,
+      payload.detail ?? `API ${response.status}: ${response.statusText}`,
+      payload.code,
+      payload.fields,
+      response.headers?.get?.('Retry-After') ?? undefined,
+    );
   }
 
   if (response.status === 204) return undefined as T;
@@ -146,7 +154,7 @@ export function apiUpload<T>(path: string, formData: FormData, onProgress?: Uplo
   const isAuthFree = AUTH_FREE_PATHS.some((prefix) => path.startsWith(prefix));
 
   const send = () =>
-    new Promise<{ status: number; body: ArrayBuffer; statusText: string }>((resolve, reject) => {
+    new Promise<{ status: number; body: ArrayBuffer; statusText: string; retryAfter?: string }>((resolve, reject) => {
       const token = getAccessToken();
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${API_BASE_URL}${path}`);
@@ -156,7 +164,12 @@ export function apiUpload<T>(path: string, formData: FormData, onProgress?: Uplo
           if (event.lengthComputable) onProgress(Math.min(100, Math.round((event.loaded / event.total) * 100)));
         };
       }
-      xhr.onload = () => resolve({ status: xhr.status, body: xhr.response, statusText: xhr.statusText });
+      xhr.onload = () => resolve({
+        status: xhr.status,
+        body: xhr.response,
+        statusText: xhr.statusText,
+        retryAfter: xhr.getResponseHeader?.('Retry-After') ?? undefined,
+      });
       xhr.onerror = () => reject(new Error('تعذّر الاتصال بالخادم أثناء الرفع.'));
       xhr.onabort = () => reject(new Error('أُلغيّ الرفع.'));
       xhr.responseType = 'arraybuffer';
@@ -173,8 +186,6 @@ export function apiUpload<T>(path: string, formData: FormData, onProgress?: Uplo
 
   return (async () => {
     let response = await send();
-    const ok = response.status >= 200 && response.status < 300;
-
     if (response.status === 401 && !isAuthFree) {
       const original = decodeBody(response.body);
       const refreshed = await refreshTokens();
@@ -188,9 +199,16 @@ export function apiUpload<T>(path: string, formData: FormData, onProgress?: Uplo
       }
     }
 
+    const ok = response.status >= 200 && response.status < 300;
     if (!ok) {
       const payload = decodeBody(response.body);
-      throw new ApiError(response.status, payload.detail ?? `API ${response.status}: ${response.statusText}`, payload.code);
+      throw new ApiError(
+        response.status,
+        payload.detail ?? `API ${response.status}: ${response.statusText}`,
+        payload.code,
+        undefined,
+        response.retryAfter,
+      );
     }
     return decodeBody(response.body) as T;
   })();

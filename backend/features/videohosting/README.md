@@ -22,7 +22,7 @@ All paths are mounted under `/api/`.
 | `GET` | `/studio/video-providers` | Authenticated provider rows with availability, reason, policy, and effective plan. |
 | `GET` · `POST` | `/studio/videos` | Paged owned/all library or create a storage asset. |
 | `POST` | `/studio/videos/link` | Create validated YouTube/Vimeo embed or external-link asset. |
-| `PATCH` · `DELETE` | `/studio/videos/<asset_id>` | Edit title/poster or delete an unlinked owned asset. |
+| `GET` · `PATCH` · `DELETE` | `/studio/videos/<asset_id>` | Read private detail/usage, edit title/poster, or delete an unlinked owned asset. |
 | `POST` | `/studio/videos/<asset_id>/captions` | Add a WebVTT language track (512 KiB maximum). |
 | `DELETE` | `/studio/videos/<asset_id>/captions/<language>` | Delete one owned language track. |
 | `POST` | `/studio/videos/<asset_id>/upload` | Start resumable provider upload; response contains no provider URI. |

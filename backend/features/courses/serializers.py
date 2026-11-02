@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from features.common.serializers import as_number, compact
@@ -105,29 +106,29 @@ def _staff_rows(course: Course) -> list[Any]:
     return list(getattr(course, "_prefetched_objects_cache", {}).get("staff", ()))
 
 
+def _sanitized_markdown(value: str) -> str:
+    return re.sub(r"<[^>]*>", "", value or "")
+
+
+def _public_instructor(user: Any) -> dict[str, Any]:
+    profile = getattr(user, "instructor_profile", None)
+    return compact(
+        id=str(user.pk),
+        name=user.full_name or user.email.split("@", 1)[0],
+        headline=getattr(profile, "headline", ""),
+        credential=getattr(profile, "credential", ""),
+        bio=_sanitized_markdown(getattr(profile, "bio", "")),
+        expertise=getattr(profile, "expertise", []) or [],
+        avatarUrl=user.avatar_url,
+    )
+
+
 def instructors(course: Course, staff_rows: list[Any] | None = None) -> list[dict[str, Any]]:
     """Public staff profiles deliberately omit email and account metadata."""
     rows = _staff_rows(course) if staff_rows is None else staff_rows
     if not rows and course.owner_id and getattr(course, "owner", None) is not None:
-        owner = course.owner
-        return [
-            compact(
-                id=str(owner.pk),
-                name=owner.full_name or owner.email.split("@", 1)[0],
-                headline=getattr(getattr(owner, "instructor_profile", None), "headline", ""),
-                avatarUrl=owner.avatar_url,
-            )
-        ]
-    return [
-        compact(
-            id=str(row.user_id),
-            name=row.user.full_name or row.user.email.split("@", 1)[0],
-            headline=getattr(getattr(row.user, "instructor_profile", None), "headline", ""),
-            avatarUrl=row.user.avatar_url,
-        )
-        for row in rows
-        if row.kind in {"owner", "co_instructor"}
-    ]
+        return [_public_instructor(course.owner)]
+    return [_public_instructor(row.user) for row in rows if row.kind in {"owner", "co_instructor"}]
 
 
 def live_session(row: Any) -> dict[str, Any]:
@@ -158,6 +159,13 @@ def course_detail(
     )
     sessions = relation_rows["live_sessions"] if relation_rows is not None else course.live_sessions.all()
     staff_rows = relation_rows["staff"] if relation_rows is not None else None
+    primary_instructor = getattr(course, "owner", None)
+    if primary_instructor is None and staff_rows:
+        primary_instructor = next(
+            (row.user for row in staff_rows if row.kind in {"owner", "co_instructor"}),
+            None,
+        )
+    profile = getattr(primary_instructor, "instructor_profile", None)
     return {
         "id": course.slug,
         "startedLessonId": course.started_lesson_slug,
@@ -167,9 +175,11 @@ def course_detail(
         "thumbnailUrl": course.thumbnail_url,
         "tagline": course.tagline,
         "about": course.about,
-        "instructorName": course.instructor,
-        "instructorCredential": course.instructor_credential,
-        "instructorBio": course.instructor_bio,
+        "instructorName": primary_instructor.full_name if primary_instructor else course.instructor,
+        "instructorCredential": (profile.credential if profile is not None else course.instructor_credential),
+        "instructorBio": (
+            _sanitized_markdown(profile.bio) if profile is not None else _sanitized_markdown(course.instructor_bio)
+        ),
         "rating": float(course.rating) if course.rating is not None else 0,
         "reviewCount": course.review_count,
         "enrolledCount": course.enrolled_count,

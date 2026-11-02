@@ -267,6 +267,58 @@
   .studio-inline-confirm > div { @apply flex justify-end gap-2; }
   .studio-setting-muted { @apply border-navy-600/70 bg-navy-950/35 text-slate-400; }
 
+  .studio-video-toolbar { @apply items-stretch; }
+  .studio-video-grid { @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-3; }
+  .studio-video-list { @apply flex flex-col gap-2; }
+  .studio-video-card { @apply overflow-hidden rounded-2xl border border-navy-600/80 bg-navy-900/65; box-shadow: var(--shadow-elev-1); }
+  .studio-video-list .studio-video-card { @apply flex items-stretch; }
+  .studio-video-poster { @apply relative flex aspect-video w-full items-center justify-center bg-navy-800 text-blue-400; }
+  .studio-video-list .studio-video-poster { @apply max-w-56; }
+  .studio-video-poster img { @apply h-full w-full object-cover; }
+  .studio-video-status { @apply absolute start-3 top-3 rounded-full border border-navy-600 bg-navy-950/90 px-2 py-1 text-[11px] text-slate-200; }
+  .studio-video-status.status-ready { @apply border-success-500/50 text-success-500; }
+  .studio-video-status.status-error { @apply border-danger-500/50 text-danger-500; }
+  .studio-video-card-progress { @apply absolute bottom-3 end-3 rounded-full bg-navy-950/90 px-2 py-1 text-xs text-gold-400; }
+  .studio-video-card-body { @apply flex min-w-0 flex-1 flex-col gap-2 p-4; }
+  .studio-video-card-heading { @apply flex items-start justify-between gap-2; }
+  .studio-video-card-heading h3 { @apply min-w-0 truncate text-base text-white; }
+  .studio-video-card-heading button { @apply text-slate-500 hover:text-white; }
+  .studio-video-badges, .studio-video-meta, .studio-detail-facts { @apply flex flex-wrap gap-2 text-xs text-slate-400; }
+  .studio-video-badges span { @apply rounded-full border border-navy-600 px-2 py-1; }
+  .studio-video-meta { @apply mt-auto pt-3 font-mono; }
+  .studio-video-usage { @apply text-xs text-slate-500; }
+  .studio-video-empty > div { @apply flex flex-wrap gap-2; }
+  .studio-pagination { @apply flex items-center justify-center gap-4 text-sm text-slate-400; }
+  .studio-pagination button { @apply rounded-lg border border-navy-600 px-3 py-2 hover:border-blue-400 disabled:opacity-40; }
+  .studio-upload-queue { @apply flex flex-col gap-3 rounded-2xl border border-blue-400/25 bg-navy-900/70 p-4; }
+  .studio-upload-job { @apply flex flex-wrap items-center gap-3 text-xs text-slate-300; }
+  .studio-upload-job-name { @apply min-w-32 max-w-56 truncate; }
+  .studio-upload-job > button { @apply rounded-lg border border-navy-600 px-2 py-1 text-slate-400 hover:text-white; }
+  .studio-upload-job small { @apply basis-full text-danger-500; }
+  .studio-progress { @apply h-2 min-w-36 flex-1 overflow-hidden rounded-full bg-navy-800; }
+  .studio-progress span { @apply block h-full rounded-full bg-blue-400 transition-[width]; }
+  .studio-video-flow { @apply max-h-[90vh] max-w-xl overflow-y-auto; }
+  .studio-video-stepper { @apply mb-5 grid grid-cols-3 gap-2; }
+  .studio-video-stepper span { @apply border-b-2 border-navy-600 pb-2 text-center text-xs text-slate-500; }
+  .studio-video-stepper span.is-active { @apply border-blue-400 text-blue-400; }
+  .studio-flow-actions { @apply mt-5 flex justify-end gap-2; }
+  .studio-form-success { @apply text-xs text-success-500; }
+  .studio-provider-option { @apply flex-row items-start gap-3 rounded-xl border border-navy-600 p-3; }
+  .studio-provider-option.is-selected { @apply border-blue-400 bg-blue-400/10; }
+  .studio-provider-option input { @apply mt-1 accent-blue-400; }
+  .studio-provider-option span { @apply flex min-w-0 flex-col gap-1; }
+  .studio-provider-option small { @apply text-xs text-slate-400; }
+  .studio-picker-toolbar { @apply mb-3 flex flex-wrap gap-2; }
+  .studio-picker-toolbar input, .studio-picker-toolbar select { @apply min-h-10 flex-1 rounded-xl border border-navy-600 bg-navy-950 px-3 text-sm text-white outline-none focus:border-blue-400; }
+  .studio-video-detail { @apply fixed inset-y-0 end-0 z-40 flex w-full max-w-xl flex-col border-s border-navy-600 bg-navy-950 shadow-2xl; animation: studio-drawer-in .2s ease-out; }
+  .studio-video-preview { @apply flex min-h-40 flex-col items-center justify-center gap-3 rounded-xl border border-navy-600 bg-navy-900 text-slate-400; }
+  .studio-video-preview-host { @apply flex min-h-40 w-full items-center justify-center overflow-hidden rounded-xl bg-black; }
+  .studio-video-preview-host video, .studio-video-preview-host iframe { @apply block aspect-video h-auto min-h-40 w-full border-0 object-contain; }
+  .studio-preview-status { @apply flex items-center gap-2 text-xs text-slate-400; }
+  .studio-preview-toggle { @apply inline-flex items-center gap-2; }
+  .studio-caption-row { @apply flex items-center justify-between gap-2 rounded-lg border border-navy-600/70 p-2 text-sm text-slate-300; }
+  .studio-usage-link { @apply rounded-lg border border-navy-600/70 p-2 text-sm text-blue-400 hover:bg-navy-800; }
+
   @keyframes studio-drawer-in { from { transform: translateX(1rem); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   @media (max-width: 767px) {
     .studio-editor { @apply px-3 pt-2; }

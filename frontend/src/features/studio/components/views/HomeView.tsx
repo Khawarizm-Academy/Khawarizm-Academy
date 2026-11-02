@@ -39,16 +39,18 @@ export const HomeView: React.FC = () => {
       </div>
       {totalCourses === 0 ? <OnboardingChecklist /> : (
         <div className="studio-home-grid">
-          <section className="studio-panel">
-            <SectionHeading title="تابع التحرير" />
-            <div className="studio-activity-list">
-              {overview.recentActivity.slice(0, 4).map((item) => (
-                <button type="button" className="studio-activity-row" key={`${item.courseSlug}-${item.at}`} onClick={() => item.courseSlug && nav(`/studio/courses/${item.courseSlug}?tab=info`)}>
-                  <Activity size={16} /><span>{item.title}</span><small>{item.courseSlug}</small>
-                </button>
-              ))}
-            </div>
-          </section>
+          {can(user, 'students.view_own') && (
+            <section className="studio-panel">
+              <SectionHeading title="تابع التحرير" />
+              <div className="studio-activity-list">
+                {overview.recentActivity.slice(0, 4).map((item) => (
+                  <button type="button" className="studio-activity-row" key={`${item.courseSlug}-${item.at}`} onClick={() => item.courseSlug && nav(`/studio/courses/${item.courseSlug}?tab=info`)}>
+                    <Activity size={16} /><span>{item.title}</span><small>{item.courseSlug}</small>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
           {can(user, 'analytics.view_own') && (
             <section className="studio-panel">
               <SectionHeading title="أداء آخر ٣٠ يومًا" />
@@ -58,7 +60,7 @@ export const HomeView: React.FC = () => {
               <p className="studio-panel-note">التسجيلات الفعلية من بيانات الالتحاق.</p>
             </section>
           )}
-          {overview.inbox.length > 0 && <section className="studio-panel"><SectionHeading title="بانتظارك" />{overview.inbox.map((item, index) => <div className="studio-inbox-item" key={`${item.kind}-${index}`}><Inbox size={16} /><span>{item.title}</span></div>)}</section>}
+          {overview.inbox.length > 0 && <section className="studio-panel"><SectionHeading title="بانتظارك" />{overview.inbox.map((item, index) => <button type="button" className="studio-inbox-item" key={`${item.kind}-${index}`} disabled={!item.courseSlug} onClick={() => item.courseSlug && nav(`/studio/courses/${item.courseSlug}?tab=publish`)}><Inbox size={16} /><span>{item.title}{item.note && <small>{item.note}</small>}</span></button>)}</section>}
         </div>
       )}
     </div>

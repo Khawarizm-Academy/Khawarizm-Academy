@@ -32,22 +32,22 @@ export const CourseDetailProvider: React.FC<{ slug: string; children: React.Reac
 
   const fetcher = useCallback(() => fetchCourseDetail(slug), [slug]);
   const { data: course, isLoading } = useCachedData<CourseDetail | null>(
-    ['course-detail', slug],
+    ['course-detail', slug, user?.id ?? 'anonymous'],
     fetcher,
-    { keepPreviousData: true, staleTime: 10 * 60 * 1000, cacheTime: 30 * 60 * 1000 }
+    { staleTime: 10 * 60 * 1000, cacheTime: 30 * 60 * 1000 }
   );
 
   // Enrollment and favorites are gated: only a signed-in reader has these rows.
   const enrolledFetcher = useCallback(() => fetchEnrolledCourses(), []);
   const { data: enrolledCourses } = useCachedData<EnrolledCourse[]>(
-    ['dashboard', 'courses-list'],
+    ['dashboard', 'courses-list', user?.id ?? 'anonymous'],
     enrolledFetcher,
     { enabled: Boolean(user), initialData: [] }
   );
 
   const favoritesFetcher = useCallback(() => fetchFavoriteCourses(), []);
   const { data: favoriteCourses } = useCachedData<FavoriteCourseItem[]>(
-    ['dashboard', 'favorite-courses'],
+    ['dashboard', 'favorite-courses', user?.id ?? 'anonymous'],
     favoritesFetcher,
     { enabled: Boolean(user), initialData: [] }
   );

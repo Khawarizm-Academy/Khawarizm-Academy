@@ -28,7 +28,7 @@ from features.videohosting.models import VideoAsset, VideoCaption
 _MAX_VTT_BYTES = 512 * 1024
 _LANGUAGE_RE = re.compile(r"^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$")
 _WEBVTT_HEADER_RE = re.compile(r"^WEBVTT(?:[ \t].*)?$")
-_URL_VALIDATOR = URLValidator(schemes=("http", "https"))
+_URL_VALIDATOR = URLValidator(schemes=("https",))
 
 
 def _response(data: Any = None, code: int = status.HTTP_200_OK) -> Response:
@@ -134,6 +134,24 @@ def _caption_payload(caption: VideoCaption) -> dict[str, Any]:
         "language": caption.language,
         "label": caption.label,
         "isDefault": caption.is_default,
+    }
+
+
+def _detail_payload(asset: VideoAsset) -> dict[str, Any]:
+    usage = _published_links(asset)
+    return {
+        **_asset_payload(asset),
+        "status": asset.status,
+        "provider": asset.provider.code if asset.provider_id else None,
+        "durationSeconds": asset.duration_seconds,
+        "sizeBytes": asset.source_size_bytes,
+        "viewCount": asset.view_count,
+        "progress": asset.progress,
+        "playbackMode": asset.playback_mode,
+        "protection": asset.protection,
+        "errorMessage": asset.error_message[-240:] if asset.error_message else "",
+        "usage": usage,
+        "captions": [_caption_payload(row) for row in asset.captions.all()],
     }
 
 
@@ -260,6 +278,10 @@ def studio_video_delete(request: HttpRequest, asset_id: str) -> Response:
 
 
 @extend_schema_view(
+    get=extend_schema(
+        request=None,
+        responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="Video detail and usage.")},
+    ),
     patch=extend_schema(
         request=OpenApiTypes.OBJECT,
         responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="Updated video asset.")},
@@ -269,10 +291,13 @@ def studio_video_delete(request: HttpRequest, asset_id: str) -> Response:
         responses={204: OpenApiResponse(description="Deleted video asset.")},
     ),
 )
-@api_view(["PATCH", "DELETE"])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def studio_video_detail(request: HttpRequest, asset_id: str) -> Response:
-    """Combined route handler for the same asset path's PATCH and DELETE methods."""
+    """Combined route handler for the same asset path's GET, PATCH, and DELETE methods."""
+    if request.method == "GET":
+        asset = _asset(asset_id, request.user)
+        return _response(_detail_payload(asset))
     if request.method == "PATCH":
         return _update_impl(request, asset_id)
     return _delete_impl(request, asset_id)

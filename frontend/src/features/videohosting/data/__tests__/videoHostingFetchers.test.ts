@@ -77,15 +77,19 @@ describe('learner video-hosting fetchers', () => {
     });
   });
 
-  it('keeps the legacy metadata and slug grant fetchers intact', async () => {
+  it('keeps metadata intact and mints an encoded uncached slug grant', async () => {
     const metadata = { id: 'video-1', status: 'ready', qualities: [] };
     apiGetMock.mockResolvedValue(metadata);
-    apiPostMock.mockResolvedValue(grant);
+    apiRequestMock.mockResolvedValue(grant);
 
     await expect(fetchVideoMeta('legacy-video')).resolves.toBe(metadata);
     await expect(mintStreamGrant('legacy-video')).resolves.toBe(grant);
 
     expect(apiGetMock).toHaveBeenCalledWith('/videos/legacy-video');
-    expect(apiPostMock).toHaveBeenCalledWith('/videos/legacy-video/token');
+    expect(apiRequestMock).toHaveBeenCalledWith('/videos/legacy-video/token', {
+      method: 'POST',
+      cache: 'no-store',
+      body: JSON.stringify({}),
+    });
   });
 });

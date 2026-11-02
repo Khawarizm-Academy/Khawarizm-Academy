@@ -86,7 +86,9 @@ def course_detail_view(request: Any, slug: str) -> Response:
         OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH),
         OpenApiParameter("lesson_uuid", OpenApiTypes.UUID, OpenApiParameter.PATH),
     ],
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="Lesson Markdown and safe resource links.")},
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="Lesson Markdown and safe resource links.")
+    },
 )
 @api_view(["GET"])
 @permission_classes([AllowAny])

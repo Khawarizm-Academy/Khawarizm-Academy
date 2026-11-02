@@ -6,8 +6,8 @@ import uuid
 from datetime import timedelta
 from typing import Any
 
-from django.db.models import Count, Q, Sum, Prefetch
-from django.db.models.functions import TruncDate
+from django.db.models import Count, Prefetch, Q, Sum
+from django.db.models.functions import Lower, TruncDate
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework import serializers as drf_serializers
@@ -20,17 +20,17 @@ from features.access.permissions import perm
 from features.access.services import has_object_perm, has_perm
 from features.adminconsole.permissions import permission_for_methods
 from features.auth.models import InstructorProfile, User
-from features.dashboard.models import Enrollment
+from features.catalog.models import Category
 from features.common.choices import CourseStaffKind, CourseStatus
 from features.common.errors import InvalidParameter, NotFound, PermissionDenied
 from features.common.messages import COURSE_NOT_FOUND
 from features.common.throttling import scoped_throttle
 from features.courses import services
 from features.courses.models import Course, CourseLesson, CourseModule, CourseStaff, LessonResource
-from features.catalog.models import Category
+from features.dashboard.models import Enrollment
+from features.quizzes.models import Quiz
 from features.studio import serializers
 from features.videohosting.models import VideoAsset
-from features.quizzes.models import Quiz
 
 PAGE_SIZE = 20
 MAX_PAGE = 10_000
@@ -165,6 +165,12 @@ def overview(request: Any) -> Response:
     counts = {row["status"]: row["total"] for row in queryset.values("status").annotate(total=Count("id"))}
     enrollment_total = queryset.aggregate(total=Sum("enrolled_count"))["total"] or 0
     recent_courses = list(queryset.order_by("-updated_at", "slug")[:10])
+    review_changes = (
+        queryset.filter(status=CourseStatus.DRAFT)
+        .exclude(review_note="")
+        .only("title", "slug", "review_note")
+        .order_by("-updated_at", "slug")[:10]
+    )
     since = timezone.now() - timedelta(days=30)
     series_rows = (
         Enrollment.objects.filter(course__in=queryset, created_at__gte=since)
@@ -180,8 +186,21 @@ def overview(request: Any) -> Response:
             "courses": {status_value: counts.get(status_value, 0) for status_value in CourseStatus.values},
             "enrollments": enrollment_total,
             "inReview": counts.get(CourseStatus.IN_REVIEW, 0),
-            "readiness": round(sum(services.publish_checklist(course)["completeness"] for course in recent_courses) / len(recent_courses)) if recent_courses else 0,
-            "inbox": [],
+            "readiness": round(
+                sum(services.publish_checklist(course)["completeness"] for course in recent_courses)
+                / len(recent_courses)
+            )
+            if recent_courses
+            else 0,
+            "inbox": [
+                {
+                    "kind": "course_changes_requested",
+                    "title": f"طلب المراجع تعديلات على «{course.title}»",
+                    "courseSlug": course.slug,
+                    "note": course.review_note,
+                }
+                for course in review_changes
+            ],
             "recentActivity": [
                 {"kind": "course_updated", "title": course.title, "courseSlug": course.slug, "at": course.updated_at}
                 for course in recent_courses
@@ -229,6 +248,7 @@ def profile(request: Any) -> Response:
     parameters=[
         OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
         OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY),
+        OpenApiParameter("sort", OpenApiTypes.STR, OpenApiParameter.QUERY),
         OpenApiParameter("page", OpenApiTypes.INT, OpenApiParameter.QUERY),
         OpenApiParameter("scope", OpenApiTypes.STR, OpenApiParameter.QUERY),
     ],
@@ -269,9 +289,16 @@ def courses(request: Any) -> Response:
         queryset = queryset.filter(
             Q(slug__icontains=query) | Q(title__icontains=query) | Q(instructor__icontains=query)
         )
+    sort_order = {
+        "updated": ("-updated_at", "slug"),
+        "enrolled": ("-enrolled_count", "-updated_at", "slug"),
+        "title": (Lower("title"), "slug"),
+    }.get(request.query_params.get("sort", "updated"), ("-updated_at", "slug"))
     page = _page(request)
     total = queryset.count()
-    rows = queryset.prefetch_related("modules__lessons__video_asset").order_by("-updated_at", "slug")[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
+    rows = queryset.prefetch_related("modules__lessons__video_asset").order_by(*sort_order)[
+        (page - 1) * PAGE_SIZE : page * PAGE_SIZE
+    ]
     for row in rows:
         row.studio_readiness = services.publish_checklist(row)["completeness"]
     return _response(
@@ -283,14 +310,17 @@ def courses(request: Any) -> Response:
     operation_id="studio_course_duplicate",
     summary="Duplicate a course graph without copying provider video files.",
     parameters=[OpenApiParameter("keepVideos", OpenApiTypes.BOOL, OpenApiParameter.QUERY)],
-    responses={201: OpenApiResponse(description="Duplicated draft course.")},
+    request=None,
+    responses={201: OpenApiResponse(response=OpenApiTypes.OBJECT, description="Duplicated draft course.")},
 )
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @scoped_throttle("studio_write")
 def duplicate(request: Any, slug: str) -> Response:
     course = _course(slug, editor=True)
-    cloned = services.duplicate_course(course, request.user, keep_videos=request.query_params.get("keepVideos") == "true")
+    cloned = services.duplicate_course(
+        course, request.user, keep_videos=request.query_params.get("keepVideos") == "true"
+    )
     return _response(_editor_payload(_course(cloned.slug, editor=True)), code=status.HTTP_201_CREATED)
 
 
@@ -431,7 +461,10 @@ def categories(request: Any) -> Response:
 @extend_schema(
     operation_id="studio_video_picker",
     summary="List own video metadata for the Phase 8 lesson picker.",
-    parameters=[OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY)],
+    parameters=[
+        OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY),
+        OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
+    ],
     responses={200: OpenApiResponse(description="`{items: [...]}`.")},
 )
 @api_view(["GET"])
@@ -447,6 +480,11 @@ def video_picker(request: Any) -> Response:
         rows = rows.filter(created_by=request.user)
     if query:
         rows = rows.filter(Q(title__icontains=query) | Q(slug__icontains=query))
+    requested_status = request.query_params.get("status")
+    if requested_status:
+        if requested_status not in {"uploading", "processing", "ready", "staged", "error"}:
+            raise InvalidParameter("حالة الفيديو غير صالحة.", code="invalid_status")
+        rows = rows.filter(status=requested_status)
     return _response(
         {
             "items": [
@@ -552,6 +590,32 @@ def staff(request: Any, slug: str) -> Response:
     row = services.add_staff(course, request.user, user, values.get("kind", CourseStaffKind.CO_INSTRUCTOR))
     row.user = user
     return _response(serializers.staff_row(row), code=status.HTTP_201_CREATED)
+
+
+@extend_schema(
+    operation_id="studio_course_staff_candidates",
+    summary="Search users allowed to join a course team.",
+    parameters=[OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY)],
+    responses={200: OpenApiResponse(description="`{items: [...]}`.")},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, perm("courses.manage_staff")])
+@scoped_throttle("studio_write")
+def staff_candidates(request: Any, slug: str) -> Response:
+    course = _course(slug)
+    _require_staff_manager(request.user, course)
+    query = _search(request)
+    existing_ids = set(CourseStaff.objects.filter(course=course).values_list("user_id", flat=True))
+    users = User.objects.select_related("instructor_profile").exclude(pk__in=existing_ids)
+    if query:
+        users = users.filter(Q(full_name__icontains=query) | Q(email__icontains=query))
+    candidates = []
+    for user in users.order_by(Lower("full_name"), "email")[:100]:
+        if has_perm(user, "studio.access"):
+            candidates.append(serializers.staff_candidate_row(user))
+            if len(candidates) >= 20:
+                break
+    return _response({"items": candidates})
 
 
 @extend_schema(

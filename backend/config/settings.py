@@ -270,6 +270,7 @@ CORS_ALLOWED_ORIGINS = env_list(
     "DJANGO_CORS_ALLOWED_ORIGINS",
     ["http://localhost:5173", "http://127.0.0.1:5173"],
 )
+CORS_EXPOSE_HEADERS = ["Retry-After"]
 # Vercel serves the SPA from its own domain and from per-deploy preview URLs.
 if IS_VERCEL:
     CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://[a-z0-9.-]+\.vercel\.app$"]

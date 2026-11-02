@@ -1,5 +1,5 @@
-import { apiGet, apiPost, apiPatch, apiDelete, apiPut, buildQuery } from '@/shared/lib/apiClient';
-import type { InstructorProfile, StudioCoursePage, StudioEditorCourse, StudioLesson, StudioModule, StudioOverview, StudioPickerAsset, StudioResource } from '@/features/studio/types';
+import { apiGet, apiPost, apiPatch, apiDelete, apiPut, apiRequest, buildQuery } from '@/shared/lib/apiClient';
+import type { InstructorProfile, StudioCoursePage, StudioEditorCourse, StudioLesson, StudioModule, StudioOverview, StudioPickerAsset, StudioResource, StudioUploadInit, StudioVideoCaption, StudioVideoDetail, StudioVideoLibraryPage, StudioVideoProviderOption } from '@/features/studio/types';
 
 export const fetchStudioOverview = () => apiGet<StudioOverview>('/studio/overview');
 export const fetchStudioCourses = (params: { status?: string; q?: string; sort?: string; page?: number; scope?: string } = {}) => apiGet<StudioCoursePage>(`/studio/courses${buildQuery(params)}`);
@@ -11,6 +11,8 @@ export const updateStudioProfile = (input: Partial<InstructorProfile>) => apiPat
 export const fetchStudioEditor = (slug: string) => apiGet<StudioEditorCourse>(`/studio/courses/${encodeURIComponent(slug)}`);
 export const deleteStudioCourse = (slug: string) => apiDelete<void>(`/studio/courses/${encodeURIComponent(slug)}`);
 export const addStudioStaff = (slug: string, userId: string, kind: string) => apiPost(`/studio/courses/${encodeURIComponent(slug)}/staff`, { userId, kind });
+export const fetchStudioStaffCandidates = (slug: string, q = '') => apiGet<{ items: Array<{ id: string; name: string; headline: string; avatarUrl: string }> }>(`/studio/courses/${encodeURIComponent(slug)}/staff/candidates${buildQuery({ q })}`);
+export const removeStudioStaff = (slug: string, staffId: string) => apiDelete<void>(`/studio/courses/${encodeURIComponent(slug)}/staff/${encodeURIComponent(staffId)}`);
 export const patchStudioCourse = (slug: string, input: Record<string, unknown>) => apiPatch<StudioEditorCourse>(`/studio/courses/${encodeURIComponent(slug)}`, input);
 export const patchStudioModule = (id: string, input: Record<string, unknown>) => apiPatch<StudioModule>(`/studio/modules/${encodeURIComponent(id)}`, input);
 export const patchStudioLesson = (id: string, input: Record<string, unknown>) => apiPatch<StudioLesson>(`/studio/lessons/${encodeURIComponent(id)}`, input);
@@ -29,8 +31,24 @@ export const replaceStudioRelated = (slug: string, relatedIds: string[], expecte
 export const fetchPublishedStudioRelatedCourses = (q = '') => apiGet<{ items: Array<{ id: string; title: string; status?: string }> }>(`/catalog${buildQuery({ type: 'courses', q, sort: 'newest', page: 1 })}`);
 export const linkStudioLessonVideo = (id: string, assetId: string) => apiPut<StudioLesson>(`/studio/lessons/${encodeURIComponent(id)}/video`, { assetId });
 export const unlinkStudioLessonVideo = (id: string) => apiDelete<StudioLesson>(`/studio/lessons/${encodeURIComponent(id)}/video`);
-export const fetchStudioPickerAssets = (q = '') => apiGet<{ items: StudioPickerAsset[] }>(`/studio/picker/videos${buildQuery({ q })}`);
-export const createStudioVideoLink = (title: string, url: string) => apiPost<StudioPickerAsset>('/studio/videos/link', { title, url });
+export const fetchStudioPickerAssets = (params: { q?: string; status?: string } = {}) => apiGet<{ items: StudioPickerAsset[] }>(`/studio/picker/videos${buildQuery(params)}`);
+export const createStudioVideoLink = (title: string, url: string, posterUrl?: string) => apiPost<StudioPickerAsset>('/studio/videos/link', { title, url, ...(posterUrl ? { posterUrl } : {}) });
+export const fetchStudioVideoLibrary = (params: { q?: string; status?: string; provider?: string; sort?: string; page?: number; scope?: string } = {}) => {
+  const query = buildQuery(params);
+  const allScope = params.scope === 'all' ? `${query ? '&' : '?'}scope=all` : '';
+  return apiGet<StudioVideoLibraryPage>(`/studio/videos${query}${allScope}`);
+};
+export const fetchStudioVideoProviders = () => apiGet<StudioVideoProviderOption[]>('/studio/video-providers');
+export const fetchStudioVideoDetail = (id: string) => apiGet<StudioVideoDetail>(`/studio/videos/${encodeURIComponent(id)}`);
+export const updateStudioVideo = (id: string, input: { title?: string; posterUrl?: string }) => apiPatch<StudioPickerAsset>(`/studio/videos/${encodeURIComponent(id)}`, input);
+export const deleteStudioVideo = (id: string) => apiDelete<void>(`/studio/videos/${encodeURIComponent(id)}`);
+export const createStudioCaption = (id: string, input: { language: string; label: string; isDefault: boolean; vtt: string }) => apiPost<StudioVideoCaption>(`/studio/videos/${encodeURIComponent(id)}/captions`, input);
+export const deleteStudioCaption = (id: string, language: string) => apiDelete<void>(`/studio/videos/${encodeURIComponent(id)}/captions/${encodeURIComponent(language)}`);
+export const initStudioUpload = (assetId: string, input: { fileName: string; sizeBytes: number; mimeType: string; firstChunkSha256: string; packaging?: string }) => apiPost<StudioUploadInit>(`/studio/videos/${encodeURIComponent(assetId)}/upload`, input);
+export const getStudioUploadStatus = (sessionId: string) => apiGet<{ offset: number; total?: number; chunkSize?: number; status?: string; fileName?: string; firstChunkSha256?: string }>(`/studio/uploads/${encodeURIComponent(sessionId)}`);
+export const uploadStudioChunk = (sessionId: string, body: Blob, start: number, end: number, total: number) => apiRequest<{ offset: number; complete?: boolean }>(`/studio/uploads/${encodeURIComponent(sessionId)}/chunk`, { method: 'PUT', body, headers: { 'Content-Type': 'application/octet-stream', 'Content-Range': `bytes ${start}-${end}/${total}` } });
+export const completeStudioUpload = (sessionId: string, durationSeconds?: number) => apiRequest<StudioPickerAsset>(`/studio/uploads/${encodeURIComponent(sessionId)}/complete`, { method: 'POST', body: JSON.stringify(durationSeconds === undefined ? {} : { durationSeconds }) });
+export const cancelStudioUpload = (sessionId: string) => apiDelete<void>(`/studio/uploads/${encodeURIComponent(sessionId)}`);
 export const fetchStudioCategories = () => apiGet<{ items: Array<{ slug: string; label: string }> }>('/studio/catalog/categories');
 export const fetchStudioChecklist = (slug: string) => apiGet<StudioEditorCourse['checklist']>(`/studio/courses/${encodeURIComponent(slug)}/checklist`);
 export const submitStudioCourse = (slug: string) => apiPost<StudioEditorCourse>(`/studio/courses/${encodeURIComponent(slug)}/submit`);

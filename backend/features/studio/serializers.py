@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import re
-from urllib.parse import urlparse
 from typing import Any
+from urllib.parse import urlparse
 
 from rest_framework import serializers
 
@@ -55,6 +55,11 @@ class CourseRequest(StrictSerializer):
     )
     expectedUpdatedAt = serializers.DateTimeField(required=False)
 
+    def validate_thumbnailUrl(self, value):
+        if value and urlparse(value).scheme != "https":
+            raise serializers.ValidationError("يجب أن يبدأ رابط صورة الغلاف بـ https.")
+        return value
+
 
 class ModuleRequest(StrictSerializer):
     moduleId = serializers.CharField(required=False, allow_blank=False, max_length=120)
@@ -98,6 +103,17 @@ class ReorderRequest(StrictSerializer):
 class StaffRequest(StrictSerializer):
     userId = serializers.UUIDField()
     kind = serializers.ChoiceField(required=False, choices=["co_instructor", "assistant"])
+
+
+def staff_candidate_row(user: Any) -> dict[str, Any]:
+    name = user.full_name or user.email.split("@", 1)[0]
+    profile = getattr(user, "instructor_profile", None)
+    return compact(
+        id=str(user.pk),
+        name=name,
+        headline=getattr(profile, "headline", ""),
+        avatarUrl=user.avatar_url,
+    )
 
 
 class VideoRequest(StrictSerializer):
@@ -166,7 +182,8 @@ def staff_row(row: Any) -> dict[str, Any]:
     name = user.full_name or user.email.split("@", 1)[0]
     profile = getattr(user, "instructor_profile", None)
     return compact(
-        id=str(row.user_id),
+        id=str(row.pk),
+        userId=str(row.user_id),
         name=name,
         headline=getattr(profile, "headline", ""),
         avatarUrl=user.avatar_url,

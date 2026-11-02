@@ -162,7 +162,17 @@ class StudioUploadsTests(TestCase):
         start_session.assert_called_once()
         self.assertNotIn("upload_uri", response.data)
         self.assertNotIn("secret", repr(response.data))
-        self.assertEqual(response.data, {"sessionId": mock.ANY, "chunkSize": mock.ANY, "offset": 0})
+        self.assertEqual(
+            response.data,
+            {
+                "sessionId": mock.ANY,
+                "chunkSize": mock.ANY,
+                "offset": 0,
+                "total": 12,
+                "fileName": "clip.mp4",
+                "firstChunkSha256": "",
+            },
+        )
         session = UploadSession.objects.get(session_key=response.data["sessionId"])
         self.assertEqual(session.upload_uri, "https://upload.googleapis.com/upload/secret")
 
@@ -305,7 +315,16 @@ class StudioUploadsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.data,
-            {"sessionId": "session-test", "chunkSize": 4 * 1024 * 1024, "offset": 5, "total": 12, "status": "pending"},
+            {
+                "sessionId": "session-test",
+                "chunkSize": 4 * 1024 * 1024,
+                "offset": 5,
+                "total": 12,
+                "status": "pending",
+                "progress": 0,
+                "fileName": "clip.mp4",
+                "firstChunkSha256": "",
+            },
         )
         self.assertNotIn("upload_uri", response.data)
 

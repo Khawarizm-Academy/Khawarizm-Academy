@@ -95,6 +95,13 @@ def _playlist_response(text: str) -> HttpResponse:
     return response
 
 
+def _grant_response(payload: dict[str, Any]) -> Response:
+    """Keep short-lived playback credentials out of browser and proxy caches."""
+    response = Response(payload)
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
 def _grant(request: Any, token: str):
     """Resolve the playback grant or raise `PlaybackTokenInvalid`."""
     row = tokens.resolve(token, client_ip(request))
@@ -306,7 +313,7 @@ def video_token_view(request: Any, slug: str) -> Response:
     if not isinstance(payload, dict) or set(payload) - {"lessonRef"}:
         raise InvalidParameter(INVALID_VIDEO_LINK)
     lesson = _resolve_lesson_ref(asset, payload.get("lessonRef"))
-    return Response(_issue_grant(request, asset, access, lesson))
+    return _grant_response(_issue_grant(request, asset, access, lesson))
 
 
 @extend_schema(
@@ -345,7 +352,7 @@ def lesson_playback_view(request: Any, slug: str, lesson_id: str) -> Response:
         raise NotEntitled()
     if asset.status != "ready":
         raise Conflict(NOT_READY_BY_STATUS.get(asset.status, NOT_READY))
-    return Response(_issue_grant(request, asset, access, lesson))
+    return _grant_response(_issue_grant(request, asset, access, lesson))
 
 
 @extend_schema(

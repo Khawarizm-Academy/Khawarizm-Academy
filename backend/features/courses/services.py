@@ -174,6 +174,44 @@ def _expected(row: Any, value: Any, current: dict[str, Any] | None = None) -> No
         raise error
 
 
+def _course_conflict_values(course: Course) -> dict[str, Any]:
+    return {
+        "slug": course.slug,
+        "title": course.title,
+        "categoryLabel": course.category_label,
+        "categorySlug": course.category_slug,
+        "thumbnailUrl": course.thumbnail_url,
+        "courseLevel": course.course_level,
+        "courseLevelAr": course.course_level_ar,
+        "priceType": course.price_type,
+        "priceLabel": course.price_label,
+        "language": course.language,
+        "tagline": course.tagline,
+        "about": course.about,
+        "instructor": course.instructor,
+        "instructorCredential": course.instructor_credential,
+        "instructorBio": course.instructor_bio,
+        "outcomes": course.outcomes,
+        "relatedIds": course.related_ids,
+        "updatedAt": course.updated_at,
+    }
+
+
+def _lesson_conflict_values(lesson: CourseLesson) -> dict[str, Any]:
+    return {
+        "lessonId": lesson.lesson_id,
+        "title": lesson.title,
+        "duration": lesson.duration,
+        "summary": lesson.summary,
+        "order": lesson.order,
+        "kind": lesson.kind,
+        "content": lesson.content,
+        "isFreePreview": lesson.is_free_preview,
+        "isPublished": lesson.is_published,
+        "updatedAt": lesson.updated_at,
+    }
+
+
 def _profile_name(user: Any) -> str:
     return getattr(user, "full_name", "") or getattr(user, "email", "").split("@", 1)[0]
 
@@ -222,14 +260,19 @@ def duplicate_course(course: Course, actor: Any, *, keep_videos: bool = False) -
     fields = {
         field.name: getattr(course, field.name)
         for field in Course._meta.fields
-        if field.name not in {"id", "slug", "owner", "status", "submitted_at", "published_at", "review_note", "updated_at"}
+        if field.name
+        not in {"id", "slug", "owner", "status", "submitted_at", "published_at", "review_note", "updated_at"}
     }
-    fields.update(slug=slug, owner=actor, status=CourseStatus.DRAFT, submitted_at=None, published_at=None, review_note="")
+    fields.update(
+        slug=slug, owner=actor, status=CourseStatus.DRAFT, submitted_at=None, published_at=None, review_note=""
+    )
     clone = Course.objects.create(**fields)
     CourseStaff.objects.create(course=clone, user=actor, kind=CourseStaffKind.OWNER)
     lesson_map: dict[Any, CourseLesson] = {}
     for module in course.modules.all():
-        copied_module = CourseModule.objects.create(course=clone, module_id=module.module_id, title=module.title, order=module.order)
+        copied_module = CourseModule.objects.create(
+            course=clone, module_id=module.module_id, title=module.title, order=module.order
+        )
         for lesson in module.lessons.select_related("video_asset").all():
             copied_lesson = CourseLesson.objects.create(
                 module=copied_module,
@@ -350,7 +393,7 @@ def update_course(course: Course, data: Mapping[str, Any], actor: Any) -> Course
     unknown = sorted(set(values) - _COURSE_FIELDS)
     if unknown:
         raise InvalidParameter(f"حقول غير معروفة: {', '.join(unknown)}")
-    _expected(course, values.pop("expectedUpdatedAt", None))
+    _expected(course, values.pop("expectedUpdatedAt", None), _course_conflict_values(course))
     _validate_course_values(values)
     if "relatedIds" in values:
         related = values["relatedIds"]
@@ -568,8 +611,8 @@ def _validate_course_values(values: Mapping[str, Any]) -> None:
             _text(values[key], key, maximum)
     if values.get("thumbnailUrl"):
         parsed = urlparse(values["thumbnailUrl"])
-        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-            raise InvalidParameter("رابط صورة الغلاف غير صالح.")
+        if parsed.scheme != "https" or not parsed.hostname:
+            raise InvalidParameter("رابط صورة الغلاف يجب أن يبدأ بـ HTTPS.")
     if "courseLevel" in values and values["courseLevel"] not in CourseLevel.values:
         raise InvalidParameter("مستوى الدورة غير صالح.")
     if "priceType" in values and (
@@ -807,7 +850,7 @@ def update_lesson(lesson: CourseLesson, actor: Any, data: Mapping[str, Any]) -> 
     lesson = _locked_lesson(lesson.pk, module.pk, course.pk)
     _require_edit(actor, course, curriculum=True)
     values = dict(data)
-    _expected(lesson, values.pop("expectedUpdatedAt", None))
+    _expected(lesson, values.pop("expectedUpdatedAt", None), _lesson_conflict_values(lesson))
     mapping = {"lessonId": "lesson_id", "isFreePreview": "is_free_preview", "isPublished": "is_published"}
     allowed = {
         "lessonId",
@@ -874,13 +917,17 @@ def duplicate_lesson(lesson: CourseLesson, actor: Any) -> CourseLesson:
     while CourseLesson.objects.filter(module=module, lesson_id=lesson_id).exists():
         lesson_id = f"{base}-copy-{suffix}"
         suffix += 1
+    ordered_lessons = list(
+        CourseLesson.objects.select_for_update().filter(module_id=module.pk).order_by("order", "lesson_id")
+    )
+    source_index = next(index for index, row in enumerate(ordered_lessons) if row.pk == source.pk)
     clone = CourseLesson.objects.create(
         module=module,
         lesson_id=lesson_id,
         title=f"{source.title} — نسخة",
         duration=source.duration,
         summary=source.summary,
-        order=source.order + 1,
+        order=len(ordered_lessons),
         kind=source.kind,
         video_asset=source.video_asset,
         is_free_preview=False,
@@ -896,6 +943,12 @@ def duplicate_lesson(lesson: CourseLesson, actor: Any) -> CourseLesson:
             kind=resource.kind,
             order=resource.order,
         )
+    ordered_lessons.insert(source_index + 1, clone)
+    timestamp = timezone.now()
+    for index, row in enumerate(ordered_lessons):
+        row.order = index
+        row.updated_at = timestamp
+    CourseLesson.objects.bulk_update(ordered_lessons, ["order", "updated_at"])
     recompute_course_stats(course)
     return clone
 

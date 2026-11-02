@@ -40,6 +40,8 @@ Studio responses are authenticated, private, and `no-store`; authorization is pe
 | `GET` · `PATCH` | `/studio/profile` | Instructor profile `{headline,bio,credential,expertise,avatarUrl}`; profile rows are ensured on first access and avatar URLs must be HTTPS. |
 | `GET` · `POST` | `/studio/courses` | Permission-scoped course page or draft creation. List rows include lifecycle status and computed readiness. |
 | `GET` · `PATCH` · `DELETE` | `/studio/courses/<slug>` | Full private editor graph and course field mutations. Graph/module/lesson rows expose database UUIDs as `id` plus stable `moduleId`/`lessonId` business identifiers; public course metadata exposes only each lesson's `contentId` UUID. |
+| `GET` | `/studio/courses/<slug>/staff/candidates?q=...` | Owner-scoped search of active users with effective `studio.access`, excluding existing team members; returns only public-safe profile fields. |
+| `POST` · `DELETE` | `/studio/courses/<slug>/staff[/<uuid>]` | Add or remove non-owner staff after course-owner authorization; the owner row cannot be removed. |
 | `POST` | `/studio/courses/<slug>/modules/reorder`, `/studio/modules/<uuid>/lessons/reorder` | Complete ordered module/lesson lists use business identifiers. Cross-module `moves` use the UUID route for the source module and `moduleId`/`lessonId` business identifiers in the payload. |
 | `GET` · `POST` | `/studio/lessons/<uuid>/resources` | Private lesson resource list/create; resource URLs must be HTTPS. |
 | `DELETE` | `/studio/lessons/<uuid>/resources/<uuid>` | Deletes one resource after course-scoped curriculum authorization. |
@@ -82,7 +84,7 @@ All these routes require authentication, return `private, no-store`, and are aut
 | `GET` | `/studio/video-providers` | `[...]` provider rows with `code`, `name`, `kind`, `needs`, `available`, `reason`, `packagingPolicy`, and effective plan. |
 | `GET` · `POST` | `/studio/videos` | Paged owned/all library (`results,total,page,pageSize`) or create a storage asset (`201`) with a server-generated slug. `scope=all` requires `videos.manage_any`. |
 | `POST` | `/studio/videos/link` | Create a ready `embed`/`external` asset from a validated HTTPS provider URL. Requires `videos.use_embed`. |
-| `PATCH` · `DELETE` | `/studio/videos/:asset_id` | Edit title/poster or delete an unlinked owned asset; deletion schedules remote cleanup and refuses published links. |
+| `GET` · `PATCH` · `DELETE` | `/studio/videos/:asset_id` | Read private detail/usage, edit title/poster, or delete an unlinked owned asset; deletion schedules remote cleanup and refuses published links. |
 | `POST` | `/studio/videos/:asset_id/captions` | Create one WebVTT track: `{language,label,isDefault,vtt}`; max 512 KiB and one language per asset. |
 | `DELETE` | `/studio/videos/:asset_id/captions/:language` | Delete an owned language track. |
 | `POST` | `/studio/videos/:asset_id/upload` | Start a provider session with `{fileName,sizeBytes,mimeType}`; returns `{sessionId,chunkSize,offset}` and never returns `upload_uri`. Max source is `VIDEO_UPLOAD_MAX_BYTES` (default 2 GiB), quota is `VIDEO_USER_QUOTA_BYTES` (default 20 GiB unless `videos.manage_any`). |

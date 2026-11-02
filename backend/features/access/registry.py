@@ -101,7 +101,7 @@ _PERMISSION_ROWS: tuple[PermissionSpec, ...] = (
     _permission("students", "students.view_any", "عرض كل الطلاب", elevated=True, implies=("students.view_own",)),
     _permission("students", "analytics.view_own", "تحليلات دوراتي"),
     _permission("students", "analytics.view_any", "تحليلات كل الدورات", elevated=True, implies=("analytics.view_own",)),
-    _permission("videos", "videos.upload", "رفع الفيديوهات", implies=("studio.access",)),
+    _permission("videos", "videos.upload", "رفع الفيديوهات", implies=("studio.access", "videos.manage_own")),
     _permission("videos", "videos.manage_own", "إدارة فيديوهاتي"),
     _permission("videos", "videos.manage_any", "إدارة كل الفيديوهات", elevated=True, implies=("videos.manage_own",)),
     _permission("videos", "videos.use_embed", "استخدام مصادر غير محمية (يوتيوب/فيميو/رابط)"),

@@ -394,7 +394,8 @@
     "description": "تتيح صلاحية «رفع الفيديوهات» هذا الإجراء للمستخدم.",
     "elevated": false,
     "implies": [
-      "studio.access"
+      "studio.access",
+      "videos.manage_own"
     ]
   },
   {
