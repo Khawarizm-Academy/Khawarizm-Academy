@@ -25,6 +25,10 @@
     @apply flex lg:hidden flex-col gap-4 w-full;
   }
 
+  .player-surface-responsive {
+    @apply flex flex-col gap-4 w-full;
+  }
+
   /* ======================================================================
      Course landing page
      ====================================================================== */
@@ -325,7 +329,7 @@
   }
 
   .player-bar-title {
-    @apply flex-1 text-sm sm:text-base font-bold text-white font-display truncate hidden sm:block;
+    @apply flex-1 min-w-0 text-xs sm:text-base font-bold text-white font-display truncate;
   }
 
   .player-progress-chip {
@@ -340,6 +344,22 @@
     @apply flex flex-col gap-5 min-w-0;
   }
 
+  .player-stage-slot {
+    @apply w-full min-w-0;
+  }
+
+  .player-stage-slot-hidden-mobile {
+    @apply hidden lg:block;
+  }
+
+  .player-theater-mode .player-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .player-theater-mode .player-sidebar {
+    display: none;
+  }
+
   .player-stage {
     @apply relative w-full aspect-video rounded-2xl overflow-hidden border border-navy-600 bg-navy-950;
   }
@@ -352,6 +372,27 @@
   /* The clip stays fully visible: no full-stage scrim, controls float in pills. */
   .player-video {
     @apply absolute inset-0 w-full h-full object-cover;
+  }
+
+  .player-poster {
+    @apply absolute inset-0 z-0 w-full h-full object-cover bg-navy-950;
+  }
+
+  .player-engine-host {
+    @apply absolute inset-0 z-[1] overflow-hidden bg-black;
+  }
+
+  .player-engine-host video,
+  .player-engine-host iframe {
+    @apply absolute inset-0 w-full h-full border-0;
+  }
+
+  .player-engine-host video {
+    object-fit: contain;
+  }
+
+  .player-engine-host iframe {
+    display: block;
   }
 
   /* Viewer stamp drawn over the frame — the anti-screen-record deterrent. */
@@ -373,6 +414,28 @@
 
   .player-center {
     @apply absolute inset-0 z-10 flex items-center justify-center;
+  }
+
+  .player-center > * {
+    pointer-events: auto;
+  }
+
+  .player-controls-auto-hidden {
+    cursor: none;
+  }
+
+  .player-controls-bar-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+
+  .player-controls-bar {
+    transition: opacity 180ms ease;
+  }
+
+  .player-sr-status {
+    @apply sr-only;
   }
 
   /* Single hero affordance, shown only while paused so playback stays unobstructed. */
@@ -437,6 +500,179 @@
     @apply mt-2 text-xs text-slate-300 font-body;
   }
 
+  .player-badges {
+    @apply absolute top-3 left-3 z-10 flex items-center gap-1.5 pointer-events-none;
+  }
+
+  .player-badge {
+    @apply inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold font-body backdrop-blur-md;
+  }
+
+  .player-badge-encrypted {
+    @apply border-emerald-400/50 bg-emerald-950/75 text-emerald-200;
+  }
+
+  .player-badge-gated {
+    @apply border-blue-400/50 bg-navy-950/75 text-blue-200;
+  }
+
+  .player-badge-external {
+    @apply border-slate-500/50 bg-navy-950/75 text-slate-200;
+  }
+
+  .player-error-panel {
+    @apply flex w-[min(90vw,440px)] items-start gap-4 rounded-2xl border border-navy-600 bg-navy-950/95 p-5 text-right shadow-[0_18px_50px_rgba(0,0,0,0.55)] backdrop-blur-xl;
+  }
+
+  .player-error-icon {
+    @apply mt-0.5 shrink-0 text-amber-300;
+  }
+
+  .player-error-content {
+    @apply flex min-w-0 flex-1 flex-col gap-2;
+  }
+
+  .player-error-title {
+    @apply text-sm font-bold font-display text-white;
+  }
+
+  .player-error-note {
+    @apply text-xs leading-relaxed font-body text-slate-300;
+  }
+
+  .player-error-actions {
+    @apply mt-2 flex flex-wrap items-center gap-2;
+  }
+
+  .player-error-retry,
+  .player-error-enroll {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors;
+  }
+
+  .player-error-retry {
+    @apply bg-blue-500 text-white hover:bg-blue-400;
+  }
+
+  .player-error-enroll {
+    @apply border border-navy-600 bg-navy-800 text-slate-100 hover:bg-navy-700;
+  }
+
+  .player-resume-prompt {
+    @apply absolute top-12 left-1/2 z-20 flex w-[min(92%,380px)] -translate-x-1/2 items-start gap-3 rounded-2xl border border-blue-400/30 bg-navy-950/90 p-4 shadow-xl backdrop-blur-xl;
+  }
+
+  .player-resume-content {
+    @apply flex flex-1 flex-col gap-1.5;
+  }
+
+  .player-resume-title {
+    @apply text-xs font-bold font-display text-white;
+  }
+
+  .player-resume-time {
+    @apply text-lg font-semibold font-mono tabular-nums text-blue-300;
+  }
+
+  .player-resume-actions {
+    @apply mt-2 flex flex-wrap items-center gap-2;
+  }
+
+  .player-resume-dismiss {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white;
+  }
+
+  .player-resume-start-over,
+  .player-resume-continue {
+    @apply min-h-11 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors;
+  }
+
+  .player-resume-start-over {
+    @apply border border-navy-600 text-slate-200 hover:bg-white/10;
+  }
+
+  .player-resume-continue {
+    @apply bg-blue-500 text-white hover:bg-blue-400;
+  }
+
+  .player-up-next-card {
+    @apply absolute bottom-24 left-1/2 z-20 flex w-[min(90%,430px)] -translate-x-1/2 items-center gap-4 rounded-2xl border border-blue-400/30 bg-navy-950/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.6)] backdrop-blur-xl;
+  }
+
+  .player-up-next-copy {
+    @apply flex min-w-0 flex-1 flex-col gap-1;
+  }
+
+  .player-up-next-eyebrow {
+    @apply text-[10px] font-semibold font-body text-blue-300;
+  }
+
+  .player-up-next-title {
+    @apply line-clamp-2 text-sm font-bold font-display text-white;
+  }
+
+  .player-up-next-status {
+    @apply text-[11px] font-body text-slate-300;
+  }
+
+  .player-up-next-progress-ring {
+    @apply h-10 w-10 shrink-0 rounded-full;
+    background: conic-gradient(#29a9ff var(--player-progress), rgba(148, 163, 184, 0.25) 0);
+    mask: radial-gradient(circle, transparent 56%, #000 58%);
+  }
+
+  .player-up-next-progress-static {
+    @apply h-1.5 w-full max-w-20 shrink-0 overflow-hidden rounded-full bg-navy-700;
+    background-image: linear-gradient(to left, #29a9ff var(--player-progress), transparent var(--player-progress));
+  }
+
+  .player-up-next-cancel {
+    @apply min-h-11 shrink-0 rounded-lg border border-navy-600 px-3 py-2 text-[10px] font-semibold text-slate-200 hover:bg-white/10;
+  }
+
+  .player-seek-ripple {
+    @apply absolute top-1/2 z-10 flex -translate-y-1/2 flex-col items-center gap-1 text-white drop-shadow-lg pointer-events-none;
+  }
+
+  .player-seek-ripple-back {
+    @apply left-[20%];
+  }
+
+  .player-seek-ripple-forward {
+    @apply right-[20%];
+  }
+
+  .player-shortcut-scrim {
+    @apply absolute inset-0 z-30 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm;
+  }
+
+  .player-shortcut-dialog {
+    @apply flex max-h-[90%] w-[min(92%,420px)] flex-col gap-4 overflow-y-auto rounded-2xl border border-navy-600 bg-navy-950 p-5 text-right shadow-2xl;
+  }
+
+  .player-shortcut-head {
+    @apply flex items-center justify-between gap-3 text-base font-bold font-display text-white;
+  }
+
+  .player-shortcut-head button {
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white;
+  }
+
+  .player-shortcut-dialog dl {
+    @apply flex flex-col gap-2;
+  }
+
+  .player-shortcut-dialog dl > div {
+    @apply flex items-center justify-between gap-4 rounded-lg bg-navy-900 px-3 py-2;
+  }
+
+  .player-shortcut-dialog dt {
+    @apply rounded bg-navy-800 px-2 py-1 font-mono text-[11px] text-blue-200;
+  }
+
+  .player-shortcut-dialog dd {
+    @apply text-xs text-slate-300;
+  }
+
   .player-actions {
     @apply w-full flex items-center gap-2 sm:gap-3;
   }
@@ -449,12 +685,38 @@
     @apply flex items-center gap-1 sm:gap-1.5 ms-auto;
   }
 
+  @media (max-width: 359px) {
+    .player-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      row-gap: 0.5rem;
+    }
+
+    .player-actions-main {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .player-time {
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: end;
+    }
+
+    .player-actions-side {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      justify-self: end;
+      margin-inline-start: 0;
+    }
+  }
+
   .player-action-btn {
-    @apply w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-200 hover:text-white hover:bg-white/10 transition-all active:scale-90 cursor-pointer shrink-0;
+    @apply h-11 w-11 rounded-xl flex items-center justify-center text-slate-200 hover:text-white hover:bg-white/10 transition-all active:scale-90 cursor-pointer shrink-0;
   }
 
   .player-action-primary {
-    @apply w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-blue-500/90 hover:bg-blue-400 text-white border border-blue-400/60 shadow-[0_0_16px_rgba(41,169,255,0.45)] hover:shadow-[0_0_22px_rgba(41,169,255,0.6)] transition-all active:scale-95 cursor-pointer shrink-0;
+    @apply h-11 w-11 rounded-full flex items-center justify-center bg-blue-500/90 hover:bg-blue-400 text-white border border-blue-400/60 shadow-[0_0_16px_rgba(41,169,255,0.45)] hover:shadow-[0_0_22px_rgba(41,169,255,0.6)] transition-all active:scale-95 cursor-pointer shrink-0;
   }
 
   .player-skip-glyph {
@@ -479,11 +741,24 @@
   }
 
   .player-menu-sheet {
-    @apply fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+84px)];
+    @apply fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+84px)] max-h-[calc(100dvh-150px)] overflow-y-auto;
+  }
+
+  .player-menu-scrim {
+    @apply fixed inset-0 z-[199] flex items-end bg-black/60 backdrop-blur-[2px];
+  }
+
+  .player-menu-dialog {
+    @apply pointer-events-none fixed inset-0;
+  }
+
+  .player-menu-dialog .player-menu {
+    @apply pointer-events-auto;
   }
 
   .player-menu-anchored {
-    @apply fixed w-64;
+    @apply fixed w-64 max-h-[75vh] overflow-y-auto;
+    transform: translateY(-100%);
   }
 
   .player-menu-head {
@@ -503,7 +778,7 @@
   }
 
   .player-menu-chip {
-    @apply px-2.5 py-1 rounded-lg text-[11px] font-display font-semibold border transition-all cursor-pointer tabular-nums;
+    @apply min-h-11 min-w-11 px-2.5 py-1 rounded-lg text-[11px] font-display font-semibold border transition-all cursor-pointer tabular-nums;
   }
 
   .player-menu-chip-active {
@@ -515,7 +790,7 @@
   }
 
   .player-menu-row {
-    @apply w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-sm font-body text-slate-200 hover:bg-navy-800 transition-colors cursor-pointer;
+    @apply min-h-11 w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-sm font-body text-slate-200 hover:bg-navy-800 transition-colors cursor-pointer;
   }
 
   .player-menu-row-label {
