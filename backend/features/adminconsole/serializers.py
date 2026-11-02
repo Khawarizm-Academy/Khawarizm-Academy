@@ -67,8 +67,8 @@ CONTENT_TYPES: dict[str, dict[str, Any]] = {
     "courses": {
         "model": Course,
         "permissions": {
-            "read": ("courses.edit_any", "courses.create"),
-            "write": {"create": ("courses.create",), "edit": ("courses.edit_any",)},
+            "read": ("courses.edit_any",),
+            "write": {"create": ("courses.edit_any",), "edit": ("courses.edit_any",)},
             "delete": ("courses.delete_any",),
         },
         "label": "الدورات",
@@ -77,6 +77,7 @@ CONTENT_TYPES: dict[str, dict[str, Any]] = {
         "search": ("slug", "title", "instructor"),
         "fields": (
             _field("slug", "slug", "المعرّف (slug)", required=True),
+            _field("owner", "owner", "مالك الدورة", "user_ref"),
             _field("title", "title", "العنوان", required=True),
             _field("categoryLabel", "category_label", "التصنيف", required=True),
             _field(

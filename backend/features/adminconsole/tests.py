@@ -10,9 +10,11 @@ from features.access.models import AccessRole
 from features.adminconsole import services as admin_services
 from features.auth import services
 from features.auth.models import User
-from features.common.choices import AuthEventKind, Role, SessionRevokeReason
+from features.common.choices import AuthEventKind, CourseStaffKind, CourseStatus, Role, SessionRevokeReason
 from features.common.errors import InvalidParameter
 from features.common.testing import ApiTestCase, FakeRequest, authenticate, make_admin, make_user
+from features.courses.models import Course, CourseStaff
+from features.dashboard.models import Enrollment
 
 
 class AdminConsoleUrlTests(TestCase):
@@ -481,6 +483,50 @@ class AdminConsoleContentTests(ApiTestCase):
         self.assertIsNone(cleared["owner"])
         with self.assertRaises(InvalidParameter):
             admin_services.values_for({"fields": [field]}, {"owner": "not-a-user-id"}, create=True)
+
+    def test_course_owner_user_ref_synchronizes_owner_staff_row(self):
+        owner_one = make_user(email="content-owner-one@example.com", role=Role.INSTRUCTOR, full_name="Owner One")
+        owner_two = make_user(email="content-owner-two@example.com", role=Role.INSTRUCTOR, full_name="Owner Two")
+        created = self.client.post(
+            "/api/admin/content/courses",
+            {
+                "slug": "admin-owner-course",
+                "owner": str(owner_one.pk),
+                "title": "Admin-owned course",
+                "categoryLabel": "Programming",
+                "categorySlug": "programming",
+                "thumbnailUrl": "https://cdn.example.com/admin-owner.png",
+                "courseLevel": "beginner",
+            },
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+        course = Course.objects.get(slug="admin-owner-course")
+        self.assertEqual(course.owner_id, owner_one.pk)
+        self.assertEqual(course.status, CourseStatus.DRAFT)
+        self.assertEqual(course.instructor, "Owner One")
+        self.assertTrue(CourseStaff.objects.filter(course=course, user=owner_one, kind=CourseStaffKind.OWNER).exists())
+
+        reassigned = self.client.patch(
+            f"/api/admin/content/courses/{course.pk}", {"owner": str(owner_two.pk)}, format="json"
+        )
+        self.assertEqual(reassigned.status_code, 200)
+        course.refresh_from_db()
+        self.assertEqual(course.owner_id, owner_two.pk)
+        self.assertFalse(CourseStaff.objects.filter(course=course, user=owner_one).exists())
+        self.assertTrue(CourseStaff.objects.filter(course=course, user=owner_two, kind=CourseStaffKind.OWNER).exists())
+        # The catalog display is only derived while blank; edits keep intentional copy.
+        self.assertEqual(course.instructor, "Owner One")
+
+        cleared = self.client.patch(f"/api/admin/content/courses/{course.pk}", {"owner": None}, format="json")
+        self.assertEqual(cleared.status_code, 200)
+        self.assertFalse(CourseStaff.objects.filter(course=course, kind=CourseStaffKind.OWNER).exists())
+
+        Enrollment.objects.create(user=make_user(email="admin-owner-enrollee@example.com"), course=course)
+        blocked_delete = self.client.delete(f"/api/admin/content/courses/{course.pk}")
+        self.assertEqual(blocked_delete.status_code, 409)
+        self.assertEqual(blocked_delete.json()["code"], "has_enrollments")
+        self.assertTrue(Course.objects.filter(pk=course.pk).exists())
 
     def test_content_write_rejects_fields_outside_the_declared_schema(self):
         response = self.client.post(

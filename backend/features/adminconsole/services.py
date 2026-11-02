@@ -204,10 +204,10 @@ def values_for(spec: dict, data: dict[str, Any], create: bool) -> dict[str, Any]
     return values
 
 
-def create_content_row(spec: dict, data: dict[str, Any]) -> Any:
+def create_content_row(spec: dict, data: dict[str, Any], *, defaults: dict[str, Any] | None = None) -> Any:
     """One new content row from validated values; duplicates are 400s."""
     _reject_unknown_content_fields(spec, data)
-    values = values_for(spec, data, create=True)
+    values = {**(defaults or {}), **values_for(spec, data, create=True)}
     try:
         return spec["model"].objects.create(**values)
     except (IntegrityError, ValueError) as exc:

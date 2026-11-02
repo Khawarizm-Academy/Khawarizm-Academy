@@ -9,6 +9,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from features.common.cache import DEFAULT_TTL_SECONDS, cached
+from features.common.choices import CourseStatus
 from features.common.http_cache import etag_response
 from features.competitions.serializers import competition
 from features.events.serializers import event
@@ -50,7 +51,10 @@ def build_home_data() -> dict[str, Any]:
     events = {row.key: event(row.event) for row in HomeEventSpot.objects.select_related("event")}
 
     return {
-        "courses": [featured_course(row) for row in HomeFeaturedCourse.objects.select_related("course")],
+        "courses": [
+            featured_course(row)
+            for row in HomeFeaturedCourse.objects.select_related("course").filter(course__status=CourseStatus.PUBLISHED)
+        ],
         "scholarships": [
             featured_scholarship(row) for row in HomeFeaturedScholarship.objects.select_related("scholarship")
         ],

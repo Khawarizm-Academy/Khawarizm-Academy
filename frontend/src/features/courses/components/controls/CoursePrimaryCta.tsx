@@ -3,6 +3,7 @@ import { BookOpen, PlayCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCourseDetail } from '@/features/courses/context/courseDetailContext';
 import { courseCopy } from '@/features/courses/data/courseCopy';
+import type { CourseLandingCourse } from '@/features/courses/types';
 
 /** CTA tone per enrollment state: gold for guests, cyan outline for enrolled. */
 const CTA_TONE: Record<'enrolled' | 'guest', string> = {
@@ -17,7 +18,9 @@ const CTA_ICON: Record<'enrolled' | 'guest', LucideIcon> = {
 
 /** The single enroll/continue button every CTA surface (panel + sticky bar) reuses. */
 export const CoursePrimaryCta: React.FC = () => {
-  const { isEnrolled, progress, enroll, continueLearning } = useCourseDetail();
+  const { course, isEnrolled, progress, enroll, continueLearning } = useCourseDetail();
+  if ((course as CourseLandingCourse | null)?.enrollable === false && !isEnrolled) return null;
+
   const state = isEnrolled ? 'enrolled' : 'guest';
   const Icon = CTA_ICON[state];
   const label = isEnrolled ? courseCopy.landing.continueLabel : courseCopy.landing.enrollLabel;

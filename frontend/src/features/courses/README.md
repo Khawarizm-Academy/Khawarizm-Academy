@@ -97,6 +97,17 @@ courses/
 
 Cache keys: `['course-detail', slug]` and `['course-problems']`.
 
+## Course lifecycle payload
+
+The public detail fetcher accepts additive lifecycle fields without removing any
+legacy keys. `status`, `isPreview`, `enrollable`, and `instructors[]` drive the
+landing notices and staff-safe instructor cards. Published courses keep the
+existing enrollment CTA; archived courses show an Arabic unavailable notice and
+hide enrollment for non-enrolled visitors while preserving the continue action
+for existing learners. Draft slugs keep the established `CourseNotFound` state.
+When the new instructor list is absent, `InstructorCard` falls back to the legacy
+`instructorName`, credential, and biography fields.
+
 ## Reused components
 
 | Component | Role |

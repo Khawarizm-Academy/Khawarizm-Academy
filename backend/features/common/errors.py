@@ -78,6 +78,12 @@ _STATUS_CODES = {
 
 def _parts(exc: Exception) -> tuple[Any, str | None, dict | None]:
     """(detail, code, fields) for the envelope — `fields` only for input validation."""
+    if hasattr(exc, "issues"):
+        return (
+            getattr(exc, "detail", str(exc)),
+            getattr(exc, "default_code", "not_publishable"),
+            {"issues": exc.issues},
+        )
     if isinstance(exc, exceptions.ValidationError):
         detail = exc.detail
         fields = detail if isinstance(detail, dict) else {"non_field_errors": detail}
@@ -142,3 +148,17 @@ class RoleMissing(InvalidParameter):
 
     default_code = "role_missing"
     default_detail = "الدور المطلوب غير موجود."
+
+
+class HasEnrollments(Conflict):
+    default_code = "has_enrollments"
+    default_detail = "لا يمكن حذف دورة لها تسجيلات؛ أرشفها بدلاً من ذلك."
+
+
+class NotPublishable(InvalidParameter):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    default_code = "not_publishable"
+
+    def __init__(self, issues):
+        self.issues = issues
+        super().__init__("الدورة غير جاهزة للنشر.")

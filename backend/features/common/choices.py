@@ -27,6 +27,31 @@ class CoursePriceType(models.TextChoices):
     PAID = "paid", "paid"
 
 
+class CourseStatus(models.TextChoices):
+    DRAFT = "draft", "Draft"
+    IN_REVIEW = "in_review", "In review"
+    PUBLISHED = "published", "Published"
+    ARCHIVED = "archived", "Archived"
+
+
+class CourseStaffKind(models.TextChoices):
+    OWNER = "owner", "Owner"
+    CO_INSTRUCTOR = "co_instructor", "Co-instructor"
+    ASSISTANT = "assistant", "Assistant"
+
+
+class LessonKind(models.TextChoices):
+    VIDEO = "video", "Video"
+    ARTICLE = "article", "Article"
+    QUIZ = "quiz", "Quiz"
+    RESOURCE = "resource", "Resource"
+
+
+class LessonResourceKind(models.TextChoices):
+    LINK = "link", "Link"
+    DOCUMENT_LINK = "document_link", "Document link"
+
+
 class ScholarshipCountrySlug(models.TextChoices):
     SAUDI = "saudi", "saudi"
     USA = "usa", "usa"

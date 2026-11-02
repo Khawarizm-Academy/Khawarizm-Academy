@@ -11,6 +11,8 @@ from features.courses.models import (
     CourseModule,
     CourseProblem,
     CourseProblemOption,
+    CourseStaff,
+    LessonResource,
 )
 
 
@@ -25,12 +27,17 @@ class CourseLiveSessionInline(admin.TabularInline):
     extra = 0
 
 
+class CourseStaffInline(admin.TabularInline):
+    model = CourseStaff
+    extra = 0
+
+
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("slug", "title", "category_label", "course_level", "price_type", "language")
-    list_filter = ("course_level", "price_type", "language", "category_slug")
+    list_display = ("slug", "title", "status", "owner", "course_level", "price_type", "language")
+    list_filter = ("status", "course_level", "price_type", "language", "category_slug")
     search_fields = ("slug", "title", "instructor")
-    inlines = [CourseModuleInline, CourseLiveSessionInline]
+    inlines = [CourseModuleInline, CourseLiveSessionInline, CourseStaffInline]
 
 
 class CourseLessonInline(admin.TabularInline):
@@ -50,6 +57,26 @@ class CourseModuleAdmin(admin.ModelAdmin):
 class CourseLessonAdmin(admin.ModelAdmin):
     list_display = ("module", "lesson_id", "title", "duration", "order")
     search_fields = ("lesson_id", "title")
+
+    class LessonResourceInline(admin.TabularInline):
+        model = LessonResource
+        extra = 0
+
+    inlines = [LessonResourceInline]
+
+
+@admin.register(CourseStaff)
+class CourseStaffAdmin(admin.ModelAdmin):
+    list_display = ("course", "user", "kind", "created_at", "updated_at")
+    list_filter = ("kind",)
+    search_fields = ("course__slug", "user__email", "user__full_name")
+
+
+@admin.register(LessonResource)
+class LessonResourceAdmin(admin.ModelAdmin):
+    list_display = ("lesson", "title", "kind", "order")
+    list_filter = ("kind",)
+    search_fields = ("lesson__lesson_id", "lesson__module__course__slug", "title")
 
 
 @admin.register(CourseLiveSession)
