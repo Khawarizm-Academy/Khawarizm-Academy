@@ -31,6 +31,11 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements*.txt
 
+      - name: Install FFmpeg for video packaging tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Install dependencies + dev tools
         run: |
           pip install -r requirements.txt
