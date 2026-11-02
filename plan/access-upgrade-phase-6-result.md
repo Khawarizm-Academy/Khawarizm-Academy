@@ -33,7 +33,9 @@ The Phase 6 authoring surface is the API; the dedicated Studio quiz-editor front
 
 ## Integration closeout
 
-- Feature commit: pending.
-- PR and squash-merge commit into `Feature/AccessStudio`: pending.
+- Feature commit `960ab7d1a0597a59888bb7666a85f3443f9313f6` was pushed on `Feature/Quizzes`.
+- PR [#52](https://github.com/Khawarizm-Academy/Khawarizm-Academy/pull/52) was squash-merged into `Feature/AccessStudio` on 2026-11-02 as `88ff83fa52bd4fb154db4803780512fd1b64e4fc`.
+- At merge, GitHub reported **0 failing, 1 successful, and 6 pending checks**. Local backend and frontend gates were green; pending remote checks were not awaited, per the owner's preference.
+- The local `Feature/AccessStudio` branch is fast-forwarded to the merge commit.
 - Integration-branch merge into `main`: pending.
 - GitHub release: pending after the main-branch merge.
