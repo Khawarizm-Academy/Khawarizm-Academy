@@ -12,6 +12,8 @@ import json
 from collections.abc import Callable
 from typing import Any
 
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
 from features.adminconsole.serializers import CONTENT_TYPES, USER_FIELDS
@@ -53,7 +55,7 @@ def _assign_legacy_role(user: User, role: str, acting_user: User) -> User:
 
 
 @transaction.atomic
-def create_user_account(data: dict[str, Any]) -> User:
+def create_user_account(data: dict[str, Any], acting_user: User | None = None) -> User:
     """Create an account from the console's user form (email is the identity)."""
     values = values_for({"fields": USER_FIELDS}, data, create=True)
     email = str(values.get("email", "")).strip().lower()
@@ -61,7 +63,7 @@ def create_user_account(data: dict[str, Any]) -> User:
         raise InvalidParameter("البريد الإلكتروني مطلوب.")
     if User.objects.filter(email=email).exists():
         raise InvalidParameter("البريد الإلكتروني مستخدم بالفعل.")
-    requested_role = values.get("role", Role.STUDENT)
+    requested_role = values.pop("role", Role.STUDENT)
     if requested_role not in Role.values:
         raise InvalidParameter("دور غير صالح.")
     if requested_role == Role.INSTRUCTOR:
@@ -70,10 +72,18 @@ def create_user_account(data: dict[str, Any]) -> User:
         if not AccessRole.objects.filter(slug="instructor").exists():
             raise RoleMissing("دور المدرّب غير موجود في مدير الأدوار.")
     password = data.get("password") or None
-    user = User.objects.create_user(email=email, password=password, **{k: v for k, v in values.items() if k != "email"})
+    user = User.objects.create_user(
+        email=email,
+        password=password,
+        role=Role.STUDENT,
+        **{k: v for k, v in values.items() if k != "email"},
+    )
     from features.access.services import sync_primary_role
 
-    return sync_primary_role(user)
+    sync_primary_role(user)
+    if requested_role != Role.STUDENT:
+        return _assign_legacy_role(user, requested_role, acting_user)
+    return user
 
 
 @transaction.atomic
@@ -139,12 +149,22 @@ def _json_coerce(value: Any) -> Any:
     return value if not isinstance(value, str) else json.loads(value)
 
 
+def _user_ref_coerce(value: Any) -> User:
+    """Resolve an async user-search selection to a real foreign-key object."""
+    UserModel = get_user_model()
+    try:
+        return UserModel.objects.get(pk=value)
+    except (UserModel.DoesNotExist, ValueError, TypeError, ValidationError) as exc:
+        raise ValueError("invalid user reference") from exc
+
+
 # One coercer per field kind — the dispatch table replaces the old if-chain.
 _COERCERS: dict[str, Callable[[Any], Any]] = {
     "number": int,
     "decimal": float,
     "bool": lambda value: value in (True, "true", "1", 1),
     "json": _json_coerce,
+    "user_ref": _user_ref_coerce,
 }
 
 # Kinds whose empty submission clears the column (a numeric one keeps its value).
@@ -167,9 +187,11 @@ def values_for(spec: dict, data: dict[str, Any], create: bool) -> dict[str, Any]
             continue
         value = data[field["name"]]
         if value is None or value == "":
-            # Clearing a text column is fine; a numeric one keeps its current value.
+            # Clearing a text column is fine; a numeric one keeps its value.
             if create and field.get("required"):
                 errors.append(f"الحقل «{field['label']}» مطلوب.")
+            elif not create and field["kind"] == "user_ref":
+                values[field["attr"]] = None
             elif not create and field["kind"] in CLEARABLE_KINDS:
                 values[field["attr"]] = ""
             continue
@@ -184,6 +206,7 @@ def values_for(spec: dict, data: dict[str, Any], create: bool) -> dict[str, Any]
 
 def create_content_row(spec: dict, data: dict[str, Any]) -> Any:
     """One new content row from validated values; duplicates are 400s."""
+    _reject_unknown_content_fields(spec, data)
     values = values_for(spec, data, create=True)
     try:
         return spec["model"].objects.create(**values)
@@ -193,6 +216,7 @@ def create_content_row(spec: dict, data: dict[str, Any]) -> Any:
 
 def save_content_row(spec: dict, row: Any, data: dict[str, Any]) -> Any:
     """Patch one content row from validated values; duplicates are 400s."""
+    _reject_unknown_content_fields(spec, data)
     values = values_for(spec, data, create=False)
     for attr, value in values.items():
         setattr(row, attr, value)
@@ -201,3 +225,10 @@ def save_content_row(spec: dict, row: Any, data: dict[str, Any]) -> Any:
     except (IntegrityError, ValueError) as exc:
         raise InvalidParameter("تعذّر الحفظ: بيانات غير صالحة أو مكرّرة.") from exc
     return row
+
+
+def _reject_unknown_content_fields(spec: dict, data: dict[str, Any]) -> None:
+    allowed = {field["name"] for field in spec["fields"]}
+    unknown = sorted(set(data) - allowed)
+    if unknown:
+        raise InvalidParameter(f"حقول غير معروفة: {', '.join(unknown)}")

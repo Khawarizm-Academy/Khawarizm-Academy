@@ -1207,6 +1207,83 @@
   .admin-mini-actions {
     @apply flex items-center gap-2 shrink-0;
   }
+  .role-manager { @apply gap-4; }
+  .role-manager-layout { @apply grid gap-4 items-start; grid-template-columns: minmax(250px, .8fr) minmax(0, 1.8fr); }
+  .role-list-panel, .role-editor, .role-preview, .permission-group, .role-members, .role-advanced { @apply flex flex-col gap-3 rounded-2xl border border-navy-600/50 bg-navy-900/55 p-4; }
+  .role-list-panel { @apply sticky top-20; }
+  .role-list { @apply flex flex-col gap-1.5 mt-2; }
+  .role-list-item { @apply flex items-center gap-1 rounded-xl border border-transparent transition-colors; }
+  .role-list-item:hover, .role-list-item-selected { @apply border-gold-400/35 bg-gold-400/10; }
+  .role-list-main { @apply flex flex-1 min-w-0 items-center gap-2.5 text-start p-2 rounded-xl cursor-pointer; }
+  .role-drag-handle { @apply size-9 grid place-items-center rounded-lg text-slate-500 cursor-grab focus-visible:ring-2 focus-visible:ring-blue-400/60 disabled:opacity-30 disabled:cursor-not-allowed; }
+  .role-color-dot { @apply size-3 rounded-full shrink-0 ring-2 ring-white/10; }
+  .role-color-dot-large { @apply size-4; }
+  .role-list-copy { @apply flex flex-col min-w-0; }
+  .role-list-copy strong { @apply text-sm text-slate-100 truncate; }
+  .role-list-copy small, .role-editor-title small, .role-member-row small { @apply text-[11px] text-slate-400; }
+  .role-list-hint { @apply text-[11px] text-slate-500 leading-5; }
+  .role-chips { @apply flex flex-wrap items-center gap-1.5; }
+  .role-chip { @apply inline-flex min-h-7 items-center gap-1.5 px-2.5 rounded-full border border-navy-600/60 bg-navy-950/50 text-[11px] text-slate-300 focus-visible:ring-2 focus-visible:ring-blue-400/70 disabled:cursor-default; }
+  .role-chip-active { @apply border-gold-400/50 bg-gold-400/10 text-gold-400; }
+  .role-editor { @apply min-w-0; }
+  .role-editor-header { @apply flex flex-wrap items-center justify-between gap-3; }
+  .role-editor-title { @apply flex items-center gap-3 min-w-0; }
+  .role-editor-title h2 { @apply text-xl text-white font-bold truncate; }
+  .role-tabs { @apply flex gap-1 overflow-x-auto border-b border-navy-600/60; }
+  .role-tabs button { @apply min-h-11 px-4 text-sm text-slate-400 border-b-2 border-transparent whitespace-nowrap focus-visible:ring-2 focus-visible:ring-blue-400/60; }
+  .role-tabs button[aria-selected="true"], .role-tab-active { @apply text-gold-400 border-gold-400 font-bold; }
+  .role-overview { @apply grid gap-4; }
+  .role-preview { @apply border-blue-400/30 bg-blue-400/5; }
+  .role-preview h3 { @apply text-sm text-blue-300; }
+  .role-preview p { @apply text-xs text-slate-300 leading-6; }
+  .role-color-swatches { @apply flex flex-wrap gap-2 mt-2; }
+  .role-color-swatch { @apply size-9 rounded-full border-2 border-transparent ring-2 ring-transparent transition-transform focus-visible:ring-blue-400/60; }
+  .role-color-swatch-selected { @apply border-white ring-gold-400 scale-110; }
+  .permissions-tab { @apply flex flex-col gap-3; }
+  .permissions-toolbar { @apply flex flex-wrap items-center justify-between gap-3; }
+  .permissions-toolbar .admin-search { @apply flex-1 min-w-[220px]; }
+  .permission-group { @apply gap-2; }
+  .permission-group legend { @apply flex flex-wrap items-center justify-between gap-2 w-full; }
+  .permission-group-toggle { @apply flex items-center gap-2 text-sm font-bold text-slate-100; }
+  .permission-group-toggle span { @apply text-[11px] text-slate-400 font-normal; }
+  .permission-toggle { @apply flex items-start gap-3 p-3 rounded-xl border border-navy-600/40 bg-navy-950/30; }
+  .permission-toggle-disabled { @apply opacity-70; }
+  .permission-switch { @apply size-6 rounded-full border border-navy-600 bg-navy-800 shrink-0 p-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-blue-400/70 disabled:cursor-not-allowed; }
+  .permission-switch span { @apply block size-4 rounded-full bg-slate-400 transition-transform; }
+  .permission-switch-on { @apply bg-blue-400 border-blue-400; }
+  .permission-switch-on span { @apply bg-white; transform: translateX(-1rem); }
+  .permission-copy { @apply flex flex-col gap-1 min-w-0 flex-1; }
+  .permission-copy strong { @apply text-xs text-slate-100; }
+  .permission-copy small { @apply text-[11px] text-slate-400 leading-5; }
+  .permission-elevated { @apply inline-flex h-6 items-center px-2 rounded-full border border-warning-500/50 bg-warning-500/10 text-[10px] text-warning-500 whitespace-nowrap; }
+  .administrator-toggle { @apply flex items-center gap-3 w-full p-3 rounded-xl border border-danger-500/50 bg-danger-500/10 text-danger-500 text-start; }
+  .administrator-toggle span:nth-child(2) { @apply flex flex-col gap-1 flex-1; }
+  .administrator-toggle small { @apply text-[11px] text-slate-300; }
+  .role-conflict { @apply flex flex-wrap items-center gap-2 p-3 rounded-xl border border-danger-500/50 bg-danger-500/10 text-danger-500 text-sm; }
+  .role-members-add { @apply flex flex-wrap items-end gap-2; }
+  .role-members-add .admin-field { @apply flex-1 min-w-[220px]; }
+  .role-member-row { @apply flex items-center justify-between gap-3 p-3 rounded-xl border border-navy-600/40 bg-navy-950/30; }
+  .role-member-row > span { @apply flex flex-col gap-1 min-w-0; }
+  .role-member-row strong { @apply text-sm text-slate-100 truncate; }
+  .role-advanced p { @apply text-sm text-slate-300; }
+  .unsaved-role-bar { @apply sticky bottom-3 z-10 flex translate-y-5 opacity-0 pointer-events-none items-center justify-between gap-3 p-3 rounded-2xl border border-gold-400/45 bg-navy-950/95 shadow-2xl transition-[transform,opacity] duration-200; }
+  .unsaved-role-bar-visible { @apply translate-y-0 opacity-100 pointer-events-auto; }
+  .unsaved-role-bar span { @apply text-xs font-bold text-gold-400; }
+  .unsaved-role-bar > div { @apply flex gap-2; }
+  .create-role-options { @apply grid grid-cols-1 sm:grid-cols-2 gap-2; }
+  .create-role-options button { @apply flex flex-col gap-1 p-3 rounded-xl border border-navy-600/60 bg-navy-950/40 text-start transition-colors focus-visible:ring-2 focus-visible:ring-blue-400/70; }
+  .create-role-options button:hover, .create-option-selected { @apply border-gold-400/60 bg-gold-400/10; }
+  .create-role-options strong { @apply text-sm text-slate-100; }
+  .create-role-options small { @apply text-[11px] text-slate-400; }
+  .audit-filters { @apply flex flex-wrap gap-3; }
+  .audit-table-wrap { @apply overflow-x-auto rounded-2xl border border-navy-600/50; }
+  .audit-table { @apply w-full min-w-[680px] text-sm; }
+  .audit-table th, .audit-table td { @apply p-3 text-start border-b border-navy-600/40; }
+  .audit-table th { @apply bg-navy-950/60 text-xs text-slate-400; }
+  .audit-table td { @apply text-slate-200; }
+  .audit-table tr:last-child td { @apply border-b-0; }
+  @media (max-width: 1023px) { .role-manager-layout { grid-template-columns: 1fr; } .role-list-panel { @apply static; } }
+  @media (max-width: 640px) { .role-editor-header { @apply items-start; } .unsaved-role-bar { @apply bottom-16; } .permission-group legend { @apply items-start; } }
 }
 
 @keyframes admin-progress-shimmer {

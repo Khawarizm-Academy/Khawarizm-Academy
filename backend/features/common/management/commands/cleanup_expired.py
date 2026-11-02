@@ -2,8 +2,9 @@
 
 Sweeps expired `StreamToken`s (the on-miss delete only fires when a client
 replays a dead token; this reaches the rest), `UploadSession`s stale past 7
-days, expired `DriveAuthState`s, and `AuthEvent`s past
-`AUTH_EVENT_RETENTION_DAYS` (env, default 180).
+days, expired `DriveAuthState`s, `AuthEvent`s past
+`AUTH_EVENT_RETENTION_DAYS` (env, default 180), and access `AuditEvent`s past
+`AUDIT_RETENTION_DAYS` (env, default 365).
 
 Self-hosted: cron every 6h —
     0 */6 * * *  cd /path/to/backend && .venv/bin/python manage.py cleanup_expired
@@ -26,7 +27,7 @@ from features.common.maintenance import run_cleanup
 
 class Command(BaseCommand):
     help = (
-        "Delete expired playback tokens, stale upload sessions, expired Drive states, and past-retention auth events."
+        "Delete expired playback tokens, stale uploads/Drive states, and past-retention auth and access audit events."
     )
 
     def handle(self, *args, **options) -> None:

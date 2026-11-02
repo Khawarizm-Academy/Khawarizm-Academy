@@ -1,6 +1,11 @@
 import type { AdminField } from '@/features/admin/types';
 
-export type AdminFormValue = string | boolean;
+export interface AdminUserRefValue {
+  id: string;
+  label: string;
+}
+
+export type AdminFormValue = string | boolean | AdminUserRefValue;
 
 /** The reading order of an editor plate: required → prose → structured values. */
 export const FIELD_GROUP_ORDER = ['required', 'prose', 'structured'] as const;
@@ -14,7 +19,7 @@ export const FIELD_GROUP_LABELS: Record<FieldGroupKey, string> = {
   structured: 'بيانات تقنية',
 };
 
-const PROSE_KINDS: AdminField['kind'][] = ['text', 'textarea', 'url', 'select'];
+const PROSE_KINDS: AdminField['kind'][] = ['text', 'textarea', 'url', 'select', 'user_ref'];
 
 /**
  * Split a schema into the editor's stacks: what must exist before saving, the
@@ -36,6 +41,10 @@ export const groupEditorFields = (fields: AdminField[]): Record<FieldGroupKey, A
 function toFormValue(field: AdminField, raw: unknown): AdminFormValue {
   if (field.kind === 'bool') return Boolean(raw);
   if (field.kind === 'json') return raw == null ? '' : JSON.stringify(raw, null, 2);
+  if (field.kind === 'user_ref' && raw && typeof raw === 'object' && 'id' in raw) {
+    const reference = raw as { id: string; name?: string; fullName?: string; email?: string };
+    return { id: String(reference.id), label: reference.fullName ?? reference.name ?? reference.email ?? String(reference.id) };
+  }
   if (raw === null || raw === undefined) return '';
   return String(raw);
 }
@@ -58,7 +67,9 @@ export function stepGuardError(
 ): string | null {
   for (const field of fields) {
     if (!field.required || field.kind === 'bool') continue;
-    if (String(formValues[field.name] ?? '').trim() !== '') continue;
+    const value = formValues[field.name];
+    const text = typeof value === 'object' && value !== null ? value.id : String(value ?? '');
+    if (text.trim() !== '') continue;
     return `الحقل «${field.label}» إلزامي — أكمله قبل الانتقال إلى الخطوة التالية.`;
   }
   return null;
@@ -79,7 +90,7 @@ export function toPayloadValues(
       payload[field.name] = Boolean(value);
       continue;
     }
-    const text = typeof value === 'string' ? value.trim() : '';
+    const text = typeof value === 'object' && value !== null ? value.id.trim() : typeof value === 'string' ? value.trim() : '';
     if (text === '') {
       if (isCreate) {
         if (field.required) {
@@ -87,7 +98,7 @@ export function toPayloadValues(
         }
         continue;
       }
-      if (field.kind === 'text' || field.kind === 'textarea' || field.kind === 'url' || field.kind === 'select') {
+      if (field.kind === 'text' || field.kind === 'textarea' || field.kind === 'url' || field.kind === 'select' || field.kind === 'user_ref') {
         payload[field.name] = '';
       }
       continue;

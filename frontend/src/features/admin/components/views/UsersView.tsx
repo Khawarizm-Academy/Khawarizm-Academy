@@ -7,7 +7,10 @@ import { AdminSearchBox } from '@/features/admin/components/controls/AdminSearch
 import { UsersTable } from '@/features/admin/components/layout/UsersTable';
 import { AdminPagination } from '@/features/admin/components/toolbar/AdminPagination';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
-import { ROLE_FILTERS } from '@/features/admin/types';
+import { ROLE_FILTERS, type AdminRole } from '@/features/admin/types';
+import { useCachedData } from '@/shared/hooks/useCachedData';
+import { fetchRoles, setUserRoles } from '@/features/admin/data/roleFetchers';
+import type { AuthRoleSummary } from '@/features/auth/types';
 
 /** Users section: search + role filter over the paged table; a row opens the inspector. */
 export const UsersView: React.FC = () => {
@@ -25,6 +28,8 @@ export const UsersView: React.FC = () => {
     changingRoleId,
     changeRole,
   } = useAdmin();
+  const roleOptions = useCachedData<AdminRole[]>(['admin-roles'], fetchRoles, { initialData: [] });
+  const availableRoles: AuthRoleSummary[] = (roleOptions.data ?? []).map(({ id, slug, name, color }) => ({ id, slug, name, color }));
 
   const isSearching = Boolean(userSearch) || userRole !== 'all';
 
@@ -56,6 +61,11 @@ export const UsersView: React.FC = () => {
             changingRoleId={changingRoleId}
             onOpen={selectUser}
             onChangeRole={changeRole}
+            availableRoles={availableRoles}
+            onSetRoles={async (userId, roles) => {
+              await setUserRoles(userId, roles.map((role) => role.id));
+              await refresh();
+            }}
           />
           <AdminPagination
             total={users.total}

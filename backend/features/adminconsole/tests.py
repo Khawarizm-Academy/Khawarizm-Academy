@@ -5,9 +5,13 @@ from __future__ import annotations
 from django.test import TestCase
 from django.urls import reverse
 
+from features.access import services as access_services
+from features.access.models import AccessRole
+from features.adminconsole import services as admin_services
 from features.auth import services
 from features.auth.models import User
 from features.common.choices import AuthEventKind, Role, SessionRevokeReason
+from features.common.errors import InvalidParameter
 from features.common.testing import ApiTestCase, FakeRequest, authenticate, make_admin, make_user
 
 
@@ -35,6 +39,92 @@ class AdminConsolePermissionTests(ApiTestCase):
         )
         authenticate(self.client, legacy_staff)
         self.assertEqual(self.client.get("/api/admin/overview").status_code, 200)
+
+
+class GranularAdminPermissionTests(ApiTestCase):
+    def _actor(self, permissions: list[str], email: str) -> User:
+        administrator = make_admin(email=f"owner-{email}")
+        role = AccessRole.objects.create(
+            slug=f"test-{email.split('@')[0].replace('.', '-')}",
+            name="Test permission role",
+            description="Least-privilege test role",
+            color="cyan",
+            position=100,
+            permissions=permissions,
+        )
+        user = make_user(email=email)
+        access_services.assign_roles(administrator, user, [role.pk])
+        authenticate(self.client, user)
+        return user
+
+    def test_users_view_does_not_unlock_sessions_or_role_writes(self):
+        self._actor(["users.view"], "viewer@example.com")
+        target = make_user(email="target@example.com")
+
+        users = self.client.get("/api/admin/users")
+        self.assertEqual(users.status_code, 200)
+        self.assertIn("roles", users.json()["results"][0])
+        detail = self.client.get(f"/api/admin/users/{target.pk}")
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["sessions"], [])
+        self.assertEqual(detail.json()["events"], [])
+        self.assertEqual(self.client.get("/api/admin/sessions").status_code, 403)
+        self.assertEqual(
+            self.client.post("/api/admin/users", {"email": "blocked@example.com"}, format="json").status_code, 403
+        )
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/roles",
+                {"name": "Forbidden", "color": "cyan", "permissions": []},
+                format="json",
+            ).status_code,
+            403,
+        )
+
+    def test_users_create_cannot_grant_an_elevated_legacy_role(self):
+        self._actor(["users.create"], "creator@example.com")
+        blocked = self.client.post(
+            "/api/admin/users",
+            {"email": "blocked-admin@example.com", "role": Role.ADMIN},
+            format="json",
+        )
+        self.assertEqual(blocked.status_code, 403)
+        self.assertFalse(User.objects.filter(email="blocked-admin@example.com").exists())
+
+        created = self.client.post(
+            "/api/admin/users",
+            {"email": "created-student@example.com", "role": Role.STUDENT},
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+        self.assertFalse(User.objects.get(email="created-student@example.com").is_staff)
+
+    def test_content_schema_only_returns_types_the_actor_can_read(self):
+        self._actor(["scholarships.manage"], "scholarship-editor@example.com")
+        schema = self.client.get("/api/admin/content/schema")
+        self.assertEqual(schema.status_code, 200)
+        self.assertEqual([item["key"] for item in schema.json()["types"]], ["scholarships"])
+        self.assertEqual(schema.json()["userFields"], [])
+        self.assertEqual(self.client.get("/api/admin/content/scholarships").status_code, 200)
+        self.assertEqual(self.client.get("/api/admin/content/events").status_code, 403)
+
+    def test_analytics_audit_and_session_permissions_are_separate(self):
+        self._actor(["analytics.view_platform"], "analytics@example.com")
+        self.assertEqual(self.client.get("/api/admin/analytics/logins").status_code, 200)
+        self.assertEqual(self.client.get("/api/admin/events").status_code, 403)
+
+        self._actor(["audit.view"], "audit@example.com")
+        self.assertEqual(self.client.get("/api/admin/events").status_code, 200)
+        self.assertEqual(self.client.get("/api/admin/analytics/devices").status_code, 403)
+
+        self._actor(["sessions.view_any"], "sessions@example.com")
+        self.assertEqual(self.client.get("/api/admin/sessions").status_code, 200)
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/sessions/00000000-0000-0000-0000-000000000001/revoke", {}, format="json"
+            ).status_code,
+            403,
+        )
 
 
 class AdminConsoleOverviewTests(ApiTestCase):
@@ -113,6 +203,13 @@ class AdminConsoleUserTests(ApiTestCase):
         target = make_user(email="badrole@example.com")
         response = self.client.post(f"/api/admin/users/{target.id}/role", {"role": "wizard"}, format="json")
         self.assertEqual(response.status_code, 400)
+
+    def test_legacy_role_endpoint_accepts_patch_without_removing_post_compatibility(self):
+        target = make_user(email="patch-role@example.com")
+        response = self.client.patch(f"/api/admin/users/{target.id}/role", {"role": Role.INSTRUCTOR}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["role"], Role.INSTRUCTOR)
+        self.assertTrue(target.role_assignments.filter(role__slug="instructor").exists())
 
 
 class AdminConsoleSessionTests(ApiTestCase):
@@ -375,6 +472,24 @@ class AdminConsoleContentTests(ApiTestCase):
         email_field = next(field for field in body["userFields"] if field["name"] == "email")
         self.assertTrue(email_field["readonly"])
 
+    def test_user_ref_coercer_resolves_existing_accounts_and_supports_clearing(self):
+        target = make_user(email="user-ref@example.com")
+        field = {"name": "owner", "attr": "owner", "kind": "user_ref", "label": "Owner"}
+        values = admin_services.values_for({"fields": [field]}, {"owner": str(target.pk)}, create=True)
+        self.assertEqual(values["owner"], target)
+        cleared = admin_services.values_for({"fields": [field]}, {"owner": None}, create=False)
+        self.assertIsNone(cleared["owner"])
+        with self.assertRaises(InvalidParameter):
+            admin_services.values_for({"fields": [field]}, {"owner": "not-a-user-id"}, create=True)
+
+    def test_content_write_rejects_fields_outside_the_declared_schema(self):
+        response = self.client.post(
+            "/api/admin/content/events",
+            {"eventId": "strict-fields", "title": "Valid", "unexpected": "ignored before Phase 2"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
     def test_events_can_be_listed_created_updated_and_deleted(self):
         created = self.client.post(
             "/api/admin/content/events",
@@ -425,7 +540,7 @@ class AdminUsersQueryGuardTests(ApiTestCase):
             user = make_user(email=f"guarded-{index}@example.com")
             services.open_session(user, FakeRequest(), "password")  # one active session each
         authenticate(self.client, make_admin(email="guard-admin@example.com"))
-        with self.assertNumQueries(4):  # auth + touch + total count + annotated page slice
+        with self.assertNumQueries(6):  # auth/touch/count/page plus two constant-query role-summary reads
             body = self.client.get("/api/admin/users").json()
         self.assertEqual(body["total"], 4)
         self.assertTrue(all(row["activeSessions"] == 1 for row in body["results"]))

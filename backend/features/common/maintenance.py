@@ -38,6 +38,7 @@ def expired_families(now: Any) -> dict[str, Any]:
     Model imports stay inside the function: `common` is the lowest layer and
     must not import feature apps at module load (features import *it*).
     """
+    from features.access.models import AuditEvent
     from features.auth.models import AuthEvent
     from features.videohosting.models import DriveAuthState, StreamToken, UploadSession
 
@@ -48,6 +49,9 @@ def expired_families(now: Any) -> dict[str, Any]:
         ).exclude(status="done"),
         "driveAuthStates": DriveAuthState.objects.filter(expires_at__lte=now),
         "authEvents": AuthEvent.objects.filter(created_at__lt=now - timedelta(days=settings.AUTH_EVENT_RETENTION_DAYS)),
+        "accessAuditEvents": AuditEvent.objects.filter(
+            created_at__lt=now - timedelta(days=settings.AUDIT_RETENTION_DAYS)
+        ),
     }
 
 

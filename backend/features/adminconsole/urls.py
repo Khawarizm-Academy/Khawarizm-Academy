@@ -2,9 +2,22 @@
 
 from django.urls import include, path
 
-from features.adminconsole import views
+from features.adminconsole import role_views, views
 
 urlpatterns = [
+    # Role manager statics must precede the UUID route below.
+    path("admin/roles/catalog", role_views.role_catalog, name="admin-role-catalog"),
+    path("admin/roles/reorder", role_views.reorder_roles, name="admin-role-reorder"),
+    path("admin/roles", role_views.roles, name="admin-roles"),
+    path("admin/roles/<uuid:role_id>/members", role_views.role_members, name="admin-role-members"),
+    path(
+        "admin/roles/<uuid:role_id>/members/<uuid:user_id>",
+        role_views.role_member_detail,
+        name="admin-role-member-detail",
+    ),
+    path("admin/roles/<uuid:role_id>", role_views.role_detail, name="admin-role-detail"),
+    path("admin/users/<uuid:user_id>/roles", role_views.user_roles, name="admin-user-roles"),
+    path("admin/audit", role_views.audit, name="admin-audit"),
     path("admin/overview", views.overview, name="admin-overview"),
     path("admin/users", views.users, name="admin-users"),
     path("admin/users/<uuid:user_id>", views.user_detail, name="admin-user-detail"),

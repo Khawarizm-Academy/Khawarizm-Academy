@@ -458,6 +458,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     sessions: sessions.isLoading,
     analytics: loginSeries.isLoading || devices.isLoading,
     activity: events.isLoading,
+    roles: false,
+    audit: false,
   };
 
   const loadErrors: Record<AdminSectionKey, boolean> = {
@@ -469,6 +471,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     sessions: sessions.isError,
     analytics: loginSeries.isError || devices.isError,
     activity: events.isError,
+    roles: false,
+    audit: false,
   };
 
   // First load of the section being opened: hold the page with a Tier 2 skeleton.

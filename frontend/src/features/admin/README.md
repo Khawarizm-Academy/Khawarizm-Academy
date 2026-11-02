@@ -1,6 +1,6 @@
 # Admin Console — لوحة الإدارة
 
-The staff-only console, inside its own immersive shell: a grouped section rail,
+The permission-gated console, inside its own immersive shell: a grouped section rail,
 a slim top bar, and a registry-driven page head — over the same celestial canvas
 as every other page. One responsive surface, never a Desktop/Mobile split: the
 tables reflow through `admin.css`, and a section twin would only duplicate them.
@@ -11,14 +11,14 @@ tables reflow through `admin.css`, and a section twin would only duplicate them.
 | :--- | :--- |
 | **Route** | `/admin` |
 | **Shell** | Hidden (`hideShell`) — the console owns its own rail + top bar |
-| **Guard** | `requiresAdmin` in `routes.json`; a learner is bounced to `/` |
+| **Guard** | `requiresAdmin` in `routes.json` is the navigation guard; API authorization remains per method and content type |
 | **Entry** | `pages/AdminPage.tsx` |
 | **State provider** | `context/AdminProvider.tsx` |
 | **Styles** | `admin.css` (concept classes `admin-*`), imported once from `src/styles/globals.css` |
 
 ## Purpose
 
-Eight sections, selected by `?tab=` so a section is linkable. The rail groups
+Ten sections, selected by `?tab=` so a section is linkable. The rail groups
 them into `ADMIN_NAV_GROUPS` (المنصة / المحتوى والفيديو / المتابعة), and every
 section opens with its `SECTION_DETAILS` headline, so no view hand-draws a
 page header:
@@ -26,13 +26,15 @@ page header:
 | Tab | Answers |
 | :--- | :--- |
 | `overview` | headline counts (users, active sessions, logins, revocations) + the video health strip |
-| `users` | every account — arrived through signup, never created here — with role filter, search, and an inspector (view/edit/promote/revoke/delete) |
+| `users` | every account with role filter, search, and an inspector (view/edit/promote/revoke/delete); list/detail and mutations are separately permissioned |
 | `content` | generic content manager with sub-tabs (courses, scholarships, events, competitions), schema-driven forms |
 | `videos` | hosted video assets: upload (FFmpeg-aware), review statuses/errors, delete |
 | `system` | the staged video diagnostics: pipeline / Telegram / Google Drive, why not, and the fix hint — with an opt-in deep run against the live provider APIs |
 | `sessions` | every device session, active/closed filter, search by mail or IP |
 | `analytics` | the login series chart and the OS / browser / device breakdown |
-| `activity` | the most recent audit rows, filterable by kind |
+| `activity` | recent `AuthEvent` activity (login, logout, refresh, revocation, rejection), filterable by kind |
+| `roles` | role catalog, role CRUD, hierarchy reorder, paged/bulk membership, and user role replacement |
+| `audit` | access-mutation audit history for role and assignment changes |
 
 ## Structure
 
@@ -54,6 +56,7 @@ admin/
 │   ├── toolbar/                         AdminPagination
 │   └── views/                           OverviewView, UsersView, SessionsView,
 │                                        AnalyticsView, ActivityView,
+│                                        RolesView, AuditLogView,
 │                                        VideoHostingView, AdminSystemView,
 │                                        UserDetailPanel
 ├── context/
@@ -81,16 +84,20 @@ admin/
   `dir="rtl"`, so `AdminShell` puts the rail first (far right), then the
   column of top bar — page head — pills strip — section view. `admin-container`
   centers the column (`max-w-[1280px] mx-auto`) so nothing hugs the edge.
-- **Accounts arrive via signup only.** There is no create-user flow: no button,
-  no modal, no fetcher. The inspector's `UserEditor` seeds inputs from the
-  schema-driven `userFields`, keeps a `تغييرات غير محفوظة` dirty chip, resets
-  to the saved values, and its close (backdrop or Escape) asks before discard.
+- **Account permissions stay separate.** Creating an account as the default
+  student uses `users.create`; assigning a non-default role uses
+  `users.assign_roles` and is subject to hierarchy and grant checks. The
+  inspector's `UserEditor` seeds inputs from the schema-driven `userFields`,
+  keeps a `تغييرات غير محفوظة` dirty chip, resets to the saved values, and its
+  close (backdrop or Escape) asks before discard.
 - **Schema-driven editing:** `adminContentForm.ts` is the one source for
   `AdminFormValue`, `groupEditorFields` (essentials / prose / structured
   stacks with `FIELD_GROUP_LABELS`), and payload validation. Both
   `ContentFormModal` and the inline `UserEditor` render from it; inputs come
   from `AdminFieldInput` keyed by `field.kind`, with LTR handling for
-  emails, urls, slugs, and numeric kinds.
+  emails, urls, slugs, and numeric kinds. Content schemas are filtered by read
+  permission; each content type carries read/write/delete permission metadata,
+  and `user_ref` fields resolve account references asynchronously.
 - **Icons instead of prose:** `fieldIcons.ts` maps field names (kind
   fallbacks) to lucide icons, `ADMIN_*_FILTERS` lists the segmented-control
   options, and every empty/error state carries an icon via `AdminEmptyState`
@@ -117,6 +124,7 @@ admin/
 | Source | Provides |
 | :--- | :--- |
 | `data/adminFetchers.ts` | `fetchOverview`, `fetchUsers`, `fetchUserDetail`, `updateUserRole`, `fetchSessions`, `revokeAdminSession`, `fetchLoginSeries`, `fetchDeviceBreakdown`, `fetchEvents`, `updateAdminUser`, `deleteAdminUser`, `fetchContentSchema`, `fetchContent`, `createContent`, `updateContent`, `deleteContent`, `fetchVideoProviders`, `fetchVideoAssets`, `fetchVideoDiagnostics(deep)`, `fetchVideoAsset(id)`, `uploadVideoAsset(file, onProgress)`, `createVideoAsset`, `deleteVideoAsset`, `startDriveOAuth` |
+| `data/roleFetchers.ts` | role catalog/list/detail CRUD, reorder, member pages/bulk membership, user role replacement, and access-audit queries |
 | `data/adminContentForm.ts` | `AdminFormValue`, `emptyFormValues`, `toFormValues`, `toPayloadValues`, `groupEditorFields`, `FIELD_GROUP_ORDER`, `FIELD_GROUP_LABELS` |
 | `data/adminFormatters.ts` | `formatCount`, `formatDateTime`, `formatShortDateTime`, `formatDayLabel`, `formatLastSeen(Short)`, `initialsOf`, `SECTION_ICONS`, `METRIC_ICONS`, `REVOKE_REASON_LABELS`, `EVENT_KIND_LABELS` |
 | `data/fieldIcons.ts` | `fieldIcon(field)` — name map with kind fallback |
@@ -131,18 +139,27 @@ admin/
   a scrolling pills strip; below `md` the top bar steps aside for the page
   head alone.
 - `admin/errors` from a 403 render as a full-panel state, not a crash — a
-  non-staff reader who lands here is told plainly that they cannot manage the
-  platform.
+  caller without the required permission is told plainly that they cannot use
+  that administration surface.
 
 ## Endpoints
 
 | Method | Path | Notes |
 | :--- | :--- | :--- |
 | `GET` | `/admin/overview` | The home counts + `content` sub-counts. |
-| `GET` | `/admin/users` | Paged accounts; `q`, `role`, `page`. |
-| `PATCH` | `/admin/users/:id` | Update subset; returns `AdminUserRow`. Self-demotion rejected. |
+| `GET` | `/admin/users` | Paged accounts; `q`, `role`, `page` (`users.view`). |
+| `POST` | `/admin/users` | Create an account (`users.create`); a default student does not require role assignment. |
+| `PATCH` | `/admin/users/:id` | Update subset (`users.edit`); non-default role changes additionally require `users.assign_roles` and hierarchy/grant checks. Self-demotion rejected. |
 | `DELETE` | `/admin/users/:id` | `{deleted:true,id}`; self-delete rejected. |
-| `GET` | `/admin/content/schema` | `{types, userFields}` (schema-driven forms). |
+| `GET` | `/admin/roles/catalog` | Permission groups, role templates, and colors. |
+| `GET` · `POST` | `/admin/roles` | Role list / create. |
+| `GET` · `PATCH` · `DELETE` | `/admin/roles/:id` | Role detail CRUD. |
+| `POST` | `/admin/roles/reorder` | Reorder editable roles. |
+| `GET` · `POST` | `/admin/roles/:id/members` | Paged members / bulk membership assignment. |
+| `DELETE` | `/admin/roles/:id/members/:userId` | Remove one role assignment. |
+| `PUT` | `/admin/users/:id/roles` | Replace explicit user roles. |
+| `GET` | `/admin/audit` | Access-mutation audit trail; distinct from `/admin/events` AuthEvent activity. |
+| `GET` | `/admin/content/schema` | `{types, userFields}`; readable types only, with per-type read/write/delete metadata and async `user_ref` account fields. |
 | `GET` | `/admin/content/:type` | Paged rows; `q` filters by key/title fields. |
 | `POST` | `/admin/content/:type` | Create row from schema fields; returns `ContentRow`. |
 | `PATCH` | `/admin/content/:type/:id` | Update subset; returns `ContentRow`. |
