@@ -12,6 +12,22 @@ Private/admin/Studio/playback responses are not app-cached. Token-bearing HLS ma
 
 The existing auth, catalog, course, dashboard, profile, admin, and Studio course-authoring routes remain as described by the feature modules. Course playback adds the video contracts below. Course lifecycle still controls entitlement: published lessons can be previewed when marked free-preview, enrolled learners need `lessons.watch`, course staff/owners and authorized video admins may manage or watch according to the access policy; draft/in-review content is private.
 
+### Practice, quizzes, and exams
+
+The quiz API is owned by `backend/features/quizzes/` and mounted under `/api/`. Learner attempt/check routes require authentication, enforce enrollment and server-side unlock/deadline rules, and return `private, no-store` responses. Active question payloads omit correctness, explanations, and hints; only the finished-result service can reveal feedback according to the quiz policy.
+
+| Method | Path | Contract |
+| :--- | :--- | :--- |
+| `GET` | `/courses/<slug>/quizzes` | `{items:[...]}` published quiz summaries with `attemptsUsed`, `attemptsLeft`, `bestPercent`, `passed`, and `locked`. |
+| `GET` | `/courses/<slug>/problems` · `/problems` | Legacy `{items}` envelopes retained; correct IDs, explanations, and hints are stripped. A published course practice quiz replaces the legacy shared set. |
+| `POST` | `/quizzes/<id>/attempts` | Start or resume; returns stable question/option ordering, `serverNow`, `deadlineAt`, and no answer key. |
+| `GET` | `/attempts/<id>` | In-progress attempt plus saved `answers`, or a finished result filtered by reveal policy. |
+| `PUT` | `/attempts/<id>/answers` | `{answers:[{questionId,optionIds}]}`; validates option ownership and never grades. |
+| `POST` | `/attempts/<id>/submit` | Idempotently grades on the server and returns score/pass state plus feedback only when allowed. |
+| `POST` | `/questions/<id>/check` · `/problems/<problem_id>/check` | Server-side practice answer check; rate-limited by `quiz_check`. |
+
+Authoring routes under `/studio/` require course-scoped `quizzes.*` permissions and private/no-store responses: `/studio/courses/<slug>/quizzes`, `/studio/quizzes/<id>` (including publish/unpublish), `/studio/quizzes/<id>/questions` and `/questions/reorder`, `/studio/questions/<id>`, `/studio/quizzes/<id>/import`, `/stats`, `/attempts`, `/results.csv`, and `/extra-attempts`. Mutations are throttled by `studio_write`; import supports dry-run before atomic commit; CSV exports escape formula-prefixed cells. The `cleanup_expired` job also grades overdue attempts after the ten-second grace period and reports `quizAttemptsExpired`.
+
 ## 3. Video hosting contract
 
 The video control plane stores metadata, playback plans, manifests, keys, captions, grants, and provider references. Bytes remain with the provider. Current routes are mounted under `/api/` from `backend/features/videohosting/urls.py`.

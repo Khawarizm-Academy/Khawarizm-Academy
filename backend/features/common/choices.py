@@ -47,6 +47,25 @@ class LessonKind(models.TextChoices):
     RESOURCE = "resource", "Resource"
 
 
+class QuizKind(models.TextChoices):
+    PRACTICE = "practice", "Practice"
+    LESSON_QUIZ = "lesson_quiz", "Lesson quiz"
+    EXAM = "exam", "Exam"
+
+
+class RevealPolicy(models.TextChoices):
+    NEVER = "never", "Never"
+    AFTER_SUBMIT = "after_submit", "After submit"
+    AFTER_PASS = "after_pass", "After pass"
+    AFTER_CLOSE = "after_close", "After close"
+
+
+class QuestionKind(models.TextChoices):
+    SINGLE = "single", "Single choice"
+    MULTIPLE = "multiple", "Multiple choice"
+    TRUE_FALSE = "true_false", "True/false"
+
+
 class LessonResourceKind(models.TextChoices):
     LINK = "link", "Link"
     DOCUMENT_LINK = "document_link", "Document link"
@@ -254,3 +273,4 @@ class AuditAction(models.TextChoices):
     USER_DELETED = "user_deleted", "User deleted"
     USER_STATUS_CHANGED = "user_status_changed", "User status changed"
     SETTINGS_CHANGED = "settings_changed", "Settings changed"
+    QUIZ_ATTEMPT_GRANTED = "quiz_attempt_granted", "Quiz attempt granted"

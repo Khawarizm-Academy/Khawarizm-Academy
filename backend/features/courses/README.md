@@ -7,10 +7,12 @@ The course domain owns the public catalog/detail payload, learner enrollment and
 | | |
 | :--- | :--- |
 | **App label** | `courses` |
-| **Public routes** | `GET /api/courses/:slug`, `GET /api/courses/:slug/problems`, `GET /api/problems`, `GET /api/courses/:slug/related`, `POST /api/courses/:slug/enroll`, `POST /api/courses/:slug/favorite`, `POST /api/courses/:slug/progress`, `GET /api/courses/:slug/certificate` |
+| **Public routes** | `GET /api/courses/:slug`, `GET /api/courses/:slug/related`, `POST /api/courses/:slug/enroll`, `POST /api/courses/:slug/favorite`, `POST /api/courses/:slug/progress`, `GET /api/courses/:slug/certificate` |
 | **Authoring routes** | `/api/studio/*` (owned by the model-less `studio` app) |
 | **Models** | `Course`, `CourseStaff`, `CourseModule`, `CourseLesson`, `LessonResource`, `CourseLiveSession`, `CourseProblem`, `CourseProblemOption` |
 | **Frontend twin** | `frontend/src/features/courses/` |
+
+Legacy problem and course-quiz list/check routes are implemented by [`../quizzes/README.md`](../quizzes/README.md); the `CourseProblem` tables remain owned here for migration-safe compatibility.
 
 ## Lifecycle and visibility
 
@@ -35,8 +37,8 @@ courses/
 ├── models.py         Course, staff, curriculum, resources, sessions, problems
 ├── serializers.py    stable public catalog/detail and lesson payloads
 ├── services.py       lifecycle, ownership, authorization, curriculum, progress
-├── views.py          public detail/problems/related/enroll/favorite/progress/certificate
-├── urls.py           /api/courses/* and /api/problems
+├── views.py          public detail/related/enroll/favorite/progress/certificate
+├── urls.py           /api/courses/*
 ├── admin.py          registered models, course/module/lesson inline editing
 ├── migrations/       additive lifecycle schema; no heuristic owner backfill
 └── README.md

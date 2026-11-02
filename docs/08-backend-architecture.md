@@ -90,6 +90,12 @@ Drive OAuth is authorization-code/offline access with `drive.file`. `DriveGrant`
 
 Provider credentials and Google OAuth client values are backend-only. A real Drive account acceptance remains an external gate, not a passed implementation claim.
 
+## 8. Quizzes and server-authoritative grading
+
+`features/quizzes` owns quiz/question/option/attempt/answer/grant tables and mounts both learner routes and Studio authoring routes under `/api/`. `quizzes.services` validates enrollment, progress unlocks, attempt limits, option ownership, deadlines, grading, and reveal policy; views do not decide correctness. Per-attempt question and option order is persisted so reloads are stable. Active-attempt serializers exclude answer keys and feedback, and the result serializer is the only path that may expose correctness.
+
+The retained legacy problem URLs are served by the quizzes feature too. Their list serializers strip correct IDs, explanations, and hints; explicit check endpoints grade on the server. The shared cleanup service lazily imports `quizzes.services.expire_overdue()` to finalize abandoned timed attempts without making the low-level common app import feature models at module load.
+
 ## Related
 
 - API surface and exact endpoints: [07 · Backend Contract](07-backend-contract.md)

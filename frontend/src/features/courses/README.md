@@ -19,7 +19,7 @@ The learner course journey: discover a course, study through a responsive player
 ## Purpose
 
 - **Landing** — course overview, outcomes, curriculum, live sessions, exam callout, instructor cards, related courses, and enrollment/favorite actions.
-- **Player** — a single responsive video stage, lesson/problems/live/exam tabs, progress-aware syllabus, completion, mobile syllabus drawer, and mini-player.
+- **Player** — a single responsive video stage, lesson/problems/live/exam tabs, server-graded practice and timed exam flows, progress-aware syllabus, completion, mobile syllabus drawer, and mini-player.
 - **Certificate** — completion screen with a shareable/downloadable certificate.
 
 Course detail shares the feature cache. The player disables `keepPreviousData` across route slugs so it never pairs a new course URL with a previous course's lesson ID.
@@ -45,7 +45,7 @@ courses/
 │   ├── coursePlayerContext.ts        `useCoursePlayer()` contract
 │   └── videoPlayerStore.ts           Engine-backed external store via `useSyncExternalStore`
 ├── data/
-│   ├── courseFetchers.ts             Course detail, related, problems, and progress
+│   ├── data/courseFetchers.ts             Course detail, related, quiz summaries/attempts, and progress
 │   ├── courseCopy.ts                 Typed copy from `courseSystem.json`
 │   ├── coursePath.ts                 Lesson flattening, unlock, and progress helpers
 │   ├── playerTime.ts                 Duration and clock formatting
@@ -72,9 +72,11 @@ The public detail fetcher accepts additive lifecycle fields without removing leg
 | Source | Provides |
 | :--- | :--- |
 | `@/shared/types/entities` | `CourseDetail`, `CourseLesson`, curriculum DTOs |
-| `data/courseFetchers.ts` | Course detail, problems, related courses and learner progress |
+| `data/courseFetchers.ts` | Course detail, redacted problem lists, quiz summaries/attempts, related courses and learner progress |
 | `features/videohosting/data/videoHostingFetchers.ts` | Lesson playback grants and progress heartbeats |
 | `@/shared/json/courseSystem.json` | Arabic landing/player/certificate copy and speed choices |
+
+Practice correctness and exam grading are server-authoritative. `ProblemsPanel` submits selections to the check endpoint; `ExamPanel` starts/resumes a server attempt, autosaves selections, calculates its display countdown from `serverNow`/`deadlineAt`, and renders only the feedback returned under the quiz reveal policy. The browser never receives active answer keys.
 
 Run frontend checks from `frontend/`: `npm test`, `npm run lint`, and `npm run build`.
 

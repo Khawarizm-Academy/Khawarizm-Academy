@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from features.common.serializers import as_number, compact
-from features.courses.models import Course, CourseProblem
+from features.courses.models import Course
 
 LANGUAGE_LABELS = {"arabic": "العربية", "english": "الإنجليزية", "french": "الفرنسية"}
 
@@ -191,16 +191,4 @@ def course_detail(
         "instructors": instructors(course, staff_rows),
         "enrollable": enrollable,
         **({"isPreview": True} if is_preview else {}),
-    }
-
-
-def course_problem(problem: CourseProblem) -> dict[str, Any]:
-    return {
-        "id": problem.problem_id,
-        "prompt": problem.prompt,
-        "code": problem.code,
-        "options": [{"id": option.option_id, "label": option.label} for option in problem.options.all()],
-        "correctOptionId": problem.correct_option_id,
-        "explanation": problem.explanation,
-        "hint": problem.hint,
     }

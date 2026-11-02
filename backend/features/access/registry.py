@@ -147,6 +147,7 @@ PERMISSIONS["administrator"] = replace(
 )
 
 OWN_KINDS: dict[str, set[str]] = {
+    "quizzes.edit_own": {"owner", "co_instructor"},
     "courses.edit_own": {"owner", "co_instructor"},
     "curriculum.edit_own": {"owner", "co_instructor"},
     "courses.delete_own": {"owner"},

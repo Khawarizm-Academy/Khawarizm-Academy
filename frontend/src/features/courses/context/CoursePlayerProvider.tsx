@@ -1,8 +1,10 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useAuth } from '@/features/auth/context/authContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import {
   fetchCourseDetail,
   fetchCourseProblems,
+  fetchCourseQuizzes,
   syncCourseProgress,
 } from '@/features/courses/data/courseFetchers';
 import { dataCacheManager } from '@/shared/lib/cacheManager';
@@ -14,6 +16,7 @@ import {
   seedCompletedLessonIds,
 } from '@/features/courses/data/coursePath';
 import type { CourseDetail, CourseProblem } from '@/shared/types/entities';
+import type { CourseQuizSummary } from '@/features/courses/quizTypes';
 import type { CourseTab } from '@/features/courses/types';
 import { CoursePlayerContext } from '@/features/courses/context/coursePlayerContext';
 import type { CoursePlayerContextValue } from '@/features/courses/context/coursePlayerContext';
@@ -24,6 +27,7 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
   slug,
   children,
 }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<CourseTab>('lesson');
   const [activeLessonId, setActiveLessonId] = useState('');
   const [completedIds, setCompletedIds] = useState<string[]>([]);
@@ -40,10 +44,16 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
   );
 
   const problemsFetcher = useCallback(() => fetchCourseProblems(slug), [slug]);
-  const { data: problems } = useCachedData<CourseProblem[]>(['course-problems', slug], problemsFetcher, {
+  const problemsState = useCachedData<CourseProblem[]>(['course-problems', slug], problemsFetcher, {
     staleTime: 30 * 60 * 1000,
   });
-  const problemList = useMemo(() => problems ?? [], [problems]);
+  const quizzesFetcher = useCallback(() => fetchCourseQuizzes(slug), [slug]);
+  const quizzesState = useCachedData<CourseQuizSummary[]>(
+    ['course-quizzes', slug, user?.id ?? 'anonymous'],
+    quizzesFetcher,
+    { enabled: Boolean(user?.permissions.includes('quizzes.attempt')), initialData: [], staleTime: 60 * 1000 }
+  );
+  const problemList = useMemo(() => problemsState.data ?? [], [problemsState.data]);
 
   // The fetched detail carries the resume point for returning learners.
   const startedLessonId = course?.startedLessonId ?? '';
@@ -106,6 +116,13 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
       activeTab,
       isSyllabusOpen,
       problems: problemList,
+      problemsLoading: problemsState.isLoading,
+      problemsError: problemsState.error,
+      retryProblems: problemsState.refetch,
+      quizzes: quizzesState.data ?? [],
+      quizzesLoading: quizzesState.isLoading,
+      quizzesError: quizzesState.error,
+      retryQuizzes: quizzesState.refetch,
       progress,
       isExamUnlocked: examUnlocked,
       selectLesson,
@@ -124,6 +141,13 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
       activeTab,
       isSyllabusOpen,
       problemList,
+      problemsState.isLoading,
+      problemsState.error,
+      problemsState.refetch,
+      quizzesState.data,
+      quizzesState.isLoading,
+      quizzesState.error,
+      quizzesState.refetch,
       progress,
       examUnlocked,
       selectLesson,
