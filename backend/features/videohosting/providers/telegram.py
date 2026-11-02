@@ -2,6 +2,8 @@
 # Wraps Pyrogram so a Telegram channel acts as unlimited video storage: upload
 # (>2GB auto-split), 1 MiB chunk streaming, and Bot API file-path resolution.
 # Serving paths never import Pyrogram — they refresh file paths over plain HTTPS.
+from __future__ import annotations
+
 import asyncio
 import json
 import os

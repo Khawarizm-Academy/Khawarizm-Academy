@@ -3,10 +3,12 @@ request-id + metrics middleware, and the liveness/readiness endpoints."""
 
 from __future__ import annotations
 
+import concurrent.futures
 import importlib
 import json
 import logging
 import tempfile
+import threading
 import uuid
 from pathlib import Path
 from unittest import mock
@@ -17,7 +19,13 @@ from django.test import RequestFactory, SimpleTestCase, TestCase, override_setti
 from django.urls import resolve
 from rest_framework.test import APIClient
 
-from config.logging import JsonConsoleFormatter, RequestContextFilter, reset_request_id, set_request_id
+from config.logging import (
+    JsonConsoleFormatter,
+    RequestContextFilter,
+    current_request_id,
+    reset_request_id,
+    set_request_id,
+)
 from config.middleware import (
     ApiOriginRestrictionMiddleware,
     HardeningHeadersMiddleware,
@@ -162,6 +170,28 @@ class RequestIdTests(SimpleTestCase):
     def test_a_hostile_inbound_value_is_replaced(self):
         response = self._response(RequestFactory().get("/", HTTP_X_REQUEST_ID="../../etc/passwd"))
         self.assertTrue(uuid.UUID(response["X-Request-ID"]))
+
+    def test_concurrent_requests_have_independent_request_id_context_tokens(self):
+        barrier = threading.Barrier(2)
+
+        def get_response(request):
+            barrier.wait(timeout=5)
+            return JsonResponse({"requestId": current_request_id()})
+
+        middleware = RequestIDMiddleware(get_response)
+
+        def invoke(request_id):
+            request = RequestFactory().get("/", HTTP_X_REQUEST_ID=request_id)
+            response = middleware(request)
+            return response["X-Request-ID"], json.loads(response.content)["requestId"], current_request_id()
+
+        request_ids = ("request-a1", "request-b2")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(invoke, request_ids))
+
+        self.assertEqual({result[0] for result in results}, set(request_ids))
+        self.assertEqual({result[1] for result in results}, set(request_ids))
+        self.assertEqual({result[2] for result in results}, {""})
 
 
 class RequestMetricsTests(SimpleTestCase):

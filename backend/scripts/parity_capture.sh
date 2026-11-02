@@ -17,6 +17,7 @@ User.objects.filter(email='parity@example.com').delete()
 
 # catalog list ×3 param sets + detail
 curl -s -H "$ORIGIN" "$API/catalog" -o "$DIR/catalog-default.json"
+curl -s -H "$ORIGIN" "$API/catalog?type=courses" -o "$DIR/catalog-courses.json"
 curl -s -H "$ORIGIN" "$API/catalog?type=courses&q=course&sort=popular&page=1" -o "$DIR/catalog-filtered.json"
 curl -s -H "$ORIGIN" "$API/catalog?type=scholarships&field=cs&cost=free" -o "$DIR/catalog-scholarships.json"
 curl -s -H "$ORIGIN" "$API/catalog/course-1" -o "$DIR/catalog-detail-course1.json"
@@ -31,6 +32,7 @@ curl -s -H "$ORIGIN" "$API/auth/config" -o "$DIR/auth-config.json"
 # courses GETs (only routes the router actually mounts; 404 variants are test work)
 curl -s -H "$ORIGIN" "$API/courses/course-1" -o "$DIR/course-detail.json"
 curl -s -H "$ORIGIN" "$API/courses/course-1/problems" -o "$DIR/course-problems.json"
+curl -s -H "$ORIGIN" "$API/problems" -o "$DIR/problems.json"
 curl -s -H "$ORIGIN" "$API/courses/course-1/related" -o "$DIR/course-related.json"
 curl -s -H "$ORIGIN" "$API/scholarships/scholarship-1" -o "$DIR/scholarship-detail.json"
 
