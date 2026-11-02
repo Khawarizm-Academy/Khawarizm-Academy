@@ -6,7 +6,7 @@ import uuid
 from datetime import timedelta
 from typing import Any
 
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, Prefetch
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
@@ -27,8 +27,10 @@ from features.common.messages import COURSE_NOT_FOUND
 from features.common.throttling import scoped_throttle
 from features.courses import services
 from features.courses.models import Course, CourseLesson, CourseModule, CourseStaff, LessonResource
+from features.catalog.models import Category
 from features.studio import serializers
 from features.videohosting.models import VideoAsset
+from features.quizzes.models import Quiz
 
 PAGE_SIZE = 20
 MAX_PAGE = 10_000
@@ -73,6 +75,13 @@ def _course(slug: str, *, editor: bool = False) -> Course:
             "staff__user__instructor_profile",
             "modules__lessons__resources",
             "modules__lessons__video_asset",
+            Prefetch(
+                "quizzes",
+                queryset=Quiz.objects.annotate(
+                    question_total=Count("questions", distinct=True),
+                    attempt_total=Count("attempts", distinct=True),
+                ),
+            ),
         )
     row = queryset.filter(slug=slug).first()
     if row is None:
@@ -84,6 +93,10 @@ def _course(slug: str, *, editor: bool = False) -> Course:
             module._studio_lessons = list(module.lessons.all())
             for lesson in module._studio_lessons:
                 lesson._studio_resources = list(lesson.resources.all())
+        row._studio_quizzes = list(row.quizzes.all())
+        for quiz in row._studio_quizzes:
+            quiz._question_count = quiz.question_total
+            quiz._attempt_count = quiz.attempt_total
     return row
 
 
@@ -340,6 +353,117 @@ def course_detail(request: Any, slug: str) -> Response:
         return _response(_editor_payload(_course(course.slug, editor=True)))
     services.delete_course(course, request.user)
     return _response(code=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(
+    operation_id="studio_course_outcomes_replace",
+    summary="Replace the ordered learning outcomes for a course.",
+    request=serializers.OutcomesRequest,
+    responses={200: OpenApiResponse(description="Updated editor graph.")},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@scoped_throttle("studio_write")
+def outcomes(request: Any, slug: str) -> Response:
+    course = _course(slug)
+    _require_editor(request.user, course)
+    values = _body(serializers.OutcomesRequest, request.data)
+    updated = services.update_course(
+        course,
+        {"outcomes": values["outcomes"], "expectedUpdatedAt": values.get("expectedUpdatedAt")},
+        request.user,
+    )
+    return _response(_editor_payload(_course(updated.slug, editor=True)))
+
+
+@extend_schema(
+    operation_id="studio_course_related_replace",
+    summary="Replace the published related-course slugs.",
+    request=serializers.RelatedCoursesRequest,
+    responses={200: OpenApiResponse(description="Updated editor graph.")},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@scoped_throttle("studio_write")
+def related_courses(request: Any, slug: str) -> Response:
+    course = _course(slug)
+    _require_editor(request.user, course)
+    values = _body(serializers.RelatedCoursesRequest, request.data)
+    updated = services.update_course(
+        course,
+        {"relatedIds": values["relatedIds"], "expectedUpdatedAt": values.get("expectedUpdatedAt")},
+        request.user,
+    )
+    return _response(_editor_payload(_course(updated.slug, editor=True)))
+
+
+@extend_schema(
+    operation_id="studio_lesson_duplicate",
+    summary="Duplicate a lesson and its resources.",
+    request=None,
+    responses={201: OpenApiResponse(description="Duplicated lesson row.")},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@scoped_throttle("studio_write")
+def lesson_duplicate(request: Any, lesson_id: Any) -> Response:
+    row = _lesson(lesson_id)
+    _require_curriculum(request.user, row.module.course)
+    clone = services.duplicate_lesson(row, request.user)
+    clone._studio_resources = list(clone.resources.all())
+    return _response(serializers.lesson_row(clone), code=status.HTTP_201_CREATED)
+
+
+@extend_schema(
+    operation_id="studio_course_categories",
+    summary="Read the catalog taxonomy for course editing.",
+    responses={200: OpenApiResponse(description="`{items: [...]}`.")},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def categories(request: Any) -> Response:
+    if not has_perm(request.user, "studio.access"):
+        raise PermissionDenied()
+    rows = Category.objects.order_by("slug")
+    return _response({"items": [{"slug": row.slug, "label": row.label} for row in rows]})
+
+
+@extend_schema(
+    operation_id="studio_video_picker",
+    summary="List own video metadata for the Phase 8 lesson picker.",
+    parameters=[OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY)],
+    responses={200: OpenApiResponse(description="`{items: [...]}`.")},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def video_picker(request: Any) -> Response:
+    if not has_perm(request.user, "videos.manage_own"):
+        raise PermissionDenied()
+    query = request.query_params.get("q", "").strip()
+    if len(query) > MAX_SEARCH:
+        raise InvalidParameter("عبارة البحث طويلة جدًا.", code="search_too_long")
+    rows = VideoAsset.objects.select_related("provider")
+    if not has_perm(request.user, "videos.manage_any"):
+        rows = rows.filter(created_by=request.user)
+    if query:
+        rows = rows.filter(Q(title__icontains=query) | Q(slug__icontains=query))
+    return _response(
+        {
+            "items": [
+                {
+                    "id": str(row.pk),
+                    "slug": row.slug,
+                    "title": row.title or row.slug,
+                    "status": row.status,
+                    "durationSeconds": row.duration_seconds,
+                    "playbackMode": row.playback_mode,
+                    "protection": row.protection,
+                    "provider": row.provider.code if row.provider_id else None,
+                }
+                for row in rows.order_by("-updated_at", "slug")[:100]
+            ]
+        }
+    )
 
 
 @extend_schema(

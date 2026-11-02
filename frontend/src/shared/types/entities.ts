@@ -85,6 +85,8 @@ export type LiveSessionState = 'upcoming' | 'live' | 'past';
 /** One lesson row inside a module (title + duration only; status is derived). */
 export interface CourseLesson {
   id: string;
+  /** UUID used to fetch protected Markdown/resources without exposing them in course metadata. */
+  contentId?: string;
   title: string;
   duration: string;
   summary: string;

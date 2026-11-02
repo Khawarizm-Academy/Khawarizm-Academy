@@ -24,12 +24,14 @@ if (!API_BASE_URL) {
 export class ApiError extends Error {
   status: number;
   code?: string;
+  fields?: Record<string, unknown>;
 
-  constructor(status: number, message: string, code?: string) {
+  constructor(status: number, message: string, code?: string, fields?: Record<string, unknown>) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.fields = fields;
   }
 }
 
@@ -71,7 +73,7 @@ function refreshTokens(): Promise<boolean> {
 }
 
 /** Read an error body without throwing when it is empty or not JSON. */
-async function readErrorBody(response: Response): Promise<{ detail?: string; code?: string }> {
+async function readErrorBody(response: Response): Promise<{ detail?: string; code?: string; fields?: Record<string, unknown> }> {
   try {
     return (await response.json()) as { detail?: string; code?: string };
   } catch {
@@ -112,7 +114,7 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
 
   if (!response.ok) {
     const payload = await readErrorBody(response);
-    throw new ApiError(response.status, payload.detail ?? `API ${response.status}: ${response.statusText}`, payload.code);
+    throw new ApiError(response.status, payload.detail ?? `API ${response.status}: ${response.statusText}`, payload.code, payload.fields);
   }
 
   if (response.status === 204) return undefined as T;

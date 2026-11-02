@@ -18,7 +18,7 @@ export const StudioHomePage = lazy(() => import('../features/studio/pages/Studio
 export const StudioCoursesPage = lazy(() => import('../features/studio/pages/StudioCoursesPage').then((m) => ({ default: m.StudioCoursesPage })));
 export const StudioNewCoursePage = lazy(() => import('../features/studio/pages/StudioNewCoursePage').then((m) => ({ default: m.StudioNewCoursePage })));
 export const StudioProfilePage = lazy(() => import('../features/studio/pages/StudioProfilePage').then((m) => ({ default: m.StudioProfilePage })));
-export const StudioCourseEditorPage = lazy(() => import('../features/studio/pages/StudioPlaceholderPages').then((m) => ({ default: m.StudioCourseEditorPage })));
+export const StudioCourseEditorPage = lazy(() => import('../features/studio/pages/StudioCourseEditorPage').then((m) => ({ default: m.StudioCourseEditorPage })));
 export const StudioVideosPage = lazy(() => import('../features/studio/pages/StudioPlaceholderPages').then((m) => ({ default: m.StudioVideosPage })));
 export const StudioQuizzesPage = lazy(() => import('../features/studio/pages/StudioPlaceholderPages').then((m) => ({ default: m.StudioQuizzesPage })));
 export const StudioQuizEditorPage = lazy(() => import('../features/studio/pages/StudioPlaceholderPages').then((m) => ({ default: m.StudioQuizEditorPage })));

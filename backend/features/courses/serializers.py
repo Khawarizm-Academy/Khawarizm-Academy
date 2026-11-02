@@ -42,6 +42,7 @@ def lesson(row: Any, *, include_unpublished: bool = False) -> dict[str, Any]:
     asset = getattr(row, "video_asset", None)
     payload = compact(
         id=row.lesson_id,
+        contentId=str(row.pk),
         title=row.title,
         duration=row.duration,
         summary=row.summary,
@@ -83,6 +84,7 @@ def _modules_from_join(rows: list[dict[str, Any]], *, include_unpublished: bool)
             continue
         lesson_payload = compact(
             id=lesson_id,
+            contentId=str(row["lesson_uuid"]),
             title=row["lesson_title"],
             duration=row["lesson_duration"],
             summary=row["lesson_summary"],

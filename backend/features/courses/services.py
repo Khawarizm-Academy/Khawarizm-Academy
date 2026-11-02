@@ -162,14 +162,16 @@ def _generated(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
 
 
-def _expected(row: Any, value: Any) -> None:
+def _expected(row: Any, value: Any, current: dict[str, Any] | None = None) -> None:
     if value is None:
         return
     parsed = parse_datetime(value) if isinstance(value, str) else value
     if isinstance(parsed, datetime) and timezone.is_naive(parsed):
         parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
     if not isinstance(parsed, datetime) or parsed != row.updated_at:
-        raise Conflict("تغيّر المحتوى منذ آخر قراءة؛ حدّث الصفحة ثم أعد المحاولة.")
+        error = Conflict("تغيّر المحتوى منذ آخر قراءة؛ حدّث الصفحة ثم أعد المحاولة.", code="stale_write")
+        error.fields = {"current": current or {"updatedAt": row.updated_at}}
+        raise error
 
 
 def _profile_name(user: Any) -> str:
@@ -350,6 +352,15 @@ def update_course(course: Course, data: Mapping[str, Any], actor: Any) -> Course
         raise InvalidParameter(f"حقول غير معروفة: {', '.join(unknown)}")
     _expected(course, values.pop("expectedUpdatedAt", None))
     _validate_course_values(values)
+    if "relatedIds" in values:
+        related = values["relatedIds"]
+        if course.slug in related:
+            raise InvalidParameter("لا يمكن ربط الدورة بنفسها.", code="related_self")
+        published = set(
+            Course.objects.filter(slug__in=related, status=CourseStatus.PUBLISHED).values_list("slug", flat=True)
+        )
+        if len(published) != len(related):
+            raise InvalidParameter("الدورات المرتبطة يجب أن تكون منشورة.", code="related_not_published")
     if "slug" in values:
         new_slug = _slug(values.pop("slug"))
         if new_slug != course.slug:
@@ -549,7 +560,7 @@ def _validate_course_values(values: Mapping[str, Any]) -> None:
         "tagline": 240,
         "instructor": 120,
         "instructorCredential": 200,
-        "about": 50000,
+        "about": 20000,
         "instructorBio": 50000,
     }
     for key, maximum in text_limits.items():
@@ -766,7 +777,7 @@ def add_lesson(module: CourseModule, actor: Any, data: Mapping[str, Any] | None 
     title = _text(values.get("title", ""), "العنوان", 160).strip()
     duration = _text(values.get("duration", ""), "المدة", 20)
     summary = _text(values.get("summary", ""), "الملخص", 50000)
-    content = _text(values.get("content", ""), "المحتوى", 100000)
+    content = _text(values.get("content", ""), "المحتوى", 60000)
     order = _nonnegative_int(values.get("order", 0), "الترتيب")
     is_free_preview = values.get("isFreePreview", False)
     is_published = values.get("isPublished", True)
@@ -833,7 +844,7 @@ def update_lesson(lesson: CourseLesson, actor: Any, data: Mapping[str, Any]) -> 
     if "summary" in values:
         values["summary"] = _text(values["summary"], "الملخص", 50000)
     if "content" in values:
-        values["content"] = _text(values["content"], "المحتوى", 100000)
+        values["content"] = _text(values["content"], "المحتوى", 60000)
     if "order" in values:
         values["order"] = _nonnegative_int(values["order"], "الترتيب")
     for key in ("isFreePreview", "isPublished"):
@@ -847,6 +858,46 @@ def update_lesson(lesson: CourseLesson, actor: Any, data: Mapping[str, Any]) -> 
     lesson.save()
     recompute_course_stats(course)
     return lesson
+
+
+@transaction.atomic
+def duplicate_lesson(lesson: CourseLesson, actor: Any) -> CourseLesson:
+    """Duplicate a lesson and its resources inside the same module."""
+    module_id, course_id = _course_id_for_lesson(lesson.pk)
+    course = _locked_course(course_id)
+    module = _locked_module(module_id, course.pk)
+    source = _locked_lesson(lesson.pk, module.pk, course.pk)
+    _require_edit(actor, course, curriculum=True)
+    base = re.sub(r"[^A-Za-z0-9._-]+", "-", source.lesson_id).strip("-") or "lesson"
+    lesson_id = f"{base}-copy"
+    suffix = 2
+    while CourseLesson.objects.filter(module=module, lesson_id=lesson_id).exists():
+        lesson_id = f"{base}-copy-{suffix}"
+        suffix += 1
+    clone = CourseLesson.objects.create(
+        module=module,
+        lesson_id=lesson_id,
+        title=f"{source.title} — نسخة",
+        duration=source.duration,
+        summary=source.summary,
+        order=source.order + 1,
+        kind=source.kind,
+        video_asset=source.video_asset,
+        is_free_preview=False,
+        is_published=False,
+        content=source.content,
+        duration_seconds=source.duration_seconds,
+    )
+    for resource in source.resources.all():
+        LessonResource.objects.create(
+            lesson=clone,
+            title=resource.title,
+            url=resource.url,
+            kind=resource.kind,
+            order=resource.order,
+        )
+    recompute_course_stats(course)
+    return clone
 
 
 @transaction.atomic
@@ -1123,6 +1174,7 @@ def course_detail_relations(course: Course) -> dict[str, Any]:
             "module_id",
             module_title=F("title"),
             lesson_id=F("lessons__lesson_id"),
+            lesson_uuid=F("lessons__pk"),
             lesson_title=F("lessons__title"),
             lesson_duration=F("lessons__duration"),
             lesson_summary=F("lessons__summary"),

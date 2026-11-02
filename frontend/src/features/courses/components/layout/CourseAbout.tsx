@@ -4,6 +4,7 @@ import { useCourseDetail } from '@/features/courses/context/courseDetailContext'
 import { courseCopy } from '@/features/courses/data/courseCopy';
 import { courseEmptyStates } from '@/features/courses/data/courseStates';
 import { CourseSectionEmpty } from '@/features/courses/components/states/CourseSectionEmpty';
+import { MarkdownRenderer } from '@/shared/components/Editor/MarkdownRenderer';
 
 /** Expandable module accordion; every lesson stays visible even when locked. */
 export const CourseAbout: React.FC = () => {
@@ -15,7 +16,7 @@ export const CourseAbout: React.FC = () => {
       <h2 className="course-section-title">{courseCopy.landing.aboutTitle}</h2>
       {course.about ? (
         <div className="course-info-card animate-fade-in-up">
-          <p className="course-instructor-bio">{course.about}</p>
+          <MarkdownRenderer value={course.about} className="course-instructor-bio" />
         </div>
       ) : (
         <CourseSectionEmpty copy={courseEmptyStates.about} icon={<Info size={18} />} />

@@ -37,12 +37,12 @@ class CourseRequest(StrictSerializer):
     priceLabel = serializers.CharField(required=False, allow_blank=True, max_length=40)
     language = serializers.ChoiceField(required=False, choices=LANGUAGES)
     tagline = serializers.CharField(required=False, allow_blank=True, max_length=240)
-    about = serializers.CharField(required=False, allow_blank=True)
+    about = serializers.CharField(required=False, allow_blank=True, max_length=20000)
     instructor = serializers.CharField(required=False, allow_blank=True, max_length=120)
     instructorCredential = serializers.CharField(required=False, allow_blank=True, max_length=200)
     instructorBio = serializers.CharField(required=False, allow_blank=True)
-    outcomes = serializers.ListField(required=False, child=serializers.CharField(max_length=140), max_length=50)
-    relatedIds = serializers.ListField(required=False, child=serializers.CharField(max_length=80), max_length=50)
+    outcomes = serializers.ListField(required=False, child=serializers.CharField(max_length=140), max_length=12)
+    relatedIds = serializers.ListField(required=False, child=serializers.CharField(max_length=80), max_length=6)
     examQuestionCount = serializers.IntegerField(required=False, min_value=0, max_value=10000)
     examMinutes = serializers.IntegerField(required=False, min_value=0, max_value=10000)
     examPassThreshold = serializers.IntegerField(required=False, min_value=0, max_value=100)
@@ -70,7 +70,7 @@ class LessonRequest(StrictSerializer):
     summary = serializers.CharField(required=False, allow_blank=True)
     order = serializers.IntegerField(required=False, min_value=0)
     kind = serializers.ChoiceField(required=False, choices=["video", "article", "quiz", "resource"])
-    content = serializers.CharField(required=False, allow_blank=True)
+    content = serializers.CharField(required=False, allow_blank=True, max_length=60000)
     isFreePreview = serializers.BooleanField(required=False)
     isPublished = serializers.BooleanField(required=False)
     expectedUpdatedAt = serializers.DateTimeField(required=False)
@@ -104,12 +104,31 @@ class VideoRequest(StrictSerializer):
     assetId = serializers.UUIDField()
 
 
+class OutcomesRequest(StrictSerializer):
+    outcomes = serializers.ListField(
+        child=serializers.CharField(max_length=140, allow_blank=False), max_length=12, allow_empty=True
+    )
+    expectedUpdatedAt = serializers.DateTimeField(required=False)
+
+
+class RelatedCoursesRequest(StrictSerializer):
+    relatedIds = serializers.ListField(
+        child=serializers.CharField(max_length=80, allow_blank=False), max_length=6, allow_empty=True
+    )
+    expectedUpdatedAt = serializers.DateTimeField(required=False)
+
+
 class ResourceRequest(StrictSerializer):
     title = serializers.CharField(required=False, allow_blank=True, max_length=160)
     url = serializers.URLField(required=False, max_length=400)
     kind = serializers.ChoiceField(required=False, choices=["link", "document_link"])
     order = serializers.IntegerField(required=False, min_value=0)
     expectedUpdatedAt = serializers.DateTimeField(required=False)
+
+    def validate_url(self, value):
+        if urlparse(value).scheme != "https":
+            raise serializers.ValidationError("يجب أن يبدأ رابط المورد بـ https.")
+        return value
 
 
 class ReviewNoteRequest(StrictSerializer):
@@ -164,17 +183,20 @@ def editor_course(course: Any, *, checklist: dict[str, Any]) -> dict[str, Any]:
         enrollable=course.status == "published",
     )
     payload["reviewNote"] = course.review_note
+    payload["updatedAt"] = course.updated_at
     payload["staff"] = [staff_row(row) for row in getattr(course, "_studio_staff", ())]
     payload["checklist"] = checklist
     payload["modules"] = [
         {
-            "id": module.module_id,
+            "id": str(module.pk),
+            "moduleId": module.module_id,
             "title": module.title,
             "order": module.order,
             "updatedAt": module.updated_at,
             "lessons": [
                 {
-                    "id": lesson.lesson_id,
+                    "id": str(lesson.pk),
+                    "lessonId": lesson.lesson_id,
                     "title": lesson.title,
                     "duration": lesson.duration,
                     "summary": lesson.summary,
@@ -188,11 +210,35 @@ def editor_course(course: Any, *, checklist: dict[str, Any]) -> dict[str, Any]:
                     "durationSeconds": lesson.duration_seconds,
                     "updatedAt": lesson.updated_at,
                     "resources": [resource_row(row) for row in getattr(lesson, "_studio_resources", ())],
+                    "video": (
+                        compact(
+                            id=str(lesson.video_asset.pk),
+                            slug=lesson.video_asset.slug,
+                            title=lesson.video_asset.title,
+                            status=lesson.video_asset.status,
+                            durationSeconds=lesson.video_asset.duration_seconds,
+                            playbackMode=lesson.video_asset.playback_mode,
+                            protection=lesson.video_asset.protection,
+                        )
+                        if lesson.video_asset
+                        else None
+                    ),
                 }
                 for lesson in getattr(module, "_studio_lessons", ())
             ],
         }
         for module in getattr(course, "_studio_modules", ())
+    ]
+    payload["quizzes"] = [
+        compact(
+            id=str(quiz.pk),
+            kind=quiz.kind,
+            title=quiz.title,
+            isPublished=quiz.is_published,
+            questionCount=getattr(quiz, "_question_count", 0),
+            attemptsCount=getattr(quiz, "_attempt_count", 0),
+        )
+        for quiz in getattr(course, "_studio_quizzes", ())
     ]
     return payload
 
@@ -225,7 +271,8 @@ def instructor_profile(user: Any) -> dict[str, Any]:
 
 def lesson_row(row: Any) -> dict[str, Any]:
     return compact(
-        id=row.lesson_id,
+        id=str(row.pk),
+        lessonId=row.lesson_id,
         title=row.title,
         duration=row.duration,
         summary=row.summary,
@@ -236,6 +283,19 @@ def lesson_row(row: Any) -> dict[str, Any]:
         isPublished=row.is_published,
         hasVideo=row.video_asset is not None,
         videoSlug=row.video_asset.slug if row.video_asset else None,
+        video=(
+            compact(
+                id=str(row.video_asset.pk),
+                slug=row.video_asset.slug,
+                title=row.video_asset.title,
+                status=row.video_asset.status,
+                durationSeconds=row.video_asset.duration_seconds,
+                playbackMode=row.video_asset.playback_mode,
+                protection=row.video_asset.protection,
+            )
+            if row.video_asset
+            else None
+        ),
         durationSeconds=row.duration_seconds,
         resources=[resource_row(item) for item in getattr(row, "_studio_resources", ())],
         updatedAt=row.updated_at,
@@ -244,7 +304,8 @@ def lesson_row(row: Any) -> dict[str, Any]:
 
 def module_row(row: Any) -> dict[str, Any]:
     return compact(
-        id=row.module_id,
+        id=str(row.pk),
+        moduleId=row.module_id,
         title=row.title,
         order=row.order,
         lessons=[lesson_row(item) for item in getattr(row, "_studio_lessons", ())],

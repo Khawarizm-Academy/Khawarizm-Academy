@@ -12,6 +12,8 @@ Private/admin/Studio/playback responses are not app-cached. Token-bearing HLS ma
 
 The existing auth, catalog, course, dashboard, profile, admin, and Studio course-authoring routes remain as described by the feature modules. Course playback adds the video contracts below. Course lifecycle still controls entitlement: published lessons can be previewed when marked free-preview, enrolled learners need `lessons.watch`, course staff/owners and authorized video admins may manage or watch according to the access policy; draft/in-review content is private.
 
+Course detail includes lesson `contentId` metadata but not article Markdown. `GET /courses/<slug>/lessons/<lesson_uuid>/content` returns an article body and HTTPS resource links only to course staff, enrolled users with `lessons.watch`, or visitors opening a published free-preview lesson; the response is `private, no-store` and the frontend cache key is user-scoped.
+
 ### Practice, quizzes, and exams
 
 The quiz API is owned by `backend/features/quizzes/` and mounted under `/api/`. Learner attempt/check routes require authentication, enforce enrollment and server-side unlock/deadline rules, and return `private, no-store` responses. Active question payloads omit correctness, explanations, and hints; only the finished-result service can reveal feedback according to the quiz policy.
@@ -37,6 +39,11 @@ Studio responses are authenticated, private, and `no-store`; authorization is pe
 | `GET` | `/studio/overview` | `{courses,enrollments,inReview,readiness,inbox,recentActivity,series}`; the series contains real 30-day enrollment counts. |
 | `GET` · `PATCH` | `/studio/profile` | Instructor profile `{headline,bio,credential,expertise,avatarUrl}`; profile rows are ensured on first access and avatar URLs must be HTTPS. |
 | `GET` · `POST` | `/studio/courses` | Permission-scoped course page or draft creation. List rows include lifecycle status and computed readiness. |
+| `GET` · `PATCH` · `DELETE` | `/studio/courses/<slug>` | Full private editor graph and course field mutations. Graph/module/lesson rows expose database UUIDs as `id` plus stable `moduleId`/`lessonId` business identifiers; public course metadata exposes only each lesson's `contentId` UUID. |
+| `POST` | `/studio/courses/<slug>/modules/reorder`, `/studio/modules/<uuid>/lessons/reorder` | Complete ordered module/lesson lists use business identifiers. Cross-module `moves` use the UUID route for the source module and `moduleId`/`lessonId` business identifiers in the payload. |
+| `GET` · `POST` | `/studio/lessons/<uuid>/resources` | Private lesson resource list/create; resource URLs must be HTTPS. |
+| `DELETE` | `/studio/lessons/<uuid>/resources/<uuid>` | Deletes one resource after course-scoped curriculum authorization. |
+| `POST` | `/studio/courses/<slug>/related-courses` | Replaces at most six related slugs; the service accepts published courses only and rejects the current course. The Studio picker sources rows from the published catalog list. |
 | `POST` | `/studio/courses/<slug>/duplicate` | Copies modules, lessons, resources, and quizzes into a unique draft slug. Videos are omitted unless `keepVideos=true`, which re-links existing assets without copying provider files. |
 | `POST` | `/studio/courses/bulk-archive` | Archives a selected permission-scoped list of course slugs and returns `{archived}`. |
 
