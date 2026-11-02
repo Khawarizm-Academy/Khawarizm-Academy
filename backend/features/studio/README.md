@@ -13,17 +13,26 @@ Writes carry the `studio_write` scoped throttle.
 ## Routes
 
 - `GET /studio/overview`
+- `GET/PATCH /studio/profile` — instructor headline, sanitized bio, credential, expertise, and HTTPS avatar URL.
 - `GET/POST /studio/courses`
+- `POST /studio/courses/bulk-archive`
 - `GET/PATCH/DELETE /studio/courses/<slug>`
+- `POST /studio/courses/<slug>/duplicate` — copies the authoring graph and quiz structures; video assets are re-linked only when `keepVideos=true`.
 - `POST /studio/courses/<slug>/{submit,publish,unpublish}`
 - `GET /studio/courses/<slug>/checklist`
-- `GET/POST/DELETE /studio/courses/<slug>/staff[/<uuid>]`
+- `GET /studio/courses/<slug>/staff/candidates?q=...` — owner-scoped, server-filtered users with effective `studio.access`.
+- `POST /studio/courses/<slug>/staff` and `DELETE /studio/courses/<slug>/staff/<uuid>` — add/remove non-owner team members.
 - `POST /studio/courses/<slug>/modules` and `/modules/reorder`
 - `PATCH/DELETE /studio/modules/<uuid>`
 - `POST /studio/modules/<uuid>/lessons` and `/lessons/reorder`
 - `PATCH/DELETE /studio/lessons/<uuid>`
 - `PUT/DELETE /studio/lessons/<uuid>/video`
 - `GET/POST/PATCH/DELETE /studio/lessons/<uuid>/resources[/<uuid>]`
+- `GET/POST /studio/videos` — private, permission-scoped video library and storage-asset creation; GET accepts `q`, `status`, `provider`, `sort`, `page`, and `scope=all` only for `videos.manage_any`.
+- `GET /studio/video-providers` — provider availability, reason, and effective playback/packaging plan.
+- `POST /studio/videos/link` — server-revalidated YouTube, Vimeo, or public HTTPS media link creation.
+- `GET/PATCH/DELETE /studio/videos/<id>` — safe metadata/detail/delete actions; detail includes published usage, captions, progress, views, protection, and truncated diagnostics. Delete is blocked when published lessons still use the asset.
+- `POST /studio/videos/<id>/upload`, `GET/DELETE /studio/uploads/<id>`, `PUT /studio/uploads/<id>/chunk`, and `POST /studio/uploads/<id>/complete` — authenticated resumable upload lifecycle. Provider URIs and credentials never enter responses; completion accepts a capped display-only `durationSeconds`.
 - `GET /admin/review-queue`
 - `POST /admin/review-queue/<slug>/{approve,request-changes}`
 

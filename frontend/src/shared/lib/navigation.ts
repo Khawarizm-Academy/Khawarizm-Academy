@@ -13,6 +13,10 @@ import {
   Sparkles,
   Trophy,
   User,
+  UserRound,
+  Users,
+  Video,
+  ChartNoAxesCombined,
   type LucideIcon,
 } from 'lucide-react';
 import dashboardNavJson from '@/shared/json/dashboardNav.json';
@@ -35,6 +39,10 @@ const ICONS = {
   Sparkles,
   Trophy,
   User,
+  UserRound,
+  Users,
+  Video,
+  ChartNoAxesCombined,
 } satisfies Record<string, LucideIcon>;
 
 /** Icon names allowed inside any JSON config. */

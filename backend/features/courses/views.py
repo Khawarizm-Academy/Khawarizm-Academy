@@ -9,15 +9,18 @@ from typing import Any
 
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework import serializers as ser
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from features.access.services import has_perm
 from features.common.choices import CourseStatus
-from features.common.errors import Conflict, NotFound
+from features.common.errors import Conflict, NotFound, PermissionDenied
 from features.common.messages import COURSE_NOT_FOUND
 from features.courses import services
-from features.courses.models import Course
+from features.courses.models import Course, CourseLesson
 from features.courses.serializers import course_detail
+from features.dashboard.models import Enrollment
 
 
 class CourseProgressRequestSerializer(ser.Serializer):
@@ -72,6 +75,66 @@ def course_detail_view(request: Any, slug: str) -> Response:
     )
     if staff_view:
         response["Cache-Control"] = "private, no-store"
+    return response
+
+
+@extend_schema(
+    operation_id="course_lesson_article_content",
+    summary="Read authorized Markdown and resources for one lesson.",
+    auth=None,
+    parameters=[
+        OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH),
+        OpenApiParameter("lesson_uuid", OpenApiTypes.UUID, OpenApiParameter.PATH),
+    ],
+    responses={
+        200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="Lesson Markdown and safe resource links.")
+    },
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def course_lesson_content_view(request: Any, slug: str, lesson_uuid: Any) -> Response:
+    """Return lesson body only to staff, enrolled learners, or public free-preview viewers."""
+    course = Course.objects.filter(slug=slug).first()
+    if course is None:
+        raise NotFound(COURSE_NOT_FOUND)
+    lesson = (
+        CourseLesson.objects.select_related("module__course")
+        .prefetch_related("resources")
+        .filter(pk=lesson_uuid, module__course_id=course.pk)
+        .first()
+    )
+    if lesson is None:
+        raise NotFound("الدرس غير موجود.")
+
+    user = request.user
+    staff_view = bool(
+        getattr(user, "is_authenticated", False)
+        and (services.can_edit(user, course) or services.can_edit(user, course, curriculum=True))
+    )
+    if not staff_view:
+        if not lesson.is_published:
+            raise NotFound("الدرس غير موجود.")
+        free_preview = course.status == CourseStatus.PUBLISHED and lesson.is_free_preview
+        enrolled = bool(
+            course.status in {CourseStatus.PUBLISHED, CourseStatus.ARCHIVED}
+            and getattr(user, "is_authenticated", False)
+            and has_perm(user, "lessons.watch")
+            and Enrollment.objects.filter(user=user, course=course).exists()
+        )
+        if not free_preview and not enrolled:
+            raise PermissionDenied()
+
+    response = Response(
+        {
+            "lessonId": lesson.lesson_id,
+            "content": lesson.content,
+            "resources": [
+                {"id": str(item.pk), "title": item.title, "url": item.url, "kind": item.kind}
+                for item in lesson.resources.all()
+            ],
+        }
+    )
+    response["Cache-Control"] = "private, no-store"
     return response
 
 

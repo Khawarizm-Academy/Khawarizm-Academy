@@ -7,6 +7,7 @@
     "events": "/events",
     "competitions": "/competitions",
     "dashboard": "/dashboard",
+    "studio": "/studio",
     "profile": "/dashboard?view=profile",
     "login": "/login"
   },

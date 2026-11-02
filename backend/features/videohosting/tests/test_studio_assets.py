@@ -72,6 +72,12 @@ class StudioAssetActionTests(ApiTestCase):
         self.assertEqual(self.asset.poster_url, "https://cdn.example.com/poster.jpg")
 
         response = self.client.patch(
+            f"/studio/videos/{self.asset.pk}", {"posterUrl": "http://cdn.example.com/poster.jpg"}, format="json"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], "invalid_field")
+
+        response = self.client.patch(
             f"/studio/videos/{self.asset.pk}", {"title": "Edited", "provider": "telegram"}, format="json"
         )
         self.assertEqual(response.status_code, 400)

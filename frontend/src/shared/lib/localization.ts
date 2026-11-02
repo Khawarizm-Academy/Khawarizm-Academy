@@ -13,6 +13,7 @@ export type NavTabKey =
   | 'events'
   | 'competitions'
   | 'dashboard'
+  | 'studio'
   | 'profile';
 
 export type SearchTypeKey = 'course' | 'scholarship' | 'all';

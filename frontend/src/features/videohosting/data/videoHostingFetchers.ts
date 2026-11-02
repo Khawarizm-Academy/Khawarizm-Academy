@@ -1,6 +1,6 @@
 /** Video hosting fetchers — the only place the stream endpoints are called. */
 
-import { apiGet, apiPost, apiRequest } from '@/shared/lib/apiClient';
+import { apiGet, apiRequest } from '@/shared/lib/apiClient';
 import type {
   HostedVideoMeta,
   LessonProgressHeartbeat,
@@ -15,7 +15,11 @@ export function fetchVideoMeta(slug: string): Promise<HostedVideoMeta> {
 
 /** Mint a playback grant; requires a signed-in learner. */
 export function mintStreamGrant(slug: string): Promise<StreamGrant> {
-  return apiPost<StreamGrant>(`/videos/${slug}/token`);
+  return apiRequest<StreamGrant>(`/videos/${encodeURIComponent(slug)}/token`, {
+    method: 'POST',
+    cache: 'no-store',
+    body: JSON.stringify({}),
+  });
 }
 
 /**

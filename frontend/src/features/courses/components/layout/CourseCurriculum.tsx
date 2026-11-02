@@ -7,10 +7,12 @@ import { courseEmptyStates } from '@/features/courses/data/courseStates';
 import { flattenLessons, lessonStatus, seedCompletedLessonIds } from '@/features/courses/data/coursePath';
 import { CurriculumModuleCard } from '@/features/courses/components/cards/CurriculumModuleCard';
 import { CourseSectionEmpty } from '@/features/courses/components/states/CourseSectionEmpty';
+import type { CourseLandingCourse } from '@/features/courses/types';
 
 /** Full curriculum accordion; locked lessons stay visible, never hidden. */
 export const CourseCurriculum: React.FC = () => {
-  const { course, isEnrolled, startedLessonId, enroll } = useCourseDetail();
+  const { course: courseDetail, isEnrolled, startedLessonId, enroll } = useCourseDetail();
+  const course = courseDetail as CourseLandingCourse | null;
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
 
@@ -25,10 +27,12 @@ export const CourseCurriculum: React.FC = () => {
   const ordered = flattenLessons(course.modules);
   const completedIds = isEnrolled ? seedCompletedLessonIds(course.modules, startedLessonId) : [];
   const activeLessonId = isEnrolled ? startedLessonId : '';
+  const staffPreview = course.isPreview === true && course.status !== 'published';
 
   const getStatus = (lessonId: string) => {
     const lesson = ordered.find((item) => item.id === lessonId);
     if (!lesson) return 'locked';
+    if (staffPreview || (course.status === 'published' && lesson.isFreePreview)) return 'available';
     return lessonStatus(lesson, ordered, completedIds, activeLessonId);
   };
 
@@ -39,13 +43,18 @@ export const CourseCurriculum: React.FC = () => {
   };
 
   const selectLesson = (lessonId: string) => {
-    // Guests enroll first; enrolled students jump straight into the player.
-    if (!isEnrolled) {
+    const lesson = ordered.find((item) => item.id === lessonId);
+    const canPreview = Boolean(lesson && (staffPreview || (course.status === 'published' && lesson.isFreePreview)));
+    // Guests enroll for gated lessons; free previews and authorized staff previews open directly.
+    if (!isEnrolled && !canPreview) {
       enroll();
       return;
     }
     if (getStatus(lessonId) === 'locked') return;
-    navigate(`/courses/${slug}/learn`);
+    const target = canPreview
+      ? `/courses/${slug}/learn?lesson=${encodeURIComponent(lessonId)}`
+      : `/courses/${slug}/learn`;
+    navigate(target);
   };
 
   return (
@@ -64,6 +73,8 @@ export const CourseCurriculum: React.FC = () => {
               onToggle={() => toggleModule(module.id)}
               getStatus={getStatus}
               onSelectLesson={selectLesson}
+              isCoursePreview={staffPreview}
+              showFreePreviewBadge={course.status === 'published'}
             />
           ))}
         </div>

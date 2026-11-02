@@ -54,6 +54,7 @@ class LessonPlaybackApiTests(ApiTestCase):
 
         response = self.client.post("/api/courses/course-1/lessons/lesson-1/playback")
         self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response["Cache-Control"], "private, no-store")
         grant = response.json()
         self.assertEqual(grant["assetId"], asset.slug)
         self.assertEqual(grant["mode"], "hls")
@@ -80,6 +81,7 @@ class LessonPlaybackApiTests(ApiTestCase):
 
         response = self.client.post("/api/videos/linked-youtube/token")
         self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response["Cache-Control"], "private, no-store")
         grant = response.json()
         self.assertEqual(grant["token"], "")
         self.assertEqual(grant["mode"], "embed")

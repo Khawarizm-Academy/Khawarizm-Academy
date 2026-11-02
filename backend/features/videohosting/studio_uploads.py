@@ -6,6 +6,7 @@ keeps provider session URLs server-side and contains no public playback changes.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import threading
 import uuid
@@ -14,7 +15,7 @@ from typing import Any
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Prefetch, Q, Sum
 from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.text import get_valid_filename
@@ -43,7 +44,7 @@ from features.common.errors import (
     UploadOffsetMismatch,
     UploadSessionExpired,
 )
-from features.common.messages import INVALID_VIDEO_LINK
+from features.common.messages import INVALID_VIDEO_LINK, UPLOAD_FILE_MISMATCH
 from features.videohosting.diagnostics import provider_available, provider_reason
 from features.videohosting.models import UploadSession, VideoAsset, VideoProvider, VideoSystemConfig
 from features.videohosting.playback_plan import Plan, resolve_playback_plan
@@ -107,19 +108,32 @@ def _provider(code: str) -> tuple[VideoProvider, Any]:
     return row, spec
 
 
-def _asset_row(asset: VideoAsset) -> dict[str, Any]:
+def _asset_row(asset: VideoAsset, viewer: Any | None = None) -> dict[str, Any]:
     lessons = getattr(asset, "_studio_lessons", None)
     if lessons is None:
         lessons = asset.lessons.select_related("module__course").all()
+    pending_upload = None
+    if viewer is not None and asset.created_by_id == getattr(viewer, "pk", None):
+        pending_sessions = getattr(asset, "_studio_pending_uploads", None)
+        if pending_sessions is None:
+            pending_sessions = list(asset.upload_sessions.filter(status="pending").order_by("-created_at")[:1])
+        if pending_sessions:
+            pending_upload = _session_payload(pending_sessions[0])
     return {
         "id": str(asset.pk),
         "slug": asset.slug,
         "title": asset.title,
         "status": asset.status,
         "provider": asset.provider.code if asset.provider_id else None,
+        "posterUrl": asset.poster_url,
+        "durationSeconds": asset.duration_seconds,
         "sizeBytes": asset.source_size_bytes or 0,
+        "viewCount": asset.view_count,
+        "progress": asset.progress,
         "playbackMode": asset.playback_mode,
         "protection": asset.protection,
+        "errorMessage": asset.error_message[-240:] if asset.error_message else "",
+        "pendingUpload": pending_upload,
         "lessonsUsing": [
             {
                 "course": lesson.module.course.slug,
@@ -175,6 +189,14 @@ def _safe_filename(value: str) -> str:
     return filename
 
 
+def _sha256(value: Any, *, required: bool = False) -> str:
+    if value is None and not required:
+        return ""
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-fA-F]{64}", value.strip()) is None:
+        raise InvalidParameter("بصمة الملف غير صالحة.", code="invalid_file_fingerprint")
+    return value.strip().lower()
+
+
 def _validate_size(value: Any) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise InvalidParameter("حجم الملف يجب أن يكون موجبًا.", code="invalid_size")
@@ -199,7 +221,7 @@ def _needs_available(spec: Any) -> tuple[bool, str]:
 
 
 def _plan(spec: Any, requested: str | None, provider_row: VideoProvider) -> Plan:
-    if requested not in (None, "auto", "never"):
+    if requested not in (None, "auto", "always", "never"):
         raise InvalidParameter("خيار التغليف غير صالح.", code="invalid_packaging")
     return resolve_playback_plan(
         spec,
@@ -208,6 +230,20 @@ def _plan(spec: Any, requested: str | None, provider_row: VideoProvider) -> Plan
         VideoSystemConfig.get_instance(),
         provider_row,
     )
+
+
+def _packaging_options(spec: Any, provider_row: VideoProvider, effective: Plan) -> dict[str, Any]:
+    """Describe only packaging outcomes the server can accept for this provider."""
+    packaged = _plan(spec, "always", provider_row)
+    direct = _plan(spec, "never", provider_row)
+    allow_package = packaged.mode != "refused" and packaged.package
+    allow_direct = direct.mode != "refused" and not direct.package
+    return {
+        "allowPackage": allow_package,
+        "allowDirect": allow_direct,
+        "allowOverride": allow_package and allow_direct,
+        "effective": "package" if effective.package else "direct",
+    }
 
 
 def _protection(mode: str) -> str:
@@ -221,6 +257,9 @@ def _session_payload(row: UploadSession) -> dict[str, Any]:
         "offset": row.bytes_uploaded,
         "total": row.total_bytes,
         "status": row.status,
+        "progress": row.progress,
+        "fileName": row.file_name,
+        "firstChunkSha256": row.source_sha256_partial,
     }
 
 
@@ -247,23 +286,50 @@ def studio_videos(request: HttpRequest) -> Response:
         raise InvalidParameter("النطاق غير صالح.", code="invalid_scope")
     if scope == "all" and not has_perm(request.user, "videos.manage_any"):
         raise PermissionDenied()
-    queryset = VideoAsset.objects.select_related("provider").prefetch_related("lessons__module__course")
+    queryset = VideoAsset.objects.select_related("provider").prefetch_related(
+        "lessons__module__course",
+        Prefetch(
+            "upload_sessions",
+            queryset=UploadSession.objects.filter(status="pending").order_by("-created_at"),
+            to_attr="_studio_pending_uploads",
+        ),
+    )
     if scope == "own":
         queryset = queryset.filter(created_by=request.user)
     if request.query_params.get("status"):
-        queryset = queryset.filter(status=request.query_params["status"])
+        requested_status = request.query_params["status"]
+        if requested_status not in {choice.value for choice in VideoStatus}:
+            raise InvalidParameter("حالة الفيديو غير صالحة.", code="invalid_status")
+        queryset = queryset.filter(status=requested_status)
+    if request.query_params.get("provider"):
+        queryset = queryset.filter(provider__code=request.query_params["provider"])
     query = request.query_params.get("q", "").strip()
     if len(query) > 100:
         raise InvalidParameter("عبارة البحث طويلة جدًا.", code="search_too_long")
     if query:
         queryset = queryset.filter(Q(title__icontains=query) | Q(slug__icontains=query))
+    sort = request.query_params.get("sort", "newest")
+    ordering = {
+        "newest": ("-created_at", "-pk"),
+        "oldest": ("created_at", "pk"),
+        "title": ("title", "-created_at"),
+        "views": ("-view_count", "-created_at"),
+        "progress": ("-progress", "-updated_at"),
+    }.get(sort)
+    if ordering is None:
+        raise InvalidParameter("ترتيب الفيديو غير صالح.", code="invalid_sort")
     total = queryset.count()
     page = _page(request)
-    rows = list(queryset.order_by("-created_at", "-pk")[(page - 1) * PAGE_SIZE : page * PAGE_SIZE])
+    rows = list(queryset.order_by(*ordering)[(page - 1) * PAGE_SIZE : page * PAGE_SIZE])
     for row in rows:
         row._studio_lessons = list(row.lessons.all())
     return _response(
-        {"results": [_asset_row(row) for row in rows], "total": total, "page": page, "pageSize": PAGE_SIZE}
+        {
+            "results": [_asset_row(row, request.user) for row in rows],
+            "total": total,
+            "page": page,
+            "pageSize": PAGE_SIZE,
+        }
     )
 
 
@@ -284,6 +350,7 @@ def studio_video_providers(request: HttpRequest) -> Response:
             continue
         available, reason = _needs_available(spec)
         plan = _plan(spec, None, row)
+        packaging_options = _packaging_options(spec, row, plan)
         rows.append(
             {
                 "code": row.code,
@@ -294,6 +361,7 @@ def studio_video_providers(request: HttpRequest) -> Response:
                 "reason": reason or ("المزود يحتاج التغليف قبل الرفع." if plan.mode == "refused" else ""),
                 "packagingPolicy": row.packaging_policy,
                 "effectivePlan": "سيُغلَّف بـ FFmpeg" if plan.package else "سيُشغَّل مباشرةً بدون تغليف",
+                "packagingOptions": packaging_options,
             }
         )
     return _response(rows)
@@ -384,9 +452,11 @@ def studio_upload_init(request: HttpRequest, asset_id: str) -> Response:
         raise PermissionDenied()
     asset = _asset_for_id(asset_id, request.user)
     data = _body(request)
-    filename = _safe_filename(_required_text(data, "fileName", 255))
+    original_filename = _required_text(data, "fileName", 255)
+    filename = _safe_filename(original_filename)
     size = _validate_size(data.get("sizeBytes"))
     mime_type = _required_text(data, "mimeType", 60)
+    first_chunk_sha256 = _sha256(data.get("firstChunkSha256"))
     if asset.provider_id is None:
         raise InvalidParameter("للفيديو مزود مطلوب.", code="provider_required")
     provider_row, spec = _provider(asset.provider.code)
@@ -430,15 +500,24 @@ def studio_upload_init(request: HttpRequest, asset_id: str) -> Response:
         user=request.user,
         session_key=session_key,
         status="pending",
-        file_name=filename,
+        file_name=original_filename,
         mime_type=mime_type,
+        source_sha256_partial=first_chunk_sha256,
         upload_uri=started.upload_uri,
         total_bytes=size,
         chunk_size=_chunk_size(),
         metadata=metadata,
     )
     return _response(
-        {"sessionId": session.session_key, "chunkSize": session.chunk_size, "offset": 0}, status.HTTP_201_CREATED
+        {
+            "sessionId": session.session_key,
+            "chunkSize": session.chunk_size,
+            "offset": 0,
+            "total": session.total_bytes,
+            "fileName": session.file_name,
+            "firstChunkSha256": session.source_sha256_partial,
+        },
+        status.HTTP_201_CREATED,
     )
 
 
@@ -485,6 +564,10 @@ def studio_upload_chunk(request: HttpRequest, session_id: str) -> Response:
             return _response({"offset": session.total_bytes, "complete": True})
         body = bytes(request.body or b"")
         start, _end = _range(request, body, session.total_bytes)
+        if start == 0:
+            first_chunk_sha256 = hashlib.sha256(body).hexdigest()
+            if session.source_sha256_partial and session.source_sha256_partial != first_chunk_sha256:
+                raise InvalidParameter(UPLOAD_FILE_MISMATCH, code="upload_file_mismatch")
         spec = spec_for(session.provider.code)
         upload = spec.upload if spec is not None else None
         if upload is None or upload.write_chunk is None:
@@ -505,6 +588,9 @@ def studio_upload_chunk(request: HttpRequest, session_id: str) -> Response:
             raise UploadOffsetMismatch(true_offset)
         if true_offset == 0 and not _magic_ok(session.file_name, body):
             raise InvalidParameter("صيغة الفيديو لا تطابق امتداد الملف.", code="invalid_video_magic")
+        if start == 0 and not session.source_sha256_partial:
+            session.source_sha256_partial = first_chunk_sha256
+            session.save(update_fields=["source_sha256_partial", "updated_at"])
         try:
             result = upload.write_chunk(session, body, start)
         except Exception:
@@ -563,6 +649,12 @@ def studio_upload_complete(request: HttpRequest, session_id: str) -> Response:
             return _response(_asset_row(session.asset))
         if session.bytes_uploaded != session.total_bytes:
             raise InvalidParameter("لم يكتمل رفع كل بايتات الملف.", code="upload_incomplete")
+        data = _body(request)
+        duration = data.get("durationSeconds")
+        if duration is not None and (
+            isinstance(duration, bool) or not isinstance(duration, (int, float)) or duration < 0 or duration > 43_200
+        ):
+            raise InvalidParameter("مدة الفيديو غير صالحة.", code="invalid_duration")
         asset = VideoAsset.objects.select_related("provider").get(pk=session.asset_id)
         spec = spec_for(session.provider.code)
         upload = spec.upload if spec is not None else None
@@ -587,6 +679,9 @@ def studio_upload_complete(request: HttpRequest, session_id: str) -> Response:
             setattr(asset, field_name, value)
         if update_fields:
             asset.save(update_fields=[*update_fields, "updated_at"])
+        if duration is not None:
+            asset.duration_seconds = min(43_200, int(duration))
+            asset.save(update_fields=["duration_seconds", "updated_at"])
         session.status = completion.session_status
         session.progress = completion.session_progress
         session.save(update_fields=["status", "progress", "updated_at"])

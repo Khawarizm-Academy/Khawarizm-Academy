@@ -12,6 +12,12 @@ export async function fetchCourseDetail(slug: string): Promise<CourseDetail | nu
   try { return normalizeCourseDetail(await apiGet<CourseDetail>(`/courses/${slug}`)); }
   catch (error) { if (error instanceof ApiError && error.status === 404) return null; throw error; }
 }
+export interface CourseLessonContent {
+  content: string;
+  resources: Array<{ id: string; title: string; url: string; kind: string }>;
+}
+export const fetchCourseLessonContent = (slug: string, contentId: string) =>
+  apiGet<CourseLessonContent>(`/courses/${encodeURIComponent(slug)}/lessons/${encodeURIComponent(contentId)}/content`);
 export async function fetchRelatedCourses(slug: string): Promise<CatalogItem[]> {
   return orEmpty((await apiGet<{ items: CatalogItem[] }>(`/courses/${slug}/related`)).items);
 }

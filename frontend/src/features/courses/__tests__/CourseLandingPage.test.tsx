@@ -79,14 +79,14 @@ describe('CourseLandingPage lifecycle slice', () => {
     mockedUseCourseDetail.mockReturnValue(contextFor(baseCourse));
   });
 
-  it('shows Arabic preview and archived notices while keeping both landing surfaces', () => {
+  it('shows a private staff preview and archived notices while keeping both landing surfaces', () => {
     mockedUseCourseDetail.mockReturnValue(
-      contextFor({ ...baseCourse, status: 'in_review', isPreview: true, enrollable: false })
+      contextFor({ ...baseCourse, status: 'draft', isPreview: true, enrollable: false })
     );
 
     const preview = render(<CourseLandingPage />);
 
-    expect(screen.getByRole('status').textContent).toContain('هذه معاينة للدورة');
+    expect(screen.getByRole('status').textContent).toContain('هذه معاينة خاصة للدورة غير المنشورة');
     expect(screen.queryByRole('note')).toBeNull();
     expect(screen.getByTestId('desktop-landing-view')).toBeTruthy();
     expect(screen.getByTestId('mobile-landing-view')).toBeTruthy();
@@ -97,8 +97,8 @@ describe('CourseLandingPage lifecycle slice', () => {
     expect(screen.getByRole('note').textContent).toContain('التسجيل فيها غير متاح');
   });
 
-  it('keeps draft courses on the existing not-found behavior', () => {
-    mockedUseCourseDetail.mockReturnValue(contextFor({ ...baseCourse, status: 'draft' }));
+  it('keeps unauthorized or missing courses on the existing not-found behavior', () => {
+    mockedUseCourseDetail.mockReturnValue(contextFor(null));
 
     render(<CourseLandingPage />);
 

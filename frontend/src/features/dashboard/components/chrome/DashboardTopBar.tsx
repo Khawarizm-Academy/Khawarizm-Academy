@@ -4,6 +4,8 @@ import { useNavigate } from '@/app/routerContext';
 import { SmartSearchBox } from '@/shared/components/Search/SmartSearchBox';
 import { DASHBOARD_TOP_BAR_TABS, NAV_TARGETS } from '@/shared/lib/navigation';
 import { toArabicNav } from '@/shared/lib/localization';
+import { WorkspaceTopBar } from '@/shared/components/Workspace/WorkspaceTopBar';
+import { WorkspaceSwitch } from '@/shared/components/Workspace/WorkspaceSwitch';
 
 /**
  * Slim global navigator pinned above the dashboard content: a quick-search pill
@@ -15,7 +17,7 @@ export const DashboardTopBar: React.FC = () => {
 
   return (
     <>
-      <header dir="rtl" className="dash-topbar animate-fade-in-down">
+      <WorkspaceTopBar dir="rtl" className="dash-topbar animate-fade-in-down">
         {/* Cyan hairline tying the bar into the celestial chrome */}
         <span className="dash-topbar-hairline" aria-hidden="true" />
 
@@ -29,6 +31,7 @@ export const DashboardTopBar: React.FC = () => {
           <Search size={15} strokeWidth={2.2} className="dash-topbar-search-glyph" />
           <span className="dash-topbar-search-label">بحث سريع</span>
         </button>
+        <WorkspaceSwitch className="dash-workspace-switch-top" />
 
         {/* Global navigation tabs (end edge in RTL) */}
         <nav className="dash-topbar-nav" aria-label="التنقل العام">
@@ -47,7 +50,7 @@ export const DashboardTopBar: React.FC = () => {
             );
           })}
         </nav>
-      </header>
+      </WorkspaceTopBar>
 
       {/* Search modal overlay */}
       {isSearchOpen && (

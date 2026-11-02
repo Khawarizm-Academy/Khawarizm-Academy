@@ -18,7 +18,7 @@ const CourseLandingNotices: React.FC<CourseLandingNoticesProps> = ({ course }) =
         role="status"
         className="rounded-2xl border border-blue-400/30 bg-blue-400/10 px-4 py-3 text-sm leading-relaxed text-blue-100 font-body"
       >
-        هذه معاينة للدورة — بعض المحتوى قد يكون قيد الإعداد.
+        هذه معاينة خاصة للدورة غير المنشورة — ما تراه متاحًا لموظفي الدورة فقط، ولن يظهر للمتعلمين قبل النشر.
       </div>
     )}
     {course.status === 'archived' && course.enrollable === false && (
@@ -33,20 +33,24 @@ const CourseLandingNotices: React.FC<CourseLandingNoticesProps> = ({ course }) =
 );
 
 const CourseLandingContent: React.FC = () => {
-  const { course } = useCourseDetail();
+  const { course, isLoading } = useCourseDetail();
   const landingCourse = course as CourseLandingCourse | null;
+
+  if (!landingCourse && !isLoading) {
+    return (
+      <main className="content-container">
+        <CourseNotFound />
+      </main>
+    );
+  }
 
   return (
     <main className="content-container">
-      {landingCourse?.status === 'draft' ? (
-        <CourseNotFound />
-      ) : (
-        <>
-          {landingCourse && <CourseLandingNotices course={landingCourse} />}
-          <DesktopCourseLandingView />
-          <MobileCourseLandingView />
-        </>
-      )}
+      <>
+        {landingCourse && <CourseLandingNotices course={landingCourse} />}
+        <DesktopCourseLandingView />
+        <MobileCourseLandingView />
+      </>
     </main>
   );
 };

@@ -13,6 +13,9 @@ export interface CourseInstructor {
   id: string;
   name: string;
   headline?: string;
+  credential?: string;
+  bio?: string;
+  expertise?: string[];
   avatarUrl?: string;
 }
 

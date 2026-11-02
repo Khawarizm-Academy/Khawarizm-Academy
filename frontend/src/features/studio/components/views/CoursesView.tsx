@@ -1,0 +1,88 @@
+import React, { useState } from 'react';
+import { LayoutGrid, List, Search } from 'lucide-react';
+import { useSearchParams, useNavigate } from '@/app/routerContext';
+import { useAuth } from '@/features/auth/context/authContext';
+import { can } from '@/shared/lib/permissions';
+import { ApiError } from '@/shared/lib/apiClient';
+import { useCachedData } from '@/shared/hooks/useCachedData';
+import { dataCacheManager } from '@/shared/lib/cacheManager';
+import {
+  fetchStudioCourses,
+  bulkArchiveStudioCourses,
+  duplicateStudioCourse,
+  deleteStudioCourse,
+} from '@/features/studio/data/studioFetchers';
+import { StudioCourseCard } from '@/features/studio/components/cards/StudioCourseCard';
+import { StatusChip } from '@/features/studio/components/controls/StatusChip';
+import { CreateCourseModal } from '@/features/studio/components/overlays/CreateCourseModal';
+import { StudioEmpty } from '@/features/studio/components/states/StudioEmpty';
+import { StudioSkeleton } from '@/features/studio/components/states/StudioSkeleton';
+import type { StudioCoursePage } from '@/features/studio/types';
+
+const actionError = (error: unknown) => error instanceof ApiError ? error.message : 'تعذّر تنفيذ الإجراء. أعد المحاولة.';
+
+export const CoursesView: React.FC = () => {
+  const nav = useNavigate();
+  const { user } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const status = params.get('status') || '';
+  const q = params.get('q') || '';
+  const sort = params.get('sort') || 'updated';
+  const page = Number(params.get('page') || '1');
+  const scope = params.get('scope') || 'own';
+  const [selected, setSelected] = useState<string[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [error, setError] = useState('');
+  const [view, setView] = useState<'cards' | 'table'>(() => (localStorage.getItem('studio-courses-view') as 'cards' | 'table') || 'cards');
+  const canEdit = scope === 'all' ? can(user, 'courses.edit_any') : can(user, 'courses.edit_own') || can(user, 'courses.edit_any');
+  const canArchive = canEdit;
+  const canDelete = scope === 'all' ? can(user, 'courses.delete_any') : can(user, 'courses.delete_own') || can(user, 'courses.delete_any');
+  const key = ['studio-courses', user?.id ?? '', { status, q, sort, page, scope }];
+  const { data, isLoading, isError, refetch } = useCachedData<StudioCoursePage>(key, () => fetchStudioCourses({ status, q, sort, page, scope }), { initialData: { items: [], total: 0, page, pageSize: 20 }, staleTime: 30_000, cacheTime: 5 * 60_000 });
+  const update = (next: Record<string, string | number>) => setParams(Object.fromEntries(Object.entries({ status, q, sort, page, scope, ...next }).filter(([, value]) => value !== '' && value !== 'own' && value !== 1).map(([key, value]) => [key, String(value)])));
+  const toggleView = (next: 'cards' | 'table') => { setView(next); localStorage.setItem('studio-courses-view', next); };
+  const refreshCourses = async () => {
+    dataCacheManager.invalidate('studio-courses');
+    await refetch();
+  };
+  const archive = async (slugs = selected) => {
+    if (!slugs.length || !canArchive) return;
+    setError('');
+    try {
+      await bulkArchiveStudioCourses(slugs);
+      setSelected([]);
+      await refreshCourses();
+    } catch (caught) {
+      setError(actionError(caught));
+    }
+  };
+  const duplicate = async (slug: string) => {
+    if (!canEdit) return;
+    setError('');
+    try {
+      await duplicateStudioCourse(slug);
+      await refreshCourses();
+    } catch (caught) {
+      setError(actionError(caught));
+    }
+  };
+  const remove = async (course: { slug: string; title: string }) => {
+    if (!canDelete) return;
+    const title = course.title || 'دورة بلا عنوان';
+    const confirmation = window.prompt(`لتأكيد حذف «${title}»، اكتب عنوان الدورة كاملًا:`);
+    if (confirmation !== title) return;
+    setError('');
+    try {
+      await deleteStudioCourse(course.slug);
+      setSelected((current) => current.filter((slug) => slug !== course.slug));
+      await refreshCourses();
+    } catch (caught) {
+      setError(actionError(caught));
+    }
+  };
+  const toggleSelected = (slug: string) => setSelected((current) => current.includes(slug) ? current.filter((value) => value !== slug) : [...current, slug]);
+  const allSelected = canArchive && data.items.length > 0 && data.items.every((course) => selected.includes(course.slug));
+  const empty = !isLoading && !isError && data.items.length === 0;
+  const content = isLoading ? <StudioSkeleton /> : isError ? <StudioEmpty title="تعذّر تحميل الدورات" text="أعد المحاولة عندما يتاح الاتصال بالخادم." /> : empty ? <StudioEmpty title="لا توجد دورات بهذه المعايير" text="ابدأ بإنشاء دورة أو غيّر البحث والحالة." action={can(user, 'courses.create') && <button type="button" className="btn-gold" onClick={() => setModalOpen(true)}>إنشاء دورة</button>} /> : view === 'cards' ? <div className="studio-course-grid">{data.items.map((course) => <StudioCourseCard key={course.slug} course={course} selected={selected.includes(course.slug)} onSelect={() => toggleSelected(course.slug)} onArchive={() => void archive([course.slug])} onDuplicate={() => void duplicate(course.slug)} onDelete={() => void remove(course)} canSelect={canArchive} canEdit={canEdit} canArchive={canArchive} canDuplicate={canEdit} canDelete={canDelete} />)}</div> : <div className="studio-course-table"><div className="studio-table-row studio-table-head"><span>تحديد</span><span>الدورة</span><span>الحالة</span><span>الجاهزية</span><span>المتعلّمون</span></div>{data.items.map((course) => <button type="button" className="studio-table-row" key={course.slug} onClick={() => nav(canEdit ? `/studio/courses/${encodeURIComponent(course.slug)}?tab=info` : `/courses/${encodeURIComponent(course.slug)}`)}><span>{canArchive && <input type="checkbox" checked={selected.includes(course.slug)} onChange={(event) => { event.stopPropagation(); toggleSelected(course.slug); }} aria-label={`تحديد ${course.title}`} />}</span><strong>{course.title}</strong><StatusChip status={course.status} /><span>{course.readiness ?? 0}%</span><span>{course.enrolledCount}</span></button>)}</div>;
+  return <div className="studio-courses-view"><div className="studio-toolbar"><label className="studio-search-field"><Search size={16} /><input value={q} onChange={(event) => update({ q: event.target.value, page: 1 })} placeholder="ابحث في دوراتك" /></label><select value={status} onChange={(event) => update({ status: event.target.value, page: 1 })}><option value="">كل الحالات</option><option value="draft">مسودة</option><option value="in_review">قيد المراجعة</option><option value="published">منشورة</option><option value="archived">مؤرشفة</option></select><select value={sort} onChange={(event) => update({ sort: event.target.value, page: 1 })}><option value="updated">الأحدث تعديلًا</option><option value="enrolled">الأكثر تسجيلًا</option><option value="title">الأبجدي</option></select><div className="studio-view-toggle"><button type="button" onClick={() => toggleView('cards')} className={view === 'cards' ? 'is-active' : ''}><LayoutGrid size={16} />بطاقات</button><button type="button" onClick={() => toggleView('table')} className={view === 'table' ? 'is-active' : ''}><List size={16} />جدول</button></div></div>{error && <p className="studio-form-error" role="alert">{error}</p>}<div className="studio-bulkbar">{canArchive && <label><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : data.items.map((course) => course.slug))} />تحديد الكل</label>}{selected.length > 0 && canArchive && <button type="button" className="btn-outline-blue" onClick={() => void archive()}>أرشفة المحدد ({selected.length})</button>}{can(user, 'courses.edit_any') && <label className="studio-scope"><input type="checkbox" checked={scope === 'all'} onChange={(event) => { setSelected([]); update({ scope: event.target.checked ? 'all' : 'own', page: 1 }); }} />كل الدورات</label>}</div>{content}<CreateCourseModal isOpen={modalOpen} onClose={() => setModalOpen(false)} /></div>;
+};

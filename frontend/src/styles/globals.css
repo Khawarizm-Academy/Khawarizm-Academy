@@ -6,6 +6,7 @@
 @import "../features/competitions/competitions.css";
 @import "../features/courses/courses.css";
 @import "../features/dashboard/dashboard.css";
+@import "../features/studio/studio.css";
 @import "../features/events/events.css";
 @import "../features/home/home.css";
 @import "../features/profile/profile.css";
@@ -1835,3 +1836,5 @@ html[data-vt-enabled='true'] .animate-page-enter {
   }
 }
 
+
+@import "../features/studio/studio.css";

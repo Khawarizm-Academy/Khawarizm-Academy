@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from '@/app/routerContext';
 import { useAuth } from '@/features/auth/context/authContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import {
@@ -28,17 +29,20 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
   children,
 }) => {
   const { user } = useAuth();
+  const [params] = useSearchParams();
+  const requestedLessonId = params.get('lesson') || '';
   const [activeTab, setActiveTab] = useState<CourseTab>('lesson');
   const [activeLessonId, setActiveLessonId] = useState('');
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [prevCourseId, setPrevCourseId] = useState('');
+  const [prevRequestedLessonId, setPrevRequestedLessonId] = useState('');
   const [isSyllabusOpen, setIsSyllabusOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
 
   const fetcher = useCallback(() => fetchCourseDetail(slug), [slug]);
   const { data: course, isLoading } = useCachedData<CourseDetail | null>(
-    ['course-detail', slug],
+    ['course-detail', slug, user?.id ?? 'anonymous'],
     fetcher,
     { keepPreviousData: false, staleTime: 10 * 60 * 1000, cacheTime: 30 * 60 * 1000 }
   );
@@ -62,10 +66,23 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
   // Seed the resume point the moment the detail arrives. Adjusting state during
   // render (guarded by the previous course id) is React's documented pattern for
   // resetting state when derived data changes — no effect round-trip needed.
-  if (course && (prevCourseId !== course.id || activeLessonId === '')) {
+  const requestedLesson = ordered.find((lesson) => lesson.id === requestedLessonId);
+  const previewCourse = course as (CourseDetail & { isPreview?: boolean; status?: string }) | null;
+  const canOpenRequestedLesson = Boolean(
+    requestedLesson &&
+      (previewCourse?.isPreview ||
+        (previewCourse?.status === 'published' && requestedLesson.isFreePreview))
+  );
+  if (
+    course &&
+    (prevCourseId !== course.id || activeLessonId === '' || prevRequestedLessonId !== requestedLessonId)
+  ) {
     setPrevCourseId(course.id);
+    setPrevRequestedLessonId(requestedLessonId);
     setCompletedIds(seedCompletedLessonIds(course.modules, startedLessonId));
-    setActiveLessonId(startedLessonId || ordered[0]?.id || '');
+    setActiveLessonId(
+      (canOpenRequestedLesson ? requestedLesson?.id : undefined) || startedLessonId || ordered[0]?.id || ''
+    );
   }
 
   const showToast = useCallback((message: string) => {

@@ -6,6 +6,8 @@ import { UserAvatar } from '@/shared/components/Artwork/UserAvatar';
 import brandIcon from '@/assets/brand/generated/icon-192.png';
 import { useAuth } from '@/features/auth/context/authContext';
 import { ROLE_LABELS } from '@/features/auth/types';
+import { WorkspaceRail } from '@/shared/components/Workspace/WorkspaceRail';
+import { WorkspaceSwitch } from '@/shared/components/Workspace/WorkspaceSwitch';
 
 interface DesktopDashboardSidebarProps {
   currentView: string;
@@ -22,7 +24,7 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
   const { user } = useAuth();
 
   return (
-    <aside dir="rtl" className="dash-sidebar">
+    <WorkspaceRail dir="rtl" className="dash-sidebar">
       <div className="dash-sidebar-rail">
         <div className="dash-side-top">
           {/* Brand */}
@@ -35,6 +37,7 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
             <img src={brandIcon} alt="شعار أكاديمية خوارزم" className="dash-brand-mark-img" />
             <span className="dash-brand-name">أكاديمية خوارزم</span>
           </button>
+          <WorkspaceSwitch className="dash-workspace-switch" />
 
           {/* Nav List */}
           <nav className="dash-nav">
@@ -101,6 +104,6 @@ export const DesktopDashboardSidebar: React.FC<DesktopDashboardSidebarProps> = (
           </div>
         </div>
       </div>
-    </aside>
+    </WorkspaceRail>
   );
 };

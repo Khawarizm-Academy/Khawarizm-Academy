@@ -141,7 +141,7 @@ def _parts(exc: Exception) -> tuple[Any, str | None, dict | None]:
         )
     if hasattr(exc, "fields"):
         detail = getattr(exc, "detail", None)
-        code = getattr(exc, "code", None) or getattr(exc, "default_code", None)
+        code = getattr(exc, "code", None) or getattr(detail, "code", None) or getattr(exc, "default_code", None)
         return detail, code, exc.fields
     if isinstance(exc, exceptions.ValidationError):
         detail = exc.detail

@@ -32,6 +32,7 @@ export const RootLayout: React.FC = () => {
 
   const hideShell = !!activeRoute?.meta?.hideShell;
   const showHeaderAndFooter = !hideShell && !activeRoute?.meta?.immersive;
+  const showGlobalBottomBar = !hideShell && !pathname.startsWith('/studio');
   const activeTab = resolveActiveTab(pathname, search);
 
   const selectTab = useCallback(
@@ -103,7 +104,7 @@ export const RootLayout: React.FC = () => {
       )}
 
       {/* Mobile bottom bar */}
-      {!hideShell && (
+      {showGlobalBottomBar && (
         <div className="shell-bottom-bar block md:hidden">
           <MobileBottomBar
             activeTab={activeTab}

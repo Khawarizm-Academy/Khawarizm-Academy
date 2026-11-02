@@ -9,6 +9,11 @@ from features.courses.video_progress_api import lesson_progress_update
 
 urlpatterns = [
     path("courses/<str:slug>", views.course_detail_view, name="course-detail"),
+    path(
+        "courses/<str:slug>/lessons/<uuid:lesson_uuid>/content",
+        views.course_lesson_content_view,
+        name="course-lesson-content",
+    ),
     path("courses/<str:slug>/related", views.course_related_view, name="course-related"),
     path("courses/<str:slug>/enroll", views.course_enroll_view, name="course-enroll"),
     path("courses/<str:slug>/favorite", views.course_favorite_view, name="course-favorite"),

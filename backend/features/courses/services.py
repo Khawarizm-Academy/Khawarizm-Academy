@@ -162,14 +162,54 @@ def _generated(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
 
 
-def _expected(row: Any, value: Any) -> None:
+def _expected(row: Any, value: Any, current: dict[str, Any] | None = None) -> None:
     if value is None:
         return
     parsed = parse_datetime(value) if isinstance(value, str) else value
     if isinstance(parsed, datetime) and timezone.is_naive(parsed):
         parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
     if not isinstance(parsed, datetime) or parsed != row.updated_at:
-        raise Conflict("تغيّر المحتوى منذ آخر قراءة؛ حدّث الصفحة ثم أعد المحاولة.")
+        error = Conflict("تغيّر المحتوى منذ آخر قراءة؛ حدّث الصفحة ثم أعد المحاولة.", code="stale_write")
+        error.fields = {"current": current or {"updatedAt": row.updated_at}}
+        raise error
+
+
+def _course_conflict_values(course: Course) -> dict[str, Any]:
+    return {
+        "slug": course.slug,
+        "title": course.title,
+        "categoryLabel": course.category_label,
+        "categorySlug": course.category_slug,
+        "thumbnailUrl": course.thumbnail_url,
+        "courseLevel": course.course_level,
+        "courseLevelAr": course.course_level_ar,
+        "priceType": course.price_type,
+        "priceLabel": course.price_label,
+        "language": course.language,
+        "tagline": course.tagline,
+        "about": course.about,
+        "instructor": course.instructor,
+        "instructorCredential": course.instructor_credential,
+        "instructorBio": course.instructor_bio,
+        "outcomes": course.outcomes,
+        "relatedIds": course.related_ids,
+        "updatedAt": course.updated_at,
+    }
+
+
+def _lesson_conflict_values(lesson: CourseLesson) -> dict[str, Any]:
+    return {
+        "lessonId": lesson.lesson_id,
+        "title": lesson.title,
+        "duration": lesson.duration,
+        "summary": lesson.summary,
+        "order": lesson.order,
+        "kind": lesson.kind,
+        "content": lesson.content,
+        "isFreePreview": lesson.is_free_preview,
+        "isPublished": lesson.is_published,
+        "updatedAt": lesson.updated_at,
+    }
 
 
 def _profile_name(user: Any) -> str:
@@ -207,6 +247,120 @@ def create_course(owner: Any, data: Mapping[str, Any]) -> Course:
 
 
 @transaction.atomic
+def duplicate_course(course: Course, actor: Any, *, keep_videos: bool = False) -> Course:
+    """Copy the authoring graph into a new draft, never copying provider files."""
+    course = Course.objects.select_for_update().get(pk=course.pk)
+    _require_action(actor, course, "courses.edit_own", "courses.edit_any", fallback={CourseStaffKind.OWNER})
+    base = re.sub(r"[^a-z0-9]+", "-", course.slug.lower()).strip("-") or "course"
+    slug = f"{base}-copy"
+    suffix = 2
+    while Course.objects.filter(slug=slug).exists():
+        slug = f"{base}-copy-{suffix}"
+        suffix += 1
+    fields = {
+        field.name: getattr(course, field.name)
+        for field in Course._meta.fields
+        if field.name
+        not in {"id", "slug", "owner", "status", "submitted_at", "published_at", "review_note", "updated_at"}
+    }
+    fields.update(
+        slug=slug, owner=actor, status=CourseStatus.DRAFT, submitted_at=None, published_at=None, review_note=""
+    )
+    clone = Course.objects.create(**fields)
+    CourseStaff.objects.create(course=clone, user=actor, kind=CourseStaffKind.OWNER)
+    lesson_map: dict[Any, CourseLesson] = {}
+    for module in course.modules.all():
+        copied_module = CourseModule.objects.create(
+            course=clone, module_id=module.module_id, title=module.title, order=module.order
+        )
+        for lesson in module.lessons.select_related("video_asset").all():
+            copied_lesson = CourseLesson.objects.create(
+                module=copied_module,
+                lesson_id=lesson.lesson_id,
+                title=lesson.title,
+                duration=lesson.duration,
+                summary=lesson.summary,
+                order=lesson.order,
+                kind=lesson.kind,
+                video_asset=lesson.video_asset if keep_videos else None,
+                is_free_preview=lesson.is_free_preview,
+                is_published=lesson.is_published,
+                content=lesson.content,
+                duration_seconds=lesson.duration_seconds,
+            )
+            lesson_map[lesson.pk] = copied_lesson
+            for resource in lesson.resources.all():
+                LessonResource.objects.create(
+                    lesson=copied_lesson,
+                    title=resource.title,
+                    url=resource.url,
+                    kind=resource.kind,
+                    order=resource.order,
+                )
+    from features.quizzes.models import Option, Question, Quiz
+
+    for quiz in course.quizzes.prefetch_related("questions__options").all():
+        copied_quiz = Quiz.objects.create(
+            course=clone,
+            lesson=lesson_map.get(quiz.lesson_id),
+            kind=quiz.kind,
+            title=quiz.title,
+            instructions=quiz.instructions,
+            is_published=False,
+            order=quiz.order,
+            time_limit_minutes=quiz.time_limit_minutes,
+            pass_threshold=quiz.pass_threshold,
+            max_attempts=quiz.max_attempts,
+            draw_count=quiz.draw_count,
+            shuffle_questions=quiz.shuffle_questions,
+            shuffle_options=quiz.shuffle_options,
+            reveal_policy=quiz.reveal_policy,
+            unlock_progress_percent=quiz.unlock_progress_percent,
+            created_by=actor,
+        )
+        for question in quiz.questions.all():
+            copied_question = Question.objects.create(
+                quiz=copied_quiz,
+                kind=question.kind,
+                prompt=question.prompt,
+                code=question.code,
+                explanation=question.explanation,
+                hint=question.hint,
+                points=question.points,
+                order=question.order,
+                partial_credit=question.partial_credit,
+            )
+            Option.objects.bulk_create(
+                [
+                    Option(
+                        question=copied_question,
+                        label=option.label,
+                        is_correct=option.is_correct,
+                        order=option.order,
+                    )
+                    for option in question.options.all()
+                ]
+            )
+    return clone
+
+
+@transaction.atomic
+def bulk_archive_courses(slugs: list[str], actor: Any) -> int:
+    if not has_perm(actor, "courses.edit_any") and not has_perm(actor, "courses.edit_own"):
+        raise PermissionDenied()
+    rows = list(studio_course_queryset(actor).select_for_update().filter(slug__in=slugs))
+    if len(rows) != len(set(slugs)):
+        raise PermissionDenied()
+    changed = 0
+    for course in rows:
+        if course.status != CourseStatus.ARCHIVED:
+            course.status = CourseStatus.ARCHIVED
+            course.save(update_fields=["status", "updated_at"])
+            changed += 1
+    return changed
+
+
+@transaction.atomic
 def sync_course_owner(course: Course, actor: Any) -> Course:
     """Synchronize an admin-edited owner FK with the explicit staff relation."""
     if not has_perm(actor, "courses.edit_any"):
@@ -239,8 +393,17 @@ def update_course(course: Course, data: Mapping[str, Any], actor: Any) -> Course
     unknown = sorted(set(values) - _COURSE_FIELDS)
     if unknown:
         raise InvalidParameter(f"حقول غير معروفة: {', '.join(unknown)}")
-    _expected(course, values.pop("expectedUpdatedAt", None))
+    _expected(course, values.pop("expectedUpdatedAt", None), _course_conflict_values(course))
     _validate_course_values(values)
+    if "relatedIds" in values:
+        related = values["relatedIds"]
+        if course.slug in related:
+            raise InvalidParameter("لا يمكن ربط الدورة بنفسها.", code="related_self")
+        published = set(
+            Course.objects.filter(slug__in=related, status=CourseStatus.PUBLISHED).values_list("slug", flat=True)
+        )
+        if len(published) != len(related):
+            raise InvalidParameter("الدورات المرتبطة يجب أن تكون منشورة.", code="related_not_published")
     if "slug" in values:
         new_slug = _slug(values.pop("slug"))
         if new_slug != course.slug:
@@ -440,7 +603,7 @@ def _validate_course_values(values: Mapping[str, Any]) -> None:
         "tagline": 240,
         "instructor": 120,
         "instructorCredential": 200,
-        "about": 50000,
+        "about": 20000,
         "instructorBio": 50000,
     }
     for key, maximum in text_limits.items():
@@ -448,8 +611,8 @@ def _validate_course_values(values: Mapping[str, Any]) -> None:
             _text(values[key], key, maximum)
     if values.get("thumbnailUrl"):
         parsed = urlparse(values["thumbnailUrl"])
-        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-            raise InvalidParameter("رابط صورة الغلاف غير صالح.")
+        if parsed.scheme != "https" or not parsed.hostname:
+            raise InvalidParameter("رابط صورة الغلاف يجب أن يبدأ بـ HTTPS.")
     if "courseLevel" in values and values["courseLevel"] not in CourseLevel.values:
         raise InvalidParameter("مستوى الدورة غير صالح.")
     if "priceType" in values and (
@@ -657,7 +820,7 @@ def add_lesson(module: CourseModule, actor: Any, data: Mapping[str, Any] | None 
     title = _text(values.get("title", ""), "العنوان", 160).strip()
     duration = _text(values.get("duration", ""), "المدة", 20)
     summary = _text(values.get("summary", ""), "الملخص", 50000)
-    content = _text(values.get("content", ""), "المحتوى", 100000)
+    content = _text(values.get("content", ""), "المحتوى", 60000)
     order = _nonnegative_int(values.get("order", 0), "الترتيب")
     is_free_preview = values.get("isFreePreview", False)
     is_published = values.get("isPublished", True)
@@ -687,7 +850,7 @@ def update_lesson(lesson: CourseLesson, actor: Any, data: Mapping[str, Any]) -> 
     lesson = _locked_lesson(lesson.pk, module.pk, course.pk)
     _require_edit(actor, course, curriculum=True)
     values = dict(data)
-    _expected(lesson, values.pop("expectedUpdatedAt", None))
+    _expected(lesson, values.pop("expectedUpdatedAt", None), _lesson_conflict_values(lesson))
     mapping = {"lessonId": "lesson_id", "isFreePreview": "is_free_preview", "isPublished": "is_published"}
     allowed = {
         "lessonId",
@@ -724,7 +887,7 @@ def update_lesson(lesson: CourseLesson, actor: Any, data: Mapping[str, Any]) -> 
     if "summary" in values:
         values["summary"] = _text(values["summary"], "الملخص", 50000)
     if "content" in values:
-        values["content"] = _text(values["content"], "المحتوى", 100000)
+        values["content"] = _text(values["content"], "المحتوى", 60000)
     if "order" in values:
         values["order"] = _nonnegative_int(values["order"], "الترتيب")
     for key in ("isFreePreview", "isPublished"):
@@ -738,6 +901,56 @@ def update_lesson(lesson: CourseLesson, actor: Any, data: Mapping[str, Any]) -> 
     lesson.save()
     recompute_course_stats(course)
     return lesson
+
+
+@transaction.atomic
+def duplicate_lesson(lesson: CourseLesson, actor: Any) -> CourseLesson:
+    """Duplicate a lesson and its resources inside the same module."""
+    module_id, course_id = _course_id_for_lesson(lesson.pk)
+    course = _locked_course(course_id)
+    module = _locked_module(module_id, course.pk)
+    source = _locked_lesson(lesson.pk, module.pk, course.pk)
+    _require_edit(actor, course, curriculum=True)
+    base = re.sub(r"[^A-Za-z0-9._-]+", "-", source.lesson_id).strip("-") or "lesson"
+    lesson_id = f"{base}-copy"
+    suffix = 2
+    while CourseLesson.objects.filter(module=module, lesson_id=lesson_id).exists():
+        lesson_id = f"{base}-copy-{suffix}"
+        suffix += 1
+    ordered_lessons = list(
+        CourseLesson.objects.select_for_update().filter(module_id=module.pk).order_by("order", "lesson_id")
+    )
+    source_index = next(index for index, row in enumerate(ordered_lessons) if row.pk == source.pk)
+    clone = CourseLesson.objects.create(
+        module=module,
+        lesson_id=lesson_id,
+        title=f"{source.title} — نسخة",
+        duration=source.duration,
+        summary=source.summary,
+        order=len(ordered_lessons),
+        kind=source.kind,
+        video_asset=source.video_asset,
+        is_free_preview=False,
+        is_published=False,
+        content=source.content,
+        duration_seconds=source.duration_seconds,
+    )
+    for resource in source.resources.all():
+        LessonResource.objects.create(
+            lesson=clone,
+            title=resource.title,
+            url=resource.url,
+            kind=resource.kind,
+            order=resource.order,
+        )
+    ordered_lessons.insert(source_index + 1, clone)
+    timestamp = timezone.now()
+    for index, row in enumerate(ordered_lessons):
+        row.order = index
+        row.updated_at = timestamp
+    CourseLesson.objects.bulk_update(ordered_lessons, ["order", "updated_at"])
+    recompute_course_stats(course)
+    return clone
 
 
 @transaction.atomic
@@ -1014,6 +1227,7 @@ def course_detail_relations(course: Course) -> dict[str, Any]:
             "module_id",
             module_title=F("title"),
             lesson_id=F("lessons__lesson_id"),
+            lesson_uuid=F("lessons__pk"),
             lesson_title=F("lessons__title"),
             lesson_duration=F("lessons__duration"),
             lesson_summary=F("lessons__summary"),

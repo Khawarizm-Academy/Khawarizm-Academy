@@ -12,6 +12,16 @@ import {
   LoginPage,
   ProfilePage,
   ScholarshipDetailPage,
+  StudioAnalyticsPage,
+  StudioCourseEditorPage,
+  StudioCoursesPage,
+  StudioHomePage,
+  StudioNewCoursePage,
+  StudioProfilePage,
+  StudioQuizEditorPage,
+  StudioQuizzesPage,
+  StudioStudentsPage,
+  StudioVideosPage,
 } from '@/app/pageLoads';
 import { NotFoundPage } from '@/app/pages/NotFoundPage';
 import routesJson from '@/shared/json/routes.json';
@@ -77,6 +87,16 @@ const PAGE_BY_PATH: Record<string, ComponentType> = {
   '/dashboard': DashboardPage,
   '/profile': ProfilePage,
   '/admin': AdminPage,
+  '/studio': StudioHomePage,
+  '/studio/courses': StudioCoursesPage,
+  '/studio/courses/new': StudioNewCoursePage,
+  '/studio/courses/:slug': StudioCourseEditorPage,
+  '/studio/videos': StudioVideosPage,
+  '/studio/quizzes': StudioQuizzesPage,
+  '/studio/quizzes/:id': StudioQuizEditorPage,
+  '/studio/students': StudioStudentsPage,
+  '/studio/analytics': StudioAnalyticsPage,
+  '/studio/profile': StudioProfilePage,
   '/login': LoginPage,
   '*': NotFoundPage,
 };

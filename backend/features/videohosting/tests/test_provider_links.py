@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from unittest import TestCase
 
 from features.videohosting.providers.external import parse_reference as parse_external
@@ -9,6 +11,29 @@ from features.videohosting.providers.vimeo import embed_url as vimeo_embed_url
 from features.videohosting.providers.vimeo import parse_reference as parse_vimeo
 from features.videohosting.providers.youtube import embed_url as youtube_embed_url
 from features.videohosting.providers.youtube import parse_reference as parse_youtube
+
+SHARED_URL_VECTORS = Path(__file__).resolve().parents[4] / "shared" / "lib" / "videoUrlVectors.json"
+PARSERS = {"youtube": parse_youtube, "vimeo": parse_vimeo, "external": parse_external}
+
+
+class SharedVideoURLVectorsTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.vectors = json.loads(SHARED_URL_VECTORS.read_text(encoding="utf-8"))
+
+    def test_shared_valid_vectors_are_accepted_by_the_matching_server_parser(self):
+        for vector in self.vectors["valid"]:
+            with self.subTest(url=vector["url"], provider=vector["provider"]):
+                reference = PARSERS[vector["provider"]](vector["url"])
+                self.assertIsNotNone(reference)
+                self.assertEqual(reference[0], vector["provider"])
+
+    def test_shared_invalid_vectors_are_rejected_by_every_server_parser(self):
+        for vector in self.vectors["invalid"]:
+            with self.subTest(url=vector["url"], reason=vector["reason"]):
+                results = {provider: parser(vector["url"]) for provider, parser in PARSERS.items()}
+                self.assertTrue(all(reference is None for reference in results.values()), results)
 
 
 class YouTubeReferenceTests(TestCase):

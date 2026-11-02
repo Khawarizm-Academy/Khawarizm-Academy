@@ -11,6 +11,8 @@ interface CurriculumModuleCardProps {
   onToggle: () => void;
   getStatus: (lessonId: string) => CourseLessonStatus;
   onSelectLesson: (lessonId: string) => void;
+  isCoursePreview?: boolean;
+  showFreePreviewBadge?: boolean;
 }
 
 /** Status mark: checkmark when done, play when next, lock when gated. */
@@ -29,6 +31,8 @@ export const CurriculumModuleCard: React.FC<CurriculumModuleCardProps> = ({
   onToggle,
   getStatus,
   onSelectLesson,
+  isCoursePreview = false,
+  showFreePreviewBadge = false,
 }) => {
   return (
     <div className="course-accordion-item animate-pop-in" style={{ animationDelay: `${index * 90}ms` }}>
@@ -62,6 +66,8 @@ export const CurriculumModuleCard: React.FC<CurriculumModuleCardProps> = ({
                 <span className={locked ? 'course-lesson-title course-lesson-title-locked' : 'course-lesson-title'}>
                   {lesson.title}
                 </span>
+                {isCoursePreview && <span className="badge-pill border border-blue-400/30 bg-blue-400/10 text-blue-200">غير منشور</span>}
+                {showFreePreviewBadge && lesson.isFreePreview && <span className="badge-pill border border-gold-400/30 bg-gold-400/10 text-gold-200">معاينة مجانية</span>}
                 <span className="course-lesson-duration">{lesson.duration}</span>
               </button>
             );
