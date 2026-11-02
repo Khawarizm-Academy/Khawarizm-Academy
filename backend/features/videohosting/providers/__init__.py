@@ -7,11 +7,15 @@ from django.conf import settings
 
 from features.videohosting.models import VideoProvider
 from features.videohosting.providers.base import ProviderSpec
-from features.videohosting.providers.google_drive import GOOGLE_DRIVE
-from features.videohosting.providers.telegram import TELEGRAM
+from features.videohosting.providers.external import EXTERNAL
+from features.videohosting.providers.google_drive import DRIVE_UPLOAD, GOOGLE_DRIVE
+from features.videohosting.providers.telegram import TELEGRAM, TELEGRAM_UPLOAD
+from features.videohosting.providers.vimeo import VIMEO
+from features.videohosting.providers.youtube import YOUTUBE
 from features.videohosting.serializers import provider_payload
 
-SPECS: tuple[ProviderSpec, ...] = (GOOGLE_DRIVE, TELEGRAM)
+SPECS: tuple[ProviderSpec, ...] = (GOOGLE_DRIVE, TELEGRAM, YOUTUBE, VIMEO, EXTERNAL)
+UPLOADS = {GOOGLE_DRIVE.code: DRIVE_UPLOAD, TELEGRAM.code: TELEGRAM_UPLOAD}
 
 
 def spec_for(code: str) -> ProviderSpec | None:

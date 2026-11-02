@@ -7,9 +7,9 @@ import { ConfirmAction } from '@/features/admin/components/controls/ConfirmActio
 import { AdminStepsRail } from '@/features/admin/components/controls/AdminStepsRail';
 import { FfmpegModeToggle } from '@/features/admin/components/controls/FfmpegModeToggle';
 import { formatShortDateTime } from '@/features/admin/data/adminFormatters';
-import { startDriveOAuth } from '@/features/admin/data/adminFetchers';
+import { startDriveOAuth, updateVideoProviderPolicy } from '@/features/admin/data/adminFetchers';
 import { vercelUploadTooLarge } from '@/shared/lib/apiClient';
-import { VIDEO_STAGE_LABELS, type AdminVideoProvider } from '@/features/admin/types';
+import { VIDEO_STAGE_LABELS, type AdminVideoPackagingPolicy, type AdminVideoProvider } from '@/features/admin/types';
 
 /** The upload wizard: one job per step, so the form never opens as one wall. */
 const UPLOAD_STEPS: { id: 'file' | 'asset' | 'provider'; label: string }[] = [
@@ -23,13 +23,13 @@ const PROVIDER_NOTES: Record<string, string> = {
   telegram:
     'تُرفع المصادر إلى قناة الأكاديمية على تليجرام، ثم تُغلَّف بصيغة HLS مشفّرة قابلة للتشغيل داخل المنصة — التغليف يتطلب FFmpeg.',
   google_drive:
-    'المصدر يُرفع تدفّقيًّا (resumable) إلى مجلد Google Drive المخصّص. مع التغليف يُبنى سلّم HLS مشفّر؛ بدونه يُخزَّن كما هو ويُشاهد مباشرة من داخل المنصة.',
+    'المصدر يُرفع تدفّقيًّا (resumable) إلى مجلد Google Drive المخصّص ويُشغَّل بوصول مباشر محمي بالنطاقات. تغليف Drive إلى HLS غير مدعوم حاليًا.',
 };
 
 /** The dropzone's second line, per packaging mode. */
 const DROPZONE_HINT: Record<'ffmpeg' | 'raw', string> = {
-  ffmpeg: 'حتى 2 GB — يُغلَّف بصيغة HLS تلقائيًا بعد الرفع إن توفر FFmpeg على الخادم',
-  raw: 'حتى 2 GB — يُخزَّن الملف كما هو ويُشاهد داخل المنصة مباشرة، دون تغليف FFmpeg',
+  ffmpeg: 'حتى 2 GB — يختار النظام التغليف وفق قدرة المزوّد وسياسة التغليف المحفوظة',
+  raw: 'حتى 2 GB — التشغيل المباشر متاح للمزوّد الداعم فقط؛ يُرفض الفيديو غير القابل للتشغيل بدل تركه مرحّلًا',
 };
 
 /** Whether an option is selectable: the registry flag AND the env checks. */
@@ -87,6 +87,13 @@ export const VideoHostingView: React.FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [authorizingDrive, setAuthorizingDrive] = useState(false);
   const [savingMode, setSavingMode] = useState(false);
+  const [savingPolicyCode, setSavingPolicyCode] = useState<string | null>(null);
+  const [policyDrafts, setPolicyDrafts] = useState<Partial<Record<string, AdminVideoPackagingPolicy>>>({});
+  const [policyFeedback, setPolicyFeedback] = useState<{
+    kind: 'error' | 'success';
+    code: string;
+    message: string;
+  } | null>(null);
   const useFfmpeg = videoSystemConfig?.useFfmpeg ?? true;
   const step = UPLOAD_STEPS[stepIndex].id;
   const isLastStep = stepIndex === UPLOAD_STEPS.length - 1;
@@ -96,6 +103,33 @@ export const VideoHostingView: React.FC = () => {
     setSavingMode(true);
     await updateVideoSystemConfig(next);
     setSavingMode(false);
+  };
+
+  /** Save a provider override immediately, then replace the row with fresh server data. */
+  const changeProviderPolicy = async (code: string, packagingPolicy: AdminVideoPackagingPolicy) => {
+    setPolicyDrafts((current) => ({ ...current, [code]: packagingPolicy }));
+    setSavingPolicyCode(code);
+    setPolicyFeedback(null);
+    try {
+      await updateVideoProviderPolicy(code, packagingPolicy);
+      await refreshVideoData();
+      setPolicyDrafts((current) => {
+        const next = { ...current };
+        delete next[code];
+        return next;
+      });
+      setPolicyFeedback({ kind: 'success', code, message: 'تم حفظ سياسة التغليف بنجاح.' });
+    } catch (thrown) {
+      setPolicyDrafts((current) => {
+        const next = { ...current };
+        delete next[code];
+        return next;
+      });
+      const message = thrown instanceof Error && thrown.message ? thrown.message : 'تعذّر حفظ سياسة التغليف.';
+      setPolicyFeedback({ kind: 'error', code, message });
+    } finally {
+      setSavingPolicyCode(null);
+    }
   };
 
   /** Drive's blocker is a missing consent, not a config edit — open Google's
@@ -120,6 +154,7 @@ export const VideoHostingView: React.FC = () => {
   const busy = videoUpload?.phase === 'sending' || videoUpload?.phase === 'tracking';
   const percent = videoUpload?.percent ?? 0;
   const missingFile = !file;
+  const storageProviders = videoProviders.filter((candidate) => candidate.kind === 'storage');
 
   /** Picking a file seeds the slug and title, so the form needs zero typing. */
   const attachFile = (next: File | null) => {
@@ -209,8 +244,8 @@ export const VideoHostingView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-bold font-display">
             <AlertTriangle size={16} className="shrink-0" />
             <span>
-              FFmpeg غير متوفر على هذا الخادم — المصادر الجديدة تُحفظ مرحَّلةً دون تغليف، ويُغلَّف كل ملف لاحقًا من جهاز
-              مثبَّت عليه FFmpeg. راجع تبويب «فحص المنظومة»، أو أوقف التغليف من مفتاح «وضع التغليف».
+              FFmpeg غير متوفر على هذا الخادم — تُرفض الملفات التي تحتاج إلى تغليف بدل حفظها بحالة انتظار دائمة. يظل
+              التشغيل الخام متاحًا للمزوّدين الداعمين مثل Google Drive. راجع تبويب «فحص المنظومة».
             </span>
           </div>
         </div>
@@ -413,20 +448,20 @@ export const VideoHostingView: React.FC = () => {
               {!chosenBlocked && provider && (
                 <span className="admin-check-hint font-body">{PROVIDER_NOTES[provider]}</span>
               )}
-              {/* Raw mode keeps Telegram usable but unwatchable until packaged — say it up front. */}
+              {/* Telegram has no raw mode; make the required packaging policy explicit. */}
               {!chosenBlocked && provider === 'telegram' && !useFfmpeg && (
                 <div className="admin-form-error">
-                  تعذّر المشاهدة بلا تغليف مع تليجرام — المشاهدة المباشرة تعمل مع Google Drive فقط.
+                  تليجرام لا يدعم التشغيل الخام — اختر التغليف مع FFmpeg أو مزوّدًا يدعم التشغيل المباشر.
                 </div>
               )}
               {!chosenBlocked && !provider && !useFfmpeg && (
                 <span className="admin-check-hint font-body">
-                  المشاهدة المباشرة تعمل مع Google Drive؛ ملفات تليجرام تبقى مرحَّلة لحين التغليف.
+                  Google Drive يدعم التشغيل الخام المحمي؛ تليجرام يتطلب FFmpeg وتُعطَّل عملياته عند غيابه.
                 </span>
               )}
               {!chosenBlocked && !provider && useFfmpeg && !pipelineOk && (
                 <span className="admin-check-hint font-body">
-                  سيُحفظ المصدر مرحَّلًا دون تغليف، وتظل النتيجة قابلة للتشغيل بعد التغليف اللاحق.
+                  تُرفض ملفات تليجرام التي تحتاج إلى تغليف حتى يصبح FFmpeg متاحًا؛ قد يظل مزوّد التشغيل الخام متاحًا.
                 </span>
               )}
             </div>
@@ -477,6 +512,67 @@ export const VideoHostingView: React.FC = () => {
           </div>
         </form>
       </section>
+
+      {storageProviders.length > 0 && (
+        <section className="admin-view-section" dir="rtl">
+          <h2 className="admin-section-title">
+            <Cloud size={15} className="admin-section-title-icon" />
+            <span className="admin-section-title-text">سياسات تغليف مُزوّدي التخزين</span>
+          </h2>
+          <p className="admin-detail-empty mb-3">
+            حدّد ما إذا كان كل مُزوّد تخزين يُغلّف المصدر تلقائيًا، أو دائمًا، أو لا يُغلّفه.
+          </p>
+          <div className="flex flex-col gap-3">
+            {storageProviders.map((storageProvider) => {
+              const policyId = `video-provider-policy-${storageProvider.code}`;
+              const isSavingPolicy = savingPolicyCode === storageProvider.code;
+              const policyLabel = `سياسة تغليف ${storageProvider.name}`;
+              return (
+                <div key={storageProvider.code} className="admin-form-section">
+                  <div className="admin-field">
+                    <label className="admin-field-label" htmlFor={policyId}>
+                      {policyLabel}
+                    </label>
+                    <select
+                      id={policyId}
+                      aria-label={policyLabel}
+                      dir="rtl"
+                      className="admin-input"
+                      value={policyDrafts[storageProvider.code] ?? storageProvider.packagingPolicy}
+                      disabled={isSavingPolicy}
+                      onChange={(event) =>
+                        void changeProviderPolicy(storageProvider.code, event.target.value as AdminVideoPackagingPolicy)
+                      }
+                    >
+                      <option value="auto">تلقائي</option>
+                      <option value="always">دائمًا</option>
+                      <option value="never">أبدًا</option>
+                    </select>
+                    {isSavingPolicy && (
+                      <span className="admin-check-hint flex items-center gap-1.5" role="status" aria-live="polite">
+                        <RefreshCw size={13} className="animate-spin" />
+                        جارٍ حفظ السياسة…
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {policyFeedback?.kind === 'error' && (
+            <div className="admin-form-error mt-3" role="alert">
+              <AlertTriangle size={14} />
+              <span>{policyFeedback.message}</span>
+            </div>
+          )}
+          {policyFeedback?.kind === 'success' && (
+            <div className="flex items-center gap-1.5 text-[11px] font-bold font-display text-emerald-400 mt-3" role="status" aria-live="polite">
+              <CheckCircle2 size={14} />
+              <span>{policyFeedback.message}</span>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="admin-view-section">
         <h2 className="admin-section-title">

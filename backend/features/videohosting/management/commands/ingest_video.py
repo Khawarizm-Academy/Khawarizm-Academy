@@ -1,4 +1,4 @@
-"""Ingest one video into Telegram + HLS — `python manage.py ingest_video <file> --slug <slug>`."""
+"""Ingest one video through the selected provider's resolved playback plan."""
 
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ from features.videohosting.ingest import PACKAGE_MODES, ingest_file
 
 class Command(BaseCommand):
     help = (
-        "Upload a video to the Telegram channel and (when the host can) package "
-        "encrypted HLS. --package never stages the source when FFmpeg is missing."
+        "Upload a video through the configured provider. Unsupported playback plans fail before provider upload "
+        "instead of leaving an unplayable asset staged indefinitely."
     )
 
     def add_arguments(self, parser) -> None:
@@ -23,7 +23,10 @@ class Command(BaseCommand):
             "--package",
             default="auto",
             choices=PACKAGE_MODES,
-            help="auto = package when FFmpeg exists, force = require it, never = stage the source only",
+            help=(
+                "auto = follow provider policy and host capabilities, force = require HLS, "
+                "never = use raw only when supported"
+            ),
         )
 
     def handle(self, *args, **options) -> None:
@@ -41,8 +44,8 @@ class Command(BaseCommand):
             megabytes = asset.source_size_bytes // (1024 * 1024)
             self.stdout.write(
                 self.style.WARNING(
-                    f"{asset.slug} staged — source stored ({megabytes}MB). "
-                    "Run again with --package force on a host that has FFmpeg to build the HLS ladder."
+                    f"{asset.slug} is a legacy staged asset ({megabytes}MB). "
+                    "Use `manage.py package_pending` on a configured persistent FFmpeg host to recover it."
                 )
             )
             return

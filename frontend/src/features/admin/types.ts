@@ -307,9 +307,15 @@ export interface AdminVideoSystemConfig {
   useFfmpeg: boolean;
 }
 
+export type AdminVideoProviderKind = 'storage' | 'link';
+export type AdminVideoPackagingPolicy = 'auto' | 'always' | 'never';
+
 export interface AdminVideoProvider {
   code: string;
   name: string;
+  kind: AdminVideoProviderKind;
+  needs: string[];
+  packagingPolicy: AdminVideoPackagingPolicy;
   enabled: boolean;
   isDefault?: boolean;
   capabilities?: Record<string, unknown>;

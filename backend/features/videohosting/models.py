@@ -10,7 +10,7 @@ from __future__ import annotations
 from django.conf import settings
 from django.db import models
 
-from features.common.choices import VideoStatus
+from features.common.choices import PackagingPolicy, PlaybackMode, Protection, VideoStatus
 from features.common.models import TimeStampedModel, UUIDModel
 
 
@@ -23,6 +23,7 @@ class VideoProvider(UUIDModel, TimeStampedModel):
     is_default = models.BooleanField(default=False)
     capabilities = models.JSONField(default=dict, blank=True)
     config = models.JSONField(default=dict, blank=True)
+    packaging_policy = models.CharField(max_length=8, choices=PackagingPolicy.choices, default=PackagingPolicy.AUTO)
 
     class Meta:
         ordering = ["name"]
@@ -42,6 +43,10 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     duration_seconds = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=12, choices=VideoStatus.choices, default=VideoStatus.UPLOADING)
     error_message = models.TextField(blank=True)
+    playback_mode = models.CharField(max_length=10, choices=PlaybackMode.choices, blank=True)
+    protection = models.CharField(max_length=10, choices=Protection.choices, blank=True)
+    external_ref = models.CharField(max_length=255, blank=True)
+    poster_url = models.URLField(max_length=400, blank=True)
 
     # The watch ledger — one minted playback grant is one session start.
     view_count = models.PositiveBigIntegerField(default=0, help_text="How many playback grants were minted")
@@ -62,6 +67,8 @@ class VideoAsset(UUIDModel, TimeStampedModel):
     )
     source_size_bytes = models.BigIntegerField(default=0)
     source_file_name = models.CharField(max_length=255, blank=True)
+    mime_type = models.CharField(max_length=60, blank=True)
+    source_sha256 = models.CharField(max_length=64, blank=True)
 
     # Generated master playlist — rewritten with per-user token URLs at serve time.
     master_playlist = models.TextField(blank=True, help_text="HLS master playlist with __TOKEN__ placeholders")
@@ -75,6 +82,23 @@ class VideoAsset(UUIDModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return self.slug
+
+
+class VideoCaption(UUIDModel, TimeStampedModel):
+    """A language-specific WebVTT track for an asset."""
+
+    asset = models.ForeignKey(VideoAsset, related_name="captions", on_delete=models.CASCADE)
+    language = models.CharField(max_length=12)
+    label = models.CharField(max_length=60)
+    is_default = models.BooleanField(default=False)
+    vtt = models.TextField()
+
+    class Meta:
+        ordering = ["asset", "language"]
+        unique_together = ("asset", "language")
+
+    def __str__(self) -> str:
+        return f"{self.asset.slug}:{self.language}"
 
 
 class VideoRendition(UUIDModel):
@@ -159,8 +183,18 @@ class UploadSession(UUIDModel, TimeStampedModel):
 
     asset = models.ForeignKey(VideoAsset, related_name="upload_sessions", on_delete=models.CASCADE)
     provider = models.ForeignKey(VideoProvider, related_name="upload_sessions", on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="upload_sessions",
+    )
     session_key = models.CharField(max_length=64, unique=True)
     status = models.CharField(max_length=16, default="pending")
+    file_name = models.CharField(max_length=255, blank=True)
+    mime_type = models.CharField(max_length=60, blank=True)
+    source_sha256_partial = models.CharField(max_length=64, blank=True)
     upload_uri = models.TextField(blank=True)
     progress = models.PositiveIntegerField(default=0)
     bytes_uploaded = models.BigIntegerField(default=0)
@@ -188,6 +222,13 @@ class StreamToken(UUIDModel, TimeStampedModel):
     asset = models.ForeignKey(VideoAsset, related_name="stream_tokens", on_delete=models.CASCADE)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="stream_tokens"
+    )
+    lesson = models.ForeignKey(
+        "courses.CourseLesson",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="stream_tokens",
     )
 
     # Binding — a shared link stops working off the minting network and after the TTL.

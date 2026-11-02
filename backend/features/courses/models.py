@@ -187,6 +187,24 @@ class LessonResource(UUIDModel):
         return f"{self.lesson.lesson_id}:{self.title}"
 
 
+class LessonProgress(UUIDModel, TimeStampedModel):
+    """A learner's watch-progress ledger for one lesson."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="lesson_progress", on_delete=models.CASCADE)
+    lesson = models.ForeignKey(CourseLesson, related_name="progress_rows", on_delete=models.CASCADE)
+    position_seconds = models.PositiveIntegerField(default=0)
+    duration_seconds = models.PositiveIntegerField(default=0)
+    watched_seconds = models.PositiveIntegerField(default=0)
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "lesson"], name="uniq_lp_user_lesson"),
+        ]
+        indexes = [models.Index(fields=["lesson", "completed"], name="idx_lp_lesson_completed")]
+
+
 class CourseLiveSession(UUIDModel):
     """A scheduled weekly review session — a launchpad, never an embedded call."""
 

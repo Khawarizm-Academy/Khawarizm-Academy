@@ -13,6 +13,7 @@ from __future__ import annotations
 AUTH_BURST_RATE = "10/min"  # login + refresh token exchanges
 CATALOG_RATE = "120/min"  # the SPA's catalog browsing
 VIDEO_TOKEN_RATE = "60/min"  # playback grant minting
+VIDEO_PROGRESS_RATE = "30/min"  # anti-cheat playback heartbeats
 ADMIN_BURST_RATE = "60/min"  # the admin console
 STUDIO_WRITE_RATE = "120/min"  # protects instructor mutations without throttling reads
 
@@ -20,6 +21,7 @@ SCOPED_RATES: dict[str, str] = {
     "auth_burst": AUTH_BURST_RATE,
     "catalog": CATALOG_RATE,
     "video_token": VIDEO_TOKEN_RATE,
+    "video_progress": VIDEO_PROGRESS_RATE,
     "admin_burst": ADMIN_BURST_RATE,
     "studio_write": STUDIO_WRITE_RATE,
 }

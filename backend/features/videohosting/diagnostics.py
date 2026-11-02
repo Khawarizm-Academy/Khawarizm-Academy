@@ -16,7 +16,8 @@ from django.utils import timezone
 from features.videohosting import packaging
 from features.videohosting.models import VideoSystemConfig
 from features.videohosting.providers import SPECS, spec_for
-from features.videohosting.providers.base import SEVERITY_ERROR, SEVERITY_OK, SEVERITY_WARN
+from features.videohosting.providers.base import SEVERITY_ERROR, SEVERITY_OK, SEVERITY_WARN, check
+from features.videohosting.services import host_capabilities, spool_directory_ready
 
 
 def _pipeline_group() -> dict[str, Any]:
@@ -83,6 +84,52 @@ def _pipeline_group() -> dict[str, Any]:
     }
 
 
+def _provider_group(spec, deep: bool, host: dict[str, bool] | None = None) -> dict[str, Any]:
+    """Combine provider-owned checks with the runtime prerequisites it declares."""
+    host = host or host_capabilities()
+    group = spec.check_group(deep)
+    needs = {
+        "ffmpeg": (
+            bool(host["ffmpeg"]),
+            "ffmpeg_host",
+            "FFmpeg متاح على خادم التغليف.",
+            "هذا المزوّد يحتاج FFmpeg على خادم تغليف دائم.",
+        ),
+        "persistent_host": (
+            bool(host["persistentHost"]),
+            "persistent_host",
+            "خادم دائم متاح.",
+            "هذا المزوّد يحتاج خادمًا دائمًا ولا يعمل على بيئة serverless.",
+        ),
+    }
+    for need in sorted(spec.needs):
+        ok, check_id, success, failure = needs.get(
+            need,
+            (False, f"need_{need}", "", f"متطلب تشغيل غير معروف: {need}."),
+        )
+        group.checks.append(check(check_id, f"متطلب {need}", ok, success if ok else failure))
+    if spec.code == "telegram":
+        spool_ok = spool_directory_ready()
+        group.checks.append(
+            check(
+                "persistent_spool",
+                "مجلد رفع Telegram دائم",
+                spool_ok,
+                "مجلد رفع دائم قابل للكتابة جاهز."
+                if spool_ok
+                else "اضبط VIDEO_SPOOL_DIR على مجلد دائم موجود وقابل للكتابة.",
+            )
+        )
+    return group.payload(spec.hints)
+
+
+def _payload_reason(payload: dict[str, Any]) -> str:
+    for item in payload["checks"]:
+        if not item["ok"] and item["severity"] == SEVERITY_ERROR:
+            return f"{item['label']}: {item['detail']}"
+    return ""
+
+
 def run(deep: bool = False) -> dict[str, Any]:
     """The full staged validation — the admin diagnostics payload.
 
@@ -92,13 +139,12 @@ def run(deep: bool = False) -> dict[str, Any]:
     """
     groups = [_pipeline_group()]
     providers = []
+    host = host_capabilities()
     for spec in SPECS:
-        payload = spec.check_group(deep=deep).payload(spec.hints)
+        payload = _provider_group(spec, deep, host)
         # One group payload serves both lists, so the env checks run once per spec.
         groups.append(payload)
-        providers.append(
-            {**payload, "code": spec.code, "available": payload["ok"], "reason": "" if payload["ok"] else spec.reason()}
-        )
+        providers.append({**payload, "code": spec.code, "available": payload["ok"], "reason": _payload_reason(payload)})
     problems = [
         f"{g['label']} — {item['label']}: {item['detail']}"
         for g in groups
@@ -123,7 +169,7 @@ def provider_available(code: str, deep: bool = False) -> bool:
     spec = spec_for(code)
     if spec is None:
         return False
-    return spec.available(deep)
+    return _provider_group(spec, deep)["ok"]
 
 
 def provider_reason(code: str) -> str:
@@ -131,4 +177,4 @@ def provider_reason(code: str) -> str:
     spec = spec_for(code)
     if spec is None:
         return "مزوّد غير معروف."
-    return spec.reason()
+    return _payload_reason(_provider_group(spec, False))

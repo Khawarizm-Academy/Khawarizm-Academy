@@ -431,6 +431,17 @@ GOOGLE_DRIVE_OAUTH_REDIRECT_URI = os.environ.get("GOOGLE_DRIVE_OAUTH_REDIRECT_UR
 # The provider assets default to when none is named explicitly.
 VIDEO_HOSTING_DEFAULT_PROVIDER = os.environ.get("VIDEO_HOSTING_DEFAULT_PROVIDER", "google_drive")
 
+# Bounded video ingest and raw-proxy controls. Telegram packaging additionally
+# requires VIDEO_SPOOL_DIR to point at a real persistent volume.
+VIDEO_UPLOAD_MAX_BYTES = env_int("VIDEO_UPLOAD_MAX_BYTES", 2**31)
+VIDEO_UPLOAD_CHUNK_BYTES = env_int("VIDEO_UPLOAD_CHUNK_BYTES", 4 * 1024 * 1024)
+VIDEO_USER_QUOTA_BYTES = env_int("VIDEO_USER_QUOTA_BYTES", 20 * 1024**3)
+VIDEO_SPOOL_DIR = os.environ.get("VIDEO_SPOOL_DIR", "").strip()
+VIDEO_RAW_RANGE_CAP_BYTES = env_int("VIDEO_RAW_RANGE_CAP_BYTES", 8 * 1024 * 1024)
+VIDEO_RAW_MAX_CONCURRENT = env_int("VIDEO_RAW_MAX_CONCURRENT", 4)
+VIDEO_GRANT_TTL_PREVIEW_MINUTES = env_int("VIDEO_GRANT_TTL_PREVIEW_MINUTES", 30)
+VIDEO_EMBED_ALLOWED_HOSTS = env_list("VIDEO_EMBED_ALLOWED_HOSTS", ["youtube-nocookie.com", "vimeo.com"])
+
 # Whether HLS packaging via FFmpeg runs automatically after upload.
 # When False the platform accepts raw uploads and serves them directly
 # (Google Drive works out-of-the-box; Telegram needs FFmpeg for HLS).

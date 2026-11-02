@@ -12,6 +12,7 @@ from features.videohosting.console import views
 
 urlpatterns = [
     path("video-providers", views.video_providers, name="admin-video-providers"),
+    path("video-providers/<str:code>/policy", views.video_provider_policy, name="admin-video-provider-policy"),
     path("video-assets", views.video_assets, name="admin-video-assets"),
     path("video-assets/upload", views.video_asset_upload, name="admin-video-asset-upload"),
     path("video-assets/<uuid:asset_id>", views.video_asset_detail, name="admin-video-asset-detail"),
