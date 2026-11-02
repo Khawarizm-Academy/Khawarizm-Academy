@@ -19,11 +19,11 @@ RUN --mount=type=cache,target=/var/cache/apt/archives,sharing=locked \
         ffmpeg gcc python3-dev curl && \
     rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /tmp/requirements.txt
+COPY requirements.txt requirements-ingest.txt /tmp/
 # The pip cache mount keeps every wheel + sdist on the host across builds, so
 # unchanged requirements re-install from the cache — only brand-new pins hit PyPI.
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install -r /tmp/requirements.txt
+    pip install -r /tmp/requirements-ingest.txt
 
 WORKDIR /app
 EXPOSE 8000

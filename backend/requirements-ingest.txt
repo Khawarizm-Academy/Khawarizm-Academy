@@ -1,0 +1,5 @@
+# Optional Telegram upload/ingest dependencies for persistent hosts only.
+# Vercel runs the API as a serverless control plane and has no persistent upload spool.
+-r requirements.txt
+Pyrogram==2.0.106
+TgCrypto==1.2.5

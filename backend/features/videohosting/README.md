@@ -55,6 +55,8 @@ Drive raw serving accepts one normalized byte range at most `VIDEO_RAW_RANGE_CAP
 
 S-1 is a NO-GO for general Telegram raw playback on the hosted Bot API: the documented download limit and short-lived file URLs are not a lesson-video fallback. Telegram therefore requires encrypted HLS packaging. Studio uploads first land in an absolute persistent writable `VIDEO_SPOOL_DIR`; the background ingest then needs a persistent FFmpeg-capable host. If the resolved plan cannot package, upload-init/ingest fails with `provider_requires_packaging` before storing a new source. It does not leave new Telegram uploads staged indefinitely. HLS uses AES-128 keys and six-second VOD segments; each segment request redirects to Telegram’s CDN.
 
+The Vercel/serverless dependency profile intentionally excludes Pyrogram and TgCrypto: without a persistent writable spool and background ingest host, Telegram Studio uploads are unavailable there. Persistent Docker/ingest deployments install `requirements-ingest.txt`, which layers those packages on the base API dependencies.
+
 ### Google Drive
 
 Drive uses a personal Google OAuth 2.0 grant with `drive.file`; the refresh token is stored in `DriveGrant`, never sent to React. Files remain private in the configured folder. S-2 is a NO-GO for Drive-backed HLS in v1, so Drive’s current supported playback is the gated raw media proxy using `files.get?alt=media` and Range. Drive is not documented as an HLS packager or origin.

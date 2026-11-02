@@ -38,7 +38,7 @@ jobs:
 
       - name: Install dependencies + dev tools
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-ingest.txt
           pip install -r requirements-dev.txt
 
       - name: Lint (ruff)
@@ -64,7 +64,7 @@ jobs:
         run: python manage.py test -v2 --parallel
 
       - name: Dependency vulnerability audit (pip-audit)
-        run: pip-audit -r requirements.txt
+        run: pip-audit -r requirements-ingest.txt
 
       - name: Secrets scan (gitleaks, whole history)
         # The official action now requires a paid license even on public repos,

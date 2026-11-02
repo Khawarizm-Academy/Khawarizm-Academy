@@ -25,7 +25,8 @@ backend/
 │   ├── courses/ · studio/     course domain and model-less authoring API
 │   ├── adminconsole/           staff APIs and role/content management
 │   └── videohosting/           provider registry, ingest, HLS/raw control plane
-├── requirements.txt
+├── requirements.txt            Vercel/serverless API runtime
+├── requirements-ingest.txt     optional persistent Telegram ingest extras
 ├── .env.development
 └── .env.production
 ```
@@ -41,7 +42,7 @@ python manage.py migrate
 python manage.py runserver 127.0.0.1:8000
 ```
 
-The API is at `http://127.0.0.1:8000/api/`. Docker and the normal Firebase/database environment setup remain as previously documented in this file. On Vercel, use Postgres for durable writes; the serverless runtime is the video control plane only and cannot run FFmpeg or retain an upload spool.
+The API is at `http://127.0.0.1:8000/api/`. The base requirements are intentionally sufficient for Vercel's serverless API and omit Pyrogram/TgCrypto. For a persistent ingest host that performs Telegram uploads, install `pip install -r requirements-ingest.txt` instead; it includes the base dependencies and the optional Telegram client. Docker uses this full ingest profile. On Vercel, use Postgres for durable writes; the serverless runtime is the video control plane only and cannot run FFmpeg or retain an upload spool.
 
 ## Video hosting
 
