@@ -33,5 +33,8 @@
 
 ## Integration closeout
 
-- Feature commit/PR integration is pending.
+- Feature commit: `57f7d31` on `Feature/CourseLifecycle`.
+- PR [#49](https://github.com/Khawarizm-Academy/Khawarizm-Academy/pull/49) was squash-merged into `Feature/AccessStudio` on 2026-11-02 as `8b5797d484cf5f2736b0704fc06436afc3938cea`.
+- At merge time, GitHub showed zero failing checks, one successful check, and six pending checks. Following the owner's instruction to avoid unnecessary waits, integration proceeded after all local backend/frontend gates and public parity checks passed; this note does not claim the pending remote checks completed.
+- The local `Feature/AccessStudio` branch is fast-forwarded to the merge commit.
 - The public `main` branch and its protection settings remain unchanged; Phase 3 targets the project integration branch `Feature/AccessStudio`.
