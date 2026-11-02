@@ -42,10 +42,11 @@
 
 Parity artifacts are under `/tmp/accessstudio/parity/{before,after}` in the execution environment and are not committed. The capture used the repository's `Origin` header. Existing admin endpoint status behavior was exercised by the full backend suite; no new route was added.
 
-## Integration state
+## Integration closeout
 
-- Local implementation and verification are complete on `Feature/AccessCore`.
-- GitHub PR, remote checks, and merge into `Feature/AccessStudio` are pending.
+- Local feature commit: `4022aea` on `Feature/AccessCore`.
+- PR [#47](https://github.com/Khawarizm-Academy/Khawarizm-Academy/pull/47) merged into `Feature/AccessStudio` on 2026-11-02 as squash commit `f24e6b29a3c44d42f6efcb6641a4a05bb87cd3f6`.
+- All **7 PR checks passed**: backend CI (both runs), frontend CI (both runs), backend and frontend Vercel deployments, and Vercel Preview Comments.
 - Repository branch-protection settings were not changed. The previously recorded owner action to require the frontend status check on `main` remains separate from this feature branch's integration.
 
 ## Phase 2 handoff
