@@ -41,4 +41,7 @@ A full screen-reader, forced-colors, and 200%-zoom manual audit was not performe
 
 ## Integration closeout
 
-The implementation and evidence are ready on `Feature/RoleManager`; merge into the `Feature/AccessStudio` integration branch after the local gates above. The public `main` branch and its protection settings were not changed.
+- Feature commit: `557ece6` on `Feature/RoleManager`.
+- PR [#48](https://github.com/Khawarizm-Academy/Khawarizm-Academy/pull/48) was squash-merged into `Feature/AccessStudio` on 2026-11-02 as `fd059c1c97f09285e5fd0f1c401dc642e123299b`.
+- At merge time, GitHub showed zero failing checks, one successful check, and six pending checks. Per the owner's instruction to avoid unnecessary waits, integration proceeded after the complete local backend/frontend gates and browser walkthrough passed; this note does not claim the pending remote checks completed.
+- The local `Feature/AccessStudio` branch is fast-forwarded to the merge commit. The public `main` branch and its protection settings were not changed.
