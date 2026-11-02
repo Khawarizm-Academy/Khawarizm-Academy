@@ -30,6 +30,7 @@ class DiagnosticsTests(ApiTestCase):
             mock.patch.object(diagnostics.settings, "TELEGRAM_BOT_TOKEN", "111:abc"),
             mock.patch.object(diagnostics.settings, "TELEGRAM_STREAM_TOKEN", "222:def"),
             mock.patch.object(diagnostics.settings, "TELEGRAM_CHANNEL_ID", "@channel"),
+            mock.patch.object(diagnostics, "spool_directory_ready", return_value=True),
         ):
             self.assertTrue(diagnostics.provider_available("telegram"))
             self.assertEqual(diagnostics.provider_reason("telegram"), "")

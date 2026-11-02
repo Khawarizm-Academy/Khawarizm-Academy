@@ -9,11 +9,131 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from ipaddress import AddressValueError, IPv4Address, IPv6Address
 from typing import Any
+from urllib.parse import SplitResult, urlsplit, urlunsplit
+
+
+class ProviderUploadError(RuntimeError):
+    """A provider upload operation failed without exposing provider secrets."""
+
+
+class ProviderUploadUnavailable(ProviderUploadError):
+    """The provider cannot currently authenticate or accept an upload."""
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderUploadStart:
+    """Server-side state returned when a provider upload session is opened."""
+
+    upload_uri: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderUploadState:
+    """Authoritative provider state after probing or writing a chunk."""
+
+    next_offset: int
+    file_id: str = ""
+    complete: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderUploadCompletion:
+    """Provider-specific completion changes and optional asynchronous work."""
+
+    asset_updates: dict[str, Any] = field(default_factory=dict)
+    session_status: str = "complete"
+    session_progress: int = 100
+    background: Callable[[], None] | None = None
+
+
+UploadStart = Callable[[str, str, int, str], ProviderUploadStart]
+UploadProbe = Callable[[Any], ProviderUploadState]
+UploadWrite = Callable[[Any, bytes, int], ProviderUploadState]
+UploadComplete = Callable[[Any, Any, Any], ProviderUploadCompletion]
+UploadCancel = Callable[[Any], None]
+UploadSpoolReady = Callable[[], bool]
+DownloadSource = Callable[[Any, str], None]
+
+
+def _upload_ready() -> bool:
+    return True
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderUpload:
+    """The data-driven upload protocol exposed by a storage provider.
+
+    Hooks receive the upload session as opaque application state. The Studio
+    handlers enforce authentication, quota, offsets, magic sniffing, and
+    response shaping; providers only implement their transport mechanics here.
+    """
+
+    start_session: UploadStart | None = None
+    probe_offset: UploadProbe | None = None
+    write_chunk: UploadWrite | None = None
+    complete: UploadComplete | None = None
+    cancel: UploadCancel | None = None
+    spool_ready: UploadSpoolReady = _upload_ready
+    download_source: DownloadSource | None = None
+
 
 SEVERITY_OK = "info"  # the check passed
 SEVERITY_WARN = "warn"  # degraded but not blocking (e.g. no stream bot)
 SEVERITY_ERROR = "error"  # blocking — this provider or the pipeline cannot serve
+
+type Reference = tuple[str, str, str]
+MAX_REFERENCE_LENGTH = 500
+HOSTNAME_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-")
+
+
+def _split_https_url(value: str, allowed_hosts: frozenset[str]) -> SplitResult | None:
+    """Parse an ASCII HTTPS URL without accepting ambiguous authority syntax."""
+    if not isinstance(value, str) or not value or len(value) > MAX_REFERENCE_LENGTH:
+        return None
+    if not value.isascii() or any(character.isspace() or ord(character) < 32 for character in value):
+        return None
+    if "\\" in value:
+        return None
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port
+    except ValueError:
+        return None
+    host = parsed.hostname
+    if parsed.scheme.lower() != "https" or not host or parsed.username or parsed.password or port is not None:
+        return None
+    host = host.lower()
+    if host not in allowed_hosts or parsed.netloc.lower() != host:
+        return None
+    if not parsed.path.startswith("/"):
+        return None
+    return parsed
+
+
+def _canonical_url(parsed: SplitResult) -> str:
+    """Normalize scheme and host while preserving the provider-owned path/query."""
+    return urlunsplit(("https", parsed.hostname.lower(), parsed.path, parsed.query, ""))
+
+
+def _is_public_hostname(host: str) -> bool:
+    """Reject literal and reserved local hosts before an external URL is stored."""
+    if not host or host.endswith(".") or host == "localhost" or host.endswith(".localhost"):
+        return False
+    if not host.isascii() or "xn--" in host.lower() or any(character not in HOSTNAME_CHARS for character in host):
+        return False
+    labels = host.split(".")
+    if any(not label or label.startswith("-") or label.endswith("-") for label in labels):
+        return False
+    for address_type in (IPv4Address, IPv6Address):
+        try:
+            address_type(host)
+        except AddressValueError:
+            continue
+        return False
+    return True
 
 
 @dataclass
@@ -139,6 +259,12 @@ class ProviderSpec:
     # Raw-serving leg for un-packaged assets: (file_id, range_header) →
     # (status, byte_iterator, headers). None means raw mode is unsupported.
     raw_stream: Callable[[str, str], tuple[int, Any, dict[str, str]]] | None = None
+    kind: str = "storage"
+    needs: frozenset[str] = frozenset()
+    parse_reference: Callable[[str], Reference | None] | None = None
+    embed_url: Callable[[str], str] | None = None
+    delete_remote: Callable[[Any], None] | None = None
+    upload: ProviderUpload | None = None
 
     def row_defaults(self) -> dict[str, object]:
         """The VideoProvider column values this spec always enforces."""

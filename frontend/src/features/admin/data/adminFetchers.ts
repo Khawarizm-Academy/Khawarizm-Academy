@@ -16,6 +16,7 @@ import type {
   AdminVideoAsset,
   AdminVideoDiagnostics,
   AdminVideoInput,
+  AdminVideoPackagingPolicy,
   AdminVideoProvider,
   AdminVideoSystemConfig,
   AdminContentSchema,
@@ -86,6 +87,10 @@ export const deleteContent = (type: AdminContentTypeKey, id: string) =>
 /** The video hosting reads — providers carry the select verdict, assets the health columns. */
 export const fetchVideoProviders = async () =>
   (await apiGet<{ results: AdminVideoProvider[] }>('/admin/video-providers')).results;
+
+/** Persist one storage provider's packaging policy; link providers have no policy. */
+export const updateVideoProviderPolicy = (code: string, packagingPolicy: AdminVideoPackagingPolicy) =>
+  apiPost<AdminVideoProvider>(`/admin/video-providers/${code}/policy`, { packagingPolicy });
 
 export const fetchVideoAssets = async () =>
   (await apiGet<{ results: AdminVideoAsset[] }>('/admin/video-assets')).results;

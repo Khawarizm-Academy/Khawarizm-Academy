@@ -1,7 +1,6 @@
 # Video ingest <- Management command / admin console upload handler.
-# Upload → (package → store | stage): pushes the source into the provider
-# channel, then builds the AES-128 HLS ladder with FFmpeg when the host can —
-# or stages the source only, so "no FFmpeg" never blocks putting a video away.
+# Upload → (package → store | raw): resolves playback before pushing the source
+# into the provider, then builds the AES-128 HLS ladder when the plan requires it.
 # Errors land on the asset row (status=error) so the admin can see what happened.
 from __future__ import annotations
 
@@ -12,19 +11,20 @@ import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
-from django.conf import settings
 from django.db import connection
 from django.db.utils import OperationalError
 
 from features.common.choices import VideoStatus
-from features.videohosting import packaging
+from features.videohosting import packaging, services
 from features.videohosting.models import VideoAsset, VideoRendition, VideoSegment, VideoSystemConfig
+from features.videohosting.playback_plan import PROVIDER_REQUIRES_PACKAGING, resolve_playback_plan
 from features.videohosting.providers import default_code, spec_for
 
-# The ingest shapes: "auto" packages when the host can, "force" requires the
-# packaging host, "never" stages the source so it can be packaged later.
+# The legacy CLI choices are normalized by playback_plan (``force`` aliases
+# ``always``); unsupported plans fail before any provider bytes are uploaded.
 PACKAGE_MODES = ("auto", "force", "never")
 
 # The admin progress bar's weighted timeline: source upload → packaging →
@@ -45,7 +45,7 @@ class ProgressTracker:
     there), so they only mutate state; a small flusher thread writes the row
     on its own connection — throttled, and closed when the thread stops.
     The tracker owns ONLY progress+stage: asset.status belongs to the ingest
-    saves (processing → ready/staged/error), so the two never race.
+    saves (processing → ready/error), so the two never race.
     """
 
     def __init__(self, asset_id: str) -> None:
@@ -120,40 +120,43 @@ class ProgressTracker:
         VideoAsset.objects.filter(pk=self.asset_id).update(progress=percent, stage=stage)
 
 
-# The packaging decision: "auto" packages when the host can, "force" requires
-# the packaging host, "never" stages the source so it can be packaged later.
-def _should_package(package: str) -> bool:
-    if package == "force":
-        return True
-    if package == "never":
-        return False
-    # Check the admin toggle first — a disabled flag short-circuits everything.
-    try:
-        config = VideoSystemConfig.get_instance()
-        if not config.use_ffmpeg:
-            return False
-    except Exception:
-        pass  # If the DB is unavailable fall back to the env heuristic.
-    return packaging.ffmpeg_available() and not settings.IS_VERCEL
+# A compatibility shape for callers that used to ask only whether packaging
+# was possible. The ingest path always passes the real provider spec and row.
+_COMPAT_PACKAGING_SPEC = SimpleNamespace(
+    kind="storage",
+    capabilities={"playback": "hls_token"},
+    needs=frozenset(),
+    ingest=SimpleNamespace(store_package=lambda *_args, **_kwargs: None),
+)
 
 
-# Which staged sources are directly playable by the platform without packaging.
-RAW_PLAYABLE = {"google_drive"}
+def _resolve_plan(spec, package: str, provider_row=None):
+    """Resolve one upload's plan from stored policy, global config, and host facts."""
+    return resolve_playback_plan(
+        spec,
+        package,
+        services.host_capabilities(),
+        VideoSystemConfig.get_instance(),
+        provider_row,
+    )
 
 
-def raw_mode_is_playable(spec, package: str) -> bool:
-    """True when this store (no packaging leg) yields a watchable raw source.
+def _should_package(package: str, spec=None, provider_row=None) -> bool:
+    """Compatibility helper backed by the canonical playback-plan resolver."""
+    return _resolve_plan(spec or _COMPAT_PACKAGING_SPEC, package, provider_row).package
 
-    Only the admin's toggle turns a skipped package watchable: with the toggle
-    on but FFmpeg absent the old staged-for-later behavior stands, and an
-    explicit ``--package never`` also defers to its packaging run.
-    """
-    if spec.code not in RAW_PLAYABLE or package != "auto":
-        return False
-    try:
-        return not VideoSystemConfig.get_instance().use_ffmpeg
-    except Exception:
-        return False
+
+def raw_mode_is_playable(spec, package: str, provider_row=None) -> bool:
+    """Compatibility helper backed by the canonical playback-plan resolver."""
+    return _resolve_plan(spec, package, provider_row).mode == "raw"
+
+
+def _playback_fields(mode: str) -> dict[str, str]:
+    """Return the stored playback contract for a resolved playable mode."""
+    return {
+        "hls": {"playback_mode": "hls", "protection": "encrypted"},
+        "raw": {"playback_mode": "raw", "protection": "gated"},
+    }[mode]
 
 
 # The public track: one ingest, one asset row; raises on failure except as noted.
@@ -176,8 +179,6 @@ def ingest_file(
     spec = spec_for(provider_code)
     if spec is None:
         raise ValueError(f"لا يوجد مسار رفع للمزود: {provider_code}")
-    if spec.ingest is None:
-        raise ValueError(f"المزود {spec.name} لا يدعم الرفع.")
 
     asset.status = VideoStatus.PROCESSING
     asset.error_message = ""
@@ -187,44 +188,40 @@ def ingest_file(
     if tracker is not None:
         tracker.start()
     try:
-        if not hasattr(spec.ingest, "store_package"):
-            # Staged-only path (Google Drive): one upload leg.
-            svc = _make_service(spec)
-            bytes_arg = _report_arg(svc, tracker, FULL_SPAN)
-            stored = _await_if_needed(spec.ingest.store_source(svc, asset, source, bytes_arg))
-            # A skipped package (FFmpeg off) makes Drive's raw source watchable
-            # as-is; Telegram keeps its source behind the bot API, so it stays staged.
-            fields = {"master_playlist": ""}
-            renditions = []
-            status = VideoStatus.READY if raw_mode_is_playable(spec, package) else VideoStatus.STAGED
-        else:
-            # Full path (Telegram): source, optionally package.
-            svc = _make_service(spec)
-            bytes_arg = _report_arg(svc, tracker, SOURCE_SPAN)
-            stored = _await_if_needed(spec.ingest.store_source(svc, asset, source, bytes_arg))
+        plan = _resolve_plan(spec, package, asset.provider)
+        if plan.mode in {"embed", "external", "refused"}:
+            raise ValueError(PROVIDER_REQUIRES_PACKAGING)
+        if spec.ingest is None:
+            raise ValueError(PROVIDER_REQUIRES_PACKAGING)
 
-            if not _should_package(package):
-                # Stage only — retrieve fine later, no HLS outputs yet.
-                fields = {"master_playlist": ""}
-                status = VideoStatus.STAGED
-                renditions = []
-            else:
-                packaging.require_packaging_host()
-                if tracker is not None:
-                    tracker.tick(PACKAGING_SPAN[0], "packaging")
+        store_package = getattr(spec.ingest, "store_package", None)
+        svc = _make_service(spec)
+        bytes_arg = _report_arg(svc, tracker, FULL_SPAN if plan.mode == "raw" else SOURCE_SPAN)
+        stored = _await_if_needed(spec.ingest.store_source(svc, asset, source, bytes_arg))
 
-                result = packaging.package_video(str(source))
-                try:
-                    pkg = _await_if_needed(spec.ingest.store_package(svc, slug, result, tracker))
-                finally:
-                    shutil.rmtree(result.work_dir, ignore_errors=True)
+        fields = {"master_playlist": "", **_playback_fields(plan.mode)}
+        renditions = []
+        status = VideoStatus.READY
+        if plan.package:
+            if store_package is None:
+                raise ValueError(PROVIDER_REQUIRES_PACKAGING)
+            packaging.require_packaging_host()
+            if tracker is not None:
+                tracker.tick(PACKAGING_SPAN[0], "packaging")
 
-                fields = {
+            result = packaging.package_video(str(source))
+            try:
+                pkg = _await_if_needed(store_package(svc, slug, result, tracker))
+            finally:
+                shutil.rmtree(result.work_dir, ignore_errors=True)
+
+            fields.update(
+                {
                     "master_playlist": result.master_playlist,
                     "duration_seconds": result.duration_seconds,
                 }
-                status = VideoStatus.READY
-                renditions = pkg
+            )
+            renditions = pkg
 
         # Persist fields onto the row.
         for k, v in stored.items():
@@ -258,8 +255,8 @@ def ingest_file(
 
 
 # The service re-exports are the ingest test seam — tests patch ingest.TelegramMediaService.
-from features.videohosting.providers.google_drive import GoogleDriveService  # noqa: E402
-from features.videohosting.providers.telegram import TelegramMediaService  # noqa: E402
+from features.videohosting.providers.google_drive import GoogleDriveService  # noqa: E402, F401
+from features.videohosting.providers.telegram import TelegramMediaService  # noqa: E402, F401
 
 
 def _await_if_needed(coro_or_val):
@@ -281,11 +278,21 @@ def _report_arg(
 
 def _make_service(spec) -> object:
     """Instantiate the hosting provider's network client."""
-    if spec.code == "telegram":
-        return TelegramMediaService()
-    if spec.code == "google_drive":
-        return GoogleDriveService()
-    raise ValueError(f"Unknown provider service: {spec.code}")
+    hook = spec.ingest.store_source
+    hook_globals = getattr(hook, "__globals__", {})
+    service_type = next(
+        (
+            value
+            for value in hook_globals.values()
+            if isinstance(value, type) and callable(getattr(value, "upload_file", None))
+        ),
+        None,
+    )
+    if service_type is None:
+        raise ValueError("Provider ingest hook does not expose a media service")
+    # Keep the historical ingest-module test seam while deriving the type from
+    # the provider hook, so new providers need no code branch here.
+    return globals().get(service_type.__name__, service_type)()
 
 
 def _store_renditions(asset: VideoAsset, renditions: list[dict[str, Any]]) -> None:

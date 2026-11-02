@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import time
@@ -20,6 +21,11 @@ from features.videohosting.providers.base import (
     SEVERITY_WARN,
     Check,
     ProviderSpec,
+    ProviderUpload,
+    ProviderUploadCompletion,
+    ProviderUploadError,
+    ProviderUploadStart,
+    ProviderUploadState,
     blocking_checks,
     check,
 )
@@ -33,6 +39,7 @@ if TYPE_CHECKING:
 CHUNK_SIZE = 1024 * 1024  # streaming chunk size — matches Pyrogram 1 MiB
 SPLIT_THRESHOLD_BYTES = 1950 * 1024 * 1024  # bot upload cap; larger files split first
 RETRYABLE_ERRORS = (OSError, TimeoutError)  # connection blips — safe to reconnect
+REMOTE_DELETE_SECONDS = 10
 
 
 # The Pyrogram-backed media service: persistent client, event-loop safe.
@@ -126,6 +133,22 @@ class TelegramMediaService:
             return await self._upload_split(file_path, caption, on_bytes)
         result = await self._with_retry(self._upload_single, file_path, caption, on_bytes)
         return {"is_split": False, "parts": [result]}
+
+    async def delete_messages(self, message_ids: tuple[int, ...]) -> None:
+        """Delete captured messages from the configured storage channel."""
+        if not message_ids:
+            return
+        await self._with_retry(self.client.delete_messages, self.channel_id, list(message_ids))
+
+    async def download_source(self, message_id: int, destination_path: str) -> None:
+        """Download one retained source message into a local recovery path."""
+        result = await self._with_retry(
+            self.client.download_media,
+            (self.channel_id, message_id),
+            file_name=destination_path,
+        )
+        if not result or not Path(destination_path).is_file():
+            raise ProviderUploadError("Telegram source download did not produce a file")
 
     @staticmethod
     def _pyrogram_progress(on_bytes: Callable[[int, int], None] | None):
@@ -348,6 +371,143 @@ class _TelegramIngest:
         return renditions
 
 
+def delete_remote(snapshot) -> None:
+    """Delete the captured source and segment messages through Pyrogram."""
+    message_ids = tuple(getattr(snapshot, "telegram_message_ids", ()) or ())
+    if not message_ids:
+        return
+
+    async def delete() -> None:
+        service = TelegramMediaService()
+        try:
+            await asyncio.wait_for(service.delete_messages(message_ids), timeout=REMOTE_DELETE_SECONDS)
+        finally:
+            await asyncio.wait_for(service._drop_client(), timeout=REMOTE_DELETE_SECONDS)
+
+    asyncio.run(delete())
+
+
+def download_source(asset, destination_path: str) -> None:
+    """Recover a Telegram source through the provider's MTProto client."""
+    raw_message_id = getattr(asset, "source_message_id", None)
+    if not raw_message_id:
+        raise ProviderUploadError("Telegram source is unavailable")
+
+    async def download() -> None:
+        service = TelegramMediaService()
+        try:
+            await service.download_source(int(raw_message_id), destination_path)
+        except ProviderUploadError:
+            raise
+        except Exception as error:
+            raise ProviderUploadError("Telegram source download failed") from error
+        finally:
+            await asyncio.wait_for(service._drop_client(), timeout=REMOTE_DELETE_SECONDS)
+
+    asyncio.run(download())
+
+
+def _studio_spool_path(session_key: str) -> Path:
+    configured = str(getattr(settings, "VIDEO_SPOOL_DIR", "") or "")
+    return Path(configured) / f"{session_key}.part"
+
+
+def _studio_spool_ready() -> bool:
+    from features.videohosting.services import spool_directory_ready
+
+    return spool_directory_ready()
+
+
+def _studio_start(_file_name: str, _mime_type: str, _total: int, session_key: str) -> ProviderUploadStart:
+    if not _studio_spool_ready():
+        raise ProviderUploadError("Telegram upload spool is not ready")
+    spool = Path(str(getattr(settings, "VIDEO_SPOOL_DIR", "")))
+    spool.mkdir(parents=True, exist_ok=True)
+    _studio_spool_path(session_key).touch()
+    return ProviderUploadStart()
+
+
+def _studio_probe(session) -> ProviderUploadState:
+    path = _studio_spool_path(session.session_key)
+    try:
+        offset = path.stat().st_size
+    except OSError as exc:
+        raise ProviderUploadError("Telegram upload spool is unavailable") from exc
+    return ProviderUploadState(next_offset=offset, complete=offset == session.total_bytes)
+
+
+def _studio_write(session, chunk: bytes, start: int) -> ProviderUploadState:
+    path = _studio_spool_path(session.session_key)
+    try:
+        with path.open("r+b" if path.exists() else "wb") as output:
+            output.seek(start)
+            output.write(chunk)
+    except OSError as exc:
+        raise ProviderUploadError("Telegram upload spool is unavailable") from exc
+    return ProviderUploadState(next_offset=start + len(chunk), complete=start + len(chunk) == session.total_bytes)
+
+
+def _studio_complete(session, asset, plan) -> ProviderUploadCompletion:
+    path = _studio_spool_path(session.session_key)
+    if not path.is_file():
+        raise ProviderUploadError("Telegram upload source is unavailable")
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+
+    def background() -> None:
+        from features.videohosting import ingest
+
+        try:
+            ingest.ingest_file(
+                path,
+                asset.slug,
+                title=asset.title,
+                created_by=asset.created_by,
+                remove_source=True,
+                package="auto" if plan.package else "never",
+                track_progress=True,
+            )
+            from features.videohosting.models import UploadSession
+
+            UploadSession.objects.filter(pk=session.pk).update(status="complete", progress=100)
+        except Exception as exc:
+            from features.videohosting.models import UploadSession
+
+            UploadSession.objects.filter(pk=session.pk).update(status="error", error_message=str(exc)[:2000])
+
+    return ProviderUploadCompletion(
+        asset_updates={
+            "source_size_bytes": session.total_bytes,
+            "source_file_name": session.file_name,
+            "mime_type": session.mime_type,
+            "source_sha256": digest.hexdigest(),
+            "status": "processing",
+            "progress": 0,
+            "stage": "uploading",
+        },
+        session_status="processing",
+        session_progress=100,
+        background=background,
+    )
+
+
+def _studio_cancel(session) -> None:
+    _studio_spool_path(session.session_key).unlink(missing_ok=True)
+
+
+TELEGRAM_UPLOAD = ProviderUpload(
+    start_session=_studio_start,
+    probe_offset=_studio_probe,
+    write_chunk=_studio_write,
+    complete=_studio_complete,
+    cancel=_studio_cancel,
+    spool_ready=_studio_spool_ready,
+    download_source=download_source,
+)
+
+
 # The spec — declared last so every symbol above is already defined.
 TELEGRAM = ProviderSpec(
     code="telegram",
@@ -362,6 +522,8 @@ TELEGRAM = ProviderSpec(
     },
     segment_redirect=telegram_file_url,
     file_path_refresher=resolve_file_path_http,
+    delete_remote=delete_remote,
+    upload=TELEGRAM_UPLOAD,
     ingest=_TelegramIngest(),
     env_checks=_telegram_env_checks,
     deep_checks=_telegram_deep_checks,
@@ -372,6 +534,7 @@ TELEGRAM = ProviderSpec(
         "stream_token": "أنشئ روبوت قراءة ثانويًا عبر BotFather وأضفه في TELEGRAM_STREAM_TOKEN",
         "channel_id": "أضف معرّف قناة التخزين (‎@مقبض أو رقم) في TELEGRAM_CHANNEL_ID",
         "channel_format": "معرّف القناة يجب أن يكون ‎@مقبض أو رقمًا صحيحًا",
+        "persistent_spool": "اضبط VIDEO_SPOOL_DIR على مجلد دائم موجود وقابل للكتابة خارج المسارات المؤقتة.",
         "bot_api": "تأكد أن TELEGRAM_BOT_TOKEN لروبوت حقيقي يصل إلى api.telegram.org",
         "chat_access": "أضف الروبوت مشرفًا في قناة التخزين ثم أعد التحقق",
     },

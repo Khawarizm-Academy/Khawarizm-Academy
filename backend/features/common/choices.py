@@ -94,6 +94,25 @@ class VideoStatus(models.TextChoices):
     ERROR = "error", "Error"
 
 
+class PlaybackMode(models.TextChoices):
+    HLS = "hls", "HLS"
+    RAW = "raw", "Raw"
+    EMBED = "embed", "Embed"
+    EXTERNAL = "external", "External"
+
+
+class Protection(models.TextChoices):
+    ENCRYPTED = "encrypted", "Encrypted"
+    GATED = "gated", "Gated"
+    NONE = "none", "None"
+
+
+class PackagingPolicy(models.TextChoices):
+    AUTO = "auto", "Auto"
+    ALWAYS = "always", "Always"
+    NEVER = "never", "Never"
+
+
 class LessonStatus(models.TextChoices):
     LOCKED = "locked", "locked"
     ACTIVE = "active", "active"
@@ -231,6 +250,7 @@ class AuditAction(models.TextChoices):
     COURSE_UNPUBLISHED = "course_unpublished", "Course unpublished"
     COURSE_DELETED = "course_deleted", "Course deleted"
     VIDEO_DELETED = "video_deleted", "Video deleted"
+    REMOTE_ORPHAN = "remote_orphan", "Remote video orphan"
     USER_DELETED = "user_deleted", "User deleted"
     USER_STATUS_CHANGED = "user_status_changed", "User status changed"
     SETTINGS_CHANGED = "settings_changed", "Settings changed"

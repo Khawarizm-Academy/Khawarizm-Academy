@@ -13,7 +13,14 @@ from django.utils import timezone
 from features.videohosting.models import StreamToken, VideoAsset
 
 
-def mint(asset: VideoAsset, user, ip: str | None) -> tuple[str, StreamToken]:
+def mint(
+    asset: VideoAsset,
+    user,
+    ip: str | None,
+    *,
+    lesson=None,
+    ttl: timedelta | None = None,
+) -> tuple[str, StreamToken]:
     """Create a grant and hand back the raw token — shown to the client once.
 
     Each mint is one watched-session start: the asset's view ledger advances
@@ -23,12 +30,18 @@ def mint(asset: VideoAsset, user, ip: str | None) -> tuple[str, StreamToken]:
     row = StreamToken.objects.create(
         asset=asset,
         user=user,
+        lesson=lesson,
         ip_binding=ip,
         token_hash=hashlib.sha256(raw.encode()).hexdigest(),
-        expires_at=timezone.now() + timedelta(hours=settings.STREAM_TOKEN_TTL_HOURS),
+        expires_at=timezone.now() + (ttl or timedelta(hours=settings.STREAM_TOKEN_TTL_HOURS)),
     )
-    VideoAsset.objects.filter(pk=asset.pk).update(view_count=models.F("view_count") + 1, last_viewed_at=timezone.now())
+    record_view(asset)
     return raw, row
+
+
+def record_view(asset: VideoAsset) -> None:
+    """Advance the asset-level view ledger for grants without a stream token."""
+    VideoAsset.objects.filter(pk=asset.pk).update(view_count=models.F("view_count") + 1, last_viewed_at=timezone.now())
 
 
 def resolve(raw: str, ip: str | None) -> StreamToken | None:

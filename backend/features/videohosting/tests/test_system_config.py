@@ -7,7 +7,7 @@ from unittest import mock
 
 from django.test import TestCase
 
-from features.common.choices import VideoStatus
+from features.common.choices import PlaybackMode, Protection, VideoStatus
 from features.common.testing import ApiTestCase, authenticate, make_admin, make_user
 from features.videohosting import diagnostics, ingest, packaging, providers
 from features.videohosting.models import VideoAsset, VideoProvider, VideoSystemConfig
@@ -73,7 +73,7 @@ class DiagnosticsToggleTests(ApiTestCase):
 
 
 class RawModeIngestTests(TestCase):
-    """Packaging off makes Drive's raw source immediately watchable; Telegram waits."""
+    """Drive uses its supported raw mode when packaging is disabled or unavailable."""
 
     def test_toggle_off_marks_drive_raw_ready(self):
         _drive_asset("raw-ready")
@@ -86,15 +86,17 @@ class RawModeIngestTests(TestCase):
         self.assertFalse(asset.master_playlist)
         self.assertEqual(asset.source_file_id, "DRIVE123")
 
-    def test_staged_drive_package_run_ignores_the_toggle(self):
-        """A packaging run packages regardless of the toggle — force means force."""
+    def test_package_never_selects_drive_raw_mode(self):
+        """Drive remains playable in raw mode when packaging is explicitly skipped."""
         _drive_asset("force-pack")
         with mock.patch.object(ingest, "GoogleDriveService", FakeDriveService):
             asset = ingest.ingest_file("missing.mp4", "force-pack", package="never")
-        self.assertEqual(asset.status, VideoStatus.STAGED)
+        self.assertEqual(asset.status, VideoStatus.READY)
+        self.assertEqual(asset.playback_mode, PlaybackMode.RAW)
+        self.assertEqual(asset.source_file_id, "DRIVE123")
 
-    def test_toggle_on_without_ffmpeg_keeps_drive_staged(self):
-        """The old behavior: touched packaging later, from a FFmpeg host."""
+    def test_toggle_on_without_ffmpeg_selects_drive_raw_mode(self):
+        """Drive's supported raw mode avoids an unplayable staged asset."""
         _drive_asset("staged-move")
         config = VideoSystemConfig.get_instance()
         with (
@@ -102,7 +104,9 @@ class RawModeIngestTests(TestCase):
             mock.patch.object(packaging, "ffmpeg_available", return_value=False),
         ):
             asset = ingest.ingest_file("missing.mp4", "staged-move", package="auto")
-        self.assertEqual(asset.status, VideoStatus.STAGED)
+        self.assertEqual(asset.status, VideoStatus.READY)
+        self.assertEqual(asset.playback_mode, PlaybackMode.RAW)
+        self.assertEqual(asset.source_file_id, "DRIVE123")
         config.use_ffmpeg = True
         config.save(update_fields=["use_ffmpeg"])
 
@@ -113,17 +117,21 @@ class RawWatchRouteTests(ApiTestCase):
     def setUp(self):
         super().setUp()
         providers.ensure_defaults()
+        self.owner = make_user(email="raw-watch-owner@example.com")
         self.asset = VideoAsset.objects.create(
             slug="raw-watch",
             status=VideoStatus.READY,
             provider=VideoProvider.objects.get(code="google_drive"),
+            playback_mode=PlaybackMode.RAW,
+            protection=Protection.GATED,
             source_file_id="DRV42",
             source_file_name="lesson.mp4",
+            created_by=self.owner,
         )
         self.canned: tuple[int, Any, dict] = (
             206,
             iter([b"part1", b"part2"]),
-            {"Content-Type": "video/mp4", "Content-Range": "bytes 0-2/10", "Accept-Ranges": "bytes"},
+            {"Content-Type": "video/mp4", "Content-Range": "bytes 0-9/10", "Accept-Ranges": "bytes"},
         )
 
     def _fake_raw(self):
@@ -136,12 +144,13 @@ class RawWatchRouteTests(ApiTestCase):
         return FakeSpec()
 
     def test_meta_lists_no_qualities_but_is_ready(self):
+        authenticate(self.client, self.owner)
         body = self.client.get("/api/videos/raw-watch").json()
         self.assertEqual(body["status"], "ready")
         self.assertEqual(body["qualities"], [])
 
     def test_token_carrying_client_mints_a_raw_play_url(self):
-        authenticate(self.client, make_user())
+        authenticate(self.client, self.owner)
         response = self.client.post("/api/videos/raw-watch/token")
         self.assertEqual(response.status_code, 200)
         body = response.json()
@@ -154,18 +163,19 @@ class RawWatchRouteTests(ApiTestCase):
         self.assertEqual(self.client.get("/api/videos/raw-watch/raw").status_code, 403)
 
     def test_raw_stream_serves_the_provider_bytes(self):
-        authenticate(self.client, make_user())
-        with mock.patch("features.videohosting.providers.spec_for", return_value=self._fake_raw()):
+        authenticate(self.client, self.owner)
+        with mock.patch("features.videohosting.views.spec_for", return_value=self._fake_raw()):
             token = self.client.post("/api/videos/raw-watch/token", HTTP_X_FORWARDED_FOR="10.0.0.1").json()["token"]
             response = self.client.get(f"/api/videos/raw-watch/raw?token={token}", HTTP_X_FORWARDED_FOR="10.0.0.1")
         self.assertEqual(response.status_code, 206)
         self.assertEqual(b"".join(response.streaming_content), b"part1part2")
-        self.assertEqual(response["Content-Range"], "bytes 0-2/10")
+        self.assertEqual(response["Content-Range"], "bytes 0-9/10")
 
     def test_raw_stream_rejects_a_packaged_asset(self):
         self.asset.master_playlist = "#EXTM3U"
-        self.asset.save(update_fields=["master_playlist"])
-        authenticate(self.client, make_user())
+        self.asset.playback_mode = PlaybackMode.HLS
+        self.asset.save(update_fields=["master_playlist", "playback_mode"])
+        authenticate(self.client, self.owner)
         token = self.client.post("/api/videos/raw-watch/token").json()["token"]
         response = self.client.get(f"/api/videos/raw-watch/raw?token={token}")
         self.assertEqual(response.status_code, 404)
