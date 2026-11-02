@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vimeo/player": "^2.30.0",
     "@vercel/analytics": "^2.0.1",
     "firebase": "^13.0.0",
     "hls.js": "^1.7.3",

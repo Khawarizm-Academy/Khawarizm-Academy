@@ -36,7 +36,7 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
   const { data: course, isLoading } = useCachedData<CourseDetail | null>(
     ['course-detail', slug],
     fetcher,
-    { keepPreviousData: true, staleTime: 10 * 60 * 1000, cacheTime: 30 * 60 * 1000 }
+    { keepPreviousData: false, staleTime: 10 * 60 * 1000, cacheTime: 30 * 60 * 1000 }
   );
 
   const problemsFetcher = useCallback(() => fetchCourseProblems(slug), [slug]);
@@ -70,7 +70,7 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
     setIsSyllabusOpen(false);
   }, []);
 
-  const completeLesson = useCallback(() => {
+  const completeLesson = useCallback((options: { showProblems?: boolean; showToast?: boolean } = {}) => {
     if (!activeLessonId) return;
     const next = completedIds.includes(activeLessonId) ? completedIds : [...completedIds, activeLessonId];
     setCompletedIds(next);
@@ -84,8 +84,8 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
       .then(() => dataCacheManager.invalidate(['dashboard', 'courses-list']))
       .catch(() => undefined);
     // Auto-advance prompt: finishing a lesson points at its practice set.
-    setActiveTab('problems');
-    showToast(courseCopy.player.lessonDoneToast);
+    if (options.showProblems !== false) setActiveTab('problems');
+    if (options.showToast !== false) showToast(courseCopy.player.lessonDoneToast);
   }, [activeLessonId, completedIds, ordered, slug, showToast]);
 
   const openSyllabus = useCallback(() => setIsSyllabusOpen(true), []);
@@ -97,6 +97,7 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
 
   const value = useMemo<CoursePlayerContextValue>(
     () => ({
+      courseSlug: slug,
       course,
       isLoading,
       activeLesson,
@@ -115,6 +116,7 @@ export const CoursePlayerProvider: React.FC<{ slug: string; children: React.Reac
     }),
     [
       course,
+      slug,
       isLoading,
       activeLesson,
       activeLessonId,

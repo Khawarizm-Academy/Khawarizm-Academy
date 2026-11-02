@@ -3,6 +3,7 @@ import type { CourseDetail, CourseLesson, CourseProblem } from '@/shared/types/e
 import type { CourseTab } from '@/features/courses/types';
 
 export interface CoursePlayerContextValue {
+  courseSlug: string;
   course: CourseDetail | null;
   isLoading: boolean;
   activeLesson: CourseLesson | null;
@@ -16,7 +17,7 @@ export interface CoursePlayerContextValue {
   isExamUnlocked: boolean;
   selectLesson: (lessonId: string) => void;
   selectTab: (tab: CourseTab) => void;
-  completeLesson: () => void;
+  completeLesson: (options?: { showProblems?: boolean; showToast?: boolean }) => void;
   openSyllabus: () => void;
   closeSyllabus: () => void;
 }

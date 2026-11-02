@@ -88,6 +88,12 @@ export interface CourseLesson {
   title: string;
   duration: string;
   summary: string;
+  kind?: 'video' | 'article' | 'quiz' | 'resource';
+  hasVideo?: boolean;
+  videoSlug?: string | null;
+  isFreePreview?: boolean;
+  isPublished?: boolean;
+  durationSeconds?: number;
 }
 
 /** A curriculum module and its ordered lessons. */

@@ -35,6 +35,7 @@
 - Access contract: backend permission keys and labels originate in `features/access/registry.py`; `frontend/src/shared/json/permissionCatalog.json` is an exact, test-checked mirror consumed by `shared/lib/permissions.ts` and the auth `useCan` hook.
 - Admin access APIs: `/api/admin/roles/*` owns role catalog, role CRUD, assignments, member pages, and reorder; `/api/admin/audit` pages access changes separately from the auth activity stream. These routes call `features/access/services.py`; do not duplicate grant/hierarchy rules in views.
 - Course lifecycle: `features/courses` owns `CourseStatus`, explicit `Course.owner`/`CourseStaff`, lesson resources, lifecycle validation and auditing; model-less `features/studio` exposes authenticated `/api/studio/*` authoring and `/api/admin/review-queue*` moderation. Catalog/home show published courses only; archived detail remains public but is not enrollable, while draft/in-review previews require course-editor access.
+- Learner playback: the course player mounts one responsive `PlayerStage`; `videohosting.usePlayback` resolves noncached, entitlement-checked lesson grants and lazy native-HLS/hls.js/raw/YouTube/Vimeo engines. `videoPlayerStore` mirrors real engine state (no synthetic ticker), sends bounded lesson-progress heartbeats, and stores only non-secret user preferences locally.
 
 ## 5. Design
 - Tokens live in the frontend (`frontend/src` CSS + Tailwind v4 theme); see `docs/01-design-system.md`.

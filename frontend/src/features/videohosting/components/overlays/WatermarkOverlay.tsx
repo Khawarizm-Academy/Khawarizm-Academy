@@ -27,6 +27,10 @@ export const WatermarkOverlay: React.FC<WatermarkOverlayProps> = ({ label }) => 
     if (!context) return;
 
     let frame = 0;
+    let timer: number | null = null;
+    const motionQuery = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
     const draw = () => {
       const { clientWidth, clientHeight } = canvas;
       canvas.width = clientWidth;
@@ -37,9 +41,8 @@ export const WatermarkOverlay: React.FC<WatermarkOverlayProps> = ({ label }) => 
       context.fillStyle = 'rgba(255, 255, 255, 0.12)';
       context.textBaseline = 'middle';
 
-      // Each row drifts a little each frame so a still capture cannot mask the
-      // stamp, and the offset cycles back so the pattern fills any aspect ratio.
-      const drift = (frame % 400) * 0.35;
+      // Movement is omitted when the viewer requests reduced motion.
+      const drift = motionQuery?.matches ? 0 : (frame % 400) * 0.35;
       for (let y = STAMP_SPACING_Y / 2; y < clientHeight; y += STAMP_SPACING_Y) {
         for (let x = -STAMP_SPACING_X; x < clientWidth + STAMP_SPACING_X; x += STAMP_SPACING_X) {
           context.fillText(label, x + drift, y + drift / 2);
@@ -48,9 +51,20 @@ export const WatermarkOverlay: React.FC<WatermarkOverlayProps> = ({ label }) => 
       frame += 1;
     };
 
-    draw();
-    const timer = window.setInterval(draw, 120);
-    return () => window.clearInterval(timer);
+    const syncMotion = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      draw();
+      if (!motionQuery?.matches) timer = window.setInterval(draw, 120);
+    };
+    syncMotion();
+    motionQuery?.addEventListener?.('change', syncMotion);
+    window.addEventListener('resize', draw);
+    return () => {
+      if (timer !== null) window.clearInterval(timer);
+      motionQuery?.removeEventListener?.('change', syncMotion);
+      window.removeEventListener('resize', draw);
+    };
   }, [label]);
 
   return <canvas ref={canvasRef} className="player-watermark" aria-hidden="true" />;
