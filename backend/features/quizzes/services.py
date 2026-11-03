@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import random
+import time
 from collections.abc import Mapping
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
@@ -14,6 +16,7 @@ from features.access.registry import OWN_KINDS
 from features.access.services import has_object_perm, has_perm, record_audit
 from features.common.choices import AuditAction
 from features.common.errors import Conflict, InvalidParameter, PermissionDenied
+from features.common.observability import log_event
 
 from .models import (
     Answer,
@@ -28,6 +31,8 @@ from .models import (
 )
 from .serializers import attempt_payload, result_payload
 from .signals import on_exam_passed, on_quiz_submitted
+
+LOGGER = logging.getLogger(__name__)
 
 GRACE_SECONDS = 10
 
@@ -206,6 +211,7 @@ def _grade(question: Question, selected: set[str]) -> tuple[bool, Decimal]:
 @transaction.atomic
 def submit_attempt(attempt: Attempt, *, expired: bool = False, now=None) -> Attempt:
     now = now or timezone.now()
+    graded_started = time.perf_counter()
     attempt = Attempt.objects.select_for_update().get(pk=attempt.pk)
     if attempt.status != AttemptStatus.IN_PROGRESS:
         return attempt
@@ -241,6 +247,17 @@ def submit_attempt(attempt: Attempt, *, expired: bool = False, now=None) -> Atte
         now,
     )
     attempt.save(update_fields=["score", "max_score", "percent", "passed", "status", "submitted_at", "updated_at"])
+    # Phase 13 §13.4: grading duration is the quiz feature's one performance
+    # signal — a slow submit is almost always an N+1 or a huge question order.
+    log_event(
+        LOGGER,
+        "attempt graded",
+        attempt=str(attempt.pk),
+        quiz=str(attempt.quiz_id),
+        questions=len(attempt.question_order),
+        expired=bool(expired),
+        duration_ms=round((time.perf_counter() - graded_started) * 1000, 1),
+    )
     transaction.on_commit(lambda: on_quiz_submitted.send(sender=Attempt, attempt=attempt))
     if attempt.quiz.kind == QuizKind.EXAM and attempt.passed:
         transaction.on_commit(lambda: on_exam_passed.send(sender=Attempt, attempt=attempt))

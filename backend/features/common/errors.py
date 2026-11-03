@@ -162,7 +162,12 @@ def _parts(exc: Exception) -> tuple[Any, str | None, dict | None]:
 
 
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
-    """Render every handled error as the one envelope."""
+    """Render every handled error as the one envelope.
+
+    Phase 13 §13.4: when a request-id context var is set, we also stamp the
+    id on the payload so the SPA can display "رمز الخطأ: …" and support can
+    correlate the failure with a structured log line.
+    """
     # DRF rebinds these internally, but on its own local reference — translate
     # again here so the envelope parts come from an APIException too.
     if isinstance(exc, Http404):
@@ -179,8 +184,35 @@ def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response |
     }
     if fields is not None:
         payload["fields"] = fields
+    # Late import: the logging module pulls in Django's context vars, and the
+    # errors module is imported from places (migrations) where that would be a
+    # cycle if it were a top-level dependency.
+    try:
+        from config.logging import current_request_id
+
+        rid = current_request_id()
+    except Exception:  # pragma: no cover - logging must never break an error path
+        rid = None
+    if rid:
+        payload["requestId"] = rid
+    if response.status_code == status.HTTP_403_FORBIDDEN:
+        # Phase 13 §13.4: denials are counted per view and surfaced as one
+        # warning line per interval, not one line per request. The URL name is
+        # the same key the route manifest uses, so the two line up in a log grep.
+        from features.common.observability import count_permission_denial
+
+        count_permission_denial(_view_key(context))
     response.data = payload
     return response
+
+
+def _view_key(context: dict[str, Any]) -> str:
+    request = context.get("request")
+    resolver_match = getattr(request, "resolver_match", None)
+    if resolver_match is not None and getattr(resolver_match, "url_name", None):
+        return str(resolver_match.url_name)
+    view = context.get("view")
+    return str(getattr(view, "__name__", None) or type(view).__name__)
 
 
 class PermissionDenied(exceptions.APIException):

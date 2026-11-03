@@ -53,6 +53,19 @@ class ApiTestCase(TestCase):
         super().setUp()
         self.client = api_client()
 
+    def assertErrorEnvelope(self, response, *, detail: str, code: str, status_code: int | None = None) -> None:
+        """Assert the `{detail, code, requestId?}` envelope a feature returns.
+
+        `requestId` is stamped by Phase 13 §13.4 whenever a request context is
+        live, so exact-body assertions must not assume it is absent; this checks
+        the two caller-visible fields and that nothing else leaked in.
+        """
+        body = response.json()
+        if status_code is not None:
+            self.assertEqual(response.status_code, status_code)
+        self.assertEqual({key: body[key] for key in ("detail", "code")}, {"detail": detail, "code": code})
+        self.assertLessEqual(set(body), {"detail", "code", "requestId", "fields"})
+
 
 def make_user(email: str = TEST_EMAIL, role: str = Role.STUDENT, **overrides: Any) -> User:
     """A user row with a usable password."""

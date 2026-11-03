@@ -126,8 +126,7 @@ class CourseViewTests(ApiTestCase):
 
     def test_detail_missing_slug_returns_404(self):
         response = self.client.get("/api/courses/missing")
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "الدورة غير موجودة", "code": "not_found"})
+        self.assertErrorEnvelope(response, detail="الدورة غير موجودة", code="not_found", status_code=404)
 
     def test_problems_list_returns_the_shared_set(self):
         build_course_row()

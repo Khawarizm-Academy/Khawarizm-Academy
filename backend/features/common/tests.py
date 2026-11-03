@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import logging
 from datetime import timedelta
 from decimal import Decimal
 from io import StringIO
@@ -13,12 +15,14 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
+from config.logging import JsonConsoleFormatter
 from features.auth.models import AuthEvent
 from features.common.cache import _version, bump_version, cached, param_digest
 from features.common.choices import AuthEventKind, MaintenanceRunStatus
 from features.common.errors import api_exception_handler
 from features.common.maintenance import run_cleanup
 from features.common.models import MaintenanceRun
+from features.common.observability import denial_counts, log_event, reset_denial_counts
 from features.common.serializers import as_number, compact
 from features.common.testing import (
     ALLOWED_ORIGIN,
@@ -123,34 +127,89 @@ class ItemsContractTests(ApiTestCase):
 
 
 class ErrorEnvelopeContractTests(ApiTestCase):
-    """Phase 8: every error is `{detail, code}` (plus `fields` on validation)."""
+    """Every error is `{detail, code, requestId}` (plus `fields` on validation).
+
+    Phase 13 §13.4 added the request-id stamp so the SPA can surface it as
+    "رمز الخطأ: …"; the parity tests therefore allow exactly those three keys.
+    """
+
+    ENVELOPE_KEYS = {"detail", "code", "requestId"}
 
     def test_a_400_names_its_code(self):
         body = self.client.get("/api/catalog", {"type": "bogus"}).json()
-        self.assertEqual(set(body), {"detail", "code"})
+        self.assertLessEqual(set(body), self.ENVELOPE_KEYS)
+        self.assertEqual({"detail", "code"} | ({"requestId"} if "requestId" in body else set()), set(body))
         self.assertEqual(body["code"], "invalid_parameter")
         self.assertIn("courses", body["detail"])
 
     def test_a_404_names_its_code(self):
         body = self.client.get("/api/courses/missing").json()
-        self.assertEqual(set(body), {"detail", "code"})
+        self.assertEqual({"detail", "code"} | ({"requestId"} if "requestId" in body else set()), set(body))
         self.assertEqual(body["code"], "not_found")
 
     def test_a_401_from_the_session_carries_its_reason_code(self):
         body = self.client.post("/api/auth/refresh", {"refreshToken": "x"}, format="json").json()
-        self.assertEqual(set(body), {"detail", "code"})
+        self.assertEqual({"detail", "code"} | ({"requestId"} if "requestId" in body else set()), set(body))
         self.assertEqual(body["code"], "session_invalid")
 
     def test_a_403_names_its_code(self):
         authenticate(self.client, make_user())  # a student, not staff
         body = self.client.get("/api/admin/users").json()
-        self.assertEqual(set(body), {"detail", "code"})
+        self.assertEqual({"detail", "code"} | ({"requestId"} if "requestId" in body else set()), set(body))
         self.assertEqual(body["code"], "permission_denied")
 
     def test_an_unauthenticated_call_names_its_code(self):
         body = APIClient().get("/api/dashboard/enrolled", HTTP_ORIGIN=ALLOWED_ORIGIN).json()
-        self.assertEqual(set(body), {"detail", "code"})
+        self.assertEqual({"detail", "code"} | ({"requestId"} if "requestId" in body else set()), set(body))
         self.assertEqual(body["code"], "not_authenticated")
+
+    def test_the_request_id_matches_the_response_header(self):
+        """Phase 13 §13.4: SPA + support see the same id in the payload and the log."""
+
+        response = self.client.get("/api/courses/missing")
+        body = response.json()
+        self.assertIn("requestId", body)
+        self.assertEqual(body["requestId"], response["X-Request-ID"])
+
+
+class ObservabilityTests(ApiTestCase):
+    """Phase 13 §13.4: denials are counted, and one line covers a burst."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        reset_denial_counts()
+        self.addCleanup(reset_denial_counts)
+
+    def test_five_denials_are_five_counts_and_one_log_line(self):
+        authenticate(self.client, make_user())
+        with self.assertLogs("features.observability", level="WARNING") as captured:
+            for _ in range(5):
+                self.assertEqual(self.client.get("/api/admin/users").status_code, 403)
+
+        self.assertEqual(denial_counts()["admin-users"], 5)
+        self.assertEqual(len(captured.records), 1)
+
+    def test_the_event_payload_reaches_the_json_line(self):
+        """`event` must survive the formatter — that is what makes the line greppable."""
+        with self.assertLogs("features.test_event", level="INFO") as captured:
+            log_event(
+                logging.getLogger("features.test_event"),
+                "video grant minted",
+                asset="course-1--lesson-1",
+                mode="hls",
+                expires_at=None,
+            )
+
+        line = json.loads(JsonConsoleFormatter().format(captured.records[0]))
+        self.assertEqual(line["msg"], "video grant minted")
+        self.assertEqual(line["event"], {"asset": "course-1--lesson-1", "mode": "hls", "expires_at": None})
+
+    def test_a_non_scalar_field_is_stringified_not_dropped(self):
+        with self.assertLogs("features.test_event", level="INFO") as captured:
+            log_event(logging.getLogger("features.test_event"), "cleanup run finished", run={"id": 7})
+
+        line = json.loads(JsonConsoleFormatter().format(captured.records[0]))
+        self.assertEqual(line["event"]["run"], "{'id': 7}")
 
 
 class TestingHelpersTests(ApiTestCase):
@@ -292,6 +351,8 @@ class CleanupExpiredTests(TestCase):
                 "driveAuthStates": 1,
                 "authEvents": 1,
                 "accessAuditEvents": 1,
+                "hiddenReviews": 0,
+                "hiddenThreads": 0,
                 "quizAttemptsExpired": 1,
                 "liveSessionStatesRefreshed": 0,
             },
@@ -320,6 +381,8 @@ class CleanupExpiredTests(TestCase):
                 "driveAuthStates": 1,
                 "authEvents": 1,
                 "accessAuditEvents": 1,
+                "hiddenReviews": 0,
+                "hiddenThreads": 0,
                 "quizAttemptsExpired": 1,
                 "liveSessionStatesRefreshed": 0,
             },
@@ -371,6 +434,8 @@ class MaintenanceEndpointTests(ApiTestCase):
                 "driveAuthStates",
                 "authEvents",
                 "accessAuditEvents",
+                "hiddenReviews",
+                "hiddenThreads",
                 "quizAttemptsExpired",
                 "liveSessionStatesRefreshed",
             },

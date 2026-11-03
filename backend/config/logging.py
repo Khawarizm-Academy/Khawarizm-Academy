@@ -21,6 +21,9 @@ _user_id_ctx: contextvars.ContextVar[str] = contextvars.ContextVar("user_id", de
 
 # The formatter whitelists these record attributes, so nothing sensitive can
 # leak into logs by accident (ts/level/msg/logger are emitted directly).
+# `event` is the Phase 13 §13.4 structured payload — a flat dict of ids and
+# counters written through `features.common.observability.log_event()`, never
+# bodies and never tokens.
 _FIELDS = (
     "request_id",
     "user_id",
@@ -31,6 +34,7 @@ _FIELDS = (
     "queries",
     "cache_ns",
     "cache_key",
+    "event",
 )
 
 
