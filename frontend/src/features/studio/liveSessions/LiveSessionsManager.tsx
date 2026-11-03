@@ -214,7 +214,6 @@ const SessionDrawer: React.FC<{
     } catch (caught) {
       setError(
         caught instanceof ApiError ? caught.message : "تعذر حفظ الجلسة.",
-        caught instanceof ApiError ? caught.message : "تعذر حفظ الجلسة.",
       );
     } finally {
       setSaving(false);
@@ -675,7 +674,10 @@ export const LiveSessionsManager: React.FC<LiveSessionsManagerProps> = ({
   const key = courseSlug ?? "";
 
   const load = useCallback(() => {
-    void (courseSlug ? fetchLiveSessions(courseSlug) : fetchGlobalLiveSessions())
+    return (courseSlug
+      ? fetchLiveSessions(courseSlug)
+      : fetchGlobalLiveSessions()
+    )
       .then((result) => setSessions(result.items))
       .catch((caught) =>
         setError(
