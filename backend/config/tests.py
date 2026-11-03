@@ -146,13 +146,38 @@ class ReadyzTests(TestCase):
     def test_readyz_reports_the_database_up(self):
         response = readyz(RequestFactory().get("/readyz"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json.loads(response.content)["database"], "up")
+        payload = json.loads(response.content)
+        self.assertEqual(payload["database"], "up")
+        # Phase 13 §13.4 also asserts the default roles row exists.
+        self.assertEqual(payload["defaultRoles"], "ok")
 
     def test_readyz_returns_503_when_the_database_is_down(self):
         with mock.patch("config.views.connection.cursor", side_effect=OSError("db down")):
             response = readyz(RequestFactory().get("/readyz"))
         self.assertEqual(response.status_code, 503)
         self.assertEqual(json.loads(response.content)["database"], "down")
+
+    def test_readyz_returns_503_when_a_default_role_is_missing(self):
+        """Phase 13 §13.4: a lost `student` or `admin` row is a boot blocker."""
+        from features.access.models import AccessRole
+
+        AccessRole.objects.filter(slug="admin").delete()
+        response = readyz(RequestFactory().get("/readyz"))
+        self.assertEqual(response.status_code, 503)
+        payload = json.loads(response.content)
+        self.assertEqual(payload["defaultRoles"], "missing")
+
+    def test_readyz_flags_a_missing_spool_dir_only_when_telegram_is_expected(self):
+        """Phase 13 §13.4: `spoolDir` appears only when the setting implies one."""
+        with override_settings(VIDEO_SPOOL_DIR="", TELEGRAM_ENABLED=False):
+            payload = json.loads(readyz(RequestFactory().get("/readyz")).content)
+        self.assertNotIn("spoolDir", payload)
+
+        with override_settings(VIDEO_SPOOL_DIR="/nonexistent/khawarizm-spool", TELEGRAM_ENABLED=True):
+            response = readyz(RequestFactory().get("/readyz"))
+        self.assertEqual(response.status_code, 503)
+        payload = json.loads(response.content)
+        self.assertEqual(payload["spoolDir"], "missing")
 
 
 class RequestIdTests(SimpleTestCase):
@@ -233,6 +258,21 @@ class RequestMetricsTests(SimpleTestCase):
         with self.assertLogs("config.request", level="INFO") as captured:
             middleware(RequestFactory().get("/"))
         self.assertNotIn("user_id", self._lines(captured)[0])
+
+    def test_a_query_string_sentinel_never_reaches_the_log(self):
+        """Phase 13 §13.1.5 (G20): raw-mode grants carry the token in the URL.
+
+        The app's own logger must record only `request.path`; the secret must
+        never appear in the JSON line, in the query, or in the URL fragment.
+        """
+        sentinel = "KH-SENTINEL-DO-NOT-LOG"
+        middleware = RequestMetricsMiddleware(lambda request: JsonResponse({}, status=200))
+        with self.assertLogs("config.request", level="INFO") as captured:
+            middleware(RequestFactory().get(f"/api/videos/raw/asset-1?token={sentinel}"))
+        for line in self._lines(captured):
+            self.assertNotIn(sentinel, json.dumps(line))
+            self.assertEqual(line["path"], "/api/videos/raw/asset-1")
+            self.assertNotIn("query", line)
 
 
 class RequestContextTests(SimpleTestCase):
@@ -430,3 +470,129 @@ class StaticBeforeParameterizedTests(TestCase):
                                 f"`{route}` is shadowed by the earlier `{earlier.pattern}` "
                                 f"— static paths must be declared first ({module_name}).",
                             )
+
+
+def _walk_api_urls(patterns, prefix=""):
+    """Yield `(url_name, route)` for every URL mounted under /api/."""
+    for p in patterns:
+        if hasattr(p, "url_patterns"):
+            yield from _walk_api_urls(p.url_patterns, prefix + str(p.pattern))
+        else:
+            name = getattr(p, "name", None)
+            if not name:
+                continue
+            route = (prefix + str(p.pattern)).rstrip("/") or "/"
+            if route.startswith("api/"):
+                yield name, route
+
+
+class RouteAccessManifestTests(SimpleTestCase):
+    """Phase 13 §13.1.1 — every `/api/` route must be declared in the manifest.
+
+    Adding a route without touching `config/route_access.py` fails here so the
+    author has to state, in review, who may call the endpoint. Renaming or
+    deleting a URL name without regenerating the manifest also fails — the
+    fix is `python -m scripts.gen_route_access`.
+    """
+
+    def test_every_api_route_is_classified(self):
+        from django.urls import get_resolver
+
+        from config import route_access
+
+        live = {name for name, _ in _walk_api_urls(get_resolver().url_patterns)}
+        declared = route_access.CLASSIFIED
+        missing = sorted(live - declared)
+        stale = sorted(declared - live)
+        self.assertEqual(
+            missing,
+            [],
+            "New /api/ routes without a manifest entry — run `python -m scripts.gen_route_access` "
+            "after reviewing the intended access bucket.",
+        )
+        self.assertEqual(
+            stale,
+            [],
+            "Manifest names routes that no longer exist — regenerate the manifest.",
+        )
+
+    def test_every_declared_permission_key_is_in_the_catalog(self):
+        from config import route_access
+        from features.access.registry import PERMISSIONS
+
+        unknown = sorted(
+            {
+                key
+                for keys in route_access.PERMISSIONED.values()
+                for key in keys
+                # perm_any(...) stores its encoded suffix; skip that shape and
+                # validate only the single-key entries the catalog owns.
+                if "." in key and key not in PERMISSIONS
+            }
+        )
+        self.assertEqual(
+            unknown,
+            [],
+            "Manifest references a permission key that is not in the access catalog — "
+            "either the catalog removed the key or the manifest drifted.",
+        )
+
+    def test_buckets_are_disjoint(self):
+        from config import route_access
+
+        permissioned_names = set(route_access.PERMISSIONED)
+        overlaps = [
+            ("public", route_access.PUBLIC & permissioned_names),
+            ("authenticated", route_access.AUTHENTICATED & permissioned_names),
+            ("method_scoped", route_access.METHOD_SCOPED & permissioned_names),
+            ("public/authenticated", route_access.PUBLIC & route_access.AUTHENTICATED),
+            ("public/method_scoped", route_access.PUBLIC & route_access.METHOD_SCOPED),
+            ("authenticated/method_scoped", route_access.AUTHENTICATED & route_access.METHOD_SCOPED),
+        ]
+        for label, overlap in overlaps:
+            with self.subTest(pairs=label):
+                self.assertEqual(sorted(overlap), [], f"Route appears in more than one manifest bucket: {label}")
+
+    def test_permissioned_routes_have_a_matching_permission_class(self):
+        """The manifest's `permissioned` bucket must describe the actual decorator."""
+        from django.urls import get_resolver
+
+        from config import route_access
+
+        name_to_callback: dict[str, object] = {}
+
+        def collect(patterns):
+            for entry in patterns:
+                if hasattr(entry, "url_patterns"):
+                    collect(entry.url_patterns)
+                else:
+                    name = getattr(entry, "name", None)
+                    if name:
+                        name_to_callback[name] = entry.callback
+
+        collect(get_resolver().url_patterns)
+
+        for url_name, keys in route_access.PERMISSIONED.items():
+            with self.subTest(route=url_name):
+                callback = name_to_callback.get(url_name)
+                self.assertIsNotNone(callback, f"{url_name} is declared as permissioned but no route matches")
+                declared_names = set()
+                node = callback
+                seen = set()
+                while node is not None and id(node) not in seen:
+                    seen.add(id(node))
+                    perms = getattr(node, "permission_classes", None)
+                    if perms:
+                        declared_names.update(getattr(p, "__name__", str(p)) for p in perms)
+                        break
+                    node = getattr(node, "cls", None) or getattr(node, "__wrapped__", None)
+                expected = {f"HasPermission_{k.replace('.', '_').replace('-', '_')}" for k in keys if "." in k}
+                # perm_any(...) uses HasAnyPermission_... — accept any Has*Permission_ shape.
+                has_perm_class = any(
+                    n.startswith("HasPermission_") or n.startswith("HasAnyPermission_") for n in declared_names
+                )
+                matched = expected.issubset(declared_names) or has_perm_class
+                self.assertTrue(
+                    matched,
+                    f"{url_name}: manifest says keys={keys} but the view exposes {sorted(declared_names)}",
+                )
