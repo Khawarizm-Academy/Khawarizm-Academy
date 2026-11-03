@@ -38,9 +38,15 @@ jobs:
         run: npx tsc -b
       - name: Phase 12 grep gate (no `isAdmin` UI fallback outside types/tests)
         run: bash scripts/grep-gate.sh
+      - name: Phase 13 Arabic-literal grep gate (features must read copy from JSON)
+        run: bash scripts/i18n-gate.sh
+      - name: Dependency audit (production deps, high-and-above, dated waiver list)
+        run: node scripts/audit-gate.mjs
       - name: Tests
         run: npm test
       - name: Build
         env:
           VITE_API_BASE_URL: https://example.invalid/api
         run: npm run build
+      - name: Phase 13 chunk budget (shell ±3 KB, route chunks < 90 KB, lazy engines)
+        run: node scripts/bundle-budget.mjs

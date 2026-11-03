@@ -83,6 +83,10 @@ Relevant typed settings (real credentials belong only in the host environment):
 | `VIDEO_SPOOL_DIR` | unset; required as persistent writable storage for Telegram Studio |
 | `VIDEO_RAW_RANGE_CAP_BYTES` | 8 MiB |
 | `VIDEO_RAW_MAX_CONCURRENT` | 4 |
+| `VIDEO_RAW_GRANT_TTL_MINUTES` | 120; raw grants are shorter than HLS because the token rides the query string (Phase 13 §13.1.5) |
+| `VIDEO_MAX_OPEN_UPLOADS` | 3 pending sessions per user; a fourth init is `too_many_open_uploads` (Phase 13 §13.1.6) |
+| `VIDEO_SPOOL_MAX_BYTES` | 20 GiB; init refuses with `spool_full` once `spool_bytes_used()` passes it — only when `VIDEO_SPOOL_DIR` is set |
+| `VIDEO_UPLOAD_STALE_HOURS` | 24; `cleanup_expired` prunes pending sessions older than this with their spool parts (Phase 13 §13.5) |
 | `STREAM_TOKEN_TTL_HOURS` | 6 |
 | `VIDEO_GRANT_TTL_PREVIEW_MINUTES` | 30 |
 | `VIDEO_EMBED_ALLOWED_HOSTS` | `youtube-nocookie.com,vimeo.com` |

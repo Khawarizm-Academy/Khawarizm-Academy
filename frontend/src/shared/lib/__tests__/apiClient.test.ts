@@ -130,6 +130,25 @@ describe('apiClient', () => {
     });
   });
 
+  it('carries the request id from the error envelope (Phase 13 §13.4)', async () => {
+    fetchMock.mockResolvedValue(fakeResponse(403, { code: 'admin_only', detail: 'مخصص للإدارة.', requestId: 'abc123' }));
+
+    const error = await apiGet('/admin/overview').catch((caught: unknown) => caught as ApiError);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).requestId).toBe('abc123');
+  });
+
+  it('falls back to the X-Request-ID header when the body has none', async () => {
+    const response = fakeResponse(503, { code: 'raw_busy', detail: 'الخادم مشغول.' });
+    (response as { headers?: Headers }).headers = new Headers({ 'X-Request-ID': 'hdr-9' });
+    fetchMock.mockResolvedValue(response);
+
+    const error = await apiGet('/videos/x').catch((caught: unknown) => caught as ApiError);
+
+    expect((error as ApiError).requestId).toBe('hdr-9');
+  });
+
   it('survives an error body that is not JSON', async () => {
     fetchMock.mockResolvedValue({
       ok: false,

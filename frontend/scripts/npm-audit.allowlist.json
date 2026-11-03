@@ -1,0 +1,26 @@
+{
+  "$comment": "Phase 13 §13.1.8 — dated waivers for `scripts/audit-gate.mjs`. Each entry must carry a reason and an expiry; an expired waiver fails CI. Add one only when no non-breaking fix exists.",
+  "entries": [
+    {
+      "package": "@grpc/grpc-js",
+      "reason": "Reaches us only through @firebase/firestore, which the app never imports (auth only — see src/features/auth/data/firebaseClient.ts). A fix requires downgrading firebase 13 → 9.",
+      "notes": "Node-only gRPC transport; not part of the browser bundle.",
+      "expires": "2027-01-31"
+    },
+    {
+      "package": "@firebase/firestore",
+      "reason": "Same chain as @grpc/grpc-js: the vulnerable dependency, never the code path.",
+      "expires": "2027-01-31"
+    },
+    {
+      "package": "@firebase/firestore-compat",
+      "reason": "Same chain as @grpc/grpc-js: the vulnerable dependency, never the code path.",
+      "expires": "2027-01-31"
+    },
+    {
+      "package": "firebase",
+      "reason": "Top-level alias npm reports for the firestore chain above.",
+      "expires": "2027-01-31"
+    }
+  ]
+}

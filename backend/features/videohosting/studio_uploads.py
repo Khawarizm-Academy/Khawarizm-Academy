@@ -7,6 +7,7 @@ keeps provider session URLs server-side and contains no public playback changes.
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 import threading
 import uuid
@@ -45,15 +46,17 @@ from features.common.errors import (
     UploadSessionExpired,
 )
 from features.common.messages import INVALID_VIDEO_LINK, UPLOAD_FILE_MISMATCH
+from features.common.observability import log_event
 from features.videohosting.diagnostics import provider_available, provider_reason
 from features.videohosting.models import UploadSession, VideoAsset, VideoProvider, VideoSystemConfig
 from features.videohosting.playback_plan import Plan, resolve_playback_plan
 from features.videohosting.providers import SPECS, ensure_defaults, spec_for
 from features.videohosting.providers.base import ProviderUploadError, ProviderUploadUnavailable
-from features.videohosting.services import host_capabilities
+from features.videohosting.services import host_capabilities, spool_bytes_used
 
 PAGE_SIZE = 20
 MAX_PAGE = 10_000
+LOGGER = logging.getLogger(__name__)
 ALLOWED_EXTENSIONS = frozenset({"mp4", "mov", "m4v", "webm", "mkv"})
 CONTENT_RANGE = re.compile(r"\Abytes ([0-9]+)-([0-9]+)/([0-9]+)\Z")
 MP4_MAGIC = b"ftyp"
@@ -450,6 +453,23 @@ def studio_video_link_create(request: HttpRequest) -> Response:
 def studio_upload_init(request: HttpRequest, asset_id: str) -> Response:
     if not has_perm(request.user, "videos.upload"):
         raise PermissionDenied()
+    # Phase 13 §13.1.6: cap the parallel resumables one user may hold open so
+    # a misbehaving client cannot fan out and exhaust the provider's session
+    # quota. Cancelled / completed sessions do not count.
+    open_sessions = UploadSession.objects.filter(user=request.user, status="pending").count()
+    if open_sessions >= int(_setting("VIDEO_MAX_OPEN_UPLOADS", 3)):
+        raise InvalidParameter(
+            "لديك الكثير من عمليات الرفع المفتوحة؛ ألغِ إحداها قبل بدء جديدة.",
+            code="too_many_open_uploads",
+        )
+    # Same section of the plan: the spool directory is bounded too, but only when
+    # one is actually configured (the Drive path never touches it).
+    spool_quota = int(_setting("VIDEO_SPOOL_MAX_BYTES", 20 * 1024**3))
+    if str(_setting("VIDEO_SPOOL_DIR", "")).strip() and spool_bytes_used() >= spool_quota:
+        raise InvalidParameter(
+            "مساحة التخزين المؤقت للرفع ممتلئة؛ حاول لاحقًا بعد انتهاء العمليات الجارية.",
+            code="spool_full",
+        )
     asset = _asset_for_id(asset_id, request.user)
     data = _body(request)
     original_filename = _required_text(data, "fileName", 255)
@@ -508,6 +528,7 @@ def studio_upload_init(request: HttpRequest, asset_id: str) -> Response:
         chunk_size=_chunk_size(),
         metadata=metadata,
     )
+    _log_transition(session, "opened")
     return _response(
         {
             "sessionId": session.session_key,
@@ -685,6 +706,7 @@ def studio_upload_complete(request: HttpRequest, session_id: str) -> Response:
         session.status = completion.session_status
         session.progress = completion.session_progress
         session.save(update_fields=["status", "progress", "updated_at"])
+        _log_transition(session, "completed")
         if completion.background is not None:
             threading.Thread(target=completion.background, daemon=True).start()
         return _response(_asset_row(asset))
@@ -710,7 +732,26 @@ def studio_upload_cancel(request: HttpRequest, session_id: str) -> Response:
         session.status = "cancelled"
         session.error_message = "cancelled"
         session.save(update_fields=["status", "error_message", "updated_at"])
+        _log_transition(session, "cancelled")
         return _response({"status": "cancelled"})
+
+
+def _log_transition(session: UploadSession, event: str) -> None:
+    """Phase 13 §13.4 — one line per upload-session state change.
+
+    Ids and counters only: the session key (it authenticates chunk PUTs), the
+    provider upload URI, the file name and the user email all stay out.
+    """
+    log_event(
+        LOGGER,
+        f"upload session {event}",
+        session=str(session.pk),
+        asset=str(session.asset_id),
+        status=session.status,
+        progress=session.progress,
+        total_bytes=session.total_bytes,
+        provider=session.provider.code if session.provider_id else "",
+    )
 
 
 # Parent URL wiring may use the shorter names from the API surface.

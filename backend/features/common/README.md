@@ -18,7 +18,8 @@ package; it depends on no feature.
 | `http_cache.py` | `etag_response` — strong ETag + `Cache-Control` + 304 short-circuit | catalog, auth config |
 | `throttling.py` | `SCOPED_RATES` + the scoped throttle classes | `settings.py`, auth views |
 | `messages.py` | Arabic user-facing message strings | serializers, errors |
-| `testing.py` | `api_client()`, `ApiTestCase`, `make_user/make_course/…` factories | every feature's tests |
+| `testing.py` | `api_client()`, `ApiTestCase` (+ `assertErrorEnvelope`), `make_user/make_course/…` factories | every feature's tests |
+| `observability.py` | `log_event()` — one structured JSON line with an `event` payload — and the counted permission-denial signal (Phase 13 §13.4) | access, quizzes, videohosting, `errors.py` |
 | `models.py` | `UUIDModel`, `TimeStampedModel` (abstract bases) + **`MaintenanceRun`** (concrete, below) | every feature's models |
 | `maintenance.py` | The `cleanup_expired` job service (below) | command + admin endpoint |
 
@@ -40,17 +41,20 @@ package; it depends on no feature.
 
 ## The maintenance job (`maintenance.py` + `cleanup_expired`)
 
-Sweeps five dead-weight families — expired `StreamToken`s, `UploadSession`s
-stale past 7 days, expired `DriveAuthState`s, `AuthEvent`s past
-`AUTH_EVENT_RETENTION_DAYS` (env, default 180), and access `AuditEvent`s past
-`AUDIT_RETENTION_DAYS` (env, default 365) — in **chunks of 500, one transaction
-per chunk**. It also asks the quiz service to grade overdue in-progress attempts
-after their ten-second grace period and reports that count as
-`quizAttemptsExpired`. Idempotent: deleting an already-deleted row deletes nothing,
-and already-graded attempts are skipped, so re-runs converge. An overlap guard (the newest still-`running`
+Sweeps the dead-weight families — expired `StreamToken`s, `UploadSession`s stale
+past `VIDEO_UPLOAD_STALE_HOURS` (env, default 24) plus their spool parts,
+expired `DriveAuthState`s, `AuthEvent`s past `AUTH_EVENT_RETENTION_DAYS` (env,
+default 180), access `AuditEvent`s past `AUDIT_RETENTION_DAYS` (env, default 365),
+and hidden reviews/threads older than `HIDDEN_CONTENT_RETENTION_DAYS` (30, added
+in Phase 13 §13.5) — in **chunks of 500, one transaction per chunk**. It also
+asks the quiz service to grade overdue in-progress attempts after their
+ten-second grace period and reports that count as `quizAttemptsExpired`. Idempotent:
+deleting an already-deleted row deletes nothing, and already-graded attempts are
+skipped, so re-runs converge. An overlap guard (the newest still-`running`
 `MaintenanceRun`, younger than 60 min) makes a concurrent second run exit 0
 with `skipped, still running`; every run leaves its per-family delete counts
-on its `MaintenanceRun` row (`trigger` = command | endpoint | cron).
+on its `MaintenanceRun` row (`trigger` = command | endpoint | cron) and one
+`cleanup run finished` log line.
 
 Two ways to schedule it:
 
@@ -71,7 +75,13 @@ Two ways to schedule it:
 ```python
 from features.common.choices import CourseLevel
 from features.common.serializers import compact, as_number
+from features.common.observability import log_event
 ```
+
+`log_event` is the only sanctioned way to add an operational log line from a
+feature: scalars only (`str/int/float/bool/None`), never a token, a provider URI,
+or user text. `config/logging.py` whitelists the `event` attribute in the JSON
+formatter, so anything passed here is exactly what appears in the line.
 
 ## Related
 

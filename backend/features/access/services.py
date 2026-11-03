@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import logging
 import math
 import re
 import sys
@@ -32,7 +33,9 @@ from features.access.registry import (
 )
 from features.common.choices import AuditAction, Role
 from features.common.errors import Conflict, InvalidParameter, NotFound, PermissionDenied, RoleHasMembers
+from features.common.observability import log_event
 
+LOGGER = logging.getLogger(__name__)
 _ROLE_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,38}$")
 _ACCESS_CACHE_ATTR = "_access_control_snapshot"
 _REDACTED_AUDIT_KEYS = {
@@ -356,10 +359,16 @@ def record_audit(
     request: Any = None,
     using: str | None = None,
 ):
-    """Append one safe audit row; request and IP are optional for tests/jobs."""
+    """Append one safe audit row; request and IP are optional for tests/jobs.
+
+    Phase 13 §13.4: the same mutation also emits one structured log line, so an
+    operator tailing stdout sees role and permission changes without opening the
+    audit table. Only the action and the ids go to the log — never the detail
+    payload, which can carry role membership lists.
+    """
     _AccessRole, _RoleAssignment, AuditEvent, _User = _model_classes()
     manager = AuditEvent.objects.using(using) if using else AuditEvent.objects
-    return manager.create(
+    event = manager.create(
         action=action,
         actor=actor if _is_authenticated(actor) else None,
         target_type=str(target_type)[:40],
@@ -367,6 +376,15 @@ def record_audit(
         detail=_safe_detail(detail or {}),
         ip_address=_request_ip(request),
     )
+    log_event(
+        LOGGER,
+        "access change",
+        action=action,
+        target_type=event.target_type,
+        target_id=event.target_id,
+        actor=str(getattr(actor, "pk", "") or ""),
+    )
+    return event
 
 
 def _permission_list(role: Any) -> list[str]:

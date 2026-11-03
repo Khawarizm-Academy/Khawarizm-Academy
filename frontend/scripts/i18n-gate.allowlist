@@ -1,0 +1,69 @@
+# Phase 13 §13.3 — Arabic-literal gate allowlist.
+#
+# Every path below has raw Arabic string literals inside a `.ts`/`.tsx` file
+# in a gated feature folder. The gate ignores them so CI stays green during
+# the migration; new violations fail.
+#
+# To clear one: move its strings into the folder's `data/*Copy.json` (create
+# it if missing), import the JSON, and drop the file from this list.
+src/features/admin/components/cards/DeviceBreakdownLists.tsx
+src/features/admin/components/cards/LoginSeriesChart.tsx
+src/features/admin/components/chrome/AdminHeader.tsx
+src/features/admin/components/chrome/AdminNotice.tsx
+src/features/admin/components/chrome/AdminSectionNav.tsx
+src/features/admin/components/controls/AdminSearchBox.tsx
+src/features/admin/components/controls/AdminStepsRail.tsx
+src/features/admin/components/controls/FfmpegModeToggle.tsx
+src/features/admin/components/layout/ContentTable.tsx
+src/features/admin/components/layout/UsersTable.tsx
+src/features/admin/components/overlays/ContentFormModal.tsx
+src/features/admin/components/toolbar/AdminPagination.tsx
+src/features/admin/components/views/ActivityView.tsx
+src/features/admin/components/views/AdminSystemView.tsx
+src/features/admin/components/views/AnalyticsView.tsx
+src/features/admin/components/views/ContentView.tsx
+src/features/admin/components/views/OverviewView.tsx
+src/features/admin/components/views/ReviewQueueView.tsx
+src/features/admin/components/views/SessionsView.tsx
+src/features/admin/components/views/UserDetailPage.tsx
+src/features/admin/components/views/UsersView.tsx
+src/features/admin/components/views/VideoHostingView.tsx
+src/features/admin/data/adminContentForm.ts
+src/features/admin/data/adminFormatters.ts
+src/features/discussions/components/DiscussionComposer.tsx
+src/features/discussions/components/DiscussionReplyComposer.tsx
+src/features/discussions/components/DiscussionTab.tsx
+src/features/discussions/components/StudioDiscussionInbox.tsx
+src/features/studio/analytics/components/AnalyticsBars.tsx
+src/features/studio/analytics/components/AnalyticsKpiTiles.tsx
+src/features/studio/analytics/components/AnalyticsLineChart.tsx
+src/features/studio/analytics/components/AnalyticsSkeleton.tsx
+src/features/studio/analytics/components/LessonHeatStrip.tsx
+src/features/studio/analytics/StudioAnalyticsPage.tsx
+src/features/studio/announcements/components/LearnerAnnouncementBanner.tsx
+src/features/studio/announcements/components/LearnerAnnouncementList.tsx
+src/features/studio/announcements/components/StudioAnnouncementComposer.tsx
+src/features/studio/announcements/components/StudioAnnouncementList.tsx
+src/features/studio/components/cards/ReadinessRing.tsx
+src/features/studio/components/cards/StudioCourseCard.tsx
+src/features/studio/components/chrome/StudioRail.tsx
+src/features/studio/components/chrome/StudioTopBar.tsx
+src/features/studio/components/layout/StudioBottomBar.tsx
+src/features/studio/components/layout/StudioPageHead.tsx
+src/features/studio/components/overlays/CreateCourseModal.tsx
+src/features/studio/components/states/StudioSkeleton.tsx
+src/features/studio/components/views/CoursesView.tsx
+src/features/studio/components/views/HomeView.tsx
+src/features/studio/liveSessions/LiveSessionsManager.tsx
+src/features/studio/pages/StudioCourseEditorPage.tsx
+src/features/studio/pages/StudioCoursesPage.tsx
+src/features/studio/pages/StudioHomePage.tsx
+src/features/studio/pages/StudioNewCoursePage.tsx
+src/features/studio/pages/StudioPlaceholderPages.tsx
+src/features/studio/pages/StudioProfilePage.tsx
+src/features/studio/pages/StudioVideosPage.tsx
+src/features/studio/quizzes/components/QuizEditorView.tsx
+src/features/studio/quizzes/components/QuizListView.tsx
+src/features/studio/quizzes/components/QuizQuestionForm.tsx
+src/features/studio/quizzes/components/QuizResultsView.tsx
+src/features/studio/students/StudioStudentsPage.tsx
