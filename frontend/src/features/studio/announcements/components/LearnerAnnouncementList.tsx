@@ -9,14 +9,17 @@ type Props = { courseSlug: string };
 const formatDate = (value: string) => new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 
 export const LearnerAnnouncementList: React.FC<Props> = ({ courseSlug }) => {
-  const [items, setItems] = useState<CourseAnnouncement[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Loading is derived from the key stored with the last resolved fetch.
+  const [snapshot, setSnapshot] = useState<{ key: string; items: CourseAnnouncement[] } | null>(null);
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    void fetchCourseAnnouncements(courseSlug).then((result) => { if (active) setItems(result); }).catch(() => { if (active) setItems([]); }).finally(() => { if (active) setLoading(false); });
+    void fetchCourseAnnouncements(courseSlug)
+      .then((result) => { if (active) setSnapshot({ key: courseSlug, items: result }); })
+      .catch(() => { if (active) setSnapshot({ key: courseSlug, items: [] }); });
     return () => { active = false; };
   }, [courseSlug]);
+  const loading = snapshot === null || snapshot.key !== courseSlug;
+  const items = snapshot && snapshot.key === courseSlug ? snapshot.items : [];
   const pinned = items.find((item) => item.pinned);
   const visibleItems = items.filter((item) => item.id !== pinned?.id);
   return (

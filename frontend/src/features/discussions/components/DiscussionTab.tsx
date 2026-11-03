@@ -9,6 +9,8 @@ import './discussion.css';
 
 const dateFormatter = new Intl.DateTimeFormat('ar', { dateStyle: 'medium', timeStyle: 'short' });
 
+type DiscussionSnapshot = { key: string; items: DiscussionThread[] };
+
 export const DiscussionTab: React.FC<{
   courseSlug: string;
   lessonId: string;
@@ -17,36 +19,47 @@ export const DiscussionTab: React.FC<{
   canModerate?: boolean;
   onJumpToTimestamp?: (seconds: number) => void;
 }> = ({ courseSlug, lessonId, canPost = true, canReply = false, canModerate = false, onJumpToTimestamp }) => {
-  const [items, setItems] = useState<DiscussionThread[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Loading is derived from the key stored with the last resolved fetch, so a
+  // lesson change immediately shows the empty/loading state without a sync setState.
+  const [snapshot, setSnapshot] = useState<DiscussionSnapshot | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
   const [error, setError] = useState('');
+  const threadKey = `${courseSlug}#${lessonId}`;
+  const loading = snapshot === null || snapshot.key !== threadKey;
+  const items = snapshot && snapshot.key === threadKey ? snapshot.items : [];
 
   useEffect(() => {
-    setLoading(true);
-    void fetchDiscussionThreads(courseSlug, lessonId).then((result) => setItems(result.items)).catch((reason) => setError(reason instanceof Error ? reason.message : 'تعذّر تحميل النقاشات.')).finally(() => setLoading(false));
-  }, [courseSlug, lessonId]);
+    let active = true;
+    void fetchDiscussionThreads(courseSlug, lessonId)
+      .then((result) => { if (active) setSnapshot({ key: threadKey, items: result.items }); })
+      .catch((reason) => {
+        if (!active) return;
+        setSnapshot({ key: threadKey, items: [] });
+        setError(reason instanceof Error ? reason.message : 'تعذّر تحميل النقاشات.');
+      });
+    return () => { active = false; };
+  }, [courseSlug, lessonId, threadKey]);
 
   const addThread = async (input: { title: string; body: string; lessonId: string }) => {
     const created = await createDiscussionThread(courseSlug, input);
-    setItems((current) => [created, ...current]);
+    setSnapshot((current) => current && current.key === threadKey ? { key: threadKey, items: [created, ...current.items] } : current);
     return created;
   };
 
   const addReply = async (thread: DiscussionThread, input: { body: string }) => {
     const post = await createDiscussionReply(courseSlug, thread.id, input);
-    setItems((current) => current.map((item) => item.id === thread.id ? { ...item, posts: [...(item.posts || []), post] } : item));
+    setSnapshot((current) => current && current.key === threadKey ? { key: threadKey, items: current.items.map((item) => item.id === thread.id ? { ...item, posts: [...(item.posts || []), post] } : item) } : current);
     return post;
   };
 
   const accept = async (thread: DiscussionThread, post: DiscussionPost) => {
     const updated = await acceptDiscussionAnswer(courseSlug, thread.id, post.id);
-    setItems((current) => current.map((item) => item.id === updated.id ? updated : item));
+    setSnapshot((current) => current && current.key === threadKey ? { key: threadKey, items: current.items.map((item) => item.id === updated.id ? updated : item) } : current);
   };
 
   const moderate = async (thread: DiscussionThread, input: { hidden?: boolean; pinned?: boolean }) => {
     const updated = await moderateDiscussion(courseSlug, thread.id, input);
-    setItems((current) => input.hidden ? current.filter((item) => item.id !== updated.id) : current.map((item) => item.id === updated.id ? updated : item));
+    setSnapshot((current) => current && current.key === threadKey ? { key: threadKey, items: input.hidden ? current.items.filter((item) => item.id !== updated.id) : current.items.map((item) => item.id === updated.id ? updated : item) } : current);
   };
 
   return (

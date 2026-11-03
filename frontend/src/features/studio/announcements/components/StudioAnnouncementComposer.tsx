@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Pin, Send, X } from 'lucide-react';
 import { ApiError } from '@/shared/lib/apiClient';
 import { MarkdownEditor } from '@/shared/components/Editor/MarkdownEditor';
@@ -34,14 +34,6 @@ export const StudioAnnouncementComposer: React.FC<Props> = ({
   const [selectedCourse, setSelectedCourse] = useState(courseSlug);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    setTitle(initial?.title ?? '');
-    setBody(initial?.body ?? '');
-    setPinned(initial?.pinned ?? false);
-    setSelectedCourse(courseSlug);
-    setError('');
-  }, [courseSlug, initial]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();

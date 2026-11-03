@@ -12,10 +12,13 @@ const features = [
   'competitions',
   'courses',
   'dashboard',
+  'discussions',
   'events',
   'home',
   'profile',
+  'reviews',
   'scholarships',
+  'studio',
   'videohosting',
 ]
 
@@ -33,6 +36,12 @@ const preExistingCrossFeatureImports = {
     scholarships: ['@/features/scholarships/data/scholarshipFetchers'],
   },
   courses: {
+    // Phase 11 embeds the discussion tab and learner announcements in the player/landing.
+    discussions: ['@/features/discussions/components/DiscussionTab'],
+    studio: [
+      '@/features/studio/announcements/components/LearnerAnnouncementList',
+      '@/features/studio/announcements/components/LearnerAnnouncementBanner',
+    ],
     catalog: ['@/features/catalog/components/cards/CatalogCard'],
     dashboard: [
       '@/features/dashboard/data/dashboardFetchers',
@@ -50,6 +59,10 @@ const preExistingCrossFeatureImports = {
       '@/features/auth/data/authFetchers',
       '@/features/auth/types',
     ],
+  },
+  // The Studio rail derives Arabic role labels from the signed-in identity.
+  studio: {
+    auth: ['@/features/auth/types'],
   },
   scholarships: {
     dashboard: [
@@ -116,6 +129,13 @@ export default defineConfig([
     ],
     languageOptions: {
       globals: globals.browser,
+    },
+    // `^_` marks an intentionally dropped binding, e.g. `({ id: _id, ...option })`.
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
     },
   },
   ...features.map(featureBoundaryConfig),

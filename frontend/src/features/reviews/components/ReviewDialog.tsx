@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import copy from '@/features/reviews/data/reviewCopy.json';
 import { createCourseReview, updateCourseReview } from '@/features/reviews/data/reviewFetchers';
 import type { CourseReview } from '@/features/reviews/types';
@@ -6,27 +6,17 @@ import type { CourseReview } from '@/features/reviews/types';
 type Props = {
   slug: string;
   review: CourseReview | null;
-  open: boolean;
   onClose: () => void;
   onSaved: (review: CourseReview) => void;
 };
 
-export const ReviewDialog: React.FC<Props> = ({ slug, review, open, onClose, onSaved }) => {
+export const ReviewDialog: React.FC<Props> = ({ slug, review, onClose, onSaved }) => {
   const [rating, setRating] = useState(review?.rating ?? 5);
   const [title, setTitle] = useState(review?.title ?? '');
   const [body, setBody] = useState(review?.body ?? '');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    setRating(review?.rating ?? 5);
-    setTitle(review?.title ?? '');
-    setBody(review?.body ?? '');
-    setError('');
-  }, [open, review]);
-
-  if (!open) return null;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);

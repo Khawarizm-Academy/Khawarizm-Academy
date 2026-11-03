@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Edit3, Pin, PinOff, Trash2 } from 'lucide-react';
 import { ApiError } from '@/shared/lib/apiClient';
 import { MarkdownRenderer } from '@/shared/components/Editor/MarkdownRenderer';
@@ -20,23 +20,28 @@ const formatDate = (value: string) => new Intl.DateTimeFormat('ar-EG', { dateSty
 
 export const StudioAnnouncementList: React.FC<Props> = ({ courseSlug, refreshKey = 0, onEdit }) => {
   const [items, setItems] = useState<CourseAnnouncement[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState('');
+  // Loading is derived from the key stored with the last resolved fetch, so a
+  // course or refresh change restores the loading state without a sync setState.
+  const [loadedKey, setLoadedKey] = useState('');
+  const listKey = `${courseSlug}#${refreshKey}`;
+  const loading = loadedKey !== listKey;
 
-  const load = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      setItems(await fetchCourseAnnouncements(courseSlug));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'تعذّر تحميل الإعلانات.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { void load(); }, [courseSlug, refreshKey]);
+  const load = useCallback(() => {
+    void fetchCourseAnnouncements(courseSlug)
+      .then((result) => {
+        setItems(result);
+        setLoadedKey(listKey);
+      })
+      .catch((reason) => {
+        setError(reason instanceof Error ? reason.message : 'تعذّر تحميل الإعلانات.');
+        setLoadedKey(listKey);
+      });
+  }, [courseSlug, listKey]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const togglePin = async (row: CourseAnnouncement) => {
     setBusyId(row.id);

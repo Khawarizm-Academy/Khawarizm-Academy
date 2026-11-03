@@ -20,6 +20,9 @@ export const LiveSessionCountdown: React.FC<LiveSessionCountdownProps> = ({
   const clockOffset = useMemo(() => {
     if (serverOffsetMs !== undefined) return serverOffsetMs;
     const serverTime = serverNow ? Date.parse(serverNow) : Number.NaN;
+    // Reading the wall clock once per render is unavoidable for a real offset;
+    // the remaining-time state below then only changes inside the interval tick.
+    // eslint-disable-next-line react-hooks/purity
     return Number.isFinite(serverTime) ? serverTime - Date.now() : 0;
   }, [serverNow, serverOffsetMs]);
   const [remaining, setRemaining] = useState(() => (Number.isFinite(target) ? target - (Date.now() + clockOffset) : 0));
