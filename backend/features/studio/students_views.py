@@ -196,14 +196,16 @@ def _roster_queryset(actor: Any, values: dict[str, Any]):
 
 
 def _sort_roster(rows: Any, sort: str):
-    return rows.order_by(
-        {
-            "name": (Lower("user__full_name"), "user_id"),
-            "progress": ("-progress", Lower("user__full_name"), "user_id"),
-            "lastActive": ("-last_active_at", Lower("user__full_name"), "user_id"),
-            "quizAverage": ("-quiz_average", Lower("user__full_name"), "user_id"),
-        }.get(sort, (Lower("user__full_name"), "user_id"))
-    )
+    # `order_by` takes field names as separate arguments; each branch here is a
+    # tuple, so it must be unpacked — passing it whole raises FieldError and
+    # turns every roster request into a 500.
+    ordering = {
+        "name": (Lower("user__full_name"), "user_id"),
+        "progress": ("-progress", Lower("user__full_name"), "user_id"),
+        "lastActive": ("-last_active_at", Lower("user__full_name"), "user_id"),
+        "quizAverage": ("-quiz_average", Lower("user__full_name"), "user_id"),
+    }.get(sort, (Lower("user__full_name"), "user_id"))
+    return rows.order_by(*ordering)
 
 
 def _csv_cell(value: Any) -> str:
