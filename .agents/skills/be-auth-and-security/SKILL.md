@@ -26,6 +26,33 @@ Security is a set of boring defaults applied everywhere. Assume every input is h
 - Role/permission checks live in one place (policy/decorator/permission class), not scattered `if user.is_admin`.
 - Admin/back-office is a separate surface with stronger auth and an audit log.
 
+### Making authorization structural, not memory
+
+A permission model held together by "remember to add the decorator" fails the day
+someone forgets. Make the build remember instead:
+
+- **Every endpoint must be classified.** Keep a generated manifest of routes and
+  their requirement (public / authenticated / named permission / per-method),
+  built by introspecting the live router rather than by hand. A test walks the same
+  router and **fails CI when a route is missing from the manifest** or names a
+  permission key that does not exist in the catalog. Adding an endpoint without
+  declaring who may call it is then a red build, not a live hole.
+- **Deny-test the whole surface from that manifest.** One table-driven test calls
+  every guarded route as anonymous (401), as the lowest-privilege role (403), and
+  as a granted role (anything but 401/403). Because it reads the manifest, the test
+  surface cannot drift from the route surface.
+- **One source of truth for keys.** Endpoints import keys from the catalog; an
+  unknown key raises at import/boot time, not at request time.
+- **Hierarchy rules live in the policy service**, never re-implemented in a view:
+  an actor may grant only what they effectively hold, and may not act on a role at
+  or above their own rank.
+- **A UI gate is not authorization.** The same key is re-checked server-side; the
+  client only hides the button. Count denials per endpoint (throttled) so a
+  misconfigured client shows as a rising counter.
+
+Project-specific facts (where the manifest lives, the command that regenerates it,
+the catalog's size) belong in `PROJECT_PROFILE.md`, not here.
+
 ## 3. Input and output
 
 - Validate type, length, range, and format at the edge ([`core-error-handling`](../core-error-handling/SKILL.md)). Reject unknown fields on writes.

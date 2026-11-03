@@ -99,3 +99,27 @@ Print the router's answer for a URL: matched route, params, active tab, skeleton
 ## 12. Rules
 
 1. No path literals. 2. No hardcoded tabs. 3. No localized text in URLs. 4. One page per view; everything else redirects. 5. `*` last. 6. Never branch on a route/view; use the resolver helpers. 7. Shareable state lives in the query. 8. Verify every URL you touch.
+
+## 13. Route guards read permissions, never role names
+
+A gated route declares a **permission key** in the route table, and the guard
+resolves it through the same `can()` the components use:
+
+```json
+{ "path": "/studio/students", "immersive": true, "requiresPermission": "students.view_own" }
+```
+
+- Never `user.isAdmin`, `role === "admin"`, or a role-name string in a guard, a
+  nav filter, or a component. Roles are editable data; a key is the contract. A
+  grep gate in CI keeps the retired boolean reads out of runtime code.
+- Prefer a list when either key should open the screen (`["quizzes.edit_own",
+  "quizzes.create"]`) — an `any-of` rule in data, not an `||` chain in JSX.
+- Hiding a route is **not** authorization: the endpoint the page calls re-checks
+  the same key, so the view must render a real denied state for a 403 that arrives
+  mid-session (permissions change, or the URL was typed).
+- Guards that live in the route table are auditable in one file; a check buried in
+  a component is not. Keep the navigation config as the single list of "who sees
+  which screen", and let components ask `can()` for finer controls.
+
+The backend half (the route manifest that must classify the endpoint a guard calls)
+lives in [`be-auth-and-security`](../be-auth-and-security/SKILL.md) §2.
