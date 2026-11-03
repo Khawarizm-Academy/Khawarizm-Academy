@@ -26,16 +26,47 @@ export class ApiError extends Error {
   code?: string;
   fields?: Record<string, unknown>;
   retryAfter?: string;
+  /** Phase 13 §13.4 — the id the backend stamps on the error envelope, so a
+      user's screenshot can be matched to one structured log line. */
+  requestId?: string;
 
-  constructor(status: number, message: string, code?: string, fields?: Record<string, unknown>, retryAfter?: string) {
+  constructor(
+    status: number,
+    message: string,
+    code?: string,
+    fields?: Record<string, unknown>,
+    retryAfter?: string,
+    requestId?: string,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.fields = fields;
     this.retryAfter = retryAfter;
+    this.requestId = requestId;
+  }
+
+  /** Build the error from the shared envelope (JSON body + response headers). */
+  static fromResponse(
+    status: number,
+    statusText: string,
+    payload: ApiErrorPayload,
+    retryAfter?: string,
+    headerRequestId?: string,
+  ): ApiError {
+    return new ApiError(
+      status,
+      payload.detail ?? `API ${status}: ${statusText}`,
+      payload.code,
+      payload.fields,
+      retryAfter,
+      payload.requestId ?? headerRequestId,
+    );
   }
 }
+
+type ApiErrorPayload = { detail?: string; code?: string; fields?: Record<string, unknown>; requestId?: string };
 
 /** Called once when the session can no longer be recovered, with the reason code. */
 type AuthLostHandler = (code: string) => void;
@@ -75,9 +106,9 @@ function refreshTokens(): Promise<boolean> {
 }
 
 /** Read an error body without throwing when it is empty or not JSON. */
-async function readErrorBody(response: Response): Promise<{ detail?: string; code?: string; fields?: Record<string, unknown> }> {
+async function readErrorBody(response: Response): Promise<ApiErrorPayload> {
   try {
-    return (await response.json()) as { detail?: string; code?: string };
+    return (await response.json()) as ApiErrorPayload;
   } catch {
     return {};
   }
@@ -116,12 +147,12 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
 
   if (!response.ok) {
     const payload = await readErrorBody(response);
-    throw new ApiError(
+    throw ApiError.fromResponse(
       response.status,
-      payload.detail ?? `API ${response.status}: ${response.statusText}`,
-      payload.code,
-      payload.fields,
+      response.statusText,
+      payload,
       response.headers?.get?.('Retry-After') ?? undefined,
+      response.headers?.get?.('X-Request-ID') ?? undefined,
     );
   }
 
@@ -178,7 +209,7 @@ export function apiUpload<T>(path: string, formData: FormData, onProgress?: Uplo
 
   const decodeBody = (body: ArrayBuffer) => {
     try {
-      return JSON.parse(new TextDecoder().decode(body)) as { detail?: string; code?: string };
+      return JSON.parse(new TextDecoder().decode(body)) as ApiErrorPayload;
     } catch {
       return {};
     }
@@ -201,14 +232,7 @@ export function apiUpload<T>(path: string, formData: FormData, onProgress?: Uplo
 
     const ok = response.status >= 200 && response.status < 300;
     if (!ok) {
-      const payload = decodeBody(response.body);
-      throw new ApiError(
-        response.status,
-        payload.detail ?? `API ${response.status}: ${response.statusText}`,
-        payload.code,
-        undefined,
-        response.retryAfter,
-      );
+      throw ApiError.fromResponse(response.status, response.statusText, decodeBody(response.body), response.retryAfter);
     }
     return decodeBody(response.body) as T;
   })();
