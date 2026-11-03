@@ -19,7 +19,10 @@ Engineering and design documentation for the Khawarizm Academy platform. Everyth
 | — | [**06 · Development Guide**](06-development-guide.md) | Set up the project and follow the page-creation workflow. |
 | — | [**07 · Backend Contract**](07-backend-contract.md) | See the entities, endpoints, and API environment. |
 | — | [**08 · Backend Architecture**](08-backend-architecture.md) | Understand the one-app-per-feature layout, models, serializers, and views. |
-| — | [**09 · Operations Runbook**](09-operations-runbook.md) | Fix a production complaint: a video that won't play, a stuck upload, a user who lost access. |
+| — | [**09 · Access Control**](09-access-control.md) | Add or audit a permission, a role, or a route's gate. |
+| — | [**10 · Studio**](10-studio.md) | Work on the authoring surface: design language, motion, editor, autosave. |
+| — | [**11 · Video Platform**](11-video-platform.md) | Understand providers, the plan resolver, entitlement, uploads, and player engines. |
+| — | [**13 · Operations Runbook**](13-operations-runbook.md) | Fix a production complaint: a video that won't play, a stuck upload, a user who lost access. |
 
 ---
 
@@ -37,42 +40,61 @@ docs/
 ├── 06-development-guide.md          setup, scripts, code style, page blueprint, verification
 ├── 07-backend-contract.md           domain entities, REST endpoints, environment
 ├── 08-backend-architecture.md       feature-app layout, models, serializers, views, admin
-└── 09-operations-runbook.md         triage trees: playback, uploads, access, jobs, health
+├── 09-access-control.md             permission catalog, role hierarchy, route manifest, UI consumption
+├── 10-studio.md                     design language, motion spec, editor architecture, autosave model
+├── 11-video-platform.md             provider × FFmpeg matrix, plan resolver, entitlement, uploads, engines
+└── 13-operations-runbook.md         triage trees: playback, uploads, access, jobs, health
 ```
 
+(The runbook moved from `09` to `13` when Phase 14 added access-control, Studio
+and video-platform documents at the numbers `plan/PLAN.md` assigns them; `12` is
+simply unused so far.)
+
 Every feature also owns a README. The frontend features live under
-`frontend/src/features/`:
+`frontend/src/features/` (15):
 
 ```
 frontend/src/features/
-├── home/README.md
+├── admin/README.md
+├── auth/README.md
 ├── catalog/README.md
+├── certificates/README.md
+├── competitions/README.md
 ├── courses/README.md
 ├── dashboard/README.md
-├── auth/README.md
-├── profile/README.md
+├── discussions/README.md
 ├── events/README.md
-├── competitions/README.md
+├── home/README.md
+├── profile/README.md
+├── reviews/README.md
 ├── scholarships/README.md
-├── admin/README.md
+├── studio/README.md
 └── videohosting/README.md
 ```
 
-The backend mirrors them one-for-one under `backend/features/`:
+The backend mirrors them one-for-one under `backend/features/` (18 Django apps —
+`accounts` is the label of the `auth` app, and `access` + `common` are
+backend-only policy and foundation modules):
 
 ```
 backend/features/
-├── common/README.md
-├── auth/README.md
-├── catalog/README.md
-├── courses/README.md
-├── scholarships/README.md
-├── dashboard/README.md
-├── home/README.md
-├── events/README.md
-├── competitions/README.md
-├── profile/README.md
+├── access/README.md          permission catalog, roles, hierarchy (no URLs)
+├── accounts/ → auth/README.md
 ├── adminconsole/README.md
+├── announcements/README.md
+├── catalog/README.md
+├── common/README.md          shared helpers, maintenance, observability
+├── competitions/README.md
+├── courses/README.md
+├── dashboard/README.md
+├── discussions/README.md
+├── events/README.md
+├── home/README.md
+├── profile/README.md
+├── quizzes/README.md
+├── reviews/README.md
+├── scholarships/README.md
+├── studio/README.md          model-less authoring + review-queue APIs
 └── videohosting/README.md
 ```
 

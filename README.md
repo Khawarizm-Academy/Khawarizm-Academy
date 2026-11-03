@@ -35,8 +35,12 @@ Around those pillars the platform offers **events & seminars**, **competitions**
 | **Auth** | Login & returning-user flow with social providers | `/login` |
 | **Events** | Events & seminars (staged) | `/events` |
 | **Competitions** | Competitions & challenges (staged) | `/competitions` |
+| **Certificates** | Public verification of any serial, with a printable card | `/verify/:serial` |
+| **Admin** | Permission-gated console: roles, users, review queue, content, sessions, audit | `/admin` |
+| **Studio** | Instructor workspace: course editor, curriculum, video library + uploader, quiz builder, live sessions, announcements, roster, analytics | `/studio`, `/studio/courses/:slug`, `/studio/videos`, `/studio/quizzes/:id`, `/studio/students`, `/studio/analytics`, … |
+| **Discussions** | Lesson-scoped Q&A inside the player, with jump-to-timestamp | inside `/courses/:slug/learn` |
 
-Each feature owns a README inside its folder — see the [feature directory](docs/05-feature-directory.md).
+Each feature owns a README inside its folder — see the [feature directory](docs/05-feature-directory.md). Every route is guarded by a **permission key** (`docs/09-access-control.md`), never a role name.
 
 ---
 
@@ -57,10 +61,12 @@ There is intentionally no global state library: state is URL-derived, page-scope
 
 **Backend** (`backend/`)
 
-- **[Django 6](https://www.djangoproject.com/)** + **[Django REST Framework](https://www.django-rest-framework.org/)** — one feature app per product feature
-- **SQLite** via the Django ORM — the schema ships empty, with no seed data
+- **[Django 6.1](https://www.djangoproject.com/)** + **[Django REST Framework 3.18](https://www.django-rest-framework.org/)** — one feature app per product feature (18 apps)
+- **SQLite in development, Postgres in production** via `DATABASE_URL`; `python manage.py seed_demo` installs the reference tables, and `--demo` (implicit under `DEBUG`) adds demo roles, logins and a full sample course
+- **Firebase ID tokens → HS256 access JWT** with hashed, rotating refresh sessions; role/permission policy in `backend/features/access`
 - **django-cors-headers** — an origin allow-list for the SPA
-- Returns the camelCase JSON shapes the frontend types declare, so the app consumes the API directly
+- **drf-spectacular** — the OpenAPI contract at `/api/schema`, generated with zero warnings in CI
+- Returns the camelCase JSON shapes the frontend types declare — serializers are the only naming boundary
 - **One folder per feature** under `backend/features/` — models, serializers, views, routes and a README live together
 
 ---
@@ -146,7 +152,24 @@ the files are skipped and variables are set in the project dashboard. See
 | `npm run build` | Production build (`tsc -b` + `vite build`) |
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | Lint with ESLint |
+| `npm test` | Vitest + Testing Library |
+| `bash scripts/grep-gate.sh` | No `user.isAdmin` reads outside types/tests (Phase 12) |
+| `bash scripts/i18n-gate.sh` | No raw Arabic literals in gated feature folders (Phase 13) |
+| `node scripts/bundle-budget.mjs` | Initial-graph gzip budget; keeps hls.js lazy |
+| `node scripts/audit-gate.mjs` | Dependency audit with a dated waiver list (expired = fail) |
 | `npm run brand:generate` | Regenerate brand icons, favicons, and the OG image from the source logo |
+
+Backend (`cd backend && source .venv/bin/activate`):
+
+| Command | Description |
+| :--- | :--- |
+| `python manage.py migrate` · `check` · `makemigrations --check --dry-run` | Schema and config gates; the middle one must report no missing migration |
+| `python manage.py test` | Full suite (732 tests; `--parallel` supported) |
+| `python manage.py seed_demo [--demo] [--flush]` | Reference data always; roles, demo logins and the sample course journey only under `--demo` or `DEBUG` |
+| `python manage.py spectacular --fail-on-warn --file openapi.yaml` | The contract must generate with zero warnings |
+| `python -m scripts.gen_route_access` | Regenerate the route-permission manifest after adding a route |
+| `python scripts/p95_latency.py` · `scripts/query_pins.py` | Latency budget and query-pin index |
+| `python manage.py cleanup_expired` · `package_pending` · `recompute_progress` · `ingest_video` · `clock_drift` · `send_reminders` | Jobs and operator commands (`docs/13-operations-runbook.md`) |
 
 ---
 
@@ -170,7 +193,7 @@ Read the full architecture in [`docs/02-architecture.md`](docs/02-architecture.m
 
 > The JSON says what a path **is**, the TSX says what **renders** it, the router says how it **changes**, the layout says what **wraps** it.
 
-Routes live in `frontend/src/shared/json/routes.json`; lazy chunks in `frontend/src/app/pageLoads.ts`; the path→component map in `frontend/src/app/routes.tsx`. See [`docs/03-routing-and-navigation.md`](docs/03-routing-and-navigation.md).
+Routes live in `frontend/src/shared/json/routes.json`; lazy chunks in `frontend/src/app/pageLoads.ts`; the path→component map in `frontend/src/app/routes.ts`. See [`docs/03-routing-and-navigation.md`](docs/03-routing-and-navigation.md).
 
 ### Design system in one line
 
@@ -193,6 +216,12 @@ See [`docs/01-design-system.md`](docs/01-design-system.md).
 | [`docs/06-development-guide.md`](docs/06-development-guide.md) | Setup, code style, page-creation workflow, verification |
 | [`docs/07-backend-contract.md`](docs/07-backend-contract.md) | Entities, endpoints, API environment |
 | [`docs/08-backend-architecture.md`](docs/08-backend-architecture.md) | Feature-app layout, models, serializers, views, admin |
+| [`docs/09-access-control.md`](docs/09-access-control.md) | Permission catalog, role hierarchy, route manifest, how the UI consumes it |
+| [`docs/10-studio.md`](docs/10-studio.md) | Studio design language, motion spec, editor architecture, autosave model |
+| [`docs/11-video-platform.md`](docs/11-video-platform.md) | Provider × FFmpeg matrix, plan resolver, entitlement, uploads, player engines |
+| [`docs/13-operations-runbook.md`](docs/13-operations-runbook.md) | Triage trees for playback, uploads and access complaints; jobs; health |
+| [`PROJECT_PROFILE.md`](PROJECT_PROFILE.md) | Project facts the agent skills read first: commands, layout, env, pitfalls |
+| [`plan/PLAN.md`](plan/PLAN.md) | The build plan; `plan/phase-*-result.md` are the per-phase evidence logs |
 
 Start with [`docs/README.md`](docs/README.md).
 
@@ -200,19 +229,25 @@ Start with [`docs/README.md`](docs/README.md).
 
 ## Agent skills
 
-Specialized playbooks live in [`/.agents/skills/`](.agents/skills/README.md) and are loaded while working on the project:
+Specialized playbooks live in [`/.agents/skills/`](.agents/skills/README.md) — 60
+generic, project-agnostic skills loaded while working on the project. They are
+named by concern, not by brand:
 
-- **khawarizm-frontend** — the master design, engineering, and architecture playbook
-- **khawarizm-code-style** — comments, data over branches, JSON placement, no duplication (frontend and backend)
-- **khawarizm-organization-and-imports** — component folder taxonomy and `@/` import rules
-- **khawarizm-desktop-mobile-views** — the Desktop/Mobile view split
-- **khawarizm-routing** — routes, redirects, tabs, query params
-- **khawarizm-navigation-cache** — skeletons, SWR caching, page transitions
-- **khawarizm-motion** — the Celestial Motion System
-- **khawarizm-layout-edit** — alignment, grids, sticky offsets, CTA hierarchy
-- **khawarizm-page-builder** — the end-to-end page-creation protocol
-- **khawarizm-backend** — the Django + DRF backend playbook (one app per feature, camelCase contract)
-- **khawarizm-backend-feature** — the end-to-end backend feature-creation protocol
+- **`core-*`** — code style, error handling, project profile, structure and
+  imports, verification and quality gates, the feature-delivery protocol
+- **`be-*`** — architecture, API design, auth & security, config & secrets,
+  background jobs, file/media pipeline, observability, testing
+- **`db-*`** — schema and migrations, indexing and query optimization, write
+  batching, the weak-database playbook
+- **`fe-*`** — component architecture, CSS, data fetching, forms, loading states,
+  responsive layout, routing, RTL & i18n, accessibility, testing
+- **`design-*`** — fundamentals, typography, color, motion, components, dashboards,
+  landing pages, review and polish
+- **`cache-*`, `perf-*`, `seo-*`, `ops-*`** — caching layers, frontend/backend speed,
+  SEO, deployment and CI
+
+Project-specific facts do not go in the skills — they live in
+[`PROJECT_PROFILE.md`](PROJECT_PROFILE.md), which every skill reads first.
 
 ---
 
@@ -222,11 +257,24 @@ Before submitting a change:
 
 ```bash
 cd frontend
-npm run build      # tsc -b + vite build — must be clean
-npx eslint src     # must be clean
+npm run lint && npx tsc -b && npm test && npm run build   # all clean
+bash scripts/grep-gate.sh && bash scripts/i18n-gate.sh
+node scripts/bundle-budget.mjs && node scripts/audit-gate.mjs
+
+cd ../backend
+source .venv/bin/activate
+ruff check . && ruff format --check .
+python manage.py check && python manage.py makemigrations --check --dry-run
+python manage.py test
+python manage.py spectacular --fail-on-warn --file /dev/null
 ```
 
-Then confirm behavior, not just types: cold loads skeleton once, cached returns are instant, filter changes never flash the skeleton, and back/forward restores scroll.
+CI runs the same gates on `main` and every PR
+([`.github/workflows/`](.github/workflows)). The route manifest and the denial
+matrix mean an endpoint that was never classified fails the build rather than
+shipping open.
+
+Then confirm behavior, not just types: cold loads skeleton once, cached returns are instant, filter changes never flash the skeleton, and back/forward restores scroll. On an Arabic screen, check RTL at mobile width and in dark mode.
 
 ---
 

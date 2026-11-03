@@ -117,8 +117,73 @@ masking and CSV formula escaping happen on the server. Analytics groups and
 aggregates enrollments, progress, watch percent, and quiz results in SQL; an
 unavailable rating metric is represented explicitly instead of fabricated.
 
+## 10. Phase 11 learning-loop ownership
+
+Progress is derived, never reported. The learner's heartbeat
+(`PUT /api/courses/<slug>/lessons/<lesson_id>/progress`) moves a server-side model
+that is **monotonic per lesson** — a client cannot un-complete a lesson by sending
+zero — and carries `curriculum_revision` so an edit to the curriculum after a
+learner watched something is detected instead of silently re-marking them.
+
+Ownership stays where the data lives:
+
+| Concern | Owner | Why it is not in `studio` |
+| :--- | :--- | :--- |
+| Lesson progress, completion, milestone signals | `courses` + `dashboard` | The curriculum and enrollment rows are `courses`/`dashboard` state |
+| Certificate issue / revoke + serials + snapshots | `courses/certificate_services.py` | Issuance needs the whole course view (all published lessons + required exam) |
+| Reviews (eligibility, one-per-course, aggregate) | `reviews` | `Course.rating` is recomputed under `select_for_update`, so it cannot be a client field |
+| Discussions (threads, posts, accepted answer) | `discussions` | Sanitizing and quotas belong to the writer, not the tab component |
+| Notification delivery | `dashboard` receivers/hooks | Preference checks, dedupe and unread-count caching happen once, for every feature |
+
+The rule between them: a feature emits an **after-commit signal** and never writes
+another feature's rows. `announcements`, `reviews`, `discussions` and certificate
+issuance all hand off to the central notification delivery rather than building
+inbox rows themselves.
+
+## 11. Structural access enforcement (Phases 12–13)
+
+Three artifacts turn "did we remember to guard it" into a build result:
+
+1. **`config/route_access.py` — the manifest.** Generated from `get_resolver()`
+   introspection by `python -m scripts.gen_route_access` (format-stable, so
+   regenerate → `ruff format` → diff is empty). Every `/api/` URL name lands in
+   exactly one of four buckets: public, authenticated-only, permissioned, or
+   method-scoped. `config/tests.py::RouteAccessManifestTests` fails when a route is
+   missing or names a key outside the catalog.
+2. **`config/test_denial_matrix.py`.** Table-driven *from that manifest*, so the
+   test surface cannot drift from the route surface: each guarded route is called
+   anonymously (401), as a student (403), and as a granted role (anything but
+   401/403). Adding an endpoint without a gate fails here, not in production.
+3. **Observability.** `features/common/observability.py` emits structured events
+   (`log_event`) and a throttled permission-denial counter keyed by resolved URL
+   name; every non-2xx body carries a `requestId` that matches the log line and the
+   `X-Request-ID` header. Features import `observability`, never `config.logging`.
+
+Phase 12 also removed the last structural shortcut — the `IsAdminRole` class, the
+single-role endpoint and the `isAdmin` UI fallback — so there is exactly one path
+from "what may I do" to the catalog. See [09 · Access Control](09-access-control.md).
+
+## 12. Budgets as code
+
+Performance claims are executable, in-repo, and offline:
+
+| Gate | What it proves |
+| :--- | :--- |
+| `backend/scripts/p95_latency.py` | p95 per sampled route inside rolled-back transactions with real fixtures, capped at each route's own throttle (0.6–9.2 ms measured against 50/150/250 ms budgets) |
+| `backend/scripts/query_pins.py` → `plan/query-pins.md` | Every `assertNumQueries` pin indexed, so a query regression names the feature that caused it |
+| `frontend/scripts/bundle-budget.mjs` | Walks the initial import graph of `dist/`, gzips it (shell 89.4 KB), and fails if a lazy engine — hls.js — is pulled into the shell |
+| `frontend/scripts/audit-gate.mjs` | Dependency audit against a **dated** waiver list; an expired waiver fails the build |
+| `frontend/scripts/i18n-gate.sh`, `grep-gate.sh` | No raw Arabic literals in gated feature folders; no `isAdmin` reads in components |
+
+The p95 harness is the one to remember when writing new fixtures: sampling a route
+above its scoped throttle measures the throttle, not the endpoint.
+
 ## Related
 
 - API surface and exact endpoints: [07 · Backend Contract](07-backend-contract.md)
+- Permissions, roles, route manifest: [09 · Access Control](09-access-control.md)
+- The authoring surface on top of these apps: [10 · Studio](10-studio.md)
+- Providers, plans, entitlement, uploads: [11 · Video Platform](11-video-platform.md)
+- Operating it: [13 · Operations Runbook](13-operations-runbook.md)
 - Feature map: [`backend/features/README.md`](../backend/features/README.md)
 - Video feature runbook: [`backend/features/videohosting/README.md`](../backend/features/videohosting/README.md)

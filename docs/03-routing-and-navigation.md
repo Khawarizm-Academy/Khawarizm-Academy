@@ -12,7 +12,7 @@ routes.json               what each path IS
                           hideShell, immersive, skeletonVariant
         │
         ▼ joined with
-routes.tsx                which COMPONENT renders it
+routes.ts                  which COMPONENT renders it
 (src/app/)                PAGE_BY_PATH: path → lazy page chunk
         │
         ▼
@@ -34,31 +34,46 @@ In one sentence: **the JSON says what a path is, the TSX says what renders it, t
 
 ## 2. The route table
 
-`frontend/src/shared/json/routes.json` is an ordered array. Order matters: `findRoute()` returns the **first** match, so specific paths must sit above `*`.
+`frontend/src/shared/json/routes.json` is an ordered array. Order matters: `findRoute()` returns the **first** match, so specific paths must sit above `*`. It is currently 31 entries; the table below is generated from that file, so a new route belongs in both.
 
-| Path | Kind | Tab | Shell | Skeleton |
-| :--- | :--- | :--- | :--- | :--- |
-| `/` | page (Home) | `home` | standard | `home` |
-| `/catalog` | page (Catalog) | `catalog` (+ `tabsByQuery`) | standard | `catalog` |
-| `/courses` | redirect → `/catalog?type=courses` | `courses` | standard | `catalog` |
-| `/scholarships` | redirect → `/catalog?type=scholarships` | `scholarships` | standard | `catalog` |
-| `/courses/:slug` | page (Course landing) | `courses` | standard | `detail` |
-| `/courses/:slug/learn` | page (Course player) | `courses` | standard | `detail` |
-| `/courses/:slug/certificate` | page (Certificate) | `courses` | standard | `detail` |
-| `/scholarships/:slug` | page (Scholarship detail) | `scholarships` | standard | `detail` |
-| `/events` | page (Events) | `events` | standard | `default` |
-| `/competitions` | page (Competitions) | `competitions` | standard | `default` |
-| `/dashboard` | page (Dashboard) | `dashboard` (+ `tabsByQuery`) | `immersive` | `dashboard` |
-| `/dashboard/enrolled` | redirect → `/dashboard?view=enrolled` | `dashboard` | — | `dashboard` |
-| `/profile` | page (redirects to `/dashboard?view=profile`) | `profile` | standard | `default` |
-| `/admin` | page (Admin console) | — | `hideShell` | `dashboard` |
-| `/studio` | page (Studio home) | — | `immersive` | `dashboard` |
-| `/studio/courses` | page (Studio course list) | — | `immersive` | `dashboard` |
-| `/studio/courses/new` | page (Studio new course) | — | `immersive` | `dashboard` |
-| `/studio/courses/:slug` | page (Studio editor placeholder in Phase 7) | — | `immersive` | `dashboard` |
-| `/login` | page (Login) | — | `hideShell` | `default` |
-| `/auth` | redirect → `/login` | — | `hideShell` | `default` |
-| `*` | page (NotFound) | — | standard | `default` |
+| Path | Kind | Tab | Shell | Guard (`requires*`) | Skeleton |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `/` | page (Home) | `home` | standard | — | `home` |
+| `/catalog` | page (Catalog) | `catalog` (+ `tabsByQuery`) | standard | — | `catalog` |
+| `/courses` | redirect → `/catalog?type=courses` | `courses` | standard | — | `catalog` |
+| `/scholarships` | redirect → `/catalog?type=scholarships` | `scholarships` | standard | — | `catalog` |
+| `/courses/:slug` | page (Course landing) | `courses` | standard | — | `detail` |
+| `/courses/:slug/learn` | page (Course player) | `courses` | standard | — | `detail` |
+| `/courses/:slug/certificate` | page (Course certificate) | `courses` | standard | — | `detail` |
+| `/verify/:serial` | page (Public certificate verify) | — | standard | — (no auth: anyone with the serial) | `detail` |
+| `/scholarships/:slug` | page (Scholarship detail) | `scholarships` | standard | — | `detail` |
+| `/events` | page (Events) | `events` | standard | — | `default` |
+| `/competitions` | page (Competitions) | `competitions` | standard | — | `default` |
+| `/dashboard` | page (Dashboard) | `dashboard` (+ `tabsByQuery`) | `immersive` | `requiresAuth` | `dashboard` |
+| `/dashboard/enrolled` | redirect → `/dashboard?view=enrolled` | `dashboard` | standard | — | `dashboard` |
+| `/profile` | page (redirects to `/dashboard?view=profile`) | `profile` | standard | `requiresAuth` | `default` |
+| `/admin` | page (Admin console) | — | `hideShell` | `admin.access` | `dashboard` |
+| `/studio` | page (Studio home) | `dashboard` | `immersive` | `studio.access` | `dashboard` |
+| `/studio/courses` | page (Studio course list) | `dashboard` | `immersive` | `studio.access` | `dashboard` |
+| `/studio/courses/new` | page (New course) | `dashboard` | `immersive` | `courses.create` | `dashboard` |
+| `/studio/courses/:slug` | page (Course editor — tabs and the open lesson live in the query string) | `dashboard` | `immersive` | `studio.access` | `dashboard` |
+| `/studio/videos` | page (Video library + uploader) | `dashboard` | `immersive` | `videos.manage_own` | `dashboard` |
+| `/studio/live-sessions` | page (Live sessions) | `dashboard` | `immersive` | `live_sessions.manage_own` | `dashboard` |
+| `/studio/announcements` | page (Announcements) | `dashboard` | `immersive` | `announcements.post` | `dashboard` |
+| `/studio/quizzes` | page (Quiz builder) | `dashboard` | `immersive` | `quizzes.edit_own` **or** `quizzes.create` | `dashboard` |
+| `/studio/quizzes/:id` | page (Quiz editor) | `dashboard` | `immersive` | `quizzes.edit_own` | `dashboard` |
+| `/studio/students` | page (Roster) | `dashboard` | `immersive` | `students.view_own` | `dashboard` |
+| `/studio/analytics` | page (Analytics overview) | `dashboard` | `immersive` | `analytics.view_own` | `dashboard` |
+| `/studio/analytics/courses/:slug` | page (Course analytics) | `dashboard` | `immersive` | `analytics.view_own` | `dashboard` |
+| `/studio/profile` | page (Instructor profile) | `dashboard` | `immersive` | `studio.access` | `dashboard` |
+| `/login` | page (Login) | — | `hideShell` | — | `default` |
+| `/auth` | redirect → `/login` | — | `hideShell` | — | `default` |
+| `*` | page (NotFound) | — | standard | — | `default` |
+
+Guards are **permission keys, never role names** — see
+[09 · Access Control](09-access-control.md) §6. A route guard is a UX convenience:
+the same permission is enforced again by the endpoint the page calls, so a hidden
+screen is never an access decision.
 
 ### Route fields
 
@@ -107,7 +122,7 @@ export const MyNewPage = lazy(() => import('../features/myfeature/pages/MyNewPag
 }
 ```
 
-**Step 3 — map the path to its component** in `src/app/routes.tsx`:
+**Step 3 — map the path to its component** in `src/app/routes.ts`:
 ```ts
 const PAGE_BY_PATH: Record<string, ComponentType> = {
   // ...
@@ -121,7 +136,7 @@ const PAGE_BY_PATH: Record<string, ComponentType> = {
 
 ## 4. Redirects
 
-A route renders a page **or** redirects, never both. `redirect` is data — there is no `<Navigate />` in the table. `routes.tsx` detects the field and builds the redirect variant; `Outlet` renders `<Navigate to={redirect} replace />`.
+A route renders a page **or** redirects, never both. `redirect` is data — there is no `<Navigate />` in the table. `routes.ts` detects the field and builds the redirect variant; `Outlet` renders `<Navigate to={redirect} replace />`.
 
 ```json
 { "path": "/courses", "redirect": "/catalog?type=courses", "activeTab": "courses", "skeletonVariant": "catalog" }

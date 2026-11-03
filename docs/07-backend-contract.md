@@ -145,6 +145,55 @@ Typed settings in `config/settings.py` include `VIDEO_HOSTING_DEFAULT_PROVIDER` 
 
 Migration `0010` backfills legacy rows with a master playlist as `hls/encrypted`, Drive source rows as `raw/gated`, and uniquely resolvable `<course>--<lesson>` links; ambiguous links are logged and skipped. It does not infer ambiguous ownership or provider state. `manage.py package_pending` now recovers stale `processing`/legacy `staged` rows older than its age threshold when a persistent spool and provider source-download hook exist; it forces HLS packaging, locks concurrent runs, skips rows without a package-capable target/source, and redacts provider URIs from errors. This recovery path does not change the rule that new unsupported Telegram plans fail before storing a source.
 
-## 6. Integration guidance
+## 6. Learning-loop and staff surfaces (Phases 10–12)
+
+The authoritative shape of every response is the generated schema — `/api/schema`
+(YAML) and `/api/schema/docs` — currently **168 paths / 210 operations**, built
+with `--fail-on-warn` at zero warnings in CI. This section lists the families that
+post-date the original contract, with the rule each one enforces.
+
+| Family | Paths | Notes |
+| :--- | :--- | :--- |
+| Quizzes & attempts | `api/courses/<slug>/quizzes`, `api/quizzes/<uuid>/attempts`, `api/attempts/<uuid>`(+`/answers`,`/submit`), `api/studio/courses/<slug>/quizzes`, `api/studio/quizzes/<uuid>/attempts` | Server-timed; active payloads omit correctness/hints; reveal follows quiz policy. Legacy `api/quizzes/<id>/check` practice endpoints are marked **deprecated** in the schema, not deleted. |
+| Lesson progress | `api/courses/<slug>/lessons/<lesson_id>/progress` (PUT), `api/courses/<slug>/progress` | The heartbeat that derives completion; monotonic per lesson, revision-checked against `curriculum_revision`. |
+| Certificates | `api/courses/<slug>/certificate`, `api/certificates/verify/<serial>`, `api/certificates/<serial>/revoke` | Verify is unauthenticated and returns only `valid`, `learnerName`, `courseTitle`, `issuedAt`, `revoked` (issue-time snapshots). Revoke needs `certificates.manage`. |
+| Reviews | `api/courses/<slug>/reviews`, `/reviews/write`, `/reviews/<uuid>`, `/reviews/<uuid>/reply`, `api/reviews/<uuid>/moderate`, `api/studio/reviews` | One review per `(user, course)` (DB constraint), eligibility from server progress, aggregate recomputed under a row lock. |
+| Discussions | `api/courses/<slug>/discussions`, `/<uuid>/posts`, `/accept`, `/moderate`, `api/studio/discussions` | Sanitized Markdown server-side, quota-protected posts, accepted answer only by the thread author or a moderator. |
+| Announcements | `api/courses/<slug>/announcements`(+`/<uuid>`,`/pin`), `api/studio/announcements/courses` | Per-course/day durable quota; private responses. |
+| Live sessions | `api/studio/courses/<slug>/live-sessions`(+`/<uuid>/cancel`,`/recording`) | Timestamps are authoritative server-side; per-user launch links are `no-store` and only returned to enrolled learners or authorized staff. |
+| Roster & analytics | `api/studio/students`(+`.csv`, `/<uuid>`, `/notes`, `/nudge`, `/extra-attempt`, `/courses`), `api/studio/analytics/overview`, `/analytics/courses/<slug>` | Emails are masked unless `students.view_any`; analytics are SQL-aggregated; CSV is streamed and privacy-scoped like the list. |
+| Notifications | `api/dashboard/notifications`, `/unread-count`, `/<id>/read` | Central delivery with preference checks, dedupe, unread-count caching. |
+| Roles & users | `api/admin/roles`(+`/catalog`,`/reorder`,`/<id>`,`/<id>/members`,`/<id>/members/<user>`), `api/admin/users/<id>/roles`, `/bulk-roles`, `/effective-permissions`, `api/admin/audit` | Phase 12 removed the legacy single-role route (`POST|PATCH /api/admin/users/<id>/role`); grant/revoke/hierarchy rules live in `features/access/services.py`, so no view re-implements them. |
+| Review queue | `api/admin/review-queue`, `/review-queue/<slug>/approve`, `/request-changes` | Reads `Course.status == in_review` ordered by `submitted_at`; approve/publish needs `courses.review`/`courses.publish`, which instructor templates deliberately lack. |
+
+### Error envelope, every route
+
+```json
+{ "detail": "رسالة عربية للمستخدم",
+  "code": "stable_machine_key",
+  "fields": { "sort": ["…"] },
+  "requestId": "d748e5fb0f534f7399fbf140dfe73211" }
+```
+
+`fields` appears only on validation errors. `requestId` (Phase 13) is stamped on
+every non-2xx body and echoed in the `X-Request-ID` response header; it is the
+same id the structured logs carry, so a learner's screenshot resolves to one
+request. `code` remains the stable contract — clients branch on it, never on the
+Arabic text. The test kit asserts the shape with
+`ApiTestCase.assertErrorEnvelope` (pins `detail` + `code`, allows only
+`fields`/`requestId` alongside).
+
+Health: `GET /healthz` (process up) and `GET /readyz`, which answers 503 until the
+database responds, the default roles exist, and — when `VIDEO_SPOOL_DIR` is
+configured — that directory is usable. The body reports each check by name
+(`database`, `defaultRoles`, `spoolDir`). Both are origin-exempt and free of
+secrets.
+
+## 7. Integration guidance
 
 Keep frontend fetchers at the feature boundary, preserve camelCase response shapes, treat `code` as the stable error contract, and do not expose provider URLs or session URIs to the browser. A real Drive OAuth/upload/raw-playback acceptance remains an external follow-up, not a passed test.
+
+Two contract rules the manifest now enforces structurally: an endpoint that is not
+classified in `config/route_access.py` fails CI (`docs/09-access-control.md` §4),
+and a new response shape is only a contract once it is in the generated schema —
+`python manage.py spectacular --fail-on-warn` runs on every backend push.

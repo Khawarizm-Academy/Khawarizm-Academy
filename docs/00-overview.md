@@ -42,9 +42,13 @@ The shared canvas, typography, elevation, and motion system are identical across
 | **Auth** | Login & returning-user flow with social providers, terms modal, toast | `/login` |
 | **Events** | Events & seminars destination: featured keynote + upcoming grid | `/events` |
 | **Competitions** | Competitions & challenges destination: banner + card grid | `/competitions` |
-| **Admin** | Permission-gated console: accounts & roles, content editor, sessions, analytics, activity | `/admin` |
+| **Admin** | Permission-gated console: accounts & roles, content editor, review queue, sessions, analytics, audit | `/admin` |
+| **Studio** | Instructor workspace: course editor, curriculum builder, video library + uploader, quiz builder, live sessions, announcements, students, analytics | `/studio`, `/studio/courses*/`, `/studio/videos`, `/studio/quizzes*`, `/studio/live-sessions`, `/studio/announcements`, `/studio/students`, `/studio/analytics*`, `/studio/profile` |
+| **Certificates** | Public serial verification with a printable card | `/verify/:serial` |
+| **Discussions** | Lesson-scoped Q&A threads inside the player (sanitized Markdown, jump-to-timestamp) | mounted in `/courses/:slug/learn` |
+| **Reviews** | Learner ratings, instructor replies, staff inbox (API-complete; UI mounts are an open item — see `docs/05`) | `/api/courses/:slug/reviews*` |
 
-Full descriptions, file maps, and links to each feature README live in [05 · Feature Directory](05-feature-directory.md).
+Full descriptions, file maps, and links to each feature README live in [05 · Feature Directory](05-feature-directory.md). The authoring surface is documented in [10 · Studio](10-studio.md), who may do what in [09 · Access Control](09-access-control.md), and lesson video in [11 · Video Platform](11-video-platform.md).
 
 ---
 
@@ -59,6 +63,9 @@ Full descriptions, file maps, and links to each feature README live in [05 · Fe
 | Routing | A **custom, data-driven router** in `src/app/` (no router library) |
 | Icons | **lucide-react** exclusively |
 | Data layer | In-memory **SWR** cache (`useCachedData` + `dataCacheManager`) over API fetchers |
+| Tests | **Vitest** + Testing Library; grep/i18n, bundle-budget and dependency-audit gates in `frontend/scripts/` |
+| API | **Django 6.1 + DRF 3.18**, function-based views, one app per feature; Firebase ID token → HS256 access JWT; SQLite in development, Postgres via `DATABASE_URL` in production |
+| Contract | **drf-spectacular** OpenAPI at `/api/schema` (168 paths / 210 operations), generated with zero warnings under `--fail-on-warn` |
 | Localization | English internal keys + an Arabic dictionary in `shared/json/localization.json` |
 | Branding | A single source logo + a `sharp` build script (`npm run brand:generate`) |
 
@@ -80,13 +87,18 @@ Khawarizm-Academy/
 │   │   └── scripts/          brand asset generation
 │   ├── public/               static files served as-is (favicons, og-image)
 │   └── README.md             frontend entry point
-├── backend/                  Django + DRF + SQLite API
-│   ├── config/               settings, URLs, middleware, WSGI/ASGI
-│   ├── features/             one app per product feature (+ its README)
+├── backend/                  Django + DRF API (SQLite in dev, Postgres in prod)
+│   ├── config/               settings, URLs, middleware, WSGI/ASGI,
+│   │                         route-permission manifest (`route_access.py`)
+│   ├── features/             one app per product feature (+ its README) — 18 apps
+│   ├── scripts/              route classifier, p95 latency harness, query pins
 │   └── README.md             backend entry point
 ├── docs/                     this documentation set
+├── plan/                     the build plan, per-phase results, budget reports
+├── shared/                   files used by both sides (video URL vectors)
 ├── .agents/skills/           agent playbooks for working on the project
 ├── Designs/                  design references (mockups + design code)
+├── PROJECT_PROFILE.md        project facts the skills read first
 └── README.md                 project entry point
 ```
 
