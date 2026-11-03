@@ -47,6 +47,11 @@
     "skeletonVariant": "detail"
   },
   {
+    "path": "/verify/:serial",
+    "title": "التحقق من الشهادة — أكاديمية خوارزم",
+    "skeletonVariant": "detail"
+  },
+  {
     "path": "/scholarships/:slug",
     "title": "تفاصيل المنحة — أكاديمية خوارزم",
     "activeTab": "scholarships",

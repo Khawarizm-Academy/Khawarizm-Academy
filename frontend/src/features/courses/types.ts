@@ -1,7 +1,7 @@
 import type { CourseDetail as SharedCourseDetail } from '@/shared/types/entities';
 
-/** The four lesson tabs of the course player. */
-export type CourseTab = 'lesson' | 'problems' | 'live' | 'exam';
+/** The learner-facing lesson panels available in the course player. */
+export type CourseTab = 'lesson' | 'problems' | 'live' | 'exam' | 'discussion';
 
 /** Which surface a shared course component renders on. */
 export type CourseSurface = 'desktop' | 'mobile';

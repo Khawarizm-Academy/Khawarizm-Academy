@@ -71,6 +71,12 @@ def course_detail_view(request: Any, slug: str) -> Response:
         and Enrollment.objects.filter(user=request.user, course=course).exists()
     )
     can_read_announcements = can_read_course_announcements(request.user, course)
+    from features.discussions import services as discussion_services
+
+    can_read_discussions = discussion_services.can_read(request.user, course)
+    can_post_discussions = discussion_services.can_post(request.user, course)
+    can_reply_discussions = discussion_services.can_reply(request.user, course)
+    can_moderate_discussions = discussion_services.can_moderate(request.user)
     include_private_session_data = staff_view or enrolled
     relation_rows = services.course_detail_relations(course)
     response = Response(
@@ -79,12 +85,17 @@ def course_detail_view(request: Any, slug: str) -> Response:
             include_unpublished=staff_view,
             is_preview=preview,
             enrollable=course.status == CourseStatus.PUBLISHED,
+            is_enrolled=enrolled,
             include_private_session_data=include_private_session_data,
             can_read_announcements=can_read_announcements,
+            can_read_discussions=can_read_discussions,
+            can_post_discussions=can_post_discussions,
+            can_reply_discussions=can_reply_discussions,
+            can_moderate_discussions=can_moderate_discussions,
             relation_rows=relation_rows,
         )
     )
-    if include_private_session_data or can_read_announcements:
+    if getattr(request.user, "is_authenticated", False) or include_private_session_data or can_read_announcements:
         response["Cache-Control"] = "private, no-store"
     return response
 
@@ -192,7 +203,7 @@ def course_enroll_view(request: Any, slug: str) -> Response:
 @extend_schema(
     operation_id="course_progress",
     summary="Persist a progress sync for a course.",
-    description="Signed-in callers save; visitors get their payload echoed back.",
+    description="Signed-in callers save only the resume label; aggregate progress is derived on the server.",
     parameters=[OpenApiParameter("slug", OpenApiTypes.STR, OpenApiParameter.PATH)],
     request=CourseProgressRequestSerializer,
     responses={
@@ -201,7 +212,7 @@ def course_enroll_view(request: Any, slug: str) -> Response:
 )
 @api_view(["POST"])
 def course_progress_view(request: Any, slug: str) -> Response:
-    """Persist a progress sync for the signed-in learner, or echo it back for a visitor."""
+    """Persist the legacy resume label and never trust client aggregate fields."""
     course = Course.objects.filter(slug=slug).first()
     if course is None or course.status in {CourseStatus.DRAFT, CourseStatus.IN_REVIEW}:
         raise NotFound(COURSE_NOT_FOUND)
@@ -210,7 +221,13 @@ def course_progress_view(request: Any, slug: str) -> Response:
     values = body.validated_data
     completed = values.get("completedLessonIds", [])
     if request.user.is_authenticated:
-        services.save_progress(request.user, course, values)
+        enrollment = services.save_progress(request.user, course, values)
+        return Response(
+            {
+                "courseId": course.slug,
+                **services.enrollment_progress_payload(request.user, course, enrollment),
+            }
+        )
     return Response({"courseId": course.slug, "completedLessonIds": completed})
 
 

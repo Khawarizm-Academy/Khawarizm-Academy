@@ -1,3 +1,5 @@
+@reference "../../../styles/globals.css";
+
 @layer components {
   .studio-analytics-page { @apply flex flex-col gap-5; }
   .studio-analytics-toolbar { @apply flex flex-wrap items-center justify-between gap-3; }

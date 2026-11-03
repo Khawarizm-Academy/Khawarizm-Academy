@@ -12,6 +12,7 @@ export const AdminPage = lazy(() => import('../features/admin/pages/AdminPage').
 export const CourseLandingPage = lazy(() => import('../features/courses/pages/CourseLandingPage').then((m) => ({ default: m.CourseLandingPage })));
 export const CoursePlayerPage = lazy(() => import('../features/courses/pages/CoursePlayerPage').then((m) => ({ default: m.CoursePlayerPage })));
 export const CourseCertificatePage = lazy(() => import('../features/courses/pages/CourseCertificatePage').then((m) => ({ default: m.CourseCertificatePage })));
+export const CertificateVerifyPage = lazy(() => import('../features/certificates/pages/CertificateVerifyPage').then((m) => ({ default: m.CertificateVerifyPage })));
 export const ScholarshipDetailPage = lazy(() => import('../features/scholarships/pages/ScholarshipDetailPage').then((m) => ({ default: m.ScholarshipDetailPage })));
 export const LoginPage = lazy(() => import('../features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 export const StudioHomePage = lazy(() => import('../features/studio/pages/StudioHomePage').then((m) => ({ default: m.StudioHomePage })));

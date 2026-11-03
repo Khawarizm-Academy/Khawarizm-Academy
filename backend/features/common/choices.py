@@ -274,3 +274,4 @@ class AuditAction(models.TextChoices):
     USER_STATUS_CHANGED = "user_status_changed", "User status changed"
     SETTINGS_CHANGED = "settings_changed", "Settings changed"
     QUIZ_ATTEMPT_GRANTED = "quiz_attempt_granted", "Quiz attempt granted"
+    CERTIFICATE_REVOKED = "certificate_revoked", "Certificate revoked"

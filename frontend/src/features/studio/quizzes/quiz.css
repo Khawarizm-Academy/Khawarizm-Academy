@@ -1,3 +1,4 @@
+@reference "../../../styles/globals.css";
 @import "../studio.css";
 
 .quiz-feature { --quiz-navy: #071a2e; --quiz-panel: rgba(9, 31, 52, .88); --quiz-panel-soft: rgba(16, 46, 72, .7); --quiz-cyan: #55d8e8; --quiz-gold: #efc56d; --quiz-muted: #9cb6c8; color: #effaff; direction: rtl; }

@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import {
   AdminPage,
   CatalogPage,
+  CertificateVerifyPage,
   CompetitionsPage,
   CourseCertificatePage,
   CourseLandingPage,
@@ -83,6 +84,7 @@ const PAGE_BY_PATH: Record<string, ComponentType> = {
   '/courses/:slug': CourseLandingPage,
   '/courses/:slug/learn': CoursePlayerPage,
   '/courses/:slug/certificate': CourseCertificatePage,
+  '/verify/:serial': CertificateVerifyPage,
   '/scholarships/:slug': ScholarshipDetailPage,
   '/events': EventsPage,
   '/competitions': CompetitionsPage,

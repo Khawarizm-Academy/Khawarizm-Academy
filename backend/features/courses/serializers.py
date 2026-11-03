@@ -188,8 +188,13 @@ def course_detail(
     include_unpublished: bool = False,
     is_preview: bool = False,
     enrollable: bool | None = None,
+    is_enrolled: bool = False,
     include_private_session_data: bool = False,
     can_read_announcements: bool = False,
+    can_read_discussions: bool = False,
+    can_post_discussions: bool = False,
+    can_reply_discussions: bool = False,
+    can_moderate_discussions: bool = False,
     relation_rows: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The merged landing record: catalog base plus additive lifecycle fields."""
@@ -246,5 +251,10 @@ def course_detail(
         "instructors": instructors(course, staff_rows),
         "enrollable": enrollable,
         "canReadAnnouncements": can_read_announcements,
+        "isEnrolled": is_enrolled,
+        "canReadDiscussions": can_read_discussions,
+        "canPostDiscussions": can_post_discussions,
+        "canReplyDiscussions": can_reply_discussions,
+        "canModerateDiscussions": can_moderate_discussions,
         **({"isPreview": True} if is_preview else {}),
     }

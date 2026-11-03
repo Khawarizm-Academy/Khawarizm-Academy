@@ -21,9 +21,11 @@ class Enrollment(UUIDModel, TimeStampedModel):
     user = models.ForeignKey(USER, related_name="enrollments", on_delete=models.CASCADE)
     course = models.ForeignKey("courses.Course", related_name="enrollments", on_delete=models.CASCADE)
     progress = models.PositiveIntegerField(default=0)
+    progress_revision = models.PositiveBigIntegerField(default=0)
     last_lesson = models.CharField(max_length=200, blank=True)
     exact_unit_lesson = models.CharField(max_length=200, blank=True)
     next_live_time = models.CharField(max_length=60, blank=True)
+    next_live_at = models.DateTimeField(null=True, blank=True)
     icon_type = models.CharField(max_length=20, choices=CourseTrackIcon.choices, blank=True)
     is_completed = models.BooleanField(default=False)
     completion_date = models.CharField(max_length=60, blank=True)
@@ -88,6 +90,7 @@ class UpcomingEvent(UUIDModel, TimeStampedModel):
     event_id = models.CharField(max_length=80)
     title = models.CharField(max_length=160)
     date_text = models.CharField(max_length=120, blank=True)
+    event_at = models.DateTimeField(null=True, blank=True)
     event_type = models.CharField(
         max_length=20,
         choices=[("submission", "submission"), ("exam", "exam"), ("session", "session")],
@@ -203,6 +206,13 @@ class Certificate(UUIDModel, TimeStampedModel):
     course = models.ForeignKey("courses.Course", related_name="certificates", on_delete=models.CASCADE)
     issue_date = models.CharField(max_length=60, blank=True)
     credential_id = models.CharField(max_length=80, blank=True)
+    issued_at = models.DateTimeField(null=True, blank=True)
+    serial = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoked_reason = models.TextField(blank=True)
+    learner_name_snapshot = models.CharField(max_length=200, blank=True)
+    course_title_snapshot = models.CharField(max_length=200, blank=True)
+    hours = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     is_official = models.BooleanField(default=True)
 
     class Meta:

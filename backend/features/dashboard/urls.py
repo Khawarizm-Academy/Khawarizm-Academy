@@ -13,6 +13,11 @@ urlpatterns = [
     path("dashboard/competitions", views.dashboard_competitions, name="dashboard-competitions"),
     path("dashboard/notifications", views.dashboard_notifications, name="dashboard-notifications"),
     path(
+        "dashboard/notifications/unread-count",
+        views.dashboard_notification_unread_count,
+        name="dashboard-notification-unread-count",
+    ),
+    path(
         "dashboard/notifications/<str:notification_id>/read",
         views.dashboard_notification_read,
         name="dashboard-notification-read",

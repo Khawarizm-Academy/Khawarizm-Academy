@@ -24,6 +24,8 @@ urlpatterns = [
     path("api/", include("features.courses.urls")),
     path("api/", include("features.courses.live_sessions_urls")),
     path("api/", include("features.announcements.urls")),
+    path("api/", include("features.reviews.urls")),
+    path("api/", include("features.discussions.urls")),
     path("api/", include("features.quizzes.urls")),
     path("api/", include("features.scholarships.urls")),
     path("api/", include("features.dashboard.urls")),

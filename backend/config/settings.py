@@ -113,6 +113,8 @@ INSTALLED_APPS = [
     "features.videohosting",
     "features.studio",
     "features.quizzes",
+    "features.reviews",
+    "features.discussions",
     "features.announcements",
 ]
 

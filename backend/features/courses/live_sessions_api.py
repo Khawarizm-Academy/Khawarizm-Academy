@@ -284,6 +284,7 @@ def live_session_detail(request: Any, slug: str, session_uuid: Any) -> Response:
 
 @extend_schema(
     operation_id="studio_live_session_cancel",
+    request=None,
     responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT)},
 )
 @api_view(["POST"])

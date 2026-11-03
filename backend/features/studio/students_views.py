@@ -18,7 +18,6 @@ from django.db.models import (
     Count,
     DateTimeField,
     DecimalField,
-    Greatest,
     IntegerField,
     OuterRef,
     Q,
@@ -26,7 +25,7 @@ from django.db.models import (
     Value,
     When,
 )
-from django.db.models.functions import Coalesce, Lower
+from django.db.models.functions import Coalesce, Greatest, Lower
 from django.db.models import Prefetch
 from django.http import StreamingHttpResponse
 from django.utils import timezone
@@ -452,14 +451,21 @@ def student_nudge(request: Any, student_id: Any) -> Response:
         if recent:
             raise Conflict("تم إرسال تنبيه لهذا الطالب خلال آخر 24 ساعة.", code="nudge_rate_limited")
         message = values.get("message") or "استمرّ في التعلّم، أنت قادر على إكمال مسارك."
-        notification = DashboardNotification.objects.create(
-            user_id=student_id,
-            notification_id=f"studio-nudge-{key}-{uuid.uuid4().hex[:16]}",
-            title=f"رسالة من مدرّبك في {course.title}: {message}"[:200],
-            time_ago="الآن",
-            notification_type=NotificationType.LESSON,
-            link=f"/courses/{course.slug}",
+        notification_id = f"studio-nudge-{key}-{uuid.uuid4().hex[:16]}"
+        from features.dashboard.notifications import notify
+
+        notify(
+            [student_id],
+            "instructor_nudge",
+            {
+                "title": f"رسالة من مدرّبك في {course.title}: {message}"[:200],
+                "message": f"رسالة من مدرّبك في {course.title}: {message}"[:200],
+                "notificationType": NotificationType.LESSON,
+                "link": f"/courses/{course.slug}",
+            },
+            notification_id,
         )
+        notification = DashboardNotification.objects.get(user_id=student_id, notification_id=notification_id)
     return _response(
         nudge_response(notification, next_allowed_at=notification.created_at + NUDGE_WINDOW),
         code=status.HTTP_201_CREATED,

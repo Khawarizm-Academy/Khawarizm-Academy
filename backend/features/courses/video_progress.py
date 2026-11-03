@@ -103,6 +103,7 @@ def record_lesson_progress(user: Any, lesson: CourseLesson, payload: Mapping[str
     _require_access(user, resolved_lesson)
 
     existing = LessonProgress.objects.select_for_update().filter(user_id=user.pk, lesson_id=resolved_lesson.pk).first()
+    was_completed = bool(existing and existing.completed)
     duration = _duration_for(existing, resolved_lesson, requested_duration)
     clamped_position = min(position, duration)
     capped_delta = min(delta, _MAX_WATCHED_DELTA_SECONDS)
@@ -145,4 +146,29 @@ def record_lesson_progress(user: Any, lesson: CourseLesson, payload: Mapping[str
             "updated_at",
         ]
     )
+    if progress.completed and not was_completed:
+        from features.courses.services import recompute_enrollment
+
+        course = resolved_lesson.module.course
+        enrollment = recompute_enrollment(user, course)
+        if enrollment is not None:
+            total = CourseLesson.objects.filter(module__course_id=course.pk, is_published=True).count()
+            completed = LessonProgress.objects.filter(
+                user_id=user.pk,
+                lesson__module__course_id=course.pk,
+                lesson__is_published=True,
+                completed=True,
+            ).values("lesson_id").distinct().count()
+            milestone = round(100 * completed / total) if total else 0
+            if milestone in {25, 50, 75, 100}:
+                from features.dashboard.event_receiver import receive_lesson_milestone
+
+                transaction.on_commit(
+                    lambda: receive_lesson_milestone(
+                        user.pk,
+                        course,
+                        f"{milestone}% من الدروس",
+                        lesson_id=f"{milestone}%",
+                    )
+                )
     return progress

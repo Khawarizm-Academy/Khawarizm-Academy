@@ -62,6 +62,7 @@ function contextFor(course: CourseLandingCourse | null): CourseDetailContextValu
   return {
     course,
     isLoading: false,
+    isEnrollmentPending: false,
     isEnrolled: false,
     isFavorite: false,
     startedLessonId: '',

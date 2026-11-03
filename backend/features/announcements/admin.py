@@ -18,7 +18,7 @@ class CourseAnnouncementAdmin(admin.ModelAdmin):
 class CourseAnnouncementDailyQuotaAdmin(admin.ModelAdmin):
     list_display = ("course", "local_date", "post_count")
     list_filter = ("local_date",)
-    readonly_fields = ("id", "course", "local_date", "post_count", "created_at", "updated_at")
+    readonly_fields = ("id", "course", "local_date", "post_count")
 
     def has_add_permission(self, request):
         return False

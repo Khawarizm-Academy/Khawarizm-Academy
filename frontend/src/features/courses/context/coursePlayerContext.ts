@@ -16,6 +16,10 @@ export interface CoursePlayerContextValue {
   problemsLoading: boolean;
   problemsError: Error | null;
   retryProblems: () => Promise<CourseProblem[] | undefined>;
+  canReadDiscussions: boolean;
+  canPostDiscussions: boolean;
+  canReplyDiscussions: boolean;
+  canModerateDiscussions: boolean;
   quizzes: CourseQuizSummary[];
   quizzesLoading: boolean;
   quizzesError: Error | null;

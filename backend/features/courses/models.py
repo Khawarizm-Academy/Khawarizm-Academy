@@ -59,6 +59,7 @@ class Course(UUIDModel):
     review_note = models.TextField(blank=True)
     total_seconds = models.PositiveIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
+    curriculum_revision = models.PositiveBigIntegerField(default=0)
 
     # Summary fields — legacy display fields remain stable for public clients.
     category_label = models.CharField(max_length=120)

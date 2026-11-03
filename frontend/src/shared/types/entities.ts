@@ -131,7 +131,12 @@ export interface CourseDetail {
   outcomes: string[];
   modules: CourseModule[];
   liveSessions: CourseLiveSession[];
+  isEnrolled?: boolean;
   canReadAnnouncements?: boolean;
+  canReadDiscussions?: boolean;
+  canPostDiscussions?: boolean;
+  canReplyDiscussions?: boolean;
+  canModerateDiscussions?: boolean;
   exam: CourseExam;
   relatedIds: string[];
 }

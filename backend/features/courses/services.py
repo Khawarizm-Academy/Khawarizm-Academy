@@ -51,6 +51,7 @@ from features.courses.models import (
     CourseModule,
     CourseStaff,
     LessonResource,
+    LessonProgress,
 )
 
 _SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -94,7 +95,7 @@ def format_live_session_labels(starts_at: datetime | None, timezone_name: str | 
     hour = local.hour % 12 or 12
     period = "ص" if local.hour < 12 else "م"
     date_label = (
-        f"{_ARABIC_WEEKDAYS[local.weekday()}، {_arabic_digits(str(local.day))} "
+        f"{_ARABIC_WEEKDAYS[local.weekday()]}، {_arabic_digits(str(local.day))} "
         f"{_ARABIC_MONTHS[local.month - 1]} {_arabic_digits(str(local.year))}"
     )
     time_label = f"{_arabic_digits(str(hour))}:{_arabic_digits(f'{local.minute:02d}')} {period}"
@@ -655,6 +656,9 @@ def publish(course: Course, actor: Any) -> Course:
     course.review_note = ""
     course.save(update_fields=["status", "published_at", "review_note", "updated_at"])
     record_audit(AuditAction.COURSE_PUBLISHED, actor=actor, target_type="course", target_id=course.pk)
+    from features.dashboard.event_receiver import receive_course_published
+
+    transaction.on_commit(lambda: receive_course_published(course))
     return course
 
 
@@ -670,6 +674,9 @@ def request_changes(course: Course, note: str, actor: Any) -> Course:
     course.status = CourseStatus.DRAFT
     course.review_note = note.strip()[:10000]
     course.save(update_fields=["status", "review_note", "updated_at"])
+    from features.dashboard.event_receiver import receive_changes_requested
+
+    transaction.on_commit(lambda: receive_changes_requested(course, reason=course.review_note))
     return course
 
 
@@ -802,6 +809,12 @@ def _touch_course(course: Course) -> None:
     course.save(update_fields=["updated_at"])
 
 
+def _touch_curriculum(course: Course) -> None:
+    course.curriculum_revision += 1
+    course.updated_at = timezone.now()
+    course.save(update_fields=["curriculum_revision", "updated_at"])
+
+
 def _locked_course(course_id: Any) -> Course:
     try:
         return Course.objects.select_for_update().get(pk=course_id)
@@ -887,7 +900,7 @@ def add_module(course: Course, actor: Any, data: Mapping[str, Any] | None = None
     title = _text(values.get("title", ""), "العنوان", 160).strip()
     order = _nonnegative_int(values.get("order", 0), "الترتيب")
     row = CourseModule.objects.create(course=course, module_id=module_id, title=title, order=order)
-    _touch_course(course)
+    _touch_curriculum(course)
     return row
 
 
@@ -910,7 +923,7 @@ def update_module(module: CourseModule, actor: Any, data: Mapping[str, Any]) -> 
     for key, value in values.items():
         setattr(module, key, value)
     module.save()
-    _touch_course(course)
+    _touch_curriculum(course)
     return module
 
 
@@ -921,6 +934,7 @@ def delete_module(module: CourseModule, actor: Any) -> None:
     _require_edit(actor, course, curriculum=True)
     module.delete()
     recompute_course_stats(course)
+    _touch_curriculum(course)
 
 
 @transaction.atomic
@@ -938,7 +952,7 @@ def reorder_modules(course: Course, actor: Any, ordered_ids: list[str]) -> None:
         module.order = index
         module.updated_at = timestamp
     CourseModule.objects.bulk_update([by_id[item] for item in ordered_ids], ["order", "updated_at"])
-    _touch_course(course)
+    _touch_curriculum(course)
 
 
 @transaction.atomic
@@ -992,6 +1006,7 @@ def add_lesson(module: CourseModule, actor: Any, data: Mapping[str, Any] | None 
         is_published=is_published,
     )
     recompute_course_stats(course)
+    _touch_curriculum(course)
     return lesson
 
 
@@ -1053,6 +1068,7 @@ def update_lesson(lesson: CourseLesson, actor: Any, data: Mapping[str, Any]) -> 
         raise InvalidParameter("نوع الدرس غير صالح.")
     lesson.save()
     recompute_course_stats(course)
+    _touch_curriculum(course)
     return lesson
 
 
@@ -1103,6 +1119,7 @@ def duplicate_lesson(lesson: CourseLesson, actor: Any) -> CourseLesson:
         row.updated_at = timestamp
     CourseLesson.objects.bulk_update(ordered_lessons, ["order", "updated_at"])
     recompute_course_stats(course)
+    _touch_curriculum(course)
     return clone
 
 
@@ -1115,6 +1132,7 @@ def delete_lesson(lesson: CourseLesson, actor: Any) -> None:
     _require_edit(actor, course, curriculum=True)
     lesson.delete()
     recompute_course_stats(course)
+    _touch_curriculum(course)
 
 
 @transaction.atomic
@@ -1163,7 +1181,7 @@ def reorder_lessons(
             row.updated_at = timezone.now()
             changed.append(row)
         CourseLesson.objects.bulk_update(changed, ["module", "order", "updated_at"])
-        _touch_course(course)
+        _touch_curriculum(course)
         return
     if not isinstance(ordered_ids, list) or any(not isinstance(item, str) for item in ordered_ids):
         raise InvalidParameter("قائمة الدروس غير صالحة.")
@@ -1176,7 +1194,7 @@ def reorder_lessons(
         row.order = index
         row.updated_at = timestamp
     CourseLesson.objects.bulk_update([by_id[item] for item in ordered_ids], ["order", "updated_at"])
-    _touch_course(course)
+    _touch_curriculum(course)
 
 
 @transaction.atomic
@@ -1200,6 +1218,7 @@ def move_lesson(lesson: CourseLesson, actor: Any, module: CourseModule, order: i
     lesson.order = order
     lesson.save(update_fields=["module", "order", "updated_at"])
     recompute_course_stats(course)
+    _touch_curriculum(course)
     return lesson
 
 
@@ -1411,15 +1430,128 @@ def enroll(user: Any, course: Course) -> None:
         locked = Course.objects.select_for_update().get(pk=course.pk)
         if locked.status != CourseStatus.PUBLISHED:
             raise Conflict("هذه الدورة غير متاحة للتسجيل.", code="not_enrollable")
-        _, created = Enrollment.objects.get_or_create(user=user, course=locked)
+        enrollment, created = Enrollment.objects.get_or_create(user=user, course=locked)
         if created:
             Course.objects.filter(pk=locked.pk).update(enrolled_count=F("enrolled_count") + 1)
             from features.common.cache import bump_version
 
             transaction.on_commit(lambda: bump_version("catalog"))
+            from features.dashboard.event_receiver import receive_enrollment_created
+
+            transaction.on_commit(lambda: receive_enrollment_created(enrollment))
 
 
-def save_progress(user: Any, course: Course, data: dict[str, Any]) -> None:
+def _published_lesson_ids(course: Course) -> list[Any]:
+    return list(
+        CourseLesson.objects.filter(module__course_id=course.pk, is_published=True).values_list("pk", flat=True)
+    )
+
+
+def completed_lesson_ids(user: Any, course: Course) -> list[str]:
+    """Return completed published lesson ids in curriculum order."""
+    lessons = list(
+        CourseLesson.objects.filter(module__course_id=course.pk, is_published=True)
+        .order_by("module__order", "module__module_id", "order", "lesson_id")
+        .values("pk", "lesson_id")
+    )
+    completed = set(
+        LessonProgress.objects.filter(
+            user_id=user.pk,
+            lesson_id__in=[lesson["pk"] for lesson in lessons],
+            completed=True,
+        ).values_list("lesson_id", flat=True)
+    )
+    return [lesson["lesson_id"] for lesson in lessons if lesson["pk"] in completed]
+
+
+@transaction.atomic
+def recompute_enrollment(user: Any, course: Course):
+    """Derive one enrollment from published lessons and any required exam."""
+    from features.dashboard.models import Enrollment, PriorityContinue
+    from features.quizzes.models import Attempt, AttemptStatus, Quiz, QuizKind
+
+    enrollment = Enrollment.objects.select_for_update().filter(user_id=user.pk, course_id=course.pk).first()
+    if enrollment is None:
+        return None
+
+    lesson_ids = _published_lesson_ids(course)
+    published_count = len(lesson_ids)
+    completed_count = (
+        LessonProgress.objects.filter(user_id=user.pk, lesson_id__in=lesson_ids, completed=True)
+        .values("lesson_id")
+        .distinct()
+        .count()
+        if lesson_ids
+        else 0
+    )
+    progress = round(100 * completed_count / published_count) if published_count else 0
+    latest_progress = (
+        LessonProgress.objects.filter(
+            user_id=user.pk,
+            lesson__module__course_id=course.pk,
+            lesson__is_published=True,
+        )
+        .select_related("lesson")
+        .order_by("-updated_at", "-pk")
+        .first()
+    )
+    last_lesson = latest_progress.lesson.lesson_id if latest_progress is not None else enrollment.last_lesson
+    exam_ids = list(
+        Quiz.objects.filter(course_id=course.pk, kind=QuizKind.EXAM, is_published=True).values_list("pk", flat=True)
+    )
+    passed_exam_ids = set(
+        Attempt.objects.filter(
+            user_id=user.pk,
+            quiz_id__in=exam_ids,
+            status__in=(AttemptStatus.SUBMITTED, AttemptStatus.EXPIRED),
+            passed=True,
+        ).values_list("quiz_id", flat=True)
+    )
+    is_completed = progress == 100 and set(exam_ids).issubset(passed_exam_ids)
+
+    changed_fields: list[str] = []
+    for field, value in (
+        ("progress", progress),
+        ("last_lesson", last_lesson),
+        ("is_completed", is_completed),
+        ("progress_revision", course.curriculum_revision),
+    ):
+        if getattr(enrollment, field) != value:
+            setattr(enrollment, field, value)
+            changed_fields.append(field)
+    completion_date = timezone.localdate().isoformat() if is_completed else ""
+    if enrollment.completion_date != completion_date:
+        enrollment.completion_date = completion_date
+        changed_fields.append("completion_date")
+    if changed_fields:
+        enrollment.save(update_fields=[*changed_fields, "updated_at"])
+    PriorityContinue.objects.filter(user_id=user.pk, course_id=course.pk).update(progress=progress)
+    if is_completed:
+        transaction.on_commit(lambda: _issue_completion_certificate(user, course))
+    return enrollment
+
+
+def _issue_completion_certificate(user: Any, course: Course) -> None:
+    from features.courses.certificate_services import issue_certificate_if_complete
+
+    issue_certificate_if_complete(user, course)
+
+
+def enrollment_progress_payload(user: Any, course: Course, enrollment: Any | None = None) -> dict[str, Any]:
+    """Return stable learner progress keys from server state only."""
+    enrollment = enrollment or recompute_enrollment(user, course)
+    if enrollment is None:
+        return {"progress": 0, "lastLesson": "", "isCompleted": False, "completedLessonIds": []}
+    return {
+        "progress": enrollment.progress,
+        "lastLesson": enrollment.last_lesson,
+        "isCompleted": enrollment.is_completed,
+        "completedLessonIds": completed_lesson_ids(user, course),
+    }
+
+
+def save_progress(user: Any, course: Course, data: dict[str, Any]):
+    """Record only the legacy resume label; aggregate progress is server-derived."""
     from features.dashboard.models import Enrollment
 
     if not isinstance(data, Mapping):
@@ -1437,18 +1569,15 @@ def save_progress(user: Any, course: Course, data: dict[str, Any]) -> None:
         enrollment = Enrollment.objects.filter(user=user, course=locked).first()
         if enrollment is None:
             raise NotFound(COURSE_NOT_FOUND)
-        if "progress" in data:
-            progress = data["progress"]
-            if isinstance(progress, bool) or not isinstance(progress, int) or not 0 <= progress <= 100:
-                raise InvalidParameter("نسبة التقدّم غير صالحة.")
-            enrollment.progress = progress
+        update_fields: list[str] = []
         if "lastLesson" in data:
-            enrollment.last_lesson = _text(data["lastLesson"], "الدرس الأخير", 200)
-        if "isCompleted" in data:
-            if not isinstance(data["isCompleted"], bool):
-                raise InvalidParameter("حالة إكمال الدورة غير صالحة.")
-            enrollment.is_completed = data["isCompleted"]
-        enrollment.save(update_fields=["progress", "last_lesson", "is_completed", "updated_at"])
+            last_lesson = _text(data["lastLesson"], "الدرس الأخير", 200)
+            if enrollment.last_lesson != last_lesson:
+                enrollment.last_lesson = last_lesson
+                update_fields.append("last_lesson")
+        if update_fields:
+            enrollment.save(update_fields=[*update_fields, "updated_at"])
+    return recompute_enrollment(user, course)
 
 
 @transaction.atomic

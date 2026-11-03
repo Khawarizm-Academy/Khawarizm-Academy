@@ -41,7 +41,7 @@ export interface PlayerCopy {
   pathButton: string;
   progressLabel: string;
   tabLabel: string;
-  tabs: Record<'lesson' | 'problems' | 'live' | 'exam', string>;
+  tabs: Record<'lesson' | 'problems' | 'live' | 'exam' | 'discussion', string>;
   qualityLabel: string;
   captionsLabel: string;
   speedLabel: string;

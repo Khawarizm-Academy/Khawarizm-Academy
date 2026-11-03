@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, ClipboardCheck, PlayCircle, Radio } from 'lucide-react';
+import { Award, ClipboardCheck, MessageCircle, PlayCircle, Radio } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCoursePlayer } from '@/features/courses/context/coursePlayerContext';
 import { courseCopy } from '@/features/courses/data/courseCopy';
@@ -11,17 +11,20 @@ const TAB_ICON: Record<CourseTab, LucideIcon> = {
   problems: ClipboardCheck,
   live: Radio,
   exam: Award,
+  discussion: MessageCircle,
 };
 
 /** One horizontal tab row, labels from JSON, icons from the lookup above. */
 export const LessonTabBar: React.FC = () => {
-  const { activeTab, selectTab } = useCoursePlayer();
+  const { activeTab, selectTab, canReadDiscussions } = useCoursePlayer();
 
-  const tabs = (Object.keys(courseCopy.player.tabs) as CourseTab[]).map((key) => ({
+  const tabs = (Object.keys(courseCopy.player.tabs) as CourseTab[])
+    .filter((key) => key !== 'discussion' || canReadDiscussions)
+    .map((key) => ({
     key,
     label: courseCopy.player.tabs[key],
     icon: TAB_ICON[key],
-  }));
+    }));
 
   return (
     <div className="player-tabs" role="tablist">

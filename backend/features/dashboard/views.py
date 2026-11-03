@@ -50,11 +50,12 @@ def dashboard_summary(request: Any) -> Response:
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def dashboard_enrolled(request: Any) -> Response:
-    rows = (
+    rows = list(
         Enrollment.objects.filter(user=request.user)
         .filter(Q(course__status=CourseStatus.PUBLISHED) | Q(course__status=CourseStatus.ARCHIVED))
         .select_related("course")
     )
+    rows = [services.sync_enrollment_progress(request.user, row) for row in rows]
     return Response({"items": [enrolled_course(row) for row in rows]})
 
 
@@ -117,6 +118,18 @@ def dashboard_competitions(request: Any) -> Response:
 def dashboard_notifications(request: Any) -> Response:
     """Both notification shapes, so the view and the drawer share one call."""
     return Response(services.notifications(request.user))
+
+
+@extend_schema(
+    operation_id="dashboard_notification_unread_count",
+    summary="Return the signed-in user's unread notification count.",
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{count: number}`")},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def dashboard_notification_unread_count(request: Any) -> Response:
+    """Return the count from the dashboard service's 15-second cache."""
+    return Response({"count": services.unread_notification_count(request.user)})
 
 
 @extend_schema(

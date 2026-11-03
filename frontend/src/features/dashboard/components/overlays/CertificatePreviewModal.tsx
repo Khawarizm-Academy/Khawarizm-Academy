@@ -32,14 +32,14 @@ export const CertificatePreviewModal: React.FC<CertificatePreviewModalProps> = (
         </div>
         <div className="p-4 bg-navy-950/40 rounded-2xl border border-navy-600/40 text-xs text-slate-300 space-y-1.5 text-right">
           <div>
-            الممنوحة إلى: <strong className="text-white">{user?.fullName}</strong>
+            الممنوحة إلى: <strong className="text-white">{certificate.learnerName || user?.fullName || '—'}</strong>
           </div>
           <div>تاريخ الإصدار: {certificate.issueDate}</div>
           <div>
             حالة الاعتماد:{' '}
-            <span className="text-emerald-400 font-bold inline-flex items-center gap-1">
-              معتمدة ومسجلة في السجل الأكاديمي
-              <Check size={13} strokeWidth={3} />
+            <span className={`${certificate.revoked ? 'text-red-300' : 'text-emerald-400'} font-bold inline-flex items-center gap-1`}>
+              {certificate.revoked ? `ملغاة${certificate.revokedReason ? `: ${certificate.revokedReason}` : ''}` : 'معتمدة ومسجلة في السجل الأكاديمي'}
+              {!certificate.revoked && <Check size={13} strokeWidth={3} />}
             </span>
           </div>
         </div>
