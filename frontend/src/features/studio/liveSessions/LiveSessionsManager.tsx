@@ -160,7 +160,7 @@ const SessionDrawer: React.FC<{
   courseSlug: string;
   session: StudioLiveSession | null;
   onClose: () => void;
-  onSaved: () => Promise<void>;
+  onSaved: () => void;
 }> = ({ courseSlug, session, onClose, onSaved }) => {
   const [form, setForm] = useState<LiveSessionInput>(() =>
     session
@@ -209,7 +209,7 @@ const SessionDrawer: React.FC<{
           });
         }
       }
-      await onSaved();
+      onSaved();
       onClose();
     } catch (caught) {
       setError(
@@ -367,7 +367,7 @@ const RecordingDrawer: React.FC<{
   courseSlug: string;
   session: StudioLiveSession;
   close: () => void;
-  onSaved: () => Promise<void>;
+  onSaved: () => void;
 }> = ({ courseSlug, session, close, onSaved }) => {
   const { user } = useAuth();
   const canPickAsset = canAny(user, ["videos.manage_own", "videos.manage_any"]);
@@ -431,7 +431,7 @@ const RecordingDrawer: React.FC<{
           ? { recordingAssetId: selectedAssetId, recordingUrl: "" }
           : { recordingAssetId: null, recordingUrl: recordingUrl.trim() };
       await addLiveSessionRecording(courseSlug, sessionId(session), payload);
-      await onSaved();
+      onSaved();
       close();
     } catch (reason) {
       setError(
