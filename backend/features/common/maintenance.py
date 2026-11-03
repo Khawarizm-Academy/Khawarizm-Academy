@@ -90,9 +90,11 @@ def run_cleanup(trigger: str) -> dict[str, Any]:
     try:
         deleted = {name: _delete_chunked(qs) for name, qs in expired_families(now).items()}
         # Keep common import-light; the owning quiz service performs grading.
+        from features.courses.services import refresh_states
         from features.quizzes.services import expire_overdue
 
         deleted["quizAttemptsExpired"] = expire_overdue()
+        deleted["liveSessionStatesRefreshed"] = refresh_states(now)
     except Exception as exc:
         run.status = MaintenanceRunStatus.ERROR
         run.error = str(exc)[:500]

@@ -4,7 +4,7 @@ How the Django service is organised and how the provider-backed video control pl
 
 ## 1. One feature = one app = one folder
 
-The backend mirrors `frontend/src/features/`. Each feature owns its models, serializers, views, routes, admin, migrations, tests, and README. `studio` is model-less course authoring; it delegates to `courses`, `access`, and `videohosting`.
+The backend mirrors `frontend/src/features/`. Each feature owns its models, serializers, views, routes, admin, migrations, tests, and README. `studio` owns private instructor-student notes and exposes course authoring, roster, and analytics views over the `courses`, `access`, `dashboard`, `quizzes`, and `videohosting` domains.
 
 The video feature owns `VideoProvider`, `VideoAsset`, `VideoCaption`, `VideoRendition`, `VideoSegment`, `StreamToken`, `DriveGrant`, `DriveAuthState`, `VideoSystemConfig`, `ProviderAsset`, and `UploadSession`. `ProviderAsset` and the original `UploadSession` shape remain historical compatibility tables; the live Studio upload path uses the current provider hooks and `UploadSession` fields.
 
@@ -87,6 +87,7 @@ Drive OAuth is authorization-code/offline access with `drive.file`. `DriveGrant`
 | `STREAM_TOKEN_TTL_HOURS` | 6 hours |
 | `VIDEO_GRANT_TTL_PREVIEW_MINUTES` | 30 minutes |
 | `VIDEO_EMBED_ALLOWED_HOSTS` | `youtube-nocookie.com,vimeo.com` |
+| `LIVE_ALLOWED_HOSTS` | `meet.google.com,zoom.us,teams.microsoft.com,teams.live.com,whereby.com` |
 
 Provider credentials and Google OAuth client values are backend-only. A real Drive account acceptance remains an external gate, not a passed implementation claim.
 
@@ -95,6 +96,26 @@ Provider credentials and Google OAuth client values are backend-only. A real Dri
 `features/quizzes` owns quiz/question/option/attempt/answer/grant tables and mounts both learner routes and Studio authoring routes under `/api/`. `quizzes.services` validates enrollment, progress unlocks, attempt limits, option ownership, deadlines, grading, and reveal policy; views do not decide correctness. Per-attempt question and option order is persisted so reloads are stable. Active-attempt serializers exclude answer keys and feedback, and the result serializer is the only path that may expose correctness.
 
 The retained legacy problem URLs are served by the quizzes feature too. Their list serializers strip correct IDs, explanations, and hints; explicit check endpoints grade on the server. The shared cleanup service lazily imports `quizzes.services.expire_overdue()` to finalize abandoned timed attempts without making the low-level common app import feature models at module load.
+
+## 9. Phase 10 teaching-tool boundaries
+
+`courses` remains the owner of live-session rows. Start times are stored as
+timezone-aware instants with an IANA display timezone; labels/state are derived
+at serialization, while cleanup only synchronizes compatibility state. Legacy
+labels are backfilled only for an exact seeded date/time pattern; ambiguous DST
+wall times and all unrecognized labels stay unresolved rather than guessed.
+Meeting hosts are validated against `LIVE_ALLOWED_HOSTS` without server-side
+fetches. Learner course detail reveals meeting, replay, and session-note fields
+only to enrolled learners or authorized course staff and marks that response
+`private, no-store`.
+
+`announcements` owns sanitized Markdown posts, a database-backed daily quota
+(three per course/day), and a single-pinned-post constraint; it emits an
+after-commit signal for the Phase 11 notification service rather than writing
+notifications itself. `studio` owns private learner notes, while roster email
+masking and CSV formula escaping happen on the server. Analytics groups and
+aggregates enrollments, progress, watch percent, and quiz results in SQL; an
+unavailable rating metric is represented explicitly instead of fabricated.
 
 ## Related
 

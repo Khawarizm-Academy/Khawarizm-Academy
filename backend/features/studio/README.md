@@ -1,8 +1,9 @@
 # Instructor Studio — استوديو المدرّب
 
-The model-less Studio app exposes the Phase 3 course authoring and moderation
-API over the `courses`, `access`, `auth`, and `videohosting` models. It is
-mounted at `/api/` and does not own migrations or database tables.
+The Studio app exposes authenticated course authoring/moderation and Phase 10
+teaching tools over the `courses`, `access`, `auth`, `dashboard`, `quizzes`, and
+`videohosting` models. It owns private `InstructorStudentNote` rows. The app is
+mounted at `/api/`.
 
 All Studio responses use `Cache-Control: private, no-store`. Every endpoint is
 authenticated. Course and curriculum access is object-scoped through
@@ -22,6 +23,12 @@ Writes carry the `studio_write` scoped throttle.
 - `GET /studio/courses/<slug>/checklist`
 - `GET /studio/courses/<slug>/staff/candidates?q=...` — owner-scoped, server-filtered users with effective `studio.access`.
 - `POST /studio/courses/<slug>/staff` and `DELETE /studio/courses/<slug>/staff/<uuid>` — add/remove non-owner team members.
+- `GET /studio/students/courses`, `GET /studio/students?course=<slug>` — staff-scoped course selector and paginated roster with server-masked email.
+- `GET /studio/students.csv?course=<slug>` — injection-safe CSV export with the same server-side email masking.
+- `GET /studio/students/<user-id>?course=<slug>` — learner progress and quiz-attempt detail; `POST /studio/students/<user-id>/nudge` enforces a per-course 24-hour limit.
+- `GET/POST /studio/students/<user-id>/notes?course=<slug>` — private staff-authored learner notes.
+- `POST /studio/students/<user-id>/extra-attempt` — scoped quiz-attempt grant for an enrolled learner.
+- `GET /studio/analytics/overview` and `/studio/analytics/courses/<slug>` — SQL-aggregated, no-store instructor analytics with 7/30/90-day ranges and an explicitly unavailable ratings distribution until Phase 11 supplies a source.
 - `POST /studio/courses/<slug>/modules` and `/modules/reorder`
 - `PATCH/DELETE /studio/modules/<uuid>`
 - `POST /studio/modules/<uuid>/lessons` and `/lessons/reorder`
@@ -40,3 +47,6 @@ Editor payloads include draft and unpublished lessons, review notes, checklist
 issues, and public-safe staff profiles. They never expose account email,
 password, access token, refresh token, provider credential, or upload-session
 fields. Resource URLs are HTTPS-only; pagination and search inputs are capped.
+Roster emails remain masked in JSON and CSV unless the viewer has
+`students.view_any`; learner notes, exports, analytics, and all other
+user-specific responses use private no-store caching.

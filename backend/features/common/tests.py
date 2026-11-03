@@ -293,6 +293,7 @@ class CleanupExpiredTests(TestCase):
                 "authEvents": 1,
                 "accessAuditEvents": 1,
                 "quizAttemptsExpired": 1,
+                "liveSessionStatesRefreshed": 0,
             },
         )
 
@@ -320,6 +321,7 @@ class CleanupExpiredTests(TestCase):
                 "authEvents": 1,
                 "accessAuditEvents": 1,
                 "quizAttemptsExpired": 1,
+                "liveSessionStatesRefreshed": 0,
             },
         )
 
@@ -370,6 +372,7 @@ class MaintenanceEndpointTests(ApiTestCase):
                 "authEvents",
                 "accessAuditEvents",
                 "quizAttemptsExpired",
+                "liveSessionStatesRefreshed",
             },
         )
         self.assertEqual(MaintenanceRun.objects.get().trigger, "endpoint")

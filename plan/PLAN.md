@@ -25,6 +25,7 @@
 - PHASE 12 — Admin console upgrades & legacy retirement
 - PHASE 13 — Hardening: security, performance, accessibility, observability, data lifecycle
 - PHASE 14 — Seed data, documentation, end-to-end smoke, release
+- PHASE 16 — Product expansion: paid enrollment, email delivery, and community attachments
 - BACKLOG — deliberately out of scope (each with the trigger that promotes it)
 - APPENDICES
 
@@ -1557,9 +1558,23 @@ Expired `StreamToken`s (exists), stale `UploadSession`s (> 24 h) + spool parts, 
 | P14.6 | **Final verification:** every gate in §0.4 on a **fresh clone**; Phase-0 parity snapshots diffed (only documented additive changes remain); all `plan/phase-*-result.md` present; merge, tag, write the release note. |
 
 **Acceptance:** fresh clone → following only `PROJECT_PROFILE.md` + `docs/11-…` brings up a platform where the smoke journey passes; every document in this plan's "Docs" list exists and matches the code (spot-check ≥ 20 facts against code and record them, as the alignment plan's Phase 11 did).
-
 ---
+# PHASE 16 — Product expansion: paid enrollment, email delivery, and community attachments
+**Branch:** `Feature/ProductExpansion` → PR into `Feature/AccessStudio` after the Phase 14 release.
+**Needs:** Phases 11–14 complete, a product-owner decision on payment provider/currency/tax policy, and approved email/object-storage providers.
 
+Phase 16 turns the highest-signal backlog items into production-safe extension points without weakening the current learner experience. It is intentionally scheduled after the release hardening work so payment, email, and uploaded community content inherit the completed permission, audit, privacy, and observability controls.
+
+| # | Task |
+| :--- | :--- |
+| P16.1 | **Paid enrollment:** define the provider, currency/tax/refund policy, webhook signature verification, idempotent order/payment ledger, entitlement transition rules, and a staff reconciliation view. No course becomes paid until the provider and legal policy are approved. |
+| P16.2 | **Email channel:** add a provider-neutral outbox with preference checks, retry/backoff, dedupe keys, unsubscribe handling, and templates for enrollment, certificate, review reply, discussion reply, and live-session reminders. In-app notifications remain the source of truth when email is unavailable. |
+| P16.3 | **Hosted files and community attachments:** add object-storage abstraction, signed upload/download URLs, MIME/size validation, malware-scan status, retention cleanup, and attachment permissions for discussions, profiles, and lesson resources. Never expose provider credentials or unsigned storage URLs. |
+| P16.4 | **Learner-facing UI:** add Arabic-first checkout/status, email preferences and delivery state, attachment composer/preview/download states, quota/error handling, keyboard access, and reduced-motion behavior. Preserve the existing notification and discussion API envelopes. |
+| P16.5 | **Verification and operations:** table-test payment/webhook idempotency and entitlement transitions; test email retries/preferences; test attachment IDOR, signed URL expiry, quotas, and cleanup; document provider setup, refunds, failed delivery, storage incidents, and rollback. Run the complete gates and update the release checklist. |
+
+**Acceptance:** a provider-approved test purchase can be completed exactly once, its webhook can be replayed safely, entitlement is granted/revoked according to policy, the same event produces at most one email per channel, attachments cannot cross learner/course permissions, expired files are cleaned up, and all new routes are documented, classified, localized, and covered by the security/observability gates.
+---
 # BACKLOG — deliberately out of scope (each with the trigger that promotes it)
 
 | ID | Item | Why not now | Trigger |

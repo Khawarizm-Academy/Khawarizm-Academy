@@ -29,6 +29,12 @@ vi.mock('@/features/courses/context/courseDetailContext', () => ({
   useCourseDetail: vi.fn(),
 }));
 
+// The page reads the signed-in identity to key the detail provider; the
+// lifecycle slice renders it bare, so auth is stubbed here.
+vi.mock('@/features/auth/context/authContext', () => ({
+  useAuth: () => ({ user: null }),
+}));
+
 const mockedUseCourseDetail = vi.mocked(useCourseDetail);
 
 const baseCourse: CourseLandingCourse = {
@@ -62,6 +68,7 @@ function contextFor(course: CourseLandingCourse | null): CourseDetailContextValu
   return {
     course,
     isLoading: false,
+    isEnrollmentPending: false,
     isEnrolled: false,
     isFavorite: false,
     startedLessonId: '',

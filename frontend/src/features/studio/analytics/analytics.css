@@ -1,0 +1,68 @@
+@reference "../../../styles/globals.css";
+
+@layer components {
+  .studio-analytics-page { @apply flex flex-col gap-5; }
+  .studio-analytics-toolbar { @apply flex flex-wrap items-center justify-between gap-3; }
+  .studio-analytics-context { @apply flex flex-col gap-1; }
+  .studio-analytics-context h1 { @apply text-2xl font-display text-white; }
+  .studio-analytics-context p { @apply text-sm text-slate-400; }
+  .studio-analytics-range { @apply flex items-center gap-1 rounded-xl border border-navy-600 bg-navy-900/70 p-1; }
+  .studio-analytics-range button { @apply min-h-10 rounded-lg px-3 text-xs text-slate-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400; }
+  .studio-analytics-range button.is-active { @apply bg-blue-400/15 text-blue-400; }
+  .studio-analytics-notice { @apply rounded-xl border border-warning-500/35 bg-warning-500/10 px-4 py-3 text-sm text-warning-500; }
+  .studio-analytics-notice strong { @apply text-white; }
+  .studio-analytics-kpi-grid { @apply grid grid-cols-2 gap-3 xl:grid-cols-5; }
+  .studio-analytics-kpi { @apply flex min-h-[108px] items-start gap-3 rounded-2xl border border-navy-600/80 bg-navy-900/65 p-4; box-shadow: var(--shadow-elev-1); }
+  .studio-analytics-kpi-icon { @apply flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-400/10 text-blue-400; }
+  .studio-analytics-kpi-gold .studio-analytics-kpi-icon { @apply bg-gold-400/10 text-gold-400; }
+  .studio-analytics-kpi-label { @apply block text-xs text-slate-400; }
+  .studio-analytics-kpi-value { @apply mt-1 block text-2xl font-mono text-white; }
+  .studio-analytics-kpi-delta { @apply mt-1 block text-[11px] text-success-500; }
+  .studio-analytics-kpi-delta.is-negative { @apply text-danger-500; }
+  .studio-analytics-grid { @apply grid gap-4 xl:grid-cols-2; }
+  .studio-analytics-chart { @apply min-w-0 rounded-2xl border border-navy-600/80 bg-navy-900/65 p-4; box-shadow: var(--shadow-elev-1); }
+  .studio-analytics-chart-wide { @apply xl:col-span-2; }
+  .studio-analytics-chart-head { @apply mb-3 flex items-center justify-between gap-3; }
+  .studio-analytics-chart-head h2 { @apply text-base font-display text-white; }
+  .studio-analytics-chart-head span { @apply text-xs text-slate-500; }
+  .studio-analytics-svg-wrap { @apply h-[220px] w-full overflow-hidden; }
+  .studio-analytics-svg-wrap svg { @apply h-full w-full; }
+  .studio-analytics-gridline { stroke: var(--color-navy-700); stroke-dasharray: 3 5; stroke-width: 1; }
+  .studio-analytics-line { stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+  .studio-analytics-line-blue { stroke: var(--color-blue-400); }
+  .studio-analytics-line-gold { stroke: var(--color-gold-400); }
+  .studio-analytics-point { stroke: var(--color-navy-950); stroke-width: 2; }
+  .studio-analytics-point-blue { fill: var(--color-blue-400); }
+  .studio-analytics-point-gold { fill: var(--color-gold-400); }
+  .studio-analytics-axis-label { fill: var(--color-slate-400); font-family: var(--font-body); font-size: 11px; }
+  .studio-analytics-chart-empty { @apply flex h-[220px] items-center justify-center rounded-xl border border-dashed border-navy-600 text-sm text-slate-500; }
+  .studio-analytics-bars { @apply flex min-h-[220px] flex-col justify-center gap-3; }
+  .studio-analytics-bar-row { @apply grid grid-cols-[minmax(64px,1fr)_minmax(100px,3fr)_auto] items-center gap-2 text-xs; }
+  .studio-analytics-bar-label { @apply min-w-0 truncate text-slate-300; }
+  .studio-analytics-bar-track { @apply h-3 overflow-hidden rounded-full bg-navy-800; }
+  .studio-analytics-bar-fill { @apply block h-full rounded-full; }
+  .studio-analytics-bar-fill-blue { @apply bg-blue-400; }
+  .studio-analytics-bar-fill-gold { @apply bg-gold-400; }
+  .studio-analytics-bar-row strong { @apply min-w-12 text-left font-mono text-white; }
+  .studio-analytics-bar-row small { @apply col-span-3 text-slate-500; }
+  .studio-analytics-heat { @apply grid min-h-[220px] grid-cols-2 content-center gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6; }
+  .studio-analytics-heat-cell { @apply flex min-h-20 flex-col justify-between rounded-xl border border-blue-400/25 p-2 text-right; background: linear-gradient(135deg, rgba(41,169,255,.08), rgba(41,169,255,.08)), linear-gradient(to top, rgba(41,169,255,.42) var(--watch), rgba(9,37,87,.42) var(--watch)); }
+  .studio-analytics-heat-cell span { @apply font-mono text-sm font-bold text-white; }
+  .studio-analytics-heat-cell small { @apply line-clamp-2 text-[11px] text-slate-300; }
+  .studio-analytics-data-details { @apply mt-4 border-t border-navy-600/70 pt-3; }
+  .studio-analytics-data-details summary { @apply cursor-pointer text-xs text-blue-400 outline-none focus-visible:ring-2 focus-visible:ring-blue-400; }
+  .studio-analytics-table-wrap { @apply mt-3 max-h-64 overflow-auto; }
+  .studio-analytics-data-table { @apply w-full min-w-[420px] text-right text-xs; }
+  .studio-analytics-data-table th { @apply border-b border-navy-600 bg-navy-800/60 px-2 py-2 font-medium text-slate-400; }
+  .studio-analytics-data-table td { @apply border-b border-navy-600/50 px-2 py-2 text-slate-200; }
+  .studio-analytics-unavailable { @apply flex min-h-[120px] items-center rounded-xl border border-dashed border-navy-600 px-4 text-sm text-slate-400; }
+  .studio-analytics-status-list { @apply flex min-h-[220px] flex-col justify-center gap-4; }
+  .studio-analytics-status-list > p:not(.studio-analytics-unavailable) { @apply rounded-xl border border-gold-400/25 bg-gold-400/10 p-5 text-sm text-slate-300; }
+  .studio-analytics-status-list > p strong { @apply me-1 text-2xl font-mono text-gold-200; }
+  .studio-analytics-skeleton { @apply flex flex-col gap-4; }
+  .studio-analytics-skeleton-kpis { @apply grid grid-cols-2 gap-3 xl:grid-cols-5; }
+  .studio-analytics-skeleton span { @apply block min-h-[108px] rounded-2xl; background: linear-gradient(100deg,var(--skeleton-base),var(--skeleton-surface),var(--skeleton-base)); background-size: 200% 100%; animation: skeleton-celestial-shimmer 1.3s infinite; }
+  .studio-analytics-skeleton-row { @apply grid min-h-[280px] gap-4 xl:grid-cols-2; }
+  .studio-analytics-forbidden { @apply rounded-2xl border border-danger-500/35 bg-danger-500/10 p-8 text-center text-sm text-danger-500; }
+  @media (max-width: 639px) { .studio-analytics-kpi-grid { @apply grid-cols-1; } .studio-analytics-kpi { @apply min-h-0; } .studio-analytics-toolbar { @apply items-stretch; } .studio-analytics-range { @apply justify-between; } .studio-analytics-range button { @apply flex-1; } }
+}

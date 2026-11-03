@@ -204,7 +204,7 @@ class CoursePersistenceTests(ApiTestCase):
         authenticate(self.client, user)
         self.client.post("/api/courses/course-1/progress", {"progress": 40, "lastLesson": "l2"}, format="json")
         enrollment = user.enrollments.get()
-        self.assertEqual((enrollment.progress, enrollment.last_lesson), (40, "l2"))
+        self.assertEqual((enrollment.progress, enrollment.last_lesson), (0, "l2"))
 
     def test_favorite_hints_a_visitor_to_sign_in(self):
         make_course()

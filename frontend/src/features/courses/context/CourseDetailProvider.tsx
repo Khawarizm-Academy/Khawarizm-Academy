@@ -26,6 +26,7 @@ export const CourseDetailProvider: React.FC<{ slug: string; children: React.Reac
   const { user } = useAuth();
   // The API is the source of truth; a local override covers the optimistic click.
   const [enrolledOverride, setEnrolledOverride] = useState<boolean | null>(null);
+  const [isEnrollmentPending, setIsEnrollmentPending] = useState(false);
   const [favoriteOverride, setFavoriteOverride] = useState<boolean | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
@@ -73,14 +74,32 @@ export const CourseDetailProvider: React.FC<{ slug: string; children: React.Reac
 
   const enroll = () => {
     if (isEnrolled) return;
+    if (!user) {
+      showToast(courseCopy.landing.toastSignIn);
+      return;
+    }
     setEnrolledOverride(true);
+    setIsEnrollmentPending(true);
     showToast(courseCopy.landing.toastEnrolled);
     // Fire-and-forget: the optimistic state is what the reader sees immediately.
     void enrollCourse(slug)
-      .then(() => dataCacheManager.invalidate(['dashboard', 'courses-list']))
-      .catch(() => setEnrolledOverride(null));
+      .then(() => {
+        dataCacheManager.invalidate(['dashboard', 'courses-list']);
+        dataCacheManager.invalidate(['course-detail', slug]);
+        setIsEnrollmentPending(false);
+      })
+      .catch(() => {
+        setEnrolledOverride(null);
+        setIsEnrollmentPending(false);
+      });
     // Land exactly on the curriculum so lesson one is in view
-    document.getElementById('curriculum')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const curriculum = document.getElementById('curriculum');
+    if (curriculum) {
+      window.scrollTo({
+        top: Math.max(0, window.scrollY + curriculum.getBoundingClientRect().top - 80),
+        behavior: 'smooth',
+      });
+    }
   };
 
   const toggleFavorite = () => {
@@ -107,6 +126,7 @@ export const CourseDetailProvider: React.FC<{ slug: string; children: React.Reac
     course,
     isLoading,
     isEnrolled,
+    isEnrollmentPending,
     isFavorite,
     startedLessonId,
     progress,

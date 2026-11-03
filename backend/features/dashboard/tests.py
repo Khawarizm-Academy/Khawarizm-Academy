@@ -188,7 +188,7 @@ class DashboardQueryGuardTests(ApiTestCase):
         DashboardStat.objects.create(user=user, attendance_rate=98, points_earned=120)
         PriorityContinue.objects.create(user=user, course=make_course(slug="course-p"))
         authenticate(self.client, user)
-        with self.assertNumQueries(6):  # auth + touch + priority + live + stats + upcoming events
+        with self.assertNumQueries(7):  # auth + touch + priority + live + stats + enrollment sync + upcoming events
             body = self.client.get("/api/dashboard").json()
         self.assertIsNotNone(body["stats"])
         self.assertIsNotNone(body["priorityContinue"])

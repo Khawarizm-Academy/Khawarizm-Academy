@@ -47,6 +47,11 @@
     "skeletonVariant": "detail"
   },
   {
+    "path": "/verify/:serial",
+    "title": "التحقق من الشهادة — أكاديمية خوارزم",
+    "skeletonVariant": "detail"
+  },
+  {
     "path": "/scholarships/:slug",
     "title": "تفاصيل المنحة — أكاديمية خوارزم",
     "activeTab": "scholarships",
@@ -136,11 +141,27 @@
     "skeletonVariant": "dashboard"
   },
   {
+    "path": "/studio/live-sessions",
+    "title": "تقويم الجلسات — استوديو المدرّب",
+    "activeTab": "dashboard",
+    "immersive": true,
+    "requiresPermission": "live_sessions.manage_own",
+    "skeletonVariant": "dashboard"
+  },
+  {
+    "path": "/studio/announcements",
+    "title": "الإعلانات — استوديو المدرّب",
+    "activeTab": "dashboard",
+    "immersive": true,
+    "requiresPermission": "announcements.post",
+    "skeletonVariant": "dashboard"
+  },
+  {
     "path": "/studio/quizzes",
     "title": "الاختبارات — استوديو المدرّب",
     "activeTab": "dashboard",
     "immersive": true,
-    "requiresPermission": "quizzes.edit_own",
+    "requiresPermission": ["quizzes.edit_own", "quizzes.create"],
     "skeletonVariant": "dashboard"
   },
   {
@@ -162,6 +183,14 @@
   {
     "path": "/studio/analytics",
     "title": "التحليلات — استوديو المدرّب",
+    "activeTab": "dashboard",
+    "immersive": true,
+    "requiresPermission": "analytics.view_own",
+    "skeletonVariant": "dashboard"
+  },
+  {
+    "path": "/studio/analytics/courses/:slug",
+    "title": "تحليلات الدورة — استوديو المدرّب",
     "activeTab": "dashboard",
     "immersive": true,
     "requiresPermission": "analytics.view_own",

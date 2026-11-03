@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Trophy, Award, Download } from 'lucide-react';
 import { useNavigate } from '@/app/routerContext';
+import { useAuth } from '@/features/auth/context/authContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import { COURSE_CERTIFICATE_ROUTE } from '@/shared/lib/navigation';
 import { DataSectionSkeleton } from '@/shared/components/Loading/DataSectionSkeleton';
@@ -30,19 +31,21 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
   onPreviewCertificate,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const viewerKey = user?.id ?? 'anonymous';
   const { content } = useDashboardContent();
   const COMP_FILTERS = content.views.competitionFilters;
   const [filterMode, setFilterMode] = useState<CompFilter>('completed');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const { data: competitions, isLoading: isLoadingCompetitions } = useCachedData<CompetitionItem[]>(
-    ['dashboard', 'competitions'],
+    ['dashboard', 'competitions', viewerKey],
     fetchCompetitions,
     { initialData: [] }
   );
 
   const { data: certificates, isLoading: isLoadingCertificates } = useCachedData<CertificateItem[]>(
-    ['dashboard', 'certificates'],
+    ['dashboard', 'certificates', viewerKey],
     fetchCertificates,
     { initialData: [] }
   );
@@ -51,6 +54,10 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
     setDownloadingId(cert.id);
     setTimeout(() => {
       setDownloadingId(null);
+      if (cert.credentialId) {
+        navigate(`/verify/${encodeURIComponent(cert.credentialId)}`);
+        return;
+      }
       if (cert.courseSlug) {
         navigate(COURSE_CERTIFICATE_ROUTE(cert.courseSlug));
         return;
@@ -143,14 +150,14 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
             certificates.map((cert, idx) => (
               <div
                 key={cert.id}
-                className="dash-cert-card group animate-pop-in"
+                className={`dash-cert-card group animate-pop-in ${cert.revoked ? 'opacity-60 grayscale' : ''}`}
                 style={{ animationDelay: `${idx * 70}ms` }}
               >
                 {/* Official badge row */}
                 <div className="flex justify-between items-center">
                   <div className="dash-cert-badge">
                     <Award size={14} className="text-gold-400" />
-                    <span className="text-gold-400 text-[11px] font-bold">رسمية ومعتمدة</span>
+                    <span className="text-gold-400 text-[11px] font-bold">{cert.isOfficial ? 'رسمية ومعتمدة' : 'نسخة غير رسمية'}</span>
                   </div>
 
                   <span className="text-slate-400 text-xs font-mono">{cert.credentialId}</span>
@@ -160,6 +167,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
                 <div className="flex flex-col gap-1 text-right">
                   <h3 className="text-slate-200 text-base font-bold leading-6">{cert.title}</h3>
                   <span className="dash-meta">تاريخ الإصدار: {cert.issueDate}</span>
+                  {cert.revoked && <span className="text-red-300 text-xs font-semibold">ملغاة{cert.revokedReason ? ` — ${cert.revokedReason}` : ''}</span>}
                 </div>
 
                 {/* Download / view CTA */}

@@ -966,6 +966,18 @@
   }
 
   /* Live session */
+  .player-live-sessions {
+    @apply mt-8 flex flex-col gap-4;
+  }
+
+  .player-live-sessions-title {
+    @apply text-lg font-bold text-white font-display;
+  }
+
+  .player-live-sessions-grid {
+    @apply grid grid-cols-1 xl:grid-cols-2 gap-4;
+  }
+
   .player-live-card {
     @apply w-full rounded-2xl border p-5 flex flex-col gap-3;
   }
@@ -992,6 +1004,18 @@
 
   .player-live-meta {
     @apply flex flex-wrap items-center gap-3 text-xs text-slate-400 font-body;
+  }
+
+  .player-live-countdown {
+    @apply inline-flex w-fit rounded-full border border-blue-400/30 bg-blue-400/10 px-3 py-1 text-xs font-bold font-mono tabular-nums text-blue-200;
+  }
+
+  .player-live-countdown.live-sessions-countdown-live {
+    @apply border-gold-400/40 bg-gold-400/10 text-gold-200;
+  }
+
+  .player-live-notes {
+    @apply rounded-xl border border-navy-600/50 bg-navy-950/40 px-3 py-2 text-sm leading-relaxed text-slate-300 font-body whitespace-pre-wrap;
   }
 
   .player-live-now {

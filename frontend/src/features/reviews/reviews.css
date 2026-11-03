@@ -1,0 +1,8 @@
+.reviews-shell { display: grid; gap: 1rem; }
+.reviews-summary { display: grid; gap: 1rem; grid-template-columns: minmax(8rem, 0.7fr) minmax(14rem, 1.3fr); }
+.review-stars { color: rgb(250 204 21); letter-spacing: 0.12em; }
+.review-distribution { display: grid; gap: 0.35rem; }
+.review-distribution-row { align-items: center; display: grid; gap: 0.6rem; grid-template-columns: 1.5rem 1fr 2.5rem; }
+.review-distribution-track { background: rgb(30 41 59 / 0.8); border-radius: 999px; height: 0.4rem; overflow: hidden; }
+.review-distribution-fill { background: rgb(34 211 238); height: 100%; }
+@media (max-width: 640px) { .reviews-summary { grid-template-columns: 1fr; } }

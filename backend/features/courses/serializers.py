@@ -4,9 +4,19 @@ from __future__ import annotations
 
 import re
 from typing import Any
+from urllib.parse import urlparse
 
+from django.utils import timezone
+
+from features.common.errors import InvalidParameter
 from features.common.serializers import as_number, compact
 from features.courses.models import Course
+from features.courses.services import (
+    live_session_labels,
+    live_session_state,
+    live_session_timezone,
+    validate_live_meet_url,
+)
 
 LANGUAGE_LABELS = {"arabic": "العربية", "english": "الإنجليزية", "french": "الفرنسية"}
 
@@ -131,13 +141,49 @@ def instructors(course: Course, staff_rows: list[Any] | None = None) -> list[dic
     return [_public_instructor(row.user) for row in rows if row.kind in {"owner", "co_instructor"}]
 
 
-def live_session(row: Any) -> dict[str, Any]:
+def live_session(row: Any, *, include_private: bool = False) -> dict[str, Any]:
+    date_label, time_label = live_session_labels(row)
+    session_timezone = live_session_timezone(row.timezone).key
+    state = live_session_state(row)
+    status = row.status
+    if row.starts_at is not None and status != "cancelled":
+        status = {"upcoming": "scheduled", "live": "live", "past": "ended"}.get(state, status)
+    meet_url = None
+    if row.meet_url:
+        try:
+            meet_url = validate_live_meet_url(row.meet_url)
+        except InvalidParameter, ValueError:
+            meet_url = None
+    recording_url = None
+    if row.recording_url:
+        try:
+            parsed_recording = urlparse(row.recording_url)
+            if (
+                not any(ord(character) < 32 for character in row.recording_url)
+                and parsed_recording.scheme == "https"
+                and parsed_recording.hostname
+                and not parsed_recording.username
+                and not parsed_recording.password
+            ):
+                recording_url = row.recording_url
+        except ValueError:
+            recording_url = None
     return {
         "id": row.session_id,
+        "uuid": str(row.pk),
         "title": row.title,
-        "state": row.state,
-        "dateLabel": row.date_label,
-        "timeLabel": row.time_label,
+        "state": state,
+        "status": status,
+        "startsAt": row.starts_at.isoformat() if row.starts_at else None,
+        "serverNow": timezone.now().isoformat(),
+        "durationMinutes": row.duration_minutes,
+        "timezone": session_timezone,
+        "meetUrl": meet_url if include_private else None,
+        "recordingUrl": recording_url if include_private else None,
+        "recordingAssetId": str(row.recording_asset_id) if include_private and row.recording_asset_id else None,
+        "notes": row.notes if include_private else "",
+        "dateLabel": date_label,
+        "timeLabel": time_label,
     }
 
 
@@ -147,6 +193,13 @@ def course_detail(
     include_unpublished: bool = False,
     is_preview: bool = False,
     enrollable: bool | None = None,
+    is_enrolled: bool = False,
+    include_private_session_data: bool = False,
+    can_read_announcements: bool = False,
+    can_read_discussions: bool = False,
+    can_post_discussions: bool = False,
+    can_reply_discussions: bool = False,
+    can_moderate_discussions: bool = False,
     relation_rows: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The merged landing record: catalog base plus additive lifecycle fields."""
@@ -191,7 +244,7 @@ def course_detail(
         "priceLabel": course.price_label,
         "outcomes": course.outcomes,
         "modules": modules,
-        "liveSessions": [live_session(row) for row in sessions],
+        "liveSessions": [live_session(row, include_private=include_private_session_data) for row in sessions],
         "exam": {
             "questionCount": course.exam_question_count,
             "minutes": course.exam_minutes,
@@ -202,5 +255,11 @@ def course_detail(
         "status": course.status,
         "instructors": instructors(course, staff_rows),
         "enrollable": enrollable,
+        "canReadAnnouncements": can_read_announcements,
+        "isEnrolled": is_enrolled,
+        "canReadDiscussions": can_read_discussions,
+        "canPostDiscussions": can_post_discussions,
+        "canReplyDiscussions": can_reply_discussions,
+        "canModerateDiscussions": can_moderate_discussions,
         **({"isPreview": True} if is_preview else {}),
     }

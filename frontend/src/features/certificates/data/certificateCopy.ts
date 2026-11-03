@@ -1,0 +1,18 @@
+export const certificateCopy = {
+  verifyTitle: 'التحقق من الشهادة',
+  verifySubtitle: 'تحقق من صحة شهادة أكاديمية خوارزم عبر الرقم التسلسلي.',
+  valid: 'شهادة موثّقة وسارية',
+  revoked: 'الشهادة ملغاة',
+  notFound: 'لم نعثر على شهادة بهذا الرقم.',
+  unavailable: 'تعذّر تحميل بيانات الشهادة الآن.',
+  learner: 'اسم المتعلم',
+  course: 'الدورة',
+  issuedAt: 'تاريخ الإصدار',
+  serial: 'الرقم التسلسلي',
+  print: 'طباعة / حفظ PDF',
+  copyLink: 'نسخ رابط التحقق',
+  copied: 'تم نسخ الرابط',
+  linkedin: 'إضافة إلى LinkedIn',
+  backHome: 'العودة إلى الأكاديمية',
+  qrLabel: 'رمز التحقق السريع',
+} as const;

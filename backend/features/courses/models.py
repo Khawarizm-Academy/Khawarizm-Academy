@@ -59,6 +59,7 @@ class Course(UUIDModel):
     review_note = models.TextField(blank=True)
     total_seconds = models.PositiveIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
+    curriculum_revision = models.PositiveBigIntegerField(default=0)
 
     # Summary fields — legacy display fields remain stable for public clients.
     category_label = models.CharField(max_length=120)
@@ -206,15 +207,44 @@ class LessonProgress(UUIDModel, TimeStampedModel):
 
 
 class CourseLiveSession(UUIDModel):
-    """A scheduled weekly review session — a launchpad, never an embedded call."""
+    """A scheduled live session — a launchpad, never an embedded call.
+
+    ``date_label`` and ``time_label`` remain database columns for released
+    clients and hand-entered legacy rows. New clients should use ``starts_at``
+    and the derived labels exposed by the serializer.
+    """
+
+    STATUS_SCHEDULED = "scheduled"
+    STATUS_LIVE = "live"
+    STATUS_ENDED = "ended"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_CHOICES = (
+        (STATUS_SCHEDULED, "Scheduled"),
+        (STATUS_LIVE, "Live"),
+        (STATUS_ENDED, "Ended"),
+        (STATUS_CANCELLED, "Cancelled"),
+    )
 
     course = models.ForeignKey(Course, related_name="live_sessions", on_delete=models.CASCADE)
     session_id = models.CharField(max_length=120)
     title = models.CharField(max_length=160)
     state = models.CharField(max_length=12, choices=LiveSessionState.choices, default=LiveSessionState.UPCOMING)
-    date_label = models.CharField(max_length=60)
-    time_label = models.CharField(max_length=60)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_SCHEDULED)
+    starts_at = models.DateTimeField(null=True, blank=True)
+    duration_minutes = models.PositiveIntegerField(default=60)
+    timezone = models.CharField(max_length=64, default=settings.TIME_ZONE)
+    date_label = models.CharField(max_length=60, blank=True, default="")
+    time_label = models.CharField(max_length=60, blank=True, default="")
     meet_url = models.URLField(max_length=400, blank=True)
+    recording_url = models.URLField(max_length=400, blank=True)
+    recording_asset = models.ForeignKey(
+        "videohosting.VideoAsset",
+        related_name="live_session_recordings",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    notes = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=0)
 
     class Meta:

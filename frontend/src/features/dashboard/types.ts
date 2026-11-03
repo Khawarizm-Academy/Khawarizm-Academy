@@ -81,6 +81,9 @@ export interface CertificateItem {
   issueDate: string;
   credentialId: string;
   isOfficial: boolean;
+  learnerName?: string;
+  revoked?: boolean;
+  revokedReason?: string;
   /** When set, the certificate deep-links to the real course certificate page. */
   courseSlug?: string;
 }

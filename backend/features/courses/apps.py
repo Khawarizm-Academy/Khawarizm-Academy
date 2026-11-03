@@ -8,3 +8,6 @@ class CoursesConfig(AppConfig):
     label = "courses"
     verbose_name = "Courses"
     default_auto_field = "django.db.models.BigAutoField"
+
+    def ready(self):
+        from features.courses import certificate_signals  # noqa: F401

@@ -17,6 +17,7 @@ import {
   Users,
   Video,
   ChartNoAxesCombined,
+  Megaphone,
   type LucideIcon,
 } from 'lucide-react';
 import dashboardNavJson from '@/shared/json/dashboardNav.json';
@@ -35,6 +36,7 @@ const ICONS = {
   Home,
   LayoutDashboard,
   LayoutGrid,
+  Megaphone,
   Palette,
   Sparkles,
   Trophy,

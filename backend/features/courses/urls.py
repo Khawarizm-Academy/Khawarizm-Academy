@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from django.urls import path
 
-from features.courses import views
+from features.courses import certificate_views, views
 from features.courses.video_progress_api import lesson_progress_update
 
 urlpatterns = [
@@ -24,4 +24,14 @@ urlpatterns = [
         name="lesson-progress-update",
     ),
     path("courses/<str:slug>/certificate", views.course_certificate_view, name="course-certificate"),
+    path(
+        "certificates/verify/<str:serial>",
+        certificate_views.certificate_verify_view,
+        name="certificate-verify",
+    ),
+    path(
+        "certificates/<str:serial>/revoke",
+        certificate_views.certificate_revoke_view,
+        name="certificate-revoke",
+    ),
 ]

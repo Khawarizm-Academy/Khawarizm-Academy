@@ -5,6 +5,7 @@ export interface CourseDetailContextValue {
   course: CourseDetail | null;
   isLoading: boolean;
   isEnrolled: boolean;
+  isEnrollmentPending: boolean;
   isFavorite: boolean;
   /** Lesson where the student resumes; lessons before it count as done. */
   startedLessonId: string;
