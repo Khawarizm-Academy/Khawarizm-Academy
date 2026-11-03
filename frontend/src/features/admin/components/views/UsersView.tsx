@@ -25,8 +25,6 @@ export const UsersView: React.FC = () => {
     setUserRole,
     setUserPage,
     selectUser,
-    changingRoleId,
-    changeRole,
   } = useAdmin();
   const roleOptions = useCachedData<AdminRole[]>(['admin-roles'], fetchRoles, { initialData: [] });
   const availableRoles: AuthRoleSummary[] = (roleOptions.data ?? []).map(({ id, slug, name, color }) => ({ id, slug, name, color }));
@@ -58,9 +56,7 @@ export const UsersView: React.FC = () => {
           <UsersTable
             rows={users.results}
             currentUserId={user?.id ?? ''}
-            changingRoleId={changingRoleId}
             onOpen={selectUser}
-            onChangeRole={changeRole}
             availableRoles={availableRoles}
             onSetRoles={async (userId, roles) => {
               await setUserRoles(userId, roles.map((role) => role.id));

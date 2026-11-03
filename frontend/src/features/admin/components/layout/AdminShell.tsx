@@ -16,6 +16,7 @@ import { VideoHostingView } from '@/features/admin/components/views/VideoHosting
 import { AdminSystemView } from '@/features/admin/components/views/AdminSystemView';
 import { RolesView } from '@/features/admin/components/views/RolesView';
 import { AuditLogView } from '@/features/admin/components/views/AuditLogView';
+import { ReviewQueueView } from '@/features/admin/components/views/ReviewQueueView';
 import { AdminEmptyState } from '@/features/admin/components/states/AdminEmptyState';
 import { SECTION_LABELS } from '@/features/admin/types';
 import type { AdminSectionKey } from '@/features/admin/types';
@@ -34,6 +35,7 @@ const SECTION_VIEWS: Record<AdminSectionKey, React.FC> = {
   activity: ActivityView,
   roles: RolesView,
   audit: AuditLogView,
+  'review-queue': ReviewQueueView,
 };
 
 /** Console chrome: rail, top bar, page head, mobile pills, and the account page. */

@@ -67,7 +67,7 @@ export const RootLayout: React.FC = () => {
               onSelectTab={selectTab}
               onNotificationsClick={() => setIsGlobalNotificationsOpen(true)}
               isAuthenticated={Boolean(user)}
-              canAccessAdmin={can(user, 'admin.access') || Boolean(user?.isAdmin)}
+              canAccessAdmin={can(user, 'admin.access')}
               onLoginClick={() => navigate(NAV_TARGETS.login)}
               onAdminClick={() => navigate('/admin')}
               onLogout={handleLogout}

@@ -25,7 +25,8 @@ export const RouteGuard: React.FC<{ children: React.ReactNode }> = ({ children }
     return <Navigate to="/" replace />;
   }
 
-  if (meta?.requiresAdmin && !(can(user, 'admin.access') || user?.isAdmin)) {
+  // Phase 12: `requiresAdmin` now means one permission key, not the legacy flag.
+  if (meta?.requiresAdmin && !can(user, 'admin.access')) {
     return <Navigate to="/" replace />;
   }
 

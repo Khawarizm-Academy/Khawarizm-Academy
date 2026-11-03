@@ -187,7 +187,7 @@ export interface LoginSeries {
 }
 
 /** The console's sections; each one is a `?tab=` value. */
-export type AdminSectionKey = 'overview' | 'users' | 'content' | 'videos' | 'system' | 'sessions' | 'analytics' | 'activity' | 'roles' | 'audit';
+export type AdminSectionKey = 'overview' | 'users' | 'content' | 'videos' | 'system' | 'sessions' | 'analytics' | 'activity' | 'roles' | 'audit' | 'review-queue';
 export interface AdminSectionDefinition {
   key: AdminSectionKey;
   label: string;
@@ -219,6 +219,7 @@ export const SECTION_DETAILS: Record<AdminSectionKey, { title: string; sub: stri
   activity: { title: 'سجل النشاط', sub: 'أحدث أحداث الدخول والخروج والتجديد والإبطال على مستوى المنصة.' },
   roles: { title: 'الأدوار والصلاحيات', sub: 'أنشئ أدوارًا واضحة، اضبط صلاحياتها، ووزّعها بأمان على الحسابات.' },
   audit: { title: 'سجل التدقيق', sub: 'تتبّع تغييرات الأدوار والصلاحيات وإسنادها مع فروق مفهومة.' },
+  'review-queue': { title: 'مراجعة الدورات', sub: 'الدورات التي أرسلها المدرّبون بانتظار القرار: نشر، طلب تعديلات، أو رفض.' },
 };
 /** Arabic labels come from the same data registry. */
 export const SECTION_LABELS: Record<AdminSectionKey, string> = Object.fromEntries(
@@ -400,4 +401,44 @@ export interface AdminVideoDiagnostics {
   problems: string[];
   groups: AdminDiagnosticGroup[];
   providers: AdminDiagnosticProvider[];
+}
+
+/** Phase 12: one row in the effective-permission inspector. */
+export interface EffectivePermissionGrant {
+  roleSlug: string;
+  roleName: string;
+  isSystem: boolean;
+  isDefault: boolean;
+}
+export interface EffectivePermissionItem {
+  key: PermissionKey;
+  label: string;
+  group: string;
+  elevated: boolean;
+  grantedBy: EffectivePermissionGrant[];
+  /** Parent keys that imply this one; empty when the permission was granted directly. */
+  via: string[];
+  administrator: boolean;
+}
+
+/** Phase 12: per-user outcome returned by the bulk-roles endpoint. */
+export interface BulkRoleOutcome {
+  userId: string;
+  ok: boolean;
+  code?: string;
+}
+
+/** Phase 12: one row in the course review queue (published Course shape subset). */
+export interface ReviewQueueItem {
+  id: string;
+  slug: string;
+  title: string;
+  tagline: string;
+  instructor: string;
+  status: string;
+  submittedAt?: string | null;
+  submittedBy?: string | null;
+  lessonsCount?: number;
+  duration?: string;
+  coverImage?: string;
 }

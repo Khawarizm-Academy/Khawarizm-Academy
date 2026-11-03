@@ -23,7 +23,6 @@ import {
   deleteVideoAsset as deleteVideoRequest,
   uploadVideoAsset as uploadVideoRequest,
   revokeAdminSession,
-  updateUserRole,
   updateAdminUser,
   deleteAdminUser,
   fetchContentSchema,
@@ -56,7 +55,6 @@ import type {
   LoginSeries,
   Paged,
 } from '@/features/admin/types';
-import type { AuthRole } from '@/features/auth/types';
 
 /** A `?tab=` value that names a real section; anything else lands on the home section. */
 const asSection = (raw: string | null): AdminSectionKey =>
@@ -81,7 +79,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [sessionPage, setSessionPage] = useState(1);
   const [loginRange, setLoginRange] = useState<AdminLoginRange>('14');
   const [eventKind, setEventKind] = useState<AdminEventKind | 'all'>('all');
-  const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deletingContentId, setDeletingContentId] = useState<string | null>(null);
@@ -217,19 +214,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     [navigate, currentSection]
   );
   const clearError = useCallback(() => setError(null), []);
-
-  const changeRole = async (userId: string, role: AuthRole) => {
-    setError(null);
-    setChangingRoleId(userId);
-    try {
-      await updateUserRole(userId, role);
-      await Promise.all([users.refetch(), overview.refetch(), selectedUser.refetch()]);
-    } catch (thrown) {
-      setError(toMessage(thrown));
-    } finally {
-      setChangingRoleId(null);
-    }
-  };
 
   const revokeSession = async (sessionId: string) => {
     setError(null);
@@ -460,6 +444,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     activity: events.isLoading,
     roles: false,
     audit: false,
+    // The review-queue section owns its own useCachedData fetch, so the
+    // shell-level loading flags stay false here.
+    'review-queue': false,
   };
 
   const loadErrors: Record<AdminSectionKey, boolean> = {
@@ -473,6 +460,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     activity: events.isError,
     roles: false,
     audit: false,
+    'review-queue': false,
   };
 
   // First load of the section being opened: hold the page with a Tier 2 skeleton.
@@ -520,14 +508,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isLoadingSelectedUser: selectedUser.isLoading,
     selectedUserError: selectedUser.isError,
     selectUser,
-    changingRoleId,
     revokingSessionId,
     error,
     clearError,
     loadErrors,
     isRefreshing,
     refresh,
-    changeRole,
     revokeSession,
     updateUser,
     deleteUser,

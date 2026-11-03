@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  bulkApplyRole,
+  fetchEffectivePermissions,
   fetchEvents,
   fetchLoginSeries,
   fetchOverview,
@@ -7,7 +9,6 @@ import {
   fetchUserDetail,
   fetchUsers,
   revokeAdminSession,
-  updateUserRole,
   updateAdminUser,
   deleteAdminUser,
   fetchContentSchema,
@@ -99,11 +100,23 @@ describe('admin fetchers', () => {
     expect(lastUrl()).toBe('/admin/events?kind=login');
   });
 
-  it('posts the role change to the user sub-route', async () => {
-    await updateUserRole('user-1', 'admin');
+  it('Phase 12: reads the effective-permission inspector per user', async () => {
+    fetchMock.mockImplementationOnce(async () =>
+      jsonResponse({ userId: 'user-1', items: [{ key: 'courses.review', label: '', group: 'courses', elevated: true, grantedBy: [], via: [], administrator: false }] })
+    );
+    const items = await fetchEffectivePermissions('user-1');
+    expect(lastUrl()).toBe('/admin/users/user-1/effective-permissions');
+    expect(items[0].key).toBe('courses.review');
+  });
 
-    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe(`${API_BASE}/admin/users/user-1/role`);
-    expect(lastCall()).toEqual({ method: 'POST', body: { role: 'admin' } });
+  it('Phase 12: posts the bulk role selection to /admin/users/bulk-roles', async () => {
+    fetchMock.mockImplementationOnce(async () => jsonResponse({ results: [] }));
+    await bulkApplyRole({ userIds: ['u1', 'u2'], roleId: 'r-1', mode: 'add' });
+    expect(lastUrl()).toBe('/admin/users/bulk-roles');
+    expect(lastCall()).toEqual({
+      method: 'POST',
+      body: { userIds: ['u1', 'u2'], roleId: 'r-1', mode: 'add' },
+    });
   });
 
   it('posts the revoke to the session sub-route', async () => {
