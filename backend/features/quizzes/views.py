@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from django.db.models import Count, Max, Q
@@ -22,6 +23,10 @@ from features.dashboard.models import Enrollment
 from . import services
 from .models import Attempt, AttemptGrant, AttemptStatus, Question, Quiz, QuizKind
 from .serializers import question_payload
+
+# Phase 12: the legacy `/problems*` surfaces emit one log line per hit so we
+# can measure traffic before removing them.
+_legacy_practice_log = logging.getLogger("features.quizzes.legacy_practice")
 
 
 class StrictSerializer(ser.Serializer):
@@ -309,6 +314,21 @@ def legacy_practice_items() -> list[dict[str, Any]]:
     ]
 
 
+def _legacy_practice_response(items: list[dict[str, Any]]) -> Response:
+    """Phase 12 deprecation wrapper for the shared practice set.
+
+    The RFC 8594 `Deprecation` header plus a `Surrogate-Control` notice lets
+    clients detect the sunset path while the quizzes app becomes the source of
+    truth. A single log line per call gives us a hit-count metric without a
+    queue. Deletion is tracked as backlog B10 in plan/PLAN.md.
+    """
+    _legacy_practice_log.info("legacy_practice_served count=%s", len(items))
+    response = Response({"items": items})
+    response["Deprecation"] = "true"
+    response["Sunset"] = "Fri, 01 May 2026 00:00:00 GMT"
+    return response
+
+
 @extend_schema(
     operation_id="problems_list",
     summary="The shared practice problem set without answer keys.",
@@ -318,7 +338,7 @@ def legacy_practice_items() -> list[dict[str, Any]]:
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def problems_list(request: Any) -> Response:
-    return Response({"items": legacy_practice_items()})
+    return _legacy_practice_response(legacy_practice_items())
 
 
 @extend_schema(
@@ -334,4 +354,6 @@ def course_problems(request: Any, slug: str) -> Response:
     if course is None:
         raise NotFound("الدورة غير موجودة.")
     quiz_items = course_practice_items(course)
-    return Response({"items": quiz_items if quiz_items is not None else legacy_practice_items()})
+    if quiz_items is not None:
+        return Response({"items": quiz_items})
+    return _legacy_practice_response(legacy_practice_items())
