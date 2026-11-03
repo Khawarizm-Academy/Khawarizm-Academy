@@ -16,9 +16,10 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
 from config.logging import JsonConsoleFormatter
-from features.auth.models import AuthEvent
+from features.access.models import AccessRole
+from features.auth.models import AuthEvent, User
 from features.common.cache import _version, bump_version, cached, param_digest
-from features.common.choices import AuthEventKind, MaintenanceRunStatus
+from features.common.choices import AuthEventKind, CourseStaffKind, MaintenanceRunStatus
 from features.common.errors import api_exception_handler
 from features.common.maintenance import run_cleanup
 from features.common.models import MaintenanceRun
@@ -34,9 +35,10 @@ from features.common.testing import (
     make_user,
 )
 from features.courses import services as courses_services
-from features.courses.models import CourseProblem, CourseProblemOption
-from features.dashboard.models import Enrollment
+from features.courses.models import Course, CourseProblem, CourseProblemOption, CourseStaff
+from features.dashboard.models import Certificate, Enrollment
 from features.quizzes.models import Attempt, AttemptStatus, Option, Question, QuestionKind, Quiz, QuizKind
+from features.reviews.models import CourseReview
 from features.videohosting.models import DriveAuthState, StreamToken, UploadSession, VideoAsset, VideoProvider
 
 
@@ -488,3 +490,68 @@ class OnCommitDisciplineTests(ApiTestCase):
             courses_services.enroll(user, course)
         course.refresh_from_db()
         self.assertEqual(course.enrolled_count, 1)
+
+
+class SeedDemoCommandTests(TestCase):
+    """Phase 14 P14.1: the demo half of `seed_demo` is gated and idempotent."""
+
+    def _counts(self) -> dict[str, int]:
+        return {
+            "template_roles": AccessRole.objects.exclude(template_key="").count(),
+            "users": User.objects.count(),
+            "courses": Course.objects.count(),
+            "staff": CourseStaff.objects.count(),
+        }
+
+    @override_settings(DEBUG=False)
+    def test_production_run_installs_no_demo_accounts_or_demo_courses(self):
+        call_command("seed_demo", stdout=StringIO())
+        for email in ("instructor@khawarizm.dev", "assistant@khawarizm.dev", "student@khawarizm.dev"):
+            self.assertFalse(User.objects.filter(email=email).exists(), email)
+        self.assertFalse(AccessRole.objects.filter(template_key="teaching_assistant").exists())
+        self.assertFalse(Course.objects.filter(slug__startswith="demo-").exists())
+        # The reference tables still land: that part is not demo data.
+        self.assertTrue(Course.objects.exists())
+
+    @override_settings(DEBUG=True)
+    def test_running_the_demo_seed_twice_changes_nothing(self):
+        call_command("seed_demo", "--demo", stdout=StringIO())
+        first = self._counts()
+        call_command("seed_demo", "--demo", stdout=StringIO())
+        self.assertEqual(self._counts(), first)
+        self.assertGreater(first["template_roles"], 0)
+
+    @override_settings(DEBUG=True)
+    def test_demo_course_is_visible_to_the_account_that_owns_it(self):
+        """Studio scopes on CourseStaff, not the `owner` column."""
+        call_command("seed_demo", "--demo", stdout=StringIO())
+        instructor = User.objects.get(email="instructor@khawarizm.dev")
+        slugs = {course.slug for course in courses_services.studio_course_queryset(instructor)}
+        self.assertEqual(slugs, {"demo-course", "demo-draft-course", "demo-review-course"})
+        self.assertTrue(
+            CourseStaff.objects.filter(course__slug="demo-course", user=instructor, kind=CourseStaffKind.OWNER).exists()
+        )
+
+    @override_settings(DEBUG=True)
+    def test_demo_journey_reaches_every_surface_it_claims(self):
+        call_command("seed_demo", "--demo", stdout=StringIO())
+        course = Course.objects.get(slug="demo-course")
+        learner = User.objects.get(email="student@khawarizm.dev")
+        assistant = User.objects.get(email="assistant@khawarizm.dev")
+
+        self.assertEqual(course.status, "published")
+        kinds = [
+            lesson.kind
+            for module in course.modules.order_by("order").prefetch_related("lessons")
+            for lesson in module.lessons.order_by("order")
+        ]
+        self.assertEqual(kinds, ["article", "video"])
+        self.assertEqual(set(course.quizzes.values_list("kind", flat=True)), {"practice", "exam"})
+        self.assertEqual(Enrollment.objects.filter(user=learner, course=course).count(), 1)
+        self.assertTrue(Certificate.objects.filter(course=course, revoked_at=None).exists())
+        self.assertEqual(CourseReview.objects.filter(course=course).count(), 1)
+        # The assistant sees the learners but is not a curriculum editor.
+        self.assertEqual(
+            list(CourseStaff.objects.filter(course=course, user=assistant).values_list("kind", flat=True)),
+            [CourseStaffKind.ASSISTANT],
+        )
