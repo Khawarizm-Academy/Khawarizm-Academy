@@ -28,7 +28,7 @@ def _private(data: Any = None, *, code: int = status.HTTP_200_OK) -> Response:
 def _uuid(value: Any) -> uuid.UUID:
     try:
         return uuid.UUID(str(value))
-    except (AttributeError, TypeError, ValueError):
+    except AttributeError, TypeError, ValueError:
         raise InvalidParameter("معرّف النقاش غير صالح.", code="invalid_uuid") from None
 
 

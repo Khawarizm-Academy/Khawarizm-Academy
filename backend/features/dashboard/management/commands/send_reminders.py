@@ -1,4 +1,5 @@
 """Send scheduled live-session reminders through the dashboard notification service."""
+
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import math
 from typing import Any
 from uuid import UUID
@@ -63,10 +64,7 @@ def can_moderate(actor: Any) -> bool:
 
 
 def is_enrolled(actor: Any, course: Course) -> bool:
-    return bool(
-        _authenticated(actor)
-        and Enrollment.objects.filter(user_id=actor.pk, course_id=course.pk).exists()
-    )
+    return bool(_authenticated(actor) and Enrollment.objects.filter(user_id=actor.pk, course_id=course.pk).exists())
 
 
 def can_post(actor: Any, course: Course) -> bool:
@@ -114,10 +112,8 @@ def resolve_lesson(course: Course, value: Any, *, required: bool = False) -> Cou
             raise InvalidParameter("اختر درسًا للنقاش.")
         return None
     scope = Q(lesson_id=str(value))
-    try:
+    with contextlib.suppress(AttributeError, TypeError, ValueError):
         scope |= Q(pk=UUID(str(value)))
-    except (AttributeError, TypeError, ValueError):
-        pass
     lesson = CourseLesson.objects.select_related("module").filter(module__course_id=course.pk).filter(scope).first()
     if lesson is None or not lesson.is_published:
         raise NotFound("الدرس غير موجود في هذه الدورة.")
@@ -125,9 +121,7 @@ def resolve_lesson(course: Course, value: Any, *, required: bool = False) -> Cou
 
 
 def _thread_queryset():
-    return DiscussionThread.objects.select_related(
-        "course", "lesson", "author", "accepted_post"
-    ).prefetch_related(
+    return DiscussionThread.objects.select_related("course", "lesson", "author", "accepted_post").prefetch_related(
         Prefetch(
             "posts",
             queryset=DiscussionPost.objects.select_related("author").order_by("created_at", "id"),
@@ -169,10 +163,7 @@ def unanswered_for_staff(actor: Any) -> list[DiscussionThread]:
             ),
             status=DiscussionStatus.OPEN,
         ).distinct()
-    return list(
-        queryset.select_related("course", "lesson", "author")
-        .order_by("created_at", "id")
-    )
+    return list(queryset.select_related("course", "lesson", "author").order_by("created_at", "id"))
 
 
 def _text(value: Any, field: str, *, maximum: int, required: bool = True) -> str:
@@ -305,11 +296,7 @@ def _notify_instructor_reply(post: DiscussionPost) -> None:
 @transaction.atomic
 def set_accepted(actor: Any, thread: DiscussionThread, post_id: Any, accepted: bool = True) -> DiscussionThread:
     require_reply_staff(actor, thread.course)
-    locked = (
-        DiscussionThread.objects.select_for_update()
-        .select_related("course")
-        .get(pk=thread.pk)
-    )
+    locked = DiscussionThread.objects.select_for_update().select_related("course").get(pk=thread.pk)
     if not accepted:
         locked.accepted_post = None
         if locked.status != DiscussionStatus.HIDDEN:

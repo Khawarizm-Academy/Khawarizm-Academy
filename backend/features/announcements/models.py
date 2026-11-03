@@ -2,6 +2,7 @@
 
 The migration is intentionally deferred until the Phase 12 integration window.
 """
+
 from __future__ import annotations
 
 from django.conf import settings

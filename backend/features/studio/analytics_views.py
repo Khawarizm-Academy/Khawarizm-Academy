@@ -13,8 +13,6 @@ from django.db.models import (
     ExpressionWrapper,
     F,
     FloatField,
-    IntegerField,
-    Q,
     Value,
     When,
 )
@@ -27,10 +25,10 @@ from rest_framework.response import Response
 
 from features.access.registry import OWN_KINDS
 from features.access.services import has_perm
-from features.common.errors import InvalidParameter, NotFound, PermissionDenied
+from features.common.errors import NotFound, PermissionDenied
 from features.courses.models import Course, CourseLesson, LessonProgress
 from features.dashboard.models import Certificate, Enrollment
-from features.quizzes.models import Attempt, AttemptStatus, Answer
+from features.quizzes.models import Answer, Attempt, AttemptStatus
 from features.studio.analytics_serializers import AnalyticsQuerySerializer
 
 NO_STORE = "private, no-store"
@@ -75,7 +73,10 @@ def _date_key(value: date | datetime | None) -> str:
 def _series(start: datetime, days: int, rows: Any) -> list[dict[str, Any]]:
     values = {_date_key(row["day"]): int(row["value"]) for row in rows}
     return [
-        {"date": (start.date() + timedelta(days=index)).isoformat(), "value": values.get((start.date() + timedelta(days=index)).isoformat(), 0)}
+        {
+            "date": (start.date() + timedelta(days=index)).isoformat(),
+            "value": values.get((start.date() + timedelta(days=index)).isoformat(), 0),
+        }
         for index in range(days)
     ]
 
@@ -136,16 +137,20 @@ def _watch_expression() -> Any:
 
 
 def _lessons(course_ids: list[Any]) -> list[dict[str, Any]]:
-    rows = CourseLesson.objects.filter(module__course_id__in=course_ids).values(
-        "id",
-        "lesson_id",
-        "title",
-        "order",
-        "module__course_id",
-        "module__course__slug",
-        "module__course__title",
-        "module__order",
-    ).order_by("module__course__slug", "module__order", "order", "lesson_id")
+    rows = (
+        CourseLesson.objects.filter(module__course_id__in=course_ids)
+        .values(
+            "id",
+            "lesson_id",
+            "title",
+            "order",
+            "module__course_id",
+            "module__course__slug",
+            "module__course__title",
+            "module__order",
+        )
+        .order_by("module__course__slug", "module__order", "order", "lesson_id")
+    )
     return [
         {
             "id": str(row["id"]),
@@ -164,9 +169,7 @@ def _lessons(course_ids: list[Any]) -> list[dict[str, Any]]:
 def _completion_funnel(course_ids: list[Any]) -> list[dict[str, Any]]:
     lessons = _lessons(course_ids)
     enrollment_rows = (
-        Enrollment.objects.filter(course_id__in=course_ids)
-        .values("course_id")
-        .annotate(total=Count("id"))
+        Enrollment.objects.filter(course_id__in=course_ids).values("course_id").annotate(total=Count("id"))
     )
     enrolled_by_course = {str(row["course_id"]): int(row["total"]) for row in enrollment_rows}
     reached_rows = (
@@ -175,8 +178,7 @@ def _completion_funnel(course_ids: list[Any]) -> list[dict[str, Any]]:
         .annotate(reached=Count("user_id", distinct=True))
     )
     reached_by_id = {
-        (str(row["lesson__module__course_id"]), str(row["lesson_id"])): int(row["reached"])
-        for row in reached_rows
+        (str(row["lesson__module__course_id"]), str(row["lesson_id"])): int(row["reached"]) for row in reached_rows
     }
     return [
         {
@@ -217,7 +219,9 @@ def _lesson_watch(course_ids: list[Any], start: datetime, end: datetime) -> list
     )
     by_lesson = {
         str(row["lesson_id"]): {
-            "averageWatchPercent": round(min(100, max(0, float(row["average"]))), 1) if row["average"] is not None else None,
+            "averageWatchPercent": round(min(100, max(0, float(row["average"]))), 1)
+            if row["average"] is not None
+            else None,
             "learners": int(row["learners"]),
         }
         for row in rows
@@ -248,7 +252,9 @@ def _average_watch(course_ids: list[Any], start: datetime, end: datetime) -> flo
     return round(min(100, max(0, float(row["average"]))), 1) if row["average"] is not None else None
 
 
-def _quiz_data(course_ids: list[Any], start: datetime, end: datetime) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _quiz_data(
+    course_ids: list[Any], start: datetime, end: datetime
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     attempts = Attempt.objects.filter(
         quiz__course_id__in=course_ids,
         status=AttemptStatus.SUBMITTED,
@@ -308,27 +314,41 @@ def _analytics_payload(course_ids: list[Any], days: int, *, scope: str, course: 
     start, end, previous_start, previous_end = _period(days)
     enrolled = Enrollment.objects.filter(course_id__in=course_ids).count()
     completed = Enrollment.objects.filter(course_id__in=course_ids, is_completed=True).count()
-    current_enrollments = Enrollment.objects.filter(course_id__in=course_ids, created_at__gte=start, created_at__lt=end).count()
+    current_enrollments = Enrollment.objects.filter(
+        course_id__in=course_ids, created_at__gte=start, created_at__lt=end
+    ).count()
     previous_enrollments = Enrollment.objects.filter(
         course_id__in=course_ids,
         created_at__gte=previous_start,
         created_at__lt=previous_end,
     ).count()
-    current_active = LessonProgress.objects.filter(
-        lesson__module__course_id__in=course_ids,
-        updated_at__gte=start,
-        updated_at__lt=end,
-    ).values("user_id").distinct().count()
-    previous_active = LessonProgress.objects.filter(
-        lesson__module__course_id__in=course_ids,
-        updated_at__gte=previous_start,
-        updated_at__lt=previous_end,
-    ).values("user_id").distinct().count()
+    current_active = (
+        LessonProgress.objects.filter(
+            lesson__module__course_id__in=course_ids,
+            updated_at__gte=start,
+            updated_at__lt=end,
+        )
+        .values("user_id")
+        .distinct()
+        .count()
+    )
+    previous_active = (
+        LessonProgress.objects.filter(
+            lesson__module__course_id__in=course_ids,
+            updated_at__gte=previous_start,
+            updated_at__lt=previous_end,
+        )
+        .values("user_id")
+        .distinct()
+        .count()
+    )
     current_watch = _average_watch(course_ids, start, end)
     previous_watch = _average_watch(course_ids, previous_start, previous_end)
     histogram, missed = _quiz_data(course_ids, start, end)
     certificate_count = Certificate.objects.filter(course_id__in=course_ids).count()
-    current_certificates = Certificate.objects.filter(course_id__in=course_ids, created_at__gte=start, created_at__lt=end).count()
+    current_certificates = Certificate.objects.filter(
+        course_id__in=course_ids, created_at__gte=start, created_at__lt=end
+    ).count()
     previous_certificates = Certificate.objects.filter(
         course_id__in=course_ids,
         created_at__gte=previous_start,

@@ -17,9 +17,7 @@ class DiscussionStatus(models.TextChoices):
 class DiscussionThread(UUIDModel, TimeStampedModel):
     """A learner question scoped to a course and optionally a lesson."""
 
-    course = models.ForeignKey(
-        "courses.Course", related_name="discussion_threads", on_delete=models.CASCADE
-    )
+    course = models.ForeignKey("courses.Course", related_name="discussion_threads", on_delete=models.CASCADE)
     lesson = models.ForeignKey(
         "courses.CourseLesson",
         related_name="discussion_threads",
@@ -63,9 +61,7 @@ class DiscussionThread(UUIDModel, TimeStampedModel):
 class DiscussionPost(UUIDModel, TimeStampedModel):
     """A reply; staff answers are marked by the service, never by the client."""
 
-    thread = models.ForeignKey(
-        DiscussionThread, related_name="posts", on_delete=models.CASCADE
-    )
+    thread = models.ForeignKey(DiscussionThread, related_name="posts", on_delete=models.CASCADE)
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name="discussion_posts",

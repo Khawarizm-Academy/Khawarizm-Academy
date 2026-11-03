@@ -50,8 +50,8 @@ from features.courses.models import (
     CourseLiveSession,
     CourseModule,
     CourseStaff,
-    LessonResource,
     LessonProgress,
+    LessonResource,
 )
 
 _SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -62,8 +62,18 @@ _LIVE_ALLOWED_HOSTS_DEFAULT = frozenset(
 )
 _ARABIC_WEEKDAYS = ("الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد")
 _ARABIC_MONTHS = (
-    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+    "يناير",
+    "فبراير",
+    "مارس",
+    "أبريل",
+    "مايو",
+    "يونيو",
+    "يوليو",
+    "أغسطس",
+    "سبتمبر",
+    "أكتوبر",
+    "نوفمبر",
+    "ديسمبر",
 )
 _SEEDED_DATE_RE = re.compile(r"^(?P<year>20\d{2})-(?P<month>0[1-9]|1[0-2])-(?P<day>[0-3]\d)$")
 _SEEDED_TIME_RE = re.compile(r"^(?P<hour>[01]\d|2[0-3]):(?P<minute>[0-5]\d)$")
@@ -74,10 +84,10 @@ def live_session_timezone(value: str | None) -> ZoneInfo:
     candidate = (value or getattr(settings, "TIME_ZONE", "UTC")).strip()
     try:
         return ZoneInfo(candidate)
-    except (ZoneInfoNotFoundError, ValueError):
+    except ZoneInfoNotFoundError, ValueError:
         try:
             return ZoneInfo(getattr(settings, "TIME_ZONE", "UTC"))
-        except (ZoneInfoNotFoundError, ValueError):
+        except ZoneInfoNotFoundError, ValueError:
             return ZoneInfo("UTC")
 
 
@@ -154,9 +164,11 @@ def refresh_states(now: datetime | None = None) -> int:
     """Synchronize stored compatibility state/status for timestamped sessions."""
     now = now or timezone.now()
     changed = 0
-    for row in CourseLiveSession.objects.filter(starts_at__isnull=False).only(
-        "id", "starts_at", "duration_minutes", "state", "status"
-    ).iterator(chunk_size=500):
+    for row in (
+        CourseLiveSession.objects.filter(starts_at__isnull=False)
+        .only("id", "starts_at", "duration_minutes", "state", "status")
+        .iterator(chunk_size=500)
+    ):
         state = live_session_state(row, now)
         status = row.status
         if status != CourseLiveSession.STATUS_CANCELLED:
@@ -192,7 +204,7 @@ def backfill_live_session_timestamps(*, queryset: Any | None = None) -> dict[str
                 first_fold = naive.replace(tzinfo=session_zone, fold=0)
                 second_fold = naive.replace(tzinfo=session_zone, fold=1)
                 starts_at = first_fold if first_fold.utcoffset() == second_fold.utcoffset() else None
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 starts_at = None
             if starts_at is not None:
                 labels = format_live_session_labels(starts_at, row.timezone)

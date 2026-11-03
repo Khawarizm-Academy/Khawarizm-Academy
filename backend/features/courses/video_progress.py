@@ -153,12 +153,17 @@ def record_lesson_progress(user: Any, lesson: CourseLesson, payload: Mapping[str
         enrollment = recompute_enrollment(user, course)
         if enrollment is not None:
             total = CourseLesson.objects.filter(module__course_id=course.pk, is_published=True).count()
-            completed = LessonProgress.objects.filter(
-                user_id=user.pk,
-                lesson__module__course_id=course.pk,
-                lesson__is_published=True,
-                completed=True,
-            ).values("lesson_id").distinct().count()
+            completed = (
+                LessonProgress.objects.filter(
+                    user_id=user.pk,
+                    lesson__module__course_id=course.pk,
+                    lesson__is_published=True,
+                    completed=True,
+                )
+                .values("lesson_id")
+                .distinct()
+                .count()
+            )
             milestone = round(100 * completed / total) if total else 0
             if milestone in {25, 50, 75, 100}:
                 from features.dashboard.event_receiver import receive_lesson_milestone

@@ -11,22 +11,22 @@ from typing import Any
 
 from django.db import transaction
 from django.db.models import (
-    F,
     Avg,
     Case,
     CharField,
     Count,
     DateTimeField,
     DecimalField,
+    F,
     IntegerField,
     OuterRef,
+    Prefetch,
     Q,
     Subquery,
     Value,
     When,
 )
 from django.db.models.functions import Coalesce, Greatest, Lower
-from django.db.models import Prefetch
 from django.http import StreamingHttpResponse
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
@@ -37,14 +37,15 @@ from rest_framework.response import Response
 
 from features.access.registry import OWN_KINDS
 from features.access.services import has_perm
+from features.auth.models import User
 from features.common.choices import CourseStatus, NotificationType
 from features.common.errors import Conflict, InvalidParameter, NotFound, PermissionDenied
 from features.common.throttling import scoped_throttle
 from features.courses.models import Course, CourseLesson, LessonProgress
 from features.dashboard.models import DashboardNotification, Enrollment
-from features.quizzes.models import Attempt, AttemptStatus, Quiz
 from features.quizzes import services as quiz_services
-from features.auth.models import User
+from features.quizzes.models import Attempt, AttemptStatus, Quiz
+from features.studio.models import InstructorStudentNote
 from features.studio.students_serializers import (
     ExtraAttemptRequest,
     StudentActionRequest,
@@ -52,13 +53,11 @@ from features.studio.students_serializers import (
     StudentsRosterRequest,
     course_option,
     grant_response,
-    mask_email,
     nudge_response,
     roster_row,
     student_detail,
     student_note_payload,
 )
-from features.studio.models import InstructorStudentNote
 
 PAGE_SIZE = 20
 NO_STORE = "private, no-store"
@@ -137,9 +136,7 @@ def _roster_queryset(actor: Any, values: dict[str, Any]):
         .values("value")[:1]
     )
     last_progress = (
-        LessonProgress.objects.filter(
-            user_id=OuterRef("user_id"), lesson__module__course_id=OuterRef("course_id")
-        )
+        LessonProgress.objects.filter(user_id=OuterRef("user_id"), lesson__module__course_id=OuterRef("course_id"))
         .order_by("-updated_at")
         .values("updated_at")[:1]
     )
@@ -294,7 +291,17 @@ def students_csv(request: Any) -> StreamingHttpResponse:
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow(
-            ["studentId", "name", "email", "course", "progress", "completedLessons", "lastActive", "quizAverage", "status"]
+            [
+                "studentId",
+                "name",
+                "email",
+                "course",
+                "progress",
+                "completedLessons",
+                "lastActive",
+                "quizAverage",
+                "status",
+            ]
         )
         yield output.getvalue()
         output.seek(0)
@@ -330,7 +337,7 @@ def _student_enrollment(actor: Any, student_id: Any, course_slug: str) -> Enroll
     course = _course_for_actor(actor, course_slug)
     try:
         return Enrollment.objects.select_related("user", "course").get(user_id=student_id, course=course)
-    except (Enrollment.DoesNotExist, ValueError, TypeError):
+    except Enrollment.DoesNotExist, ValueError, TypeError:
         raise NotFound("الطالب غير موجود في هذه الدورة.") from None
 
 
@@ -346,7 +353,9 @@ def student_detail_view(request: Any, student_id: Any) -> Response:
     if not course_slug:
         raise InvalidParameter("الدورة مطلوبة لعرض تفاصيل الطالب.")
     enrollment = _student_enrollment(request.user, student_id, course_slug)
-    progress_rows = LessonProgress.objects.filter(user_id=enrollment.user_id).order_by("lesson__module__order", "lesson__order")
+    progress_rows = LessonProgress.objects.filter(user_id=enrollment.user_id).order_by(
+        "lesson__module__order", "lesson__order"
+    )
     lessons = list(
         CourseLesson.objects.filter(module__course_id=enrollment.course_id)
         .select_related("module")
@@ -371,8 +380,9 @@ def student_detail_view(request: Any, student_id: Any) -> Response:
         .order_by("quiz__order", "quiz__title", "-started_at", "pk")
     )
     notes = list(
-        InstructorStudentNote.objects.filter(course=enrollment.course, student_id=enrollment.user_id)
-        .order_by("-created_at", "pk")[:100]
+        InstructorStudentNote.objects.filter(course=enrollment.course, student_id=enrollment.user_id).order_by(
+            "-created_at", "pk"
+        )[:100]
     )
     return _response(
         student_detail(
@@ -438,16 +448,20 @@ def student_nudge(request: Any, student_id: Any) -> Response:
     course = _course_for_actor(request.user, values["course"])
     with transaction.atomic():
         try:
-            enrollment = Enrollment.objects.select_for_update().get(user_id=student_id, course=course)
-        except (Enrollment.DoesNotExist, ValueError, TypeError):
+            Enrollment.objects.select_for_update().get(user_id=student_id, course=course)
+        except Enrollment.DoesNotExist, ValueError, TypeError:
             raise NotFound("الطالب غير موجود في هذه الدورة.") from None
         now = timezone.now()
         key = hashlib.sha256(f"{course.pk}:{student_id}".encode()).hexdigest()[:24]
-        recent = DashboardNotification.objects.filter(
-            user_id=student_id,
-            notification_id__startswith=f"studio-nudge-{key}-",
-            created_at__gte=now - NUDGE_WINDOW,
-        ).order_by("-created_at").first()
+        recent = (
+            DashboardNotification.objects.filter(
+                user_id=student_id,
+                notification_id__startswith=f"studio-nudge-{key}-",
+                created_at__gte=now - NUDGE_WINDOW,
+            )
+            .order_by("-created_at")
+            .first()
+        )
         if recent:
             raise Conflict("تم إرسال تنبيه لهذا الطالب خلال آخر 24 ساعة.", code="nudge_rate_limited")
         message = values.get("message") or "استمرّ في التعلّم، أنت قادر على إكمال مسارك."
@@ -492,7 +506,7 @@ def student_extra_attempt(request: Any, student_id: Any) -> Response:
         raise NotFound("الاختبار غير موجود في هذه الدورة.")
     try:
         user = User.objects.get(pk=student_id)
-    except (User.DoesNotExist, ValueError, TypeError):
+    except User.DoesNotExist, ValueError, TypeError:
         raise NotFound("الطالب غير موجود.") from None
     grant = quiz_services.grant_extra_attempt(
         request.user,

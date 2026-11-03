@@ -1,4 +1,5 @@
 """Django app configuration for course announcements."""
+
 from django.apps import AppConfig
 
 

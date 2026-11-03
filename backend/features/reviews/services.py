@@ -43,7 +43,7 @@ def minimum_progress() -> int:
     value = getattr(settings, "REVIEW_MIN_PROGRESS", DEFAULT_MIN_PROGRESS)
     try:
         return max(0, min(100, int(value)))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return DEFAULT_MIN_PROGRESS
 
 
@@ -178,9 +178,11 @@ def update_review(actor: Any, row: CourseReview, values: Mapping[str, Any]) -> C
 
 @transaction.atomic
 def reply_review(actor: Any, row: CourseReview, body: str) -> CourseReview:
-    staff_kind = CourseStaff.objects.filter(course_id=row.course_id, user_id=getattr(actor, "pk", None)).values_list(
-        "kind", flat=True
-    ).first()
+    staff_kind = (
+        CourseStaff.objects.filter(course_id=row.course_id, user_id=getattr(actor, "pk", None))
+        .values_list("kind", flat=True)
+        .first()
+    )
     if not has_object_perm(actor, "reviews.reply_own", {staff_kind} if staff_kind else set()):
         raise PermissionDenied()
     locked = CourseReview.objects.select_for_update().select_related("course", "user", "reply_author").get(pk=row.pk)
@@ -237,7 +239,9 @@ def list_reviews(actor: Any, course: Course, *, page: int, page_size: int, sort:
         "average": aggregate["average"],
         "total": int(aggregate["total"] or 0),
         "distribution": distribution,
-        "eligibility": eligibility(actor, course) if _authenticated(actor) else {
+        "eligibility": eligibility(actor, course)
+        if _authenticated(actor)
+        else {
             "enrolled": False,
             "progress": 0,
             "minimumProgress": minimum_progress(),
@@ -251,7 +255,7 @@ def parse_page_params(query: Mapping[str, Any]) -> tuple[int, int, str]:
     try:
         page = max(1, int(query.get("page", 1)))
         page_size = max(1, min(MAX_PAGE_SIZE, int(query.get("pageSize", DEFAULT_PAGE_SIZE))))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         raise InvalidParameter("معاملات الصفحة غير صالحة.") from None
     sort = query.get("sort", "newest")
     if sort not in SORTERS:
@@ -276,11 +280,7 @@ def list_studio_reviews(actor: Any, *, page: int, page_size: int) -> dict[str, A
 
 
 def _review_for_id(review_id: Any) -> CourseReview:
-    row = (
-        CourseReview.objects.select_related("user", "course", "reply_author")
-        .filter(pk=review_id)
-        .first()
-    )
+    row = CourseReview.objects.select_related("user", "course", "reply_author").filter(pk=review_id).first()
     if row is None:
         raise NotFound("التقييم غير موجود.")
     return row

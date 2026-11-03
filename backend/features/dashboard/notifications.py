@@ -1,4 +1,5 @@
 """The single write path for dashboard notifications and live reminders."""
+
 from __future__ import annotations
 
 import hashlib
@@ -126,13 +127,8 @@ def notify(
     if not isinstance(payload, Mapping):
         raise TypeError("payload must be a mapping")
     notification_id = _notification_id(dedupe_key)
-    profiles = {
-        str(profile.user_id): profile
-        for profile in StudentProfile.objects.filter(user_id__in=recipient_ids)
-    }
-    enabled_ids = [
-        user_id for user_id in recipient_ids if _preference_enabled(profiles.get(user_id), str(kind))
-    ]
+    profiles = {str(profile.user_id): profile for profile in StudentProfile.objects.filter(user_id__in=recipient_ids)}
+    enabled_ids = [user_id for user_id in recipient_ids if _preference_enabled(profiles.get(user_id), str(kind))]
     if not enabled_ids:
         return 0
     existing_drawer = {
@@ -205,7 +201,7 @@ def mark_read(user: User, notification_id: str) -> None:
 
 
 def send_live_session_reminders(*, now: Any | None = None) -> int:
-    """Send the next 15–20 minute reminders; the notification id is the marker."""
+    """Send the next 15-20 minute reminders; the notification id is the marker."""
     now = now or timezone.now()
     sessions = CourseLiveSession.objects.filter(
         starts_at__gt=now + timedelta(minutes=15),

@@ -4,6 +4,7 @@ Feature event sources call the ``receive_*`` functions after their successful
 transaction. Existing announcement, quiz, and live-session signals are wired
 here so those sources stay independent of dashboard storage.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -147,7 +148,8 @@ def receive_live_session(session: Any, action: str, *, course: Any | None = None
             "link": f"/courses/{course.slug}",
             "notificationType": "live",
         },
-        f"live-session:{session.pk}:{action}:{session.updated_at.isoformat() if getattr(session, 'updated_at', None) else ''}",
+        f"live-session:{session.pk}:{action}:"
+        f"{session.updated_at.isoformat() if getattr(session, 'updated_at', None) else ''}",
     )
 
 
@@ -175,7 +177,8 @@ def receive_changes_requested(course: Any, *, reason: str = "") -> int:
             "link": f"/studio/courses/{course.slug}",
             "notificationType": "lesson",
         },
-        f"course-changes-requested:{course.pk}:{course.updated_at.isoformat() if getattr(course, 'updated_at', None) else ''}",
+        f"course-changes-requested:{course.pk}:"
+        f"{course.updated_at.isoformat() if getattr(course, 'updated_at', None) else ''}",
     )
 
 

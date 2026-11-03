@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import secrets
 import string
-from datetime import date, datetime, timezone as datetime_timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -70,9 +70,13 @@ def _has_completed_course(user: Any, course: Course) -> bool:
     lesson_ids = list(
         CourseLesson.objects.filter(module__course_id=course.pk, is_published=True).values_list("pk", flat=True)
     )
-    if not lesson_ids or LessonProgress.objects.filter(user_id=user.pk, lesson_id__in=lesson_ids, completed=True).count() < len(lesson_ids):
+    if not lesson_ids or LessonProgress.objects.filter(
+        user_id=user.pk, lesson_id__in=lesson_ids, completed=True
+    ).count() < len(lesson_ids):
         return False
-    exam_ids = list(Quiz.objects.filter(course_id=course.pk, kind=QuizKind.EXAM, is_published=True).values_list("pk", flat=True))
+    exam_ids = list(
+        Quiz.objects.filter(course_id=course.pk, kind=QuizKind.EXAM, is_published=True).values_list("pk", flat=True)
+    )
     if not exam_ids:
         return True
     passed = set(
@@ -127,7 +131,7 @@ def issue_certificate_if_complete(user: Any, course: Course, *, now: datetime | 
             if "serial" not in _field_names():
                 raise
             continue
-        transaction.on_commit(lambda: _notify_certificate(user.pk, row))
+        transaction.on_commit(lambda row=row: _notify_certificate(user.pk, row))
         return row
     raise IntegrityError("Unable to allocate a unique certificate serial.")
 
@@ -144,7 +148,7 @@ def _issued_at(row: Certificate) -> str | None:
         return value.isoformat()
     legacy = str(getattr(row, "issue_date", "") or "").strip()
     try:
-        return datetime.combine(date.fromisoformat(legacy), datetime.min.time(), tzinfo=datetime_timezone.utc).isoformat()
+        return datetime.combine(date.fromisoformat(legacy), datetime.min.time(), tzinfo=UTC).isoformat()
     except ValueError:
         return None
 

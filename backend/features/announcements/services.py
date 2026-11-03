@@ -4,6 +4,7 @@ Views only resolve requests; this module owns course scope, learner privacy,
 Markdown normalization, the per-course daily creation limit, and the Phase 11
 notification hook boundary.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -39,9 +40,7 @@ def is_course_staff(actor: Any, course: Course) -> bool:
         return False
     if course.owner_id == actor.pk:
         return True
-    return CourseStaff.objects.filter(
-        course_id=course.pk, user_id=actor.pk, kind__in=STAFF_KINDS
-    ).exists()
+    return CourseStaff.objects.filter(course_id=course.pk, user_id=actor.pk, kind__in=STAFF_KINDS).exists()
 
 
 def can_manage(actor: Any, course: Course) -> bool:
@@ -61,9 +60,7 @@ def is_enrolled(actor: Any, course: Course) -> bool:
 
 
 def can_read(actor: Any, course: Course) -> bool:
-    return can_manage(actor, course) or (
-        course.status in {"published", "archived"} and is_enrolled(actor, course)
-    )
+    return can_manage(actor, course) or (course.status in {"published", "archived"} and is_enrolled(actor, course))
 
 
 def require_reader(actor: Any, course: Course) -> None:
@@ -79,8 +76,7 @@ def courses_for_posting(actor: Any) -> list[Course]:
         return []
     return list(
         Course.objects.filter(
-            Q(owner_id=actor.pk)
-            | Q(staff__user_id=actor.pk, staff__kind__in=OWN_KINDS["announcements.post"])
+            Q(owner_id=actor.pk) | Q(staff__user_id=actor.pk, staff__kind__in=OWN_KINDS["announcements.post"])
         )
         .only("slug", "title", "status")
         .distinct()

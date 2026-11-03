@@ -91,7 +91,7 @@ def course_review_update(request: Any, slug: str, review_id: Any) -> Response:
 @permission_classes([IsAuthenticated])
 @scoped_throttle("studio_write")
 def course_review_reply(request: Any, slug: str, review_id: Any) -> Response:
-    course, row = _review(slug, review_id)
+    _course, row = _review(slug, review_id)
     updated = services.reply_review(request.user, row, services.validate_reply(request.data))
     return _private(review_payload(updated), code=status.HTTP_201_CREATED)
 
@@ -106,10 +106,7 @@ def course_review_reply(request: Any, slug: str, review_id: Any) -> Response:
 @scoped_throttle("admin_burst")
 def course_review_moderate(request: Any, review_id: Any) -> Response:
     course = services.resolve_course(request.data.get("courseSlug", "")) if isinstance(request.data, dict) else None
-    if course is None:
-        row = services._review_for_id(review_id)
-    else:
-        row = services._review(course, review_id)
+    row = services._review_for_id(review_id) if course is None else services._review(course, review_id)
     if not isinstance(request.data, dict):
         raise InvalidParameter("يجب أن يكون جسم الطلب كائنًا.")
     hidden = request.data.get("hidden", True)

@@ -22,15 +22,25 @@ from rest_framework.response import Response
 from features.access.registry import OWN_KINDS
 from features.access.services import has_perm
 from features.courses import services
+from features.courses.live_sessions_signals import emit_live_session_hook
 from features.courses.models import Course, CourseLiveSession
 from features.courses.serializers import live_session
-from features.courses.live_sessions_signals import emit_live_session_hook
 from features.videohosting.models import VideoAsset
 
 _SESSION_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$")
 _ALLOWED_FIELDS = {
-    "sessionId", "title", "startsAt", "durationMinutes", "timezone", "meetUrl",
-    "dateLabel", "timeLabel", "recordingUrl", "recordingAssetId", "notes", "order",
+    "sessionId",
+    "title",
+    "startsAt",
+    "durationMinutes",
+    "timezone",
+    "meetUrl",
+    "dateLabel",
+    "timeLabel",
+    "recordingUrl",
+    "recordingAssetId",
+    "notes",
+    "order",
 }
 
 
@@ -60,8 +70,8 @@ def _timezone_name(value: Any, current: str | None = None) -> str:
         return current or "UTC"
     try:
         ZoneInfo(candidate)
-    except (ZoneInfoNotFoundError, ValueError):
-        raise ser.ValidationError({"timezone": "المنطقة الزمنية غير صالحة."})
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise ser.ValidationError({"timezone": "المنطقة الزمنية غير صالحة."}) from exc
     return candidate
 
 
@@ -116,7 +126,7 @@ def _recording_asset(value: Any, actor: Any) -> VideoAsset | None:
         return None
     try:
         asset_id = uuid.UUID(str(value))
-    except (AttributeError, TypeError, ValueError):
+    except AttributeError, TypeError, ValueError:
         raise ser.ValidationError({"recordingAssetId": "معرّف أصل التسجيل غير صالح."}) from None
     asset = VideoAsset.objects.filter(pk=asset_id).first()
     if asset is None:
@@ -197,7 +207,9 @@ def global_live_sessions(request: Any) -> Response:
     else:
         courses = Course.objects.none()
     sessions = CourseLiveSession.objects.select_related("recording_asset").order_by("starts_at", "order", "session_id")
-    courses = courses.order_by("slug").prefetch_related(Prefetch("live_sessions", queryset=sessions, to_attr="_calendar_sessions"))
+    courses = courses.order_by("slug").prefetch_related(
+        Prefetch("live_sessions", queryset=sessions, to_attr="_calendar_sessions")
+    )
     for course in courses:
         for row in course._calendar_sessions:
             item = live_session(row, include_private=True)

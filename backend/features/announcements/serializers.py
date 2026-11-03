@@ -1,4 +1,5 @@
 """Private-safe announcement payloads and Markdown sanitization."""
+
 from __future__ import annotations
 
 import html

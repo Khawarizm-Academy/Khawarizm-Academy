@@ -1,4 +1,5 @@
 """Announcements routes; the parent app mounts this module below ``/api/``."""
+
 from functools import wraps
 
 from django.urls import path

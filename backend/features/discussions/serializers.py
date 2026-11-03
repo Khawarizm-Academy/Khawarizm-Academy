@@ -68,8 +68,5 @@ def thread_payload(row: Any, *, include_posts: bool = True) -> dict[str, Any]:
         "author": _author_payload(row.author),
     }
     if include_posts:
-        payload["posts"] = [
-            post_payload(post, accepted_id=row.accepted_post_id)
-            for post in row.posts.all()
-        ]
+        payload["posts"] = [post_payload(post, accepted_id=row.accepted_post_id) for post in row.posts.all()]
     return compact(**payload)

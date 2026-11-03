@@ -11,7 +11,12 @@ from django.utils import timezone
 from features.common.errors import InvalidParameter
 from features.common.serializers import as_number, compact
 from features.courses.models import Course
-from features.courses.services import live_session_labels, live_session_state, live_session_timezone, validate_live_meet_url
+from features.courses.services import (
+    live_session_labels,
+    live_session_state,
+    live_session_timezone,
+    validate_live_meet_url,
+)
 
 LANGUAGE_LABELS = {"arabic": "العربية", "english": "الإنجليزية", "french": "الفرنسية"}
 
@@ -147,7 +152,7 @@ def live_session(row: Any, *, include_private: bool = False) -> dict[str, Any]:
     if row.meet_url:
         try:
             meet_url = validate_live_meet_url(row.meet_url)
-        except (InvalidParameter, ValueError):
+        except InvalidParameter, ValueError:
             meet_url = None
     recording_url = None
     if row.recording_url:

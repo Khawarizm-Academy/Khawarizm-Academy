@@ -1,4 +1,5 @@
 """Private course announcement API handlers."""
+
 from __future__ import annotations
 
 import uuid
@@ -27,7 +28,7 @@ def _private(data: Any = None, *, code: int = status.HTTP_200_OK) -> Response:
 def _uuid(value: Any) -> uuid.UUID:
     try:
         return uuid.UUID(str(value))
-    except (AttributeError, TypeError, ValueError):
+    except AttributeError, TypeError, ValueError:
         raise InvalidParameter("معرّف الإعلان غير صالح.", code="invalid_uuid") from None
 
 
@@ -47,12 +48,7 @@ def _row(slug: str, announcement_id: Any):
 def announcement_courses(request: Any) -> Response:
     courses = services.courses_for_posting(request.user)
     return _private(
-        {
-            "items": [
-                {"slug": course.slug, "title": course.title, "status": course.status}
-                for course in courses
-            ]
-        }
+        {"items": [{"slug": course.slug, "title": course.title, "status": course.status} for course in courses]}
     )
 
 
@@ -127,7 +123,7 @@ def course_announcement_detail(request: Any, slug: str, announcement_id: Any) ->
 @permission_classes([IsAuthenticated])
 def course_announcement_pin(request: Any, slug: str, announcement_id: Any) -> Response:
     """Pin or unpin an announcement without exposing a separate write model."""
-    course, row = _row(slug, announcement_id)
+    _course, row = _row(slug, announcement_id)
     if not isinstance(request.data, dict):
         raise InvalidParameter("يجب أن يكون جسم الطلب كائنًا.")
     pinned = request.data.get("pinned", not row.pinned)
