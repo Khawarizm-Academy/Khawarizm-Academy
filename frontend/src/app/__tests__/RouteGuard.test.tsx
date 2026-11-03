@@ -9,7 +9,16 @@ import { EMPTY_AUTH_USER } from '@/features/auth/types';
 import type { AuthUser } from '@/features/auth/types';
 
 const LEARNER: AuthUser = { ...EMPTY_AUTH_USER, id: 'user-1', email: 'ahmad@example.com' };
-const ADMIN: AuthUser = { ...EMPTY_AUTH_USER, id: 'user-2', email: 'admin@example.com', role: 'admin', isAdmin: true };
+// Phase 12: the legacy `isAdmin` UI fallback is retired, so the guard test
+// grants `admin.access` through the permission catalog like every other route.
+const ADMIN: AuthUser = {
+  ...EMPTY_AUTH_USER,
+  id: 'user-2',
+  email: 'admin@example.com',
+  role: 'admin',
+  isAdmin: true,
+  permissions: ['admin.access'],
+};
 const CONTENT_MODERATOR: AuthUser = {
   ...EMPTY_AUTH_USER,
   id: 'user-3',
@@ -118,7 +127,7 @@ describe('RouteGuard', () => {
     expect(navigate).toHaveBeenCalledWith('/login?next=%2Fadmin', { replace: true });
   });
 
-  it('bounces a signed-in learner away from the legacy admin console', () => {
+  it('bounces a signed-in reader without admin.access off the console', () => {
     const { navigate } = renderGuard(
       routeWithMeta({ requiresAdmin: true }, '/admin'),
       authValue({ user: LEARNER })
@@ -128,7 +137,19 @@ describe('RouteGuard', () => {
     expect(navigate).toHaveBeenCalledWith('/', { replace: true });
   });
 
-  it('lets a legacy admin into the admin console', () => {
+  it('Phase 12: a user with only the legacy isAdmin flag is no longer allowed', () => {
+    // The isAdmin UI fallback is retired; only `admin.access` opens the console.
+    const legacyOnly: AuthUser = { ...EMPTY_AUTH_USER, id: 'user-9', isAdmin: true, role: 'admin' };
+    const { navigate } = renderGuard(
+      routeWithMeta({ requiresAdmin: true }, '/admin'),
+      authValue({ user: legacyOnly })
+    );
+
+    expect(screen.queryByTestId('page')).toBeNull();
+    expect(navigate).toHaveBeenCalledWith('/', { replace: true });
+  });
+
+  it('lets an admin.access reader into the admin console', () => {
     const { navigate } = renderGuard(
       routeWithMeta({ requiresAdmin: true }, '/admin'),
       authValue({ user: ADMIN })

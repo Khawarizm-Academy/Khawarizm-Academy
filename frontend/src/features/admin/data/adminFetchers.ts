@@ -1,7 +1,6 @@
 /** Every call the admin console makes, each one matching an adminconsole route. */
 
 import { apiGet, apiPost, apiPatch, apiDelete, apiUpload, buildQuery, type UploadProgressHandler } from '@/shared/lib/apiClient';
-import type { AuthRole, AuthUser } from '@/features/auth/types';
 import type {
   AdminActiveFilter,
   AdminEvent,
@@ -26,6 +25,9 @@ import type {
   DeviceBreakdown,
   LoginSeries,
   Paged,
+  EffectivePermissionItem,
+  BulkRoleOutcome,
+  ReviewQueueItem,
 } from '@/features/admin/types';
 
 export const fetchOverview = () => apiGet<AdminOverview>('/admin/overview');
@@ -56,13 +58,23 @@ export const fetchDeviceBreakdown = () => apiGet<DeviceBreakdown>('/admin/analyt
 export const fetchEvents = async (kind: AdminEventKind | 'all') =>
   (await apiGet<{ results: AdminEvent[] }>(`/admin/events${buildQuery({ kind })}`)).results;
 
-/** Promote or demote; the backend refuses a self-change. */
-export const updateUserRole = (userId: string, role: AuthRole) =>
-  apiPost<AuthUser>(`/admin/users/${userId}/role`, { role });
-
 /** Force-logout one device anywhere in the fleet. */
 export const revokeAdminSession = (sessionId: string) =>
   apiPost<AdminSessionWithUser>(`/admin/sessions/${sessionId}/revoke`);
+
+/** Phase 12: the effective-permission inspector powers the 'why can she do X?' panel. */
+export const fetchEffectivePermissions = async (userId: string) =>
+  (await apiGet<{ userId: string; items: EffectivePermissionItem[] }>(
+    `/admin/users/${userId}/effective-permissions`
+  )).items;
+
+/** Phase 12: bulk add or remove an explicit role across many selected users. */
+export const bulkApplyRole = (input: { userIds: string[]; roleId: string; mode: 'add' | 'remove' }) =>
+  apiPost<{ results: BulkRoleOutcome[] }>('/admin/users/bulk-roles', input);
+
+/** Phase 12: the review queue lists submitted courses awaiting an editorial verdict. */
+export const fetchReviewQueue = async () =>
+  (await apiGet<{ items: ReviewQueueItem[] }>('/admin/review-queue')).items;
 
 export const updateAdminUser = (userId: string, input: Partial<AdminUserInput>) =>
   apiPatch<AdminUserRow>(`/admin/users/${userId}`, input);

@@ -1,7 +1,6 @@
 /** Everything the five console sections share — loaded once by AdminProvider. */
 
 import { createContext, useContext } from 'react';
-import type { AuthRole } from '@/features/auth/types';
 import type {
   AdminActiveFilter,
   AdminEvent,
@@ -97,7 +96,6 @@ export interface AdminContextValue {
   selectUser: (userId: string | null) => void;
 
   /** Per-row busy state so only the affected row spins. */
-  changingRoleId: string | null;
   revokingSessionId: string | null;
   /** A failed action, surfaced as a console-wide banner. */
   error: string | null;
@@ -132,7 +130,6 @@ export interface AdminContextValue {
 
   isRefreshing: boolean;
   refresh: () => Promise<void>;
-  changeRole: (userId: string, role: AuthRole) => Promise<void>;
   revokeSession: (sessionId: string) => Promise<void>;
   updateUser: (userId: string, input: Partial<AdminUserInput>) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;

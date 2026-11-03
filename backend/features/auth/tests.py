@@ -517,20 +517,37 @@ class AdminConsoleViewTests(ApiTestCase):
         body = self.client.get("/api/admin/users?q=findme").json()
         self.assertEqual(body["results"][0]["email"], "findme@example.com")
 
-    def test_role_change_updates_staff_flag(self):
-        authenticate(self.client, make_admin())
+    def test_role_change_flows_through_user_roles_endpoint(self):
+        """Phase 12: the legacy /role endpoint is gone; PUT /roles owns assignment."""
+        from features.access.models import AccessRole
+
+        admin = make_admin()
+        authenticate(self.client, admin)
         target = make_user(email="promote@example.com")
-        body = self.client.post(f"/api/admin/users/{target.id}/role", {"role": "instructor"}, format="json").json()
-        self.assertEqual(body["role"], "instructor")
+        instructor = AccessRole.objects.get(slug="instructor")
+        response = self.client.put(
+            f"/api/admin/users/{target.id}/roles",
+            {"roleIds": [str(instructor.pk)]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
         target.refresh_from_db()
         self.assertEqual(target.role, "instructor")
         self.assertTrue(target.role_assignments.filter(role__slug="instructor").exists())
 
-    def test_admin_cannot_change_own_role(self):
+    def test_legacy_role_endpoint_is_gone(self):
+        """POST|PATCH /admin/users/:id/role returns 404 after Phase 12."""
         admin = make_admin()
         authenticate(self.client, admin)
-        response = self.client.post(f"/api/admin/users/{admin.id}/role", {"role": "student"}, format="json")
-        self.assertEqual(response.status_code, 400)
+        target = make_user(email="gone@example.com")
+        self.assertEqual(
+            self.client.post(f"/api/admin/users/{target.id}/role", {"role": "instructor"}, format="json").status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.patch(f"/api/admin/users/{target.id}/role", {"role": "student"}, format="json").status_code,
+            404,
+        )
 
     def test_sessions_list_requires_admin(self):
         authenticate(self.client, make_user())

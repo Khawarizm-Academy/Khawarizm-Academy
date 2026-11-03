@@ -12,7 +12,7 @@ already defines, so there is one definition of "a session row" in the codebase.
 | | |
 | :--- | :--- |
 | **App label** | `adminconsole` |
-| **Routes** | `/api/admin/roles/*`, `/api/admin/audit`, `GET /api/admin/overview`, `GET|POST /api/admin/users`, `GET|PATCH|DELETE /api/admin/users/:id`, legacy `POST|PATCH /api/admin/users/:id/role`, `PUT /api/admin/users/:id/roles`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events`, `GET /api/admin/content/schema`, `GET|POST /api/admin/content/:type`, `PATCH|DELETE /api/admin/content/:type/:id`, and the existing video-console routes |
+| **Routes** | `/api/admin/roles/*`, `/api/admin/audit`, `GET /api/admin/overview`, `GET|POST /api/admin/users`, `GET|PATCH|DELETE /api/admin/users/:id`, `GET /api/admin/users/:id/effective-permissions`, `POST /api/admin/users/bulk-roles`, `PUT /api/admin/users/:id/roles`, `GET /api/admin/sessions`, `POST /api/admin/sessions/:id/revoke`, `GET /api/admin/analytics/logins`, `GET /api/admin/analytics/devices`, `GET /api/admin/events`, `GET /api/admin/content/schema`, `GET|POST /api/admin/content/:type`, `PATCH|DELETE /api/admin/content/:type/:id`, and the existing video-console routes. Phase 12 retired the legacy `POST|PATCH /api/admin/users/:id/role` route. |
 | **Owns** | — (reads across features) |
 | **Imports** | `User`, `UserSession`, `AuthEvent` (accounts); access roles and audit events; `user_profile`, `session_payload`, `session_with_user`; `Course`/`Scholarship`/`EventItem`/`Competition` (content) |
 | **Frontend twin** | `frontend/src/features/admin/` |

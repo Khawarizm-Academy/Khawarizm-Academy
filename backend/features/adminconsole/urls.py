@@ -21,7 +21,14 @@ urlpatterns = [
     path("admin/overview", views.overview, name="admin-overview"),
     path("admin/users", views.users, name="admin-users"),
     path("admin/users/<uuid:user_id>", views.user_detail, name="admin-user-detail"),
-    path("admin/users/<uuid:user_id>/role", views.set_role, name="admin-user-role"),
+    # Phase 12: legacy POST|PATCH /admin/users/<id>/role retired — role edits go
+    # through /admin/roles/* and PUT /admin/users/<id>/roles.
+    path("admin/users/bulk-roles", views.bulk_roles, name="admin-users-bulk-roles"),
+    path(
+        "admin/users/<uuid:user_id>/effective-permissions",
+        views.user_effective_permissions,
+        name="admin-user-effective-permissions",
+    ),
     path("admin/sessions", views.sessions, name="admin-sessions"),
     path("admin/sessions/<uuid:session_id>/revoke", views.revoke_session, name="admin-session-revoke"),
     path("admin/analytics/logins", views.logins_series, name="admin-analytics-logins"),

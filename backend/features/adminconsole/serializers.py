@@ -16,7 +16,6 @@ from features.common.choices import (
     CourseLevel,
     CoursePriceType,
     EventFormat,
-    Role,
     ScholarshipCountrySlug,
     ScholarshipCoverageType,
     ScholarshipDeadlineUrgency,
@@ -246,13 +245,9 @@ USER_FIELDS: tuple[dict[str, Any], ...] = (
     _field("email", "email", "البريد الإلكتروني", required=True, readonly=True),
     _field("fullName", "full_name", "الاسم الكامل"),
     _field("phone", "phone", "رقم الجوال"),
-    _field(
-        "role",
-        "role",
-        "الدور",
-        "select",
-        options=_select(Role.choices, {"student": "طالب", "instructor": "مدرّب", "admin": "مشرف"}),
-    ),
+    # Phase 12: `role` is no longer an editable input. The admin console reads
+    # it from /admin/users/:id (derived) and edits assignments through
+    # PUT /admin/users/:id/roles or POST /admin/users/bulk-roles.
     _field("isActive", "is_active", "نشط", "bool"),
     _field("membershipStatus", "membership_status", "حالة العضوية"),
     _field("language", "language", "اللغة"),

@@ -29,7 +29,7 @@ auth/
 ├── tokens.py          HS256 access token (60 min) + opaque refresh (30 days)
 ├── authentication.py  AccessTokenAuthentication + SessionAuthError codes
 ├── device.py          user-agent/IP parsing for the session footprint
-├── permissions.py     IsAdminRole
+├── permissions.py     (retired Phase 12: `IsAdminRole` — every route uses `features/access.permissions.perm`)
 ├── serializers.py     user_profile / session_payload / session_with_user / auth_config
 ├── services.py        open_session, rotate_session, upsert_firebase_user, record_event, ensure_profile
 ├── views.py           config / firebase / refresh / me / logout / sessions / revoke

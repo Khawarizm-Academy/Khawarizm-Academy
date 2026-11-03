@@ -23,6 +23,7 @@ from django.utils.text import slugify
 from features.access.registry import (
     OWN_KINDS,
     PERMISSION_COLORS,
+    PERMISSION_KEYS,
     PERMISSIONS,
     ROLE_TEMPLATES,
     SYSTEM_ROLE_SPECS,
@@ -1178,6 +1179,106 @@ def bulk_add_role_members(
             else:
                 outcomes.append({"userId": user_key, "ok": True})
     return outcomes
+
+
+def bulk_remove_role_members(
+    actor: Any,
+    role_id: Any,
+    user_ids: Sequence[Any],
+    *,
+    request: Any = None,
+) -> list[dict[str, Any]]:
+    """Revoke one role from many users in one outer transaction; per-ID outcomes."""
+    if not isinstance(user_ids, (list, tuple)):
+        raise InvalidParameter("قائمة الحسابات غير صالحة.")
+    ids = list(user_ids)
+    if len(ids) > 100:
+        raise InvalidParameter("لا يمكن إلغاء الإسناد لأكثر من 100 حساب في الطلب الواحد.")
+    if len(ids) != len({str(user_id) for user_id in ids}):
+        raise InvalidParameter("لا يمكن تكرار الحساب في القائمة.")
+
+    _AccessRole, RoleAssignment, _AuditEvent, _UserModel = _model_classes()
+    outcomes: list[dict[str, Any]] = []
+    with transaction.atomic():
+        _lock_role_mutation_guard(actor)
+        role = _role_by_id(role_id, lock=True)
+        if role.is_default:
+            raise InvalidParameter("الدور الافتراضي لا يُلغى إسنادًا صريحًا.")
+        for raw_user_id in ids:
+            user_key = str(raw_user_id)
+            try:
+                existing_ids = list(
+                    RoleAssignment.objects.filter(user_id=raw_user_id).values_list("role_id", flat=True)
+                )
+                if role.pk not in existing_ids:
+                    outcomes.append({"userId": user_key, "ok": False, "code": "not_assigned"})
+                    continue
+                desired_ids = [rid for rid in existing_ids if rid != role.pk]
+                assign_roles(actor, raw_user_id, desired_ids, request=request)
+            except (PermissionDenied, NotFound, InvalidParameter, Conflict) as exc:
+                code = getattr(exc, "default_code", None) or getattr(exc, "code", None) or "invalid_parameter"
+                outcomes.append({"userId": user_key, "ok": False, "code": str(code)})
+            except ValueError, TypeError, ValidationError:
+                outcomes.append({"userId": user_key, "ok": False, "code": "invalid_parameter"})
+            else:
+                outcomes.append({"userId": user_key, "ok": True})
+    return outcomes
+
+
+def effective_permission_provenance(user: Any) -> list[dict[str, Any]]:
+    """Explain every effective permission back to the role that granted it.
+
+    The admin console's 'why can/can't this user do X?' inspector uses this
+    output directly. Rules:
+    - `administrator` (explicit or via staff fallback) covers every catalog key.
+    - A permission granted directly by a role lists that role in `grantedBy`.
+    - A permission reached only via implication lists the source key as `via`.
+    """
+    if not _is_authenticated(user):
+        return []
+    roles, effective = _access_snapshot(user)
+    effective_keys = set(effective)
+    has_admin = "administrator" in effective_keys
+
+    direct: dict[str, list[dict[str, Any]]] = {}
+    for role in roles:
+        role_perms = role.permissions if isinstance(role.permissions, list) else []
+        entry = {
+            "roleSlug": role.slug,
+            "roleName": role.name,
+            "isSystem": bool(role.is_system),
+            "isDefault": bool(role.is_default),
+        }
+        for key in role_perms:
+            if key in PERMISSIONS:
+                direct.setdefault(key, []).append(entry)
+
+    items: list[dict[str, Any]] = []
+    for key in PERMISSION_KEYS:
+        if key not in effective_keys:
+            continue
+        spec = PERMISSIONS[key]
+        granted_by = list(direct.get(key, []))
+        via: list[str] = []
+        if not granted_by and not has_admin:
+            # Walk parents: find which held key implies this one.
+            for parent_key, parent_spec in PERMISSIONS.items():
+                if parent_key == key or parent_key not in effective_keys:
+                    continue
+                if key in parent_spec.implies:
+                    via.append(parent_key)
+        items.append(
+            {
+                "key": key,
+                "label": spec.label,
+                "group": spec.group,
+                "elevated": spec.elevated,
+                "grantedBy": granted_by,
+                "via": via,
+                "administrator": has_admin,
+            }
+        )
+    return items
 
 
 def audit_page(

@@ -3,6 +3,7 @@
   {"key":"users","label":"المستخدمون","icon":"Users","group":"المنصة","permission":"users.view"},
   {"key":"sessions","label":"الجلسات","icon":"MonitorSmartphone","group":"المنصة","permission":"sessions.view_any"},
   {"key":"content","label":"إدارة المحتوى","icon":"LayoutList","group":"المحتوى والفيديو","permission":"admin.access"},
+  {"key":"review-queue","label":"مراجعة الدورات","icon":"ClipboardCheck","group":"المحتوى والفيديو","permission":"courses.review"},
   {"key":"videos","label":"استضافة الفيديو","icon":"Video","group":"المحتوى والفيديو","permission":"admin.access"},
   {"key":"system","label":"فحص المنظومة","icon":"HeartPulse","group":"المحتوى والفيديو","permission":"system.maintenance"},
   {"key":"analytics","label":"التحليلات","icon":"TrendingUp","group":"المتابعة","permission":"analytics.view_platform"},
