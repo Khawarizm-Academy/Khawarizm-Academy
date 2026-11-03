@@ -7,6 +7,7 @@ each segment to the provider's CDN so the encrypted ``.ts`` flows browser↔prov
 
 from __future__ import annotations
 
+import logging
 import re
 import threading
 from datetime import timedelta
@@ -48,6 +49,7 @@ from features.common.messages import (
     VIDEO_NOT_FOUND,
     provider_no_direct,
 )
+from features.common.observability import log_event
 from features.common.schemas import ErrorSerializer
 from features.common.throttling import scoped_throttle
 from features.courses.models import CourseLesson, LessonProgress
@@ -84,6 +86,7 @@ NOT_READY_BY_STATUS = {
 # Manifests and keys carry the token, so they must never be cached by a proxy.
 NO_STORE = "no-store"
 _RAW_SEMAPHORE = threading.BoundedSemaphore(max(1, int(settings.VIDEO_RAW_MAX_CONCURRENT)))
+LOGGER = logging.getLogger(__name__)
 
 
 def _playlist_response(text: str) -> HttpResponse:
@@ -214,7 +217,14 @@ def _issue_grant(request: Any, asset: VideoAsset, access: Any, lesson: CourseLes
     source_url = ""
 
     if mode in {"hls", "raw"}:
-        ttl = preview_ttl if access.via == "preview" else None
+        # Phase 13 §13.1.5: raw tokens ride the query string, so they use a shorter
+        # TTL than HLS. Preview access still keeps the tighter preview window.
+        if access.via == "preview":
+            ttl = preview_ttl
+        elif mode == "raw":
+            ttl = timedelta(minutes=max(1, settings.VIDEO_RAW_GRANT_TTL_MINUTES))
+        else:
+            ttl = None
         token, row = tokens.mint(asset, request.user, client_ip(request), lesson=lesson, ttl=ttl)
         if mode == "hls":
             play_url = request.build_absolute_uri(reverse("videohosting-master", kwargs={"token": token}))
@@ -254,6 +264,17 @@ def _issue_grant(request: Any, asset: VideoAsset, access: Any, lesson: CourseLes
             "title": lesson.title,
             "nextLessonId": _next_lesson_id(lesson),
         }
+    # Phase 13 §13.4: one line per minted grant — asset, mode and the entitlement
+    # that allowed it. The token itself is never logged (§13.1.5).
+    log_event(
+        LOGGER,
+        "video grant minted",
+        asset=asset.slug,
+        mode=mode,
+        via=access.via,
+        provider=asset.provider.code if asset.provider_id else "",
+        expires_at=expires_at.isoformat() if expires_at else "",
+    )
     return grant
 
 
@@ -621,6 +642,15 @@ def _stream_raw(asset: VideoAsset, file_id: str, range_header: str):
         response["Referrer-Policy"] = "no-referrer"
         return response
     if not _RAW_SEMAPHORE.acquire(blocking=False):
+        # Phase 13 §13.4: a saturated raw proxy is the failure operators need to
+        # see; count it as a warning with the asset, never with the token.
+        log_event(
+            LOGGER,
+            "raw proxy busy",
+            level=logging.WARNING,
+            asset=asset.slug,
+            limit=settings.VIDEO_RAW_MAX_CONCURRENT,
+        )
         response = Response({"detail": RAW_BUSY, "code": "raw_busy"}, status=503)
         response["Retry-After"] = "2"
         response["Cache-Control"] = "private, no-store"
@@ -642,6 +672,14 @@ def _stream_raw(asset: VideoAsset, file_id: str, range_header: str):
             raise ValueError("upstream range exceeded the requested window")
         length = actual_end - actual_start + 1
     except Exception as exc:
+        log_event(
+            LOGGER,
+            "raw proxy upstream failure",
+            level=logging.WARNING,
+            asset=asset.slug,
+            provider=asset.provider.code if asset.provider_id else "unknown",
+            reason=type(exc).__name__,
+        )
         try:
             close = getattr(byte_iter, "close", None)
             if callable(close):

@@ -445,10 +445,25 @@ VIDEO_HOSTING_DEFAULT_PROVIDER = os.environ.get("VIDEO_HOSTING_DEFAULT_PROVIDER"
 VIDEO_UPLOAD_MAX_BYTES = env_int("VIDEO_UPLOAD_MAX_BYTES", 2**31)
 VIDEO_UPLOAD_CHUNK_BYTES = env_int("VIDEO_UPLOAD_CHUNK_BYTES", 4 * 1024 * 1024)
 VIDEO_USER_QUOTA_BYTES = env_int("VIDEO_USER_QUOTA_BYTES", 20 * 1024**3)
+# Phase 13 §13.1.6: cap the number of pending upload sessions a single user
+# may hold open at once, so a misbehaving client cannot fan out to 50 parallel
+# resumables. The Studio UI opens one drawer per asset; anything beyond this
+# limit is refused with `too_many_open_uploads`.
+VIDEO_MAX_OPEN_UPLOADS = env_int("VIDEO_MAX_OPEN_UPLOADS", 3)
+# Spool-dir byte budget for the persistent Telegram staging area. `run_cleanup`
+# prunes stale `pending` sessions (older than VIDEO_UPLOAD_STALE_HOURS) and
+# their spooled parts together, so the volume never fills silently.
+VIDEO_SPOOL_MAX_BYTES = env_int("VIDEO_SPOOL_MAX_BYTES", 20 * 1024**3)
+VIDEO_UPLOAD_STALE_HOURS = env_int("VIDEO_UPLOAD_STALE_HOURS", 24)
 VIDEO_SPOOL_DIR = os.environ.get("VIDEO_SPOOL_DIR", "").strip()
 VIDEO_RAW_RANGE_CAP_BYTES = env_int("VIDEO_RAW_RANGE_CAP_BYTES", 8 * 1024 * 1024)
 VIDEO_RAW_MAX_CONCURRENT = env_int("VIDEO_RAW_MAX_CONCURRENT", 4)
 VIDEO_GRANT_TTL_PREVIEW_MINUTES = env_int("VIDEO_GRANT_TTL_PREVIEW_MINUTES", 30)
+# Phase 13 §13.1.5 (G20): raw-mode grants ride the token in the query string,
+# so they need a shorter TTL than HLS manifests (which stay inside the origin
+# gate + no-store headers). 120 min matches a long lecture rewatch while
+# bounding exposure in upstream proxy logs.
+VIDEO_RAW_GRANT_TTL_MINUTES = env_int("VIDEO_RAW_GRANT_TTL_MINUTES", 120)
 VIDEO_EMBED_ALLOWED_HOSTS = env_list("VIDEO_EMBED_ALLOWED_HOSTS", ["youtube-nocookie.com", "vimeo.com"])
 
 # Whether HLS packaging via FFmpeg runs automatically after upload.

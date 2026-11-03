@@ -80,6 +80,30 @@ def host_capabilities() -> dict[str, bool]:
     }
 
 
+def spool_bytes_used() -> int:
+    """Total bytes currently sitting in the upload spool (0 when unconfigured).
+
+    Phase 13 §13.1.6: the spool is the one disk the platform itself grows under
+    load, so the init endpoint compares this against `VIDEO_SPOOL_MAX_BYTES`
+    before opening another session. Reading directory entries is cheap relative
+    to the request it guards.
+    """
+    configured = str(getattr(settings, "VIDEO_SPOOL_DIR", "") or "").strip()
+    if not configured:
+        return 0
+    total = 0
+    try:
+        for root, _dirs, files in Path(configured).walk():
+            for name in files:
+                try:
+                    total += (root / name).stat().st_size
+                except OSError:
+                    continue  # a part vanishing mid-walk is normal: it just uploaded
+    except OSError:
+        return 0
+    return total
+
+
 def spool_directory_ready() -> bool:
     """Require an existing writable spool outside known ephemeral locations."""
     configured = str(getattr(settings, "VIDEO_SPOOL_DIR", "") or "").strip()
