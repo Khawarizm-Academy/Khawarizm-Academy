@@ -1,13 +1,9 @@
-"""DRF permissions for the API."""
+"""DRF permissions for the API.
+
+Phase 12 retired the legacy ``IsAdminRole`` permission class. Every privileged
+route now declares a named permission key from ``features/access/registry.py``
+via ``features/access.permissions.perm`` (or ``permission_for_methods`` for the
+admin console), so the whole surface is auditable through the role manager.
+"""
 
 from __future__ import annotations
-
-from rest_framework.permissions import BasePermission
-
-
-class IsAdminRole(BasePermission):
-    """Allows the request only for the admin role or Django staff users."""
-
-    def has_permission(self, request, view) -> bool:
-        user = request.user
-        return bool(user and user.is_authenticated and getattr(user, "is_admin", False))

@@ -27,7 +27,7 @@ from features.adminconsole.serializers import USER_FIELDS
 from features.auth import services as auth_services
 from features.auth.authentication import AccessTokenAuthentication, CronSecretAuthentication
 from features.auth.models import AuthEvent, User, UserSession
-from features.auth.serializers import session_with_user, user_profile
+from features.auth.serializers import session_with_user
 from features.common.choices import AuthEventKind, CourseStatus, Role, SessionRevokeReason
 from features.common.errors import InvalidParameter, NotFound, PermissionDenied
 from features.common.maintenance import run_cleanup
@@ -245,7 +245,9 @@ def user_detail(request, user_id):
         raise NotFound(ADMIN_USER_NOT_FOUND)
     if request.method == "PATCH":
         if "role" in (request.data or {}):
-            require_any_permission(request.user, "users.assign_roles")
+            # Phase 12: the legacy single-role input is retired; role edits
+            # go through /admin/users/:id/roles or /admin/users/bulk-roles.
+            raise InvalidParameter("استخدام حقل الدور تم إلغاؤه؛ استخدم واجهة الأدوار.")
         updated_user = services.update_user_account(user, request.data or {}, acting_user=request.user)
         return Response(serializers.user_row(updated_user))
     if request.method == "DELETE":
@@ -260,37 +262,65 @@ def user_detail(request, user_id):
 
 
 @extend_schema(
-    methods=["POST"],
-    operation_id="admin_user_set_role_legacy",
-    summary="Legacy promote or demote operation.",
+    methods=["GET"],
+    operation_id="admin_user_effective_permissions",
+    summary="Every permission the user actually holds, with the role that granted it.",
     parameters=[OpenApiParameter("user_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
-    request=inline_serializer(
-        "AdminRoleChangeLegacyRequest",
-        fields={"role": ser.ChoiceField(choices=["student", "instructor", "admin"])},
-    ),
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The updated user profile.")},
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT,
+            description="`{userId, items: [{key, label, category, grantedBy: [{roleSlug, roleName, via}]}]}`.",
+        )
+    },
 )
-@extend_schema(
-    methods=["PATCH"],
-    operation_id="admin_user_set_role_patch",
-    summary="Legacy promote or demote operation (PATCH form).",
-    parameters=[OpenApiParameter("user_id", OpenApiTypes.UUID, OpenApiParameter.PATH)],
-    request=inline_serializer(
-        "AdminRoleChangePatchRequest",
-        fields={"role": ser.ChoiceField(choices=["student", "instructor", "admin"])},
-    ),
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="The updated user profile.")},
-)
-@api_view(["POST", "PATCH"])
-@permission_classes([IsAuthenticated, perm("users.assign_roles")])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, perm("users.view")])
 @scoped_throttle("admin_burst")
-def set_role(request, user_id):
-    """Promote or demote a role; an admin cannot change their own."""
+def user_effective_permissions(request, user_id):
+    """The debugging inspector: what a user can do and which role granted it."""
+    from features.access.services import effective_permission_provenance
+
     user = User.objects.filter(pk=user_id).first()
     if user is None:
         raise NotFound(ADMIN_USER_NOT_FOUND)
-    updated = services.set_role(user, (request.data or {}).get("role"), acting_user=request.user)
-    return Response(user_profile(updated))
+    items = effective_permission_provenance(user)
+    return Response({"userId": str(user.pk), "items": items})
+
+
+@extend_schema(
+    methods=["POST"],
+    operation_id="admin_users_bulk_roles",
+    summary="Bulk add or remove an explicit role for many selected users; per-id outcomes.",
+    request=inline_serializer(
+        "AdminUsersBulkRolesRequest",
+        fields={
+            "userIds": ser.ListField(child=ser.UUIDField()),
+            "roleId": ser.UUIDField(),
+            "mode": ser.ChoiceField(choices=["add", "remove"]),
+        },
+    ),
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT, description="`{results: [{userId, ok, code?}]}`")},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, perm("users.assign_roles")])
+@scoped_throttle("admin_burst")
+def bulk_roles(request):
+    """Assign or revoke one role across many users; per-id outcomes so the UI stays honest."""
+    from features.access.services import bulk_add_role_members, bulk_remove_role_members
+
+    data = request.data or {}
+    user_ids = data.get("userIds")
+    role_id = data.get("roleId")
+    mode = data.get("mode", "add")
+    if not isinstance(user_ids, list) or not user_ids:
+        raise InvalidParameter("قائمة المستخدمين مطلوبة.")
+    if mode not in {"add", "remove"}:
+        raise InvalidParameter("الطريقة غير صالحة.")
+    if mode == "add":
+        results = bulk_add_role_members(request.user, role_id, user_ids, request=request)
+    else:
+        results = bulk_remove_role_members(request.user, role_id, user_ids, request=request)
+    return Response({"results": results})
 
 
 @extend_schema(

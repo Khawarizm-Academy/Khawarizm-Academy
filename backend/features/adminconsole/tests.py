@@ -201,17 +201,14 @@ class AdminConsoleUserTests(ApiTestCase):
         response = self.client.get("/api/admin/users/00000000-0000-0000-0000-000000000000")
         self.assertEqual(response.status_code, 404)
 
-    def test_invalid_role_is_rejected(self):
+    def test_legacy_role_endpoint_is_retired(self):
+        """Phase 12 removed POST|PATCH /admin/users/:id/role."""
         target = make_user(email="badrole@example.com")
-        response = self.client.post(f"/api/admin/users/{target.id}/role", {"role": "wizard"}, format="json")
-        self.assertEqual(response.status_code, 400)
-
-    def test_legacy_role_endpoint_accepts_patch_without_removing_post_compatibility(self):
-        target = make_user(email="patch-role@example.com")
-        response = self.client.patch(f"/api/admin/users/{target.id}/role", {"role": Role.INSTRUCTOR}, format="json")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["role"], Role.INSTRUCTOR)
-        self.assertTrue(target.role_assignments.filter(role__slug="instructor").exists())
+        for method in ("post", "patch"):
+            response = getattr(self.client, method)(
+                f"/api/admin/users/{target.id}/role", {"role": "wizard"}, format="json"
+            )
+            self.assertEqual(response.status_code, 404, msg=method)
 
 
 class AdminConsoleSessionTests(ApiTestCase):
@@ -387,48 +384,30 @@ class AdminConsoleUserMutationTests(ApiTestCase):
         self.assertEqual(target.phone, "+966500000000")
         self.assertFalse(target.is_active)
 
-    def test_patch_role_keeps_django_staff_in_sync(self):
+    def test_patch_role_input_is_retired(self):
+        """Phase 12: PATCH /admin/users/:id rejects `role`; edits go via /roles."""
         target = make_user(email="promote@example.com")
         response = self.client.patch(f"/api/admin/users/{target.id}", {"role": Role.ADMIN}, format="json")
-        self.assertEqual(response.json()["role"], Role.ADMIN)
-        self.assertTrue(response.json()["isStaff"])
-        target.refresh_from_db()
-        self.assertEqual(target.role, Role.ADMIN)
-        self.assertTrue(target.is_staff)
-        self.assertTrue(target.role_assignments.filter(role__slug="admin").exists())
-
-    def test_patch_cannot_demote_your_own_account(self):
-        response = self.client.patch(f"/api/admin/users/{self.admin.id}", {"role": Role.STUDENT}, format="json")
         self.assertEqual(response.status_code, 400)
-
-    def test_patch_rolls_back_account_fields_when_role_assignment_fails(self):
-        from features.access.models import AccessRole
-
-        AccessRole.objects.get(slug="instructor").delete()
-        target = make_user(email="rollback.role@example.com", full_name="Before")
-        response = self.client.patch(
-            f"/api/admin/users/{target.id}",
-            {"fullName": "After", "role": Role.INSTRUCTOR},
-            format="json",
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()["code"], "role_missing")
+        self.assertEqual(response.json()["code"], "invalid_parameter")
         target.refresh_from_db()
-        self.assertEqual(target.full_name, "Before")
         self.assertEqual(target.role, Role.STUDENT)
+        self.assertFalse(target.role_assignments.filter(role__slug="admin").exists())
 
-    def test_legacy_role_patch_reports_role_missing_after_template_deletion(self):
+    def test_role_change_flows_through_user_roles_endpoint(self):
+        """The multi-role route remains the only path to change assignments."""
         from features.access.models import AccessRole
 
-        AccessRole.objects.get(slug="instructor").delete()
-        target = make_user(email="missing.instructor@example.com")
-        response = self.client.post(
-            f"/api/admin/users/{target.id}/role",
-            {"role": Role.INSTRUCTOR},
+        admin_role = AccessRole.objects.get(slug="admin")
+        target = make_user(email="via-roles@example.com")
+        response = self.client.put(
+            f"/api/admin/users/{target.id}/roles",
+            {"roleIds": [str(admin_role.pk)]},
             format="json",
         )
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()["code"], "role_missing")
+        self.assertEqual(response.status_code, 200)
+        target.refresh_from_db()
+        self.assertTrue(target.role_assignments.filter(role__slug="admin").exists())
 
     def test_patch_never_changes_the_email_identity(self):
         target = make_user(email="identity@example.com")

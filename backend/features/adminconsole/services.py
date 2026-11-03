@@ -56,14 +56,19 @@ def _assign_legacy_role(user: User, role: str, acting_user: User) -> User:
 
 @transaction.atomic
 def create_user_account(data: dict[str, Any], acting_user: User | None = None) -> User:
-    """Create an account from the console's user form (email is the identity)."""
+    """Create an account from the console's user form (email is the identity).
+
+    The initial `role` bootstraps one explicit assignment for the new account;
+    Phase 12 removed `role` as a PATCH input but creation is a convenience, not
+    a role-edit surface, so it is kept for one more release (backlog B9).
+    """
     values = values_for({"fields": USER_FIELDS}, data, create=True)
     email = str(values.get("email", "")).strip().lower()
     if not email:
         raise InvalidParameter("البريد الإلكتروني مطلوب.")
     if User.objects.filter(email=email).exists():
         raise InvalidParameter("البريد الإلكتروني مستخدم بالفعل.")
-    requested_role = values.pop("role", Role.STUDENT)
+    requested_role = data.get("role", Role.STUDENT)
     if requested_role not in Role.values:
         raise InvalidParameter("دور غير صالح.")
     if requested_role == Role.INSTRUCTOR:
@@ -88,27 +93,18 @@ def create_user_account(data: dict[str, Any], acting_user: User | None = None) -
 
 @transaction.atomic
 def update_user_account(user: User, data: dict[str, Any], acting_user: User) -> User:
-    """Apply the console's account edits, keeping Django staff rights in sync."""
+    """Apply the console's account edits; role changes are not accepted here anymore."""
     values = values_for({"fields": USER_FIELDS}, data, create=False)
     # Email is immutable: console edits can never change the account's identity.
     values.pop("email", None)
-    if "role" in values and is_self(acting_user, user) and values["role"] != Role.ADMIN:
-        raise InvalidParameter("لا يمكنك خفض دورك الخاص.")
-    requested_role = values.pop("role", None)
-    if requested_role is not None and requested_role not in Role.values:
-        raise InvalidParameter("دور غير صالح.")
-    if requested_role is not None:
-        user = _assign_legacy_role(user, requested_role, acting_user)
-    else:
-        user = User.objects.select_for_update().get(pk=user.pk)
+    user = User.objects.select_for_update().get(pk=user.pk)
     for attr, value in values.items():
         setattr(user, attr, value)
     try:
         user.save()
     except IntegrityError as exc:
         raise InvalidParameter("تعذّر حفظ التعديلات: قيمة مكرّرة.") from exc
-    if requested_role is None:
-        auth_services.ensure_profile(user)
+    auth_services.ensure_profile(user)
     return user
 
 
@@ -117,15 +113,6 @@ def delete_user_account(user: User, acting_user: User) -> None:
     if is_self(acting_user, user):
         raise InvalidParameter("لا يمكنك حذف حسابك الخاص.")
     user.delete()
-
-
-def set_role(user: User, role: str, acting_user: User) -> User:
-    """Promote or demote; Django staff rights follow the role, but not on yourself."""
-    if is_self(acting_user, user):
-        raise InvalidParameter("لا يمكنك تغيير دورك الخاص.")
-    if role not in Role.values:
-        raise InvalidParameter("دور غير صالح.")
-    return _assign_legacy_role(user, role, acting_user)
 
 
 def is_self(acting_user: User, user: User) -> bool:
