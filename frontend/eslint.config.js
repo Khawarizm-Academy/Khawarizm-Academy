@@ -38,6 +38,8 @@ const preExistingCrossFeatureImports = {
   courses: {
     // Phase 11 embeds the discussion tab and learner announcements in the player/landing.
     discussions: ['@/features/discussions/components/DiscussionTab'],
+    // Phase 15 mounts the learner review section on the public course landing page.
+    reviews: ['@/features/reviews/components/CourseReviewsSection'],
     studio: [
       '@/features/studio/announcements/components/LearnerAnnouncementList',
       '@/features/studio/announcements/components/LearnerAnnouncementBanner',

@@ -194,6 +194,9 @@ async function main() {
 
     await page.goto(`${BASE_URL}/courses/${DEMO.courseSlug}`, { waitUntil: 'networkidle' });
     assert(crashes.length === 0, `course detail crashed: ${crashes.join('; ')}`);
+    // Phase 15: the learner review section is mounted on the public course page.
+    const reviewsTitle = page.locator('#course-reviews-title');
+    assert((await reviewsTitle.count()) > 0, 'review section (#course-reviews-title) not mounted on course page');
 
     // The player route must mount its stage shell. The demo video lesson ships
     // with no attached asset (PLAN pitfall), so a handled "no video" state is a

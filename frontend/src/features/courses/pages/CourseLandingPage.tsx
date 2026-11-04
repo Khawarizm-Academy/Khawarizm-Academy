@@ -7,6 +7,7 @@ import { DesktopCourseLandingView } from '@/features/courses/components/views/Co
 import { MobileCourseLandingView } from '@/features/courses/components/views/CourseLandingView/MobileCourseLandingView';
 import { CourseNotFound } from '@/features/courses/components/states/CourseNotFound';
 import { LearnerAnnouncementBanner } from '@/features/studio/announcements/components/LearnerAnnouncementBanner';
+import { CourseReviewsSection } from '@/features/reviews/components/CourseReviewsSection';
 import type { CourseLandingCourse } from '@/features/courses/types';
 
 interface CourseLandingNoticesProps {
@@ -55,6 +56,8 @@ const CourseLandingContent: React.FC<{ courseSlug: string }> = ({ courseSlug }) 
         {landingCourse && <CourseLandingNotices course={landingCourse} courseSlug={courseSlug} canReadAnnouncements={landingCourse.canReadAnnouncements === true && !(isEnrolled && isEnrollmentPending)} />}
         <DesktopCourseLandingView />
         <MobileCourseLandingView />
+        {/* Reviews are public proof; a private preview course must not probe a learner inbox. */}
+        {landingCourse && !landingCourse.isPreview && <CourseReviewsSection slug={courseSlug} />}
       </>
     </main>
   );
