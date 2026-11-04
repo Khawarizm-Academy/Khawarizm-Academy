@@ -1854,6 +1854,48 @@ html[data-vt-enabled='true'] .animate-page-enter {
   .pagination-info {
     @apply mr-auto text-xs text-slate-400;
   }
+
+  /* --- Switch --- */
+  .sw-row {
+    @apply flex items-center justify-between gap-3;
+  }
+  .sw-label {
+    @apply text-sm text-slate-200;
+  }
+  .sw-track {
+    @apply relative w-10 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50;
+  }
+  .sw-track-on {
+    @apply bg-blue-500;
+  }
+  .sw-track-off {
+    @apply bg-navy-700;
+  }
+  .sw-knob {
+    @apply absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform;
+  }
+  .sw-knob-on {
+    @apply translate-x-[22px];
+  }
+  .sw-knob-off {
+    @apply translate-x-[2px];
+  }
+  .sw-disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  .sw-sm { @apply gap-2; }
+  .sw-md { @apply gap-3; }
+
+  /* --- Badge --- */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+  .badge-default { @apply bg-slate-700/70 text-slate-200; }
+  .badge-gold { @apply bg-amber-500/15 text-amber-300 border border-amber-400/30; }
+  .badge-blue { @apply bg-blue-500/15 text-blue-300 border border-blue-400/30; }
+  .badge-green { @apply bg-emerald-500/15 text-emerald-300 border border-emerald-400/30; }
+  .badge-red { @apply bg-red-500/15 text-red-300 border border-red-400/30; }
+  .badge-neutral { @apply bg-slate-600/50 text-slate-300; }
 }
 
 
