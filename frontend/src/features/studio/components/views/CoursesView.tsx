@@ -3,7 +3,7 @@ import { LayoutGrid, List, Search } from 'lucide-react';
 import { useSearchParams, useNavigate } from '@/app/routerContext';
 import { useAuth } from '@/features/auth/context/authContext';
 import { can } from '@/shared/lib/permissions';
-import { ApiError } from '@/shared/lib/apiClient';
+import { apiErrorMessage } from '@/shared/lib/apiClient';
 import { useCachedData } from '@/shared/hooks/useCachedData';
 import { dataCacheManager } from '@/shared/lib/cacheManager';
 import {
@@ -19,7 +19,7 @@ import { StudioEmpty } from '@/features/studio/components/states/StudioEmpty';
 import { StudioSkeleton } from '@/features/studio/components/states/StudioSkeleton';
 import type { StudioCoursePage } from '@/features/studio/types';
 
-const actionError = (error: unknown) => error instanceof ApiError ? error.message : 'تعذّر تنفيذ الإجراء. أعد المحاولة.';
+const actionError = (error: unknown) => apiErrorMessage(error, 'تعذّر تنفيذ الإجراء. أعد المحاولة.');
 
 export const CoursesView: React.FC = () => {
   const nav = useNavigate();

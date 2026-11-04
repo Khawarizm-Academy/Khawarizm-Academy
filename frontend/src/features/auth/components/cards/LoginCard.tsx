@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, Mail, User } from 'lucide-react';
+import { Spinner } from '@/shared/components/ui/Spinner';
 import { useRouter } from '@/app/routerContext';
 import { NAV_TARGETS } from '@/shared/lib/navigation';
 import { ApiError } from '@/shared/lib/apiClient';
@@ -174,7 +175,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({ variant = 'desktop' }) => 
 
         <button type="submit" disabled={isSubmitting} className="btn-gold w-full h-12 text-base disabled:opacity-50">
           {isSubmitting ? (
-            <span className="inline-block w-5 h-5 border-2 border-navy-950 border-t-transparent rounded-full animate-spin" />
+            <Spinner size="lg" className="text-navy-950" />
           ) : (
             <span>{isRegister ? 'إنشاء الحساب' : 'تسجيل الدخول'}</span>
           )}

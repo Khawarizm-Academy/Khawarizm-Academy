@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Download, Gift, RefreshCw } from "lucide-react";
 import { useAuth } from "@/features/auth/context/authContext";
 import { can } from "@/shared/lib/permissions";
-import { ApiError } from "@/shared/lib/apiClient";
+import { apiErrorMessage } from "@/shared/lib/apiClient";
 import {
   downloadQuizResultsCsv,
   fetchQuizAttempts,
@@ -42,7 +42,7 @@ export const QuizResultsView: React.FC<{ quiz: StudioQuiz }> = ({ quiz }) => {
       })
       .catch((reason) =>
         setError(
-          reason instanceof ApiError ? reason.message : "تعذّر تحميل النتائج.",
+          apiErrorMessage(reason, "تعذّر تحميل النتائج."),
         ),
       )
       .finally(() => setLoadedKey(resultsKey));
@@ -84,7 +84,7 @@ export const QuizResultsView: React.FC<{ quiz: StudioQuiz }> = ({ quiz }) => {
       setGrantNote("");
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر منح المحاولة.",
+        apiErrorMessage(reason, "تعذّر منح المحاولة."),
       );
     } finally {
       setGranting(false);

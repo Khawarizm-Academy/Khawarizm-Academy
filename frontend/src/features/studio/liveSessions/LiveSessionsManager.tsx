@@ -18,7 +18,7 @@ import { useAuth } from "@/features/auth/context/authContext";
 import { fetchStudioPickerAssets } from "@/features/studio/data/studioFetchers";
 import type { StudioPickerAsset } from "@/features/studio/types";
 import { canAny } from "@/shared/lib/permissions";
-import { ApiError } from "@/shared/lib/apiClient";
+import { apiErrorMessage } from "@/shared/lib/apiClient";
 import { LiveSessionCountdown } from "./LiveSessionCountdown";
 import {
   addLiveSessionRecording,
@@ -213,7 +213,7 @@ const SessionDrawer: React.FC<{
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : "تعذر حفظ الجلسة.",
+        apiErrorMessage(caught, "تعذر حفظ الجلسة."),
       );
     } finally {
       setSaving(false);
@@ -398,9 +398,7 @@ const RecordingDrawer: React.FC<{
         .catch((reason) => {
           if (active)
             setAssetError(
-              reason instanceof ApiError
-                ? reason.message
-                : "تعذّر تحميل مكتبة الفيديو.",
+              apiErrorMessage(reason, "تعذّر تحميل مكتبة الفيديو."),
             );
         })
         .finally(() => {
@@ -435,7 +433,7 @@ const RecordingDrawer: React.FC<{
       close();
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر حفظ التسجيل.",
+        apiErrorMessage(reason, "تعذّر حفظ التسجيل."),
       );
     } finally {
       setSaving(false);
@@ -681,7 +679,7 @@ export const LiveSessionsManager: React.FC<LiveSessionsManagerProps> = ({
       .then((result) => setSessions(result.items))
       .catch((caught) =>
         setError(
-          caught instanceof ApiError ? caught.message : "تعذر تحميل الجلسات.",
+          apiErrorMessage(caught, "تعذر تحميل الجلسات."),
         ),
       )
       .finally(() => setLoadedKey(key));
@@ -699,7 +697,7 @@ export const LiveSessionsManager: React.FC<LiveSessionsManagerProps> = ({
       await load();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : "تعذر تحديث الجلسة.",
+        apiErrorMessage(caught, "تعذر تحديث الجلسة."),
       );
     } finally {
       setBusyId("");

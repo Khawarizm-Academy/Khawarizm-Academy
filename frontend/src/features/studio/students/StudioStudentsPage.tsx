@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Search, UserRound, X } from "lucide-react";
 import { useAuth } from "@/features/auth/context/authContext";
 import { can } from "@/shared/lib/permissions";
-import { ApiError } from "@/shared/lib/apiClient";
+import { apiErrorMessage } from "@/shared/lib/apiClient";
 import { StudioShell } from "@/features/studio/components/layout/StudioShell";
 import {
   createStudentNote,
@@ -87,9 +87,7 @@ const StudentDrawer: React.FC<{
       .catch((reason) => {
         if (mounted)
           setError(
-            reason instanceof ApiError
-              ? reason.message
-              : "تعذّر تحميل تفاصيل الطالب.",
+            apiErrorMessage(reason, "تعذّر تحميل تفاصيل الطالب."),
           );
       })
       .finally(() => {
@@ -110,7 +108,7 @@ const StudentDrawer: React.FC<{
       onChanged();
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر إرسال التنبيه.",
+        apiErrorMessage(reason, "تعذّر إرسال التنبيه."),
       );
     } finally {
       setBusy(false);
@@ -127,7 +125,7 @@ const StudentDrawer: React.FC<{
       onChanged();
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر منح المحاولة.",
+        apiErrorMessage(reason, "تعذّر منح المحاولة."),
       );
     } finally {
       setBusy(false);
@@ -153,7 +151,7 @@ const StudentDrawer: React.FC<{
       setNotice("حُفظت الملاحظة لفريق التدريس فقط.");
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر حفظ الملاحظة.",
+        apiErrorMessage(reason, "تعذّر حفظ الملاحظة."),
       );
     } finally {
       setNoteSaving(false);
@@ -431,9 +429,7 @@ const StudioStudentsContent: React.FC = () => {
       .then(setPage)
       .catch((reason) =>
         setError(
-          reason instanceof ApiError
-            ? reason.message
-            : "تعذّر تحميل قائمة الطلاب.",
+          apiErrorMessage(reason, "تعذّر تحميل قائمة الطلاب."),
         ),
       )
       .finally(() => setLoadedKey(rosterKey));

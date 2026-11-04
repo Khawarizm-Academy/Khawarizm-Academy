@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Trophy, Play, CheckCircle2, X, Code2 } from 'lucide-react';
+import { Spinner } from '@/shared/components/ui/Spinner';
 import type { CompetitionItem } from '@/features/dashboard/components/views/CompetitionsCertificatesView';
 import { useDashboardContent } from '@/features/dashboard/context/DashboardContentContext';
 import { DashboardSectionEmpty } from '@/features/dashboard/components/states/DashboardSectionEmpty';
@@ -144,7 +145,7 @@ export const CompetitionArenaModal: React.FC<CompetitionArenaModalProps> = ({
             {/* Test results output */}
             {testResult === 'running' && (
               <div className="p-3 bg-navy-950/60 border border-blue-400/40 rounded-xl flex items-center gap-2 text-blue-400 text-xs">
-                <span className="size-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                <Spinner size="sm" />
                 <span>جاري تشغيل حالات الاختبار...</span>
               </div>
             )}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Award, CheckCircle2, Clock, FileCheck, Send, X, Sparkles, type LucideIcon } from 'lucide-react';
+import { Spinner } from '@/shared/components/ui/Spinner';
 import type { SavedScholarshipItem } from '@/features/dashboard/components/views/SavedScholarshipsView';
 import { applyToScholarship } from '@/features/scholarships/data/scholarshipFetchers';
 
@@ -168,7 +169,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               >
                 {isSubmitting ? (
                   <>
-                    <span className="size-4 border-2 border-navy-900 border-t-transparent rounded-full animate-spin" />
+                    <Spinner size="lg" />
                     <span>جاري إرسال الطلب والمستندات...</span>
                   </>
                 ) : (

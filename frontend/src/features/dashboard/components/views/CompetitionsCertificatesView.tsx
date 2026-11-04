@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Trophy, Award, Download } from 'lucide-react';
+import { Spinner } from '@/shared/components/ui/Spinner';
 import { useNavigate } from '@/app/routerContext';
 import { useAuth } from '@/features/auth/context/authContext';
 import { useCachedData } from '@/shared/hooks/useCachedData';
@@ -178,7 +179,7 @@ export const CompetitionsCertificatesView: React.FC<CompetitionsCertificatesView
                 >
                   {downloadingId === cert.id ? (
                     <>
-                      <span className="size-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                      <Spinner size="sm" className="text-blue-400" />
                       <span>جاري فتح وثيقة الشهادة...</span>
                     </>
                   ) : (

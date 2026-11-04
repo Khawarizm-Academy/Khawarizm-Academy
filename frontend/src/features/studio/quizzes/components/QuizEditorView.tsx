@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/features/auth/context/authContext";
 import { can } from "@/shared/lib/permissions";
-import { ApiError } from "@/shared/lib/apiClient";
+import { apiErrorMessage, ApiError } from "@/shared/lib/apiClient";
 import {
   createQuizQuestion,
   deleteQuizQuestion,
@@ -74,7 +74,7 @@ const ImportPanel: React.FC<{
       if (commit) onImported(next.committed);
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر تحليل ملف CSV.",
+        apiErrorMessage(reason, "تعذّر تحليل ملف CSV."),
       );
     } finally {
       setBusy(false);
@@ -212,7 +212,7 @@ const SettingsDrawer: React.FC<{
       onClose();
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر حفظ الإعدادات.",
+        apiErrorMessage(reason, "تعذّر حفظ الإعدادات."),
       );
     } finally {
       setSaving(false);
@@ -450,7 +450,7 @@ export const QuizEditorView: React.FC<{ quizId: string }> = ({ quizId }) => {
       })
       .catch((reason) =>
         setError(
-          reason instanceof ApiError ? reason.message : "تعذّر تحميل الاختبار.",
+          apiErrorMessage(reason, "تعذّر تحميل الاختبار."),
         ),
       )
       .finally(() => setLoadedKey(quizId));
@@ -513,7 +513,7 @@ export const QuizEditorView: React.FC<{ quizId: string }> = ({ quizId }) => {
       setTab("edit");
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر إضافة السؤال.",
+        apiErrorMessage(reason, "تعذّر إضافة السؤال."),
       );
     } finally {
       setSaving(false);
@@ -547,7 +547,7 @@ export const QuizEditorView: React.FC<{ quizId: string }> = ({ quizId }) => {
       window.setTimeout(() => setToast(""), 2200);
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر حفظ السؤال.",
+        apiErrorMessage(reason, "تعذّر حفظ السؤال."),
       );
     } finally {
       setSaving(false);
@@ -581,7 +581,7 @@ export const QuizEditorView: React.FC<{ quizId: string }> = ({ quizId }) => {
       setActiveId(created.id);
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر نسخ السؤال.",
+        apiErrorMessage(reason, "تعذّر نسخ السؤال."),
       );
     } finally {
       setSaving(false);
@@ -608,7 +608,7 @@ export const QuizEditorView: React.FC<{ quizId: string }> = ({ quizId }) => {
       setUndo(question);
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر حذف السؤال.",
+        apiErrorMessage(reason, "تعذّر حذف السؤال."),
       );
     } finally {
       setSaving(false);
@@ -635,7 +635,7 @@ export const QuizEditorView: React.FC<{ quizId: string }> = ({ quizId }) => {
       setUndo(null);
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر التراجع عن الحذف.",
+        apiErrorMessage(reason, "تعذّر التراجع عن الحذف."),
       );
     }
   };
@@ -653,9 +653,7 @@ export const QuizEditorView: React.FC<{ quizId: string }> = ({ quizId }) => {
       setQuiz({ ...quiz, questions: result.items });
     } catch (reason) {
       setError(
-        reason instanceof ApiError
-          ? reason.message
-          : "تعذّر حفظ ترتيب الأسئلة.",
+        apiErrorMessage(reason, "تعذّر حفظ ترتيب الأسئلة."),
       );
       void load();
     }
@@ -673,9 +671,7 @@ export const QuizEditorView: React.FC<{ quizId: string }> = ({ quizId }) => {
       .then((result) => setQuiz({ ...quiz, questions: result.items }))
       .catch((reason) => {
         setError(
-          reason instanceof ApiError
-            ? reason.message
-            : "تعذّر حفظ ترتيب الأسئلة.",
+          apiErrorMessage(reason, "تعذّر حفظ ترتيب الأسئلة."),
         );
         void load();
       })
@@ -696,7 +692,7 @@ export const QuizEditorView: React.FC<{ quizId: string }> = ({ quizId }) => {
         setValidationIssues(reason.fields.issues.map(String));
       else
         setError(
-          reason instanceof ApiError ? reason.message : "تعذّر نشر الاختبار.",
+          apiErrorMessage(reason, "تعذّر نشر الاختبار."),
         );
     }
   };

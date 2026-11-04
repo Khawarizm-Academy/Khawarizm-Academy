@@ -3,7 +3,7 @@ import { BarChart3, Filter, Plus, Search } from "lucide-react";
 import { useAuth } from "@/features/auth/context/authContext";
 import { useNavigate, useSearchParams } from "@/app/routerContext";
 import { can } from "@/shared/lib/permissions";
-import { ApiError } from "@/shared/lib/apiClient";
+import { apiErrorMessage } from "@/shared/lib/apiClient";
 import {
   fetchCourseQuizzes,
   fetchQuizCourses,
@@ -93,7 +93,7 @@ export const QuizListView: React.FC = () => {
     })()
       .catch((reason) =>
         setError(
-          reason instanceof ApiError ? reason.message : "تعذّر تحميل الاختبارات.",
+          apiErrorMessage(reason, "تعذّر تحميل الاختبارات."),
         ),
       )
       .finally(() => setLoadedKey(listKey));
@@ -138,7 +138,7 @@ export const QuizListView: React.FC = () => {
       navigate(`/studio/quizzes/${created.id}`);
     } catch (reason) {
       setError(
-        reason instanceof ApiError ? reason.message : "تعذّر إنشاء الاختبار.",
+        apiErrorMessage(reason, "تعذّر إنشاء الاختبار."),
       );
     } finally {
       setCreating(false);

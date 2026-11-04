@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Edit3, Pin, PinOff, Trash2 } from 'lucide-react';
-import { ApiError } from '@/shared/lib/apiClient';
+import { apiErrorMessage } from '@/shared/lib/apiClient';
 import { MarkdownRenderer } from '@/shared/components/Editor/MarkdownRenderer';
 import {
   deleteCourseAnnouncement,
@@ -35,7 +35,7 @@ export const StudioAnnouncementList: React.FC<Props> = ({ courseSlug, refreshKey
         setLoadedKey(listKey);
       })
       .catch((reason) => {
-        setError(reason instanceof Error ? reason.message : 'تعذّر تحميل الإعلانات.');
+        setError(apiErrorMessage(reason, 'تعذّر تحميل الإعلانات.'));
         setLoadedKey(listKey);
       });
   }, [courseSlug, listKey]);
@@ -49,7 +49,7 @@ export const StudioAnnouncementList: React.FC<Props> = ({ courseSlug, refreshKey
       const updated = await setCourseAnnouncementPinned(courseSlug, row.id, !row.pinned);
       setItems((current) => current.map((item) => item.id === row.id ? updated : item));
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'تعذّر تغيير التثبيت.');
+      setError(apiErrorMessage(reason, 'تعذّر تغيير التثبيت.'));
     } finally {
       setBusyId('');
     }
@@ -62,7 +62,7 @@ export const StudioAnnouncementList: React.FC<Props> = ({ courseSlug, refreshKey
       await deleteCourseAnnouncement(courseSlug, row.id);
       setItems((current) => current.filter((item) => item.id !== row.id));
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'تعذّر حذف الإعلان.');
+      setError(apiErrorMessage(reason, 'تعذّر حذف الإعلان.'));
     } finally {
       setBusyId('');
     }
