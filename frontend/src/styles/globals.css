@@ -248,8 +248,6 @@
 
 .btn-gold {
   @apply rounded-full py-2.5 px-4 bg-gradient-to-r from-gold-400 to-gold-200 text-navy-950 font-bold font-display hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.98] shadow-[0_2px_12px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_16px_rgba(229,182,92,0.45)] transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 select-none;
-  position: relative;
-  overflow: hidden;
 }
 
 .btn-outline-blue {
@@ -751,10 +749,10 @@
 }
 
 /* Gold CTA signature: a soft light beam sweeps the button on hover */
-
-/* The gradient background and interactive states were defined earlier in the
-concept layer (line 249). Keep this definition for the shine effect only.
-Base visual styles live in the .btn-gold block above. */
+.btn-gold {
+  position: relative;
+  overflow: hidden;
+}
 
 .btn-gold::after {
   content: '';
@@ -1836,68 +1834,6 @@ html[data-vt-enabled='true'] .animate-page-enter {
   .skeleton-sidebar {
     @apply hidden lg:block w-72 shrink-0 p-5 bg-navy-900/40 backdrop-blur-md border border-navy-600/40 rounded-2xl flex flex-col gap-6;
   }
-
-  /* --- Pagination --- */
-  .pagination {
-    @apply flex items-center gap-2 px-4 py-3 rounded-xl bg-navy-900/40 border border-navy-600/40 text-slate-200;
-  }
-  .pagination-btn {
-    @apply flex items-center justify-center w-8 h-8 rounded-lg bg-navy-800/60 hover:bg-navy-700/60 disabled:opacity-40 disabled:cursor-not-allowed transition;
-  }
-  .pagination-page {
-    @apply px-3 h-8 rounded-lg bg-navy-800/50 hover:bg-navy-700/60 text-xs font-medium transition;
-  }
-  .pagination-page-active {
-    @apply bg-gold-500/20 text-gold-300 border border-gold-400/30;
-  }
-  .pagination-page-idle {
-    @apply text-slate-300;
-  }
-  .pagination-info {
-    @apply mr-auto text-xs text-slate-400;
-  }
-
-  /* --- Switch --- */
-  .sw-row {
-    @apply flex items-center justify-between gap-3;
-  }
-  .sw-label {
-    @apply text-sm text-slate-200;
-  }
-  .sw-track {
-    @apply relative w-10 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/50;
-  }
-  .sw-track-on {
-    @apply bg-blue-500;
-  }
-  .sw-track-off {
-    @apply bg-navy-700;
-  }
-  .sw-knob {
-    @apply absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform;
-  }
-  .sw-knob-on {
-    @apply translate-x-[22px];
-  }
-  .sw-knob-off {
-    @apply translate-x-[2px];
-  }
-  .sw-disabled {
-    @apply opacity-50 cursor-not-allowed;
-  }
-  .sw-sm { @apply gap-2; }
-  .sw-md { @apply gap-3; }
-
-  /* --- Badge --- */
-  .badge {
-    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
-  }
-  .badge-default { @apply bg-slate-700/70 text-slate-200; }
-  .badge-gold { @apply bg-amber-500/15 text-amber-300 border border-amber-400/30; }
-  .badge-blue { @apply bg-blue-500/15 text-blue-300 border border-blue-400/30; }
-  .badge-green { @apply bg-emerald-500/15 text-emerald-300 border border-emerald-400/30; }
-  .badge-red { @apply bg-red-500/15 text-red-300 border border-red-400/30; }
-  .badge-neutral { @apply bg-slate-600/50 text-slate-300; }
 }
 
 
