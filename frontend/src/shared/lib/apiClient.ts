@@ -66,6 +66,12 @@ export class ApiError extends Error {
   }
 }
 
+/** Arabic fallback message for a caught value: the server line when it is an
+    <ApiError>, the caller's own line for anything else (network drop, bug). */
+export function apiErrorMessage(reason: unknown, fallback: string): string {
+  return reason instanceof ApiError ? reason.message : fallback;
+}
+
 type ApiErrorPayload = { detail?: string; code?: string; fields?: Record<string, unknown>; requestId?: string };
 
 /** Called once when the session can no longer be recovered, with the reason code. */

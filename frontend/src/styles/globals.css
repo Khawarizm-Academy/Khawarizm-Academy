@@ -1834,6 +1834,26 @@ html[data-vt-enabled='true'] .animate-page-enter {
   .skeleton-sidebar {
     @apply hidden lg:block w-72 shrink-0 p-5 bg-navy-900/40 backdrop-blur-md border border-navy-600/40 rounded-2xl flex flex-col gap-6;
   }
+
+  /* --- Pagination --- */
+  .pagination {
+    @apply flex items-center gap-2 px-4 py-3 rounded-xl bg-navy-900/40 border border-navy-600/40 text-slate-200;
+  }
+  .pagination-btn {
+    @apply flex items-center justify-center w-8 h-8 rounded-lg bg-navy-800/60 hover:bg-navy-700/60 disabled:opacity-40 disabled:cursor-not-allowed transition;
+  }
+  .pagination-page {
+    @apply px-3 h-8 rounded-lg bg-navy-800/50 hover:bg-navy-700/60 text-xs font-medium transition;
+  }
+  .pagination-page-active {
+    @apply bg-gold-500/20 text-gold-300 border border-gold-400/30;
+  }
+  .pagination-page-idle {
+    @apply text-slate-300;
+  }
+  .pagination-info {
+    @apply mr-auto text-xs text-slate-400;
+  }
 }
 
 

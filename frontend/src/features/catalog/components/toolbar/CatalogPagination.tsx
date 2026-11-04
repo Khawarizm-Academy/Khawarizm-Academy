@@ -1,51 +1,23 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pagination } from '@/shared/components/ui/Pagination';
 
 interface CatalogPaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  total?: number;
+  pageSize?: number;
 }
 
 export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  total,
+  pageSize = 20,
 }) => {
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-
-  return (
-    <nav aria-label="تنقل الصفحات" className="catalog-pagination">
-      <button
-        type="button"
-        disabled={currentPage <= 1}
-        onClick={() => onPageChange(currentPage - 1)}
-        className="catalog-page-nav"
-        title="الصفحة السابقة"
-      >
-        <ChevronLeft size={14} />
-      </button>
-
-      {pages.map((page) => (
-        <button
-          key={page}
-          type="button"
-          onClick={() => onPageChange(page)}
-          className={`catalog-page ${page === currentPage ? 'catalog-page-active' : 'catalog-page-idle'}`}
-        >
-          {page}
-        </button>
-      ))}
-
-      <button
-        type="button"
-        disabled={currentPage >= totalPages}
-        onClick={() => onPageChange(currentPage + 1)}
-        className="catalog-page-nav"
-        title="الصفحة التالية"
-      >
-        <ChevronRight size={14} />
-      </button>
-    </nav>
-  );
+  if (total !== undefined) {
+    return <Pagination page={currentPage} total={total} pageSize={pageSize} onPageChange={onPageChange} className="catalog-pagination" />;
+  }
+  return <Pagination page={currentPage} total={totalPages * pageSize} pageSize={pageSize} onPageChange={onPageChange} className="catalog-pagination" />;
 };

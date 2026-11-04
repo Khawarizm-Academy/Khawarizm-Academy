@@ -57,5 +57,14 @@
     "explore_agenda": "استكشف الأجندة",
     "register": "تسجيل",
     "search": "بحث"
+  },
+  "ui": {
+    "loading": "جاري التحميل",
+    "pagination": "تنقل الصفحات",
+    "prev_page": "الصفحة السابقة",
+    "next_page": "الصفحة التالية",
+    "page": "صفحة",
+    "page_of": "من",
+    "results": "نتيجة"
   }
 }

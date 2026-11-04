@@ -41,6 +41,15 @@ export type ActionKey =
   | 'register'
   | 'search';
 
+export type UiKey =
+  | 'loading'
+  | 'pagination'
+  | 'prev_page'
+  | 'next_page'
+  | 'page'
+  | 'page_of'
+  | 'results';
+
 /** Shape of localization.json: every group is keyed by its domain key type. */
 interface Dictionaries {
   nav: Record<NavTabKey, string>;
@@ -52,6 +61,7 @@ interface Dictionaries {
   degreeLevels: Record<DegreeLevelKey, string>;
   eventFormats: Record<EventFormatKey, string>;
   actions: Record<ActionKey, string>;
+  ui: Record<UiKey, string>;
 }
 
 /** Arabic labels live in localization.json; this cast gives them their key types. */
