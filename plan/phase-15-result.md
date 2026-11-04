@@ -89,3 +89,24 @@ invalid markup or quality debt, so they are specified rather than done under-qua
 All §0.4 gates green on `Chore/Release` at `2ca5a8f`: backend 732 tests (1 skip), frontend
 200 tests, lint / `tsc -b` / build, grep/i18n/bundle/audit gates, `spectacular` 0 warnings,
 and the **E2E smoke 15/15 against a live stack** (now covering course-page reviews).
+
+## 5a. Execution — Phase 15 Final Frontend Optimization & Refactor (landed 2026-11-04)
+
+**What shipped:** shared primitives adopted, duplication reduced, CSS merged, build verified.
+
+### 5a.1 Shared primitives (P15.A)
+- apiErrorMessage helper exported from apiClient; codemod replaced ~50 inline ApiError ternaries across studio pages.
+- Spinner shared component replaces four inline spinner copies.
+- Pagination shared component unifies CatalogPagination and AdminPagination.
+- Switch shared component replaces profile ToggleSwitch and admin AdminToggle.
+- Badge shared component created.
+
+### 5a.2 CSS consolidation (P15.B)
+- Duplicate .btn-gold merged; position/overflow added to concept block; shine pseudo-elements retained.
+- localization.json extended with ui group; UiKey added.
+
+### 5a.3 Performance
+- Build green, tests 200/200, tsc clean, no new deps.
+
+### 5a.4 Gates
+- lint, vitest, tsc, build all green; grep/i18n/audit gates green.
