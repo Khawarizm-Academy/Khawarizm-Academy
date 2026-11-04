@@ -248,6 +248,8 @@
 
 .btn-gold {
   @apply rounded-full py-2.5 px-4 bg-gradient-to-r from-gold-400 to-gold-200 text-navy-950 font-bold font-display hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.98] shadow-[0_2px_12px_rgba(229,182,92,0.3)] hover:shadow-[0_4px_16px_rgba(229,182,92,0.45)] transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 select-none;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-outline-blue {
@@ -749,10 +751,10 @@
 }
 
 /* Gold CTA signature: a soft light beam sweeps the button on hover */
-.btn-gold {
-  position: relative;
-  overflow: hidden;
-}
+
+/* The gradient background and interactive states were defined earlier in the
+concept layer (line 249). Keep this definition for the shine effect only.
+Base visual styles live in the .btn-gold block above. */
 
 .btn-gold::after {
   content: '';
